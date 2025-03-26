@@ -1,8 +1,7 @@
-
 DOCKER = docker run --platform linux/amd64 --rm -it --user $$(id -u):$$(id -g) -v`pwd`:/src -w/src
 
-LIBS = src ayumi
-MAIN_SRC = main.c
+LIBS = src/corelib-sdl external/ayumi
+MAIN_SRC = src/main.c
 BUILD = build
 
 ifeq ($(CROSS_COMPILE),)

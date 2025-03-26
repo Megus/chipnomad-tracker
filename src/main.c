@@ -117,6 +117,15 @@ int main(int argv, char** args) {
   ayumi_set_volume(chip, 0, 15);
   ayumi_set_mixer(chip, 0, 0, 1, 0);
 
+  ayumi_set_tone(chip, 1, 1024);
+  ayumi_set_volume(chip, 1, 15);
+  ayumi_set_mixer(chip, 1, 0, 1, 0);
+
+  ayumi_set_tone(chip, 2, 256);
+  ayumi_set_volume(chip, 2, 15);
+  ayumi_set_mixer(chip, 2, 0, 1, 0);
+
+
   gfx_set_font(&font5x7);
   gfx_run();
   gfx_app(0);

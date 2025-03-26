@@ -9,9 +9,9 @@ int audio_setup(void) {
   // Initialize Ayumi chip emulator
   chip = malloc(sizeof(struct ayumi));
   ayumi_configure(chip, 1, 1750000, sr);
-  ayumi_set_pan(chip, 0, 0.5, 1);
+  ayumi_set_pan(chip, 0, 0.2, 1);
   ayumi_set_pan(chip, 1, 0.5, 1);
-  ayumi_set_pan(chip, 2, 0.5, 1);
+  ayumi_set_pan(chip, 2, 0.8, 1);
 
   SDL_AudioSpec spec;
   SDL_memset(&spec, 0, sizeof(spec));
