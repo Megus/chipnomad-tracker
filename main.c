@@ -1,7 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "audio_manager.h"
+#include "common.h"
+
+#include <ayumi.h>
+
 #include <simplegfx.h>
+#include <psg_play.h>
 
 char last_key = 0;
 keyinfo_t * keyinfo = NULL;
@@ -106,29 +113,39 @@ int gfx_on_key(char key, int down) {
   return 0;
 }
 
+int period = 100;
 
+void simpleFrameCallback(void* userdata) {
+  //printf("%d\n", period);
+  struct ayumi* ay = audioManager.chips[0].userdata;
+
+  ayumi_set_tone(ay, 0, period);
+  ayumi_set_volume(ay, 0, 15);
+  ayumi_set_mixer(ay, 0, 0, 1, 0);
+
+  period++;
+}
 
 int main(int argv, char** args) {
   if (gfx_setup() != 0) {
     return 1;
   }
 
-  ayumi_set_tone(chip, 0, 512);
-  ayumi_set_volume(chip, 0, 15);
-  ayumi_set_mixer(chip, 0, 0, 1, 0);
+  audioManager.start(appSettings.audioSampleRate, appSettings.audioBufferSize, 50.0);
+  audioManager.initChips();
 
-  ayumi_set_tone(chip, 1, 1024);
-  ayumi_set_volume(chip, 1, 15);
-  ayumi_set_mixer(chip, 1, 0, 1, 0);
+  psgReadFile("test.psg");
 
-  ayumi_set_tone(chip, 2, 256);
-  ayumi_set_volume(chip, 2, 15);
-  ayumi_set_mixer(chip, 2, 0, 1, 0);
-
+  audioManager.setFrameCallback(psgFrameCallback, NULL);
 
   gfx_set_font(&font5x7);
   gfx_run();
   gfx_app(0);
+
+  audioManager.stop();
+
   gfx_cleanup();
+
+
   return 0;
 }

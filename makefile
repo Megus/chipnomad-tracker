@@ -1,7 +1,7 @@
 DOCKER = docker run --platform linux/amd64 --rm -it --user $$(id -u):$$(id -g) -v`pwd`:/src -w/src
 
-LIBS = src/corelib-sdl external/ayumi
-MAIN_SRC = src/main.c
+LIBS = external/ayumi src/chips src/corelib src/corelib-sdl src
+MAIN_SRC = main.c
 BUILD = build
 
 ifeq ($(CROSS_COMPILE),)
@@ -68,6 +68,7 @@ RG35xx-adb-install: .check-adb RG35xx .RG35xx-sh
 	${ADB} push ${BUILD}/ay-tracker.rg35xx ${APPS}/${APP}
 	${ADB} push ${BUILD}/launcher.sh ${APPS}/${APP}.sh
 	${ADB} push ${BUILD}/j2k.so ${APPS}/${APP}
+	${ADB} push ${BUILD}/test.psg ${APPS}/${APP}
 	${ADB} shell chmod 755 ${APPS}/${APP}/ay-tracker.rg35xx
 	${ADB} shell chmod 755 ${APPS}/${APP}.sh
 

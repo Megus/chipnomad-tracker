@@ -1,10 +1,6 @@
 #ifndef SIMPLEGFX_H
 #define SIMPLEGFX_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifndef WINDOW_WIDTH
 #define WINDOW_WIDTH 640
 #endif
@@ -17,18 +13,10 @@ extern "C" {
 #define FPS 30
 #endif
 
-#ifdef USE_SDL2
-  #include <SDL2/SDL.h>
-  #define FONT_COLOR SDL_Color
+#include <SDL/SDL.h>
+#undef main
 
-  extern SDL_Renderer * renderer;
-  extern SDL_Window * window;
-#else
-  #include <SDL/SDL.h>
-  #undef main
-
-  extern SDL_Surface * screen;
-#endif
+extern SDL_Surface * screen;
 
 extern uint32_t elm;
 extern char * printf_buf;
@@ -40,7 +28,6 @@ extern int full_kb;
 #include <math.h>
 #include <keymap.h>
 #include <simplefont.h>
-#include <simpleaudio.h>
 
 #ifndef M_PI
 #define M_PI 3.14159265
@@ -72,9 +59,5 @@ extern void gfx_app(int init);
 extern void gfx_draw(float fps);
 extern int gfx_on_key(char key, int down);
 extern void gfx_process_data(int compute_time);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

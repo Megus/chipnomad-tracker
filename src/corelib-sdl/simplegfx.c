@@ -5,7 +5,6 @@ uint32_t color = 0;
 
 static font_t * _font = NULL;
 static unsigned int seed = 0;
-extern double volume;
 uint32_t elm = 0;
 char * printf_buf = NULL;
 int printf_size = 0;
@@ -29,17 +28,16 @@ int gfx_setup(void) {
   //SDL_ShowCursor(SDL_DISABLE);
   seed = (unsigned int)time(NULL);
 
-  if (audio_setup() != 0) {
+  /*if (audio_setup() != 0) {
     printf("Audio setup failed\n");
     return 1;
-  }
+  }*/
 
   return 0;
 }
 
 void gfx_cleanup(void) {
   SDL_FreeSurface(screen);
-  audio_cleanup();
   gfx_clear_text_buffer();
   SDL_Quit();
 }
@@ -68,12 +66,12 @@ void gfx_run(void) {
         } else if (full_kb && event.key.keysym.sym == BTN_EXIT) {
           printf("Exit key pressed\n");
           return;
-        } else if (event.key.keysym.sym == BTN_VOLUME_UP) {
+        /*} else if (event.key.keysym.sym == BTN_VOLUME_UP) {
           volume *= 2;
           if (volume > 0.5) volume = 0.5;
         } else if (event.key.keysym.sym == BTN_VOLUME_DOWN) {
           volume /= 2;
-          if (volume <= 0.05) volume = 0.05;
+          if (volume <= 0.05) volume = 0.05;*/
         }
       } else if (event.type == SDL_KEYUP) {
         if (gfx_on_key(event.key.keysym.sym, 0) != 0) {
@@ -240,10 +238,6 @@ void gfx_fill_rect(int x, int y, int w, int h) {
   elm++;
 }
 
-int gfx_fast_rand(void) {
-  seed = seed * 1103515245 + 12345;
-  return (unsigned int)(seed / 65536) % 32768;
-}
 
 void gfx_delay(int ms) {
   SDL_Delay(ms);
