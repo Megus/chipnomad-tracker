@@ -4,9 +4,22 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+struct ColorScheme {
+  int background;
+  int textEmpty;
+  int textInfo;
+  int textDefault;
+  int textValue;
+  int textTitles;
+  int playMarkers;
+  int cursor;
+  int selection;
+};
+
 struct AppSettings {
   int audioSampleRate;
   int audioBufferSize;
+  struct ColorScheme colorScheme;
 };
 
 struct SoundChip {
@@ -17,6 +30,6 @@ struct SoundChip {
   int (*cleanup)(struct SoundChip* self);
 };
 
-extern const struct AppSettings appSettings;
+extern struct AppSettings appSettings;
 
 #endif

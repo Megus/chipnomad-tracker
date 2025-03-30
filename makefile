@@ -1,6 +1,6 @@
 DOCKER = docker run --platform linux/amd64 --rm -it --user $$(id -u):$$(id -g) -v`pwd`:/src -w/src
 
-LIBS = external/ayumi src/chips src/corelib src/corelib-sdl src
+LIBS = external/ayumi src/chips src/corelib src/corelib-sdl src/screens src
 MAIN_SRC = main.c
 BUILD = build
 

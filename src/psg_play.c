@@ -25,8 +25,6 @@ int psgReadFile(char* path) {
   fread(psgData, psgSize, 1, psgFile);
   fclose(psgFile);
 
-  printf("%s", psgData);
-
   psgOffset = 16;
   frameCountdown = 0;
 
