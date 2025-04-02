@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define SONG_MAX_CHANNELS (10)
+#define SONG_MAX_TRACKS (10)
 #define SONG_MAX_LENGTH (256)
 #define SONG_MAX_CHAINS (255)
 #define SONG_MAX_PHRASES (1024)
@@ -35,9 +35,9 @@ struct Table {
 };
 
 struct Song {
-  int channelsCount;
+  int tracksCount;
 
-  uint8_t song[SONG_MAX_LENGTH * SONG_MAX_CHANNELS];
+  uint8_t song[SONG_MAX_LENGTH][SONG_MAX_TRACKS];
   struct Chain chains[SONG_MAX_CHAINS];
   struct Phrase phrases[SONG_MAX_PHRASES];
   struct Instrument instruments[SONG_MAX_INSTRUMENTS];

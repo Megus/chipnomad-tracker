@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <corelib_mainloop.h>
 
 struct ColorScheme {
   int background;
@@ -28,6 +29,13 @@ struct SoundChip {
   int (*init)(struct SoundChip* self);
   void (*render)(struct SoundChip* self, int16_t* buffer, int samples);
   int (*cleanup)(struct SoundChip* self);
+};
+
+struct AppScreen {
+  void (*setup)(int input);
+  void (*fullRedraw)(void);
+  void (*draw)(void);
+  void (*onEvent)(enum MainLoopEvent event, int value, void* userdata);
 };
 
 extern struct AppSettings appSettings;
