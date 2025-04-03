@@ -18,25 +18,25 @@ INCLUDES     = $(addprefix -I, $(LIBS))
 SOURCES      = $(foreach dir, $(LIBS), $(wildcard $(dir)/*.c))
 SRC_FILES    = $(foreach dir, $(LIBS), $(wildcard $(dir)/*.c)) $(foreach dir, $(LIBS), $(wildcard $(dir)/*.h))
 CFLAGS       = -std=c99 -Wall -g -Os -flto ${INCLUDES} ${SOURCES} ${XTRA_CFLAGS}
-OUTPUT       = -o ${BUILD}/ay-tracker
+OUTPUT       = -o ${BUILD}/chipnomad
 
 .PHONY: desktop
 desktop:
 	mkdir -p ${BUILD}
 	${CC} ${MAIN_SRC} ${CFLAGS} -lSDL ${OUTPUT}
-	chmod +x ${BUILD}/ay-tracker
+	chmod +x ${BUILD}/chipnomad
 
 .PHONY: .RG35xx
 .RG35xx:
 	mkdir -p ${BUILD}
 	${CROSS_COMPILE}${CC} ${MAIN_SRC} ${CFLAGS} -lSDL -lasound ${OUTPUT}.rg35xx
-	chmod +x ${BUILD}/ay-tracker.rg35xx
+	chmod +x ${BUILD}/chipnomad.rg35xx
 
 .PHONY: RG35xx
 RG35xx:
 	${DOCKER} nfriedly/miyoo-toolchain:steward make .RG35xx CC=gcc
 
-APP := AYTracker
+APP := ChipNomad
 ADB := adb
 APPS := /mnt/mmc/Roms/APPS
 
@@ -45,13 +45,13 @@ APPS := /mnt/mmc/Roms/APPS
 	echo "#!/bin/sh" > ${BUILD}/launcher.sh
 	echo "HOME=\$$(dirname \"\$$0\")/${APP}" >> ${BUILD}/launcher.sh
 	echo "cd \$$HOME" >> ${BUILD}/launcher.sh
-	echo "LD_PRELOAD=./j2k.so ./ay-tracker.rg35xx" >> ${BUILD}/launcher.sh
+	echo "LD_PRELOAD=./j2k.so ./chipnomad.rg35xx" >> ${BUILD}/launcher.sh
 	chmod +x ${BUILD}/launcher.sh
 
 .PHONY: RG35xx-deploy
 RG35xx-deploy: RG35xx .RG35xx-sh
 	mkdir -p ${BUILD}/deploy/${APP}
-	cp ${BUILD}/ay-tracker.rg35xx ${BUILD}/deploy/${APP}
+	cp ${BUILD}/chipnomad.rg35xx ${BUILD}/deploy/${APP}
 	cp ${BUILD}/launcher.sh ${BUILD}/deploy/${APP}.sh
 	cp ${BUILD}/j2k.so ${BUILD}/deploy/${APP}
 	cd ${BUILD}/deploy && zip -r ${APP}.zip ${APP} ${APP}.sh
@@ -65,7 +65,7 @@ RG35xx-deploy: RG35xx .RG35xx-sh
 .PHONY: RG35xx-adb-install
 RG35xx-adb-install: .check-adb RG35xx .RG35xx-sh
 	${ADB} shell mkdir -p ${APPS}/${APP}
-	${ADB} push ${BUILD}/ay-tracker.rg35xx ${APPS}/${APP}
+	${ADB} push ${BUILD}/chipnomad.rg35xx ${APPS}/${APP}
 	${ADB} push ${BUILD}/launcher.sh ${APPS}/${APP}.sh
 	${ADB} push ${BUILD}/j2k.so ${APPS}/${APP}
 	${ADB} push ${BUILD}/test.psg ${APPS}/${APP}
@@ -79,7 +79,7 @@ RG35xx-adb-uninstall: .check-adb
 
 .PHONY: RG35xx-adb-kill
 RG35xx-adb-kill: .check-adb
-	${ADB} shell kill $$(${ADB} shell ps | grep ay-tracker.rg35xx | awk '{print $$2}')
+	${ADB} shell kill $$(${ADB} shell ps | grep chipnomad.rg35xx | awk '{print $$2}')
 
 .PHONY: RG35xx-adb-logcat
 RG35xx-adb-logcat: .check-adb

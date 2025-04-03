@@ -1,2 +1,2 @@
 make desktop
-./build/ay-tracker
+./build/chipnomad
