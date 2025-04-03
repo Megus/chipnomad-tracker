@@ -10,6 +10,8 @@ Hardware requirements:
 - Can display 40x20 characters on the screen
 - Can play stereo 16-bit audio
 
+[ChipNomad Features and UI ideas](docs/ideas.md)
+
 ## Background
 
 I (Megus) started this project because I want to make real chiptune music on the go. LSDJ is amazing but it's only
