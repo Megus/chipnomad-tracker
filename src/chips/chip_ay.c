@@ -1,5 +1,6 @@
+#include <stdlib.h>
 #include <ayumi.h>
-#include <chip_ay.h>
+#include <chips.h>
 
 static int init(struct SoundChip* self) {
   return 0;

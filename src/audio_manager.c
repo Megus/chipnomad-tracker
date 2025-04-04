@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <audio_manager.h>
 #include <corelib_audio.h>
-#include <chip_ay.h>
+#include <chips.h>
 
 static int aSampleRate;
 static int aBufferSize;

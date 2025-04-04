@@ -2,10 +2,13 @@
 #include <stdint.h>
 #include <SDL/SDL.h>
 
+#include <corelib_gfx.h>
+
 #define FPS 60
 
 // Keyboard mapping for desktop and RG35xx
 #if defined(__arm__) && defined(__linux__)
+// RG35xx mapping
 #define BTN_UP          119
 #define BTN_DOWN        115
 #define BTN_LEFT        113
@@ -26,25 +29,26 @@
 #define BTN_POWER       0
 #define BTN_EXIT        0
 #else
-#define BTN_UP          82
-#define BTN_DOWN        81
-#define BTN_LEFT        80
-#define BTN_RIGHT       79
-#define BTN_A           100
-#define BTN_B           120
-#define BTN_X           119
-#define BTN_Y           97
-#define BTN_L1          49
-#define BTN_R1          48
-#define BTN_L2          50
-#define BTN_R2          57
-#define BTN_SELECT      32
-#define BTN_START       13
-#define BTN_MENU        101
+// Desktop mapping
+#define BTN_UP          273
+#define BTN_DOWN        274
+#define BTN_LEFT        276
+#define BTN_RIGHT       275
+#define BTN_A           120
+#define BTN_B           122
+#define BTN_X           113
+#define BTN_Y           0
+#define BTN_L1          0
+#define BTN_R1          0
+#define BTN_L2          0
+#define BTN_R2          0
+#define BTN_SELECT      304
+#define BTN_START       32
+#define BTN_MENU        306
 #define BTN_VOLUME_UP   61
 #define BTN_VOLUME_DOWN 45
-#define BTN_POWER       27
-#define BTN_EXIT        113
+#define BTN_POWER       0
+#define BTN_EXIT        0
 #endif
 
 extern SDL_Surface* sdlScreen;
@@ -83,10 +87,16 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(enum MainLoopEvent event, i
         onEvent(eventExit, 0, NULL);
         return;
       } else if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
-        if (event.type == SDL_KEYDOWN) printf("Key: %d\n", event.key.keysym.sym); // Debug
         if (event.key.keysym.sym == BTN_MENU) {
           menu = event.type == SDL_KEYDOWN;
         } else {
+          // Debug output for key codes
+          /*if (event.type == SDL_KEYDOWN) {
+            gfxPrintf(35, 0, "%d", event.key.keysym.sym);
+          } else {
+            gfxPrint(35, 0, "     ");
+          }*/
+
           enum Key key = decodeKey(event.key.keysym.sym);
           if (key != -1) onEvent(event.type == SDL_KEYDOWN ? eventKeyDown : eventKeyUp, key, NULL);
         }

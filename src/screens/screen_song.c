@@ -1,3 +1,4 @@
+#include <screens.h>
 #include <common.h>
 #include <corelib_gfx.h>
 #include <utils.h>
@@ -44,8 +45,8 @@ static void draw(void) {
 
 }
 
-static void onEvent(enum MainLoopEvent event, int value, void* userdata) {
-
+static int onEvent(struct AppEvent event) {
+  return 0;
 }
 
 const struct AppScreen screenSong = {

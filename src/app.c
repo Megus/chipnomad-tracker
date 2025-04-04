@@ -68,5 +68,5 @@ void appDraw(void) {
 }
 
 void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
-  currentScreen->onEvent(event, value,  userdata);
+  //currentScreen->onEvent(event, value,  userdata);
 }

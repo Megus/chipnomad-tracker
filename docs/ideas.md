@@ -98,7 +98,8 @@ define chip-specific FX easily.
 - Arpeggio
 - Table hop
 - Song hop
-- Vibrato
+- Pitch Vibrato
+- Env Vibrato
 - Pitch bend (slide)
 - Portamento
 - Table
@@ -112,7 +113,7 @@ define chip-specific FX easily.
 - Env pitch as a value H and L regs
 - Env retrig
 - Env pitch bend
-- Env portamento?
+- Env portamento
 - Noise offset
 - 1-time pitch offset
 

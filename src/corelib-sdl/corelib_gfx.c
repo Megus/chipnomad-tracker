@@ -24,7 +24,7 @@ int gfxSetup(void) {
     return 1;
   }
 
-  sdlScreen = SDL_SetVideoMode(WINDOW_WIDTH, WINDOW_HEIGHT, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
+  sdlScreen = SDL_SetVideoMode(WINDOW_WIDTH, WINDOW_HEIGHT, 32, SDL_HWSURFACE);
   if (!sdlScreen) {
     printf("SDL1.2 Set Video Mode Error: %s\n", SDL_GetError());
     SDL_Quit();
