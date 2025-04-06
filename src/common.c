@@ -4,6 +4,9 @@
 struct AppSettings appSettings = {
   .audioSampleRate = 44100,
   .audioBufferSize = 2048,
+  .doubleTapFrames = 10,
+  .keyRepeatDelay = 20,
+  .keyRepeatSpeed = 5,
   .colorScheme = {
     .background = 0x000f1a,
     .textEmpty = 0x002638,

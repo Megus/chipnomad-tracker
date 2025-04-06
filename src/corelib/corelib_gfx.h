@@ -6,6 +6,7 @@ void gfxCleanup(void);
 void gfxSetFgColor(int rgb);
 void gfxSetBgColor(int rgb);
 void gfxClear(void);
+void gfxUpdateScreen(void);
 
 // All following functions take coordinates in characters, assuming a 40x20 screen
 void gfxFillRect(int x, int y, int w, int h);

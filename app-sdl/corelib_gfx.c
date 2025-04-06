@@ -1,7 +1,7 @@
 #include <SDL/SDL.h>
 #include <stdint.h>
+#include <version.h>
 #include "corelib_gfx.h"
-#include "font.h"
 
 #define WINDOW_WIDTH (640)
 #define WINDOW_HEIGHT (480)
@@ -10,6 +10,8 @@
 #define CHAR_X(x) ((x) * fontW * 8)
 #define CHAR_Y(y) ((y) * fontH)
 
+extern uint8_t font16x24[];
+
 SDL_Surface *sdlScreen;
 static uint32_t fgColor = 0;
 static uint32_t bgColor = 0;
@@ -17,6 +19,9 @@ static uint8_t* font = NULL;
 static char printBuffer[PRINT_BUFFER_SIZE];
 static int fontH;
 static int fontW;
+static int isDirty;
+
+static char charBuffer[80];
 
 int gfxSetup(void) {
   if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
@@ -31,12 +36,15 @@ int gfxSetup(void) {
     return 1;
   }
 
-  SDL_WM_SetCaption("Tracker", NULL);
-  SDL_ShowCursor(SDL_DISABLE);
+
+  sprintf(charBuffer, "%s v%s (%s)", appTitle, appVersion, appBuild);
+  SDL_WM_SetCaption(charBuffer, NULL);
 
   font = font16x24;
   fontW = 2; // In bytes
   fontH = 24;
+
+  isDirty = 1;
 
   return 0;
 }
@@ -55,20 +63,24 @@ void gfxSetBgColor(int rgb) {
 
 void gfxClear(void) {
   SDL_FillRect(sdlScreen, NULL, bgColor);
+  isDirty = 1;
 }
 
 void gfxPoint(int x, int y) {
   ((Uint32 *)sdlScreen->pixels)[y * sdlScreen->w + x] = fgColor;
+  isDirty = 1;
 }
 
 void gfxFillRect(int x, int y, int w, int h) {
   SDL_Rect rect = { CHAR_X(x), CHAR_Y(y), CHAR_X(w), CHAR_Y(h) };
   SDL_FillRect(sdlScreen, &rect, fgColor);
+  isDirty = 1;
 }
 
 void gfxClearRect(int x, int y, int w, int h) {
   SDL_Rect rect = { CHAR_X(x), CHAR_Y(y), CHAR_X(w), CHAR_Y(h) };
   SDL_FillRect(sdlScreen, &rect, bgColor);
+  isDirty = 1;
 }
 
 void gfxPrint(int x, int y, const char* text) {
@@ -109,6 +121,7 @@ void gfxPrint(int x, int y, const char* text) {
       cy += fontH;
     }
   }
+  isDirty = 1;
 }
 
 void gfxPrintf(int x, int y, const char * format, ...) {
@@ -117,4 +130,11 @@ void gfxPrintf(int x, int y, const char * format, ...) {
   vsnprintf(printBuffer, PRINT_BUFFER_SIZE, format, args);
   va_end(args);
   gfxPrint(x, y, printBuffer);
+}
+
+void gfxUpdateScreen(void) {
+  if (isDirty) {
+    SDL_UpdateRect(sdlScreen, 0, 0, 0, 0);
+  }
+  isDirty = 0;
 }

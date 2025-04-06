@@ -1,19 +1,20 @@
-#ifndef __SONG_H__
-#define __SONG_H__
+#ifndef __PROJECT_H__
+#define __PROJECT_H__
 
 #include <stdint.h>
 
-#define SONG_MAX_TRACKS (10)
-#define SONG_MAX_LENGTH (256)
-#define SONG_MAX_CHAINS (255)
-#define SONG_MAX_PHRASES (1024)
-#define SONG_MAX_INSTRUMENTS (128)
-#define SONG_MAX_TABLES (128)
+#define PROJECT_MAX_TRACKS (10)
+#define PROJECT_MAX_LENGTH (256)
+#define PROJECT_MAX_CHAINS (255)
+#define PROJECT_MAX_PHRASES (1024)
+#define PROJECT_MAX_INSTRUMENTS (128)
+#define PROJECT_MAX_TABLES (128)
 
 ///////////////////////////////////////////////////////////////////////////////
 // Song data structures
 
 enum InstrumentType {
+  instNone,
   instAY,
 };
 
@@ -62,33 +63,38 @@ struct PhraseRow {
 };
 
 struct Phrase {
+  int isEmpty;
   struct PhraseRow rows[16];
 };
 
 struct Chain {
+  int isEmpty;
   int phrases[16];
   int transpose[16];
 };
 
-struct Song {
+struct Project {
   int tracksCount;
   // TODO: Chip setup, pitch table
 
-  uint8_t song[SONG_MAX_LENGTH][SONG_MAX_TRACKS];
-  struct Chain chains[SONG_MAX_CHAINS];
-  struct Phrase phrases[SONG_MAX_PHRASES];
-  struct Instrument instruments[SONG_MAX_INSTRUMENTS];
-  struct Table tables[SONG_MAX_TABLES];
+  uint8_t song[PROJECT_MAX_LENGTH][PROJECT_MAX_TRACKS];
+  struct Chain chains[PROJECT_MAX_CHAINS];
+  struct Phrase phrases[PROJECT_MAX_PHRASES];
+  struct Instrument instruments[PROJECT_MAX_INSTRUMENTS];
+  struct Table tables[PROJECT_MAX_TABLES];
 };
 
 // Current song
-extern struct Song song;
+extern struct Project project;
 
 ///////////////////////////////////////////////////////////////////////////////
-// Song functions
+// Project functions
 
-// Initialize a new empty song
-void songInit(void);
-
+// Initialize an empty project
+void projectInit(void);
+// Load project from a file
+int projectLoad(const char* path);
+// Save project to a file
+int projectSave(const char* path);
 
 #endif

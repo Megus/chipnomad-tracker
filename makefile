@@ -1,7 +1,6 @@
 DOCKER = docker run --platform linux/amd64 --rm -it --user $$(id -u):$$(id -g) -v`pwd`:/src -w/src
 
-LIBS = external/ayumi src/chips src/corelib src/corelib-sdl src/screens src
-MAIN_SRC = main.c
+LIBS = external/ayumi src/chips src/corelib src/screens src app-sdl
 BUILD = build
 
 ifeq ($(CROSS_COMPILE),)
@@ -23,13 +22,13 @@ OUTPUT       = -o ${BUILD}/chipnomad
 .PHONY: desktop
 desktop:
 	mkdir -p ${BUILD}
-	${CC} ${MAIN_SRC} ${CFLAGS} -lSDL ${OUTPUT}
+	${CC} ${CFLAGS} -lSDL ${OUTPUT}
 	chmod +x ${BUILD}/chipnomad
 
 .PHONY: .RG35xx
 .RG35xx:
 	mkdir -p ${BUILD}
-	${CROSS_COMPILE}${CC} ${MAIN_SRC} ${CFLAGS} -lSDL -lasound ${OUTPUT}.rg35xx
+	${CROSS_COMPILE}${CC} ${CFLAGS} -lSDL -lasound ${OUTPUT}.rg35xx
 	chmod +x ${BUILD}/chipnomad.rg35xx
 
 .PHONY: RG35xx

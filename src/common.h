@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <corelib_mainloop.h>
 
 struct ColorScheme {
@@ -20,6 +21,9 @@ struct ColorScheme {
 struct AppSettings {
   int audioSampleRate;
   int audioBufferSize;
+  int doubleTapFrames;
+  int keyRepeatDelay;
+  int keyRepeatSpeed;
   struct ColorScheme colorScheme;
 };
 

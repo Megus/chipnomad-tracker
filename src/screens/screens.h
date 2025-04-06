@@ -4,22 +4,39 @@
 #include <common.h>
 
 enum AppEventType {
+  appEventSetup,
+  appEventFullRedraw,
+  appEventDraw,
   appEventKey,
 };
 
-struct AppEvent {
-
+struct AppEventKey {
   int keys;
+  int isDoubleTap;
 };
 
-struct AppScreen {
-  void (*setup)(int input);
-  void (*fullRedraw)(void);
-  void (*draw)(void);
-  int (*onEvent)(struct AppEvent event);
+struct AppEventSetup {
+  int input;
 };
 
+union AppEventData {
+  struct AppEventKey key;
+  struct AppEventSetup setup;
+};
 
-extern const struct AppScreen screenSong;
+struct AppEvent {
+  enum AppEventType type;
+  union AppEventData data;
+};
+
+typedef int (*AppScreen)(struct AppEvent event);
+
+int screenProject(struct AppEvent event);
+int screenSong(struct AppEvent event);
+int screenChain(struct AppEvent event);
+int screenPhrase(struct AppEvent event);
+int screenGroove(struct AppEvent event);
+int screenInstrument(struct AppEvent event);
+int screenTable(struct AppEvent event);
 
 #endif

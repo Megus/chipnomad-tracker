@@ -51,18 +51,16 @@
 #define BTN_EXIT        0
 #endif
 
-extern SDL_Surface* sdlScreen;
-
 static int decodeKey(int sym) {
   switch (sym) {
     case BTN_UP: return keyUp;
     case BTN_DOWN: return keyDown;
     case BTN_LEFT: return keyLeft;
     case BTN_RIGHT: return keyRight;
-    case BTN_A: return keyA;
-    case BTN_B: return keyB;
-    case BTN_START: return keyStart;
-    case BTN_SELECT: return keySelect;
+    case BTN_A: return keyEdit;
+    case BTN_B: return keyOpt;
+    case BTN_START: return keyPlay;
+    case BTN_SELECT: return keyShift;
     case BTN_VOLUME_UP: return keyVolumeUp;
     case BTN_VOLUME_DOWN: return keyVolumeDown;
     default: return -1;
@@ -96,15 +94,15 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(enum MainLoopEvent event, i
           } else {
             gfxPrint(35, 0, "     ");
           }*/
-
           enum Key key = decodeKey(event.key.keysym.sym);
           if (key != -1) onEvent(event.type == SDL_KEYDOWN ? eventKeyDown : eventKeyUp, key, NULL);
         }
       }
     }
+    onEvent(eventTick, 0, NULL);
 
     draw();
-    SDL_Flip(sdlScreen);
+    gfxUpdateScreen();
 
     busytime = SDL_GetTicks() - start;
     if (delay > busytime) {
