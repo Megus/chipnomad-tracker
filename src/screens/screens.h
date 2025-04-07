@@ -39,4 +39,8 @@ int screenGroove(struct AppEvent event);
 int screenInstrument(struct AppEvent event);
 int screenTable(struct AppEvent event);
 
+extern AppScreen currentScreen;
+
+void setupScreen(const AppScreen screen, int input);
+
 #endif

@@ -5,45 +5,10 @@
 #include <screens.h>
 #include <project.h>
 
-#include <psg_play.h>
-
-AppScreen currentScreen = NULL;
-
 // Input handling vars
 static int pressedButtons;
 static int editDoubleTapCount;
 static int keyRepeatCount;
-
-void redrawCommonUI() {
-  const struct ColorScheme cs = appSettings.colorScheme;
-  gfxSetBgColor(cs.background);
-  gfxClearRect(35, 0, 5, 20);
-
-  // Tracks
-  char digit[2] = "0";
-  for (int c = 0; c < project.tracksCount; c++) {
-    gfxSetFgColor(cs.textInfo);
-    digit[0] = c + 49;
-    gfxPrint(35, 3 + c, digit);
-
-    gfxSetFgColor(cs.textEmpty);
-    gfxPrint(37, 3 + c, "---");
-  }
-
-
-  // Screen map
-  gfxSetFgColor(cs.textInfo);
-  gfxPrint(35, 15, "SCPIT");
-}
-
-void setupScreen(const AppScreen screen, int input) {
-  currentScreen = screen;
-  currentScreen((struct AppEvent){appEventSetup, {.setup = {0}}});
-  gfxSetBgColor(appSettings.colorScheme.background);
-  gfxClearRect(0, 0, 35, 20);
-  currentScreen((struct AppEvent){appEventFullRedraw});
-  redrawCommonUI();
-}
 
 void appSetup(void) {
   // Keyboard input reset
@@ -65,7 +30,20 @@ void appCleanup(void) {
 }
 
 void appDraw(void) {
+  const struct ColorScheme cs = appSettings.colorScheme;
+
   currentScreen((struct AppEvent){appEventDraw});
+
+  // Tracks
+  char digit[2] = "0";
+  for (int c = 0; c < project.tracksCount; c++) {
+    gfxSetFgColor(cs.textInfo);
+    digit[0] = c + 49;
+    gfxPrint(35, 3 + c, digit);
+
+    gfxSetFgColor(cs.textEmpty);
+    gfxPrint(37, 3 + c, "---");
+  }
 }
 
 void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {

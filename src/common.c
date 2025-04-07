@@ -1,6 +1,5 @@
 #include <common.h>
 
-
 struct AppSettings appSettings = {
   .audioSampleRate = 44100,
   .audioBufferSize = 2048,

@@ -39,10 +39,20 @@ static void fullRedraw(void) {
       gfxPrint(3 + d * 3, 3 + c, chain == 0xff ? "--" : byteToHex(chain));
     }
   }
+
 }
 
 static void draw(void) {
 
+}
+
+static void onKey(int keys, int isDoubleTap) {
+  //printf("%d\n", event.data.key.keys);
+  if (keys == (keyRight | keyShift)) {
+    setupScreen(screenChain, 0);
+  } else if (keys == (keyUp | keyShift)) {
+    setupScreen(screenProject, 0);
+  }
 }
 
 int screenSong(struct AppEvent event) {
@@ -57,7 +67,7 @@ int screenSong(struct AppEvent event) {
       draw();
       break;
     case appEventKey:
-      printf("%d\n", event.data.key.keys);
+      onKey(event.data.key.keys, event.data.key.isDoubleTap);
       break;
   }
 

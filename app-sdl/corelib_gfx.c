@@ -15,6 +15,8 @@ extern uint8_t font16x24[];
 SDL_Surface *sdlScreen;
 static uint32_t fgColor = 0;
 static uint32_t bgColor = 0;
+static uint32_t cursorColor = 0;
+static uint32_t selectionColor = 0;
 static uint8_t* font = NULL;
 static char printBuffer[PRINT_BUFFER_SIZE];
 static int fontH;
@@ -61,13 +63,22 @@ void gfxSetBgColor(int rgb) {
   bgColor = SDL_MapRGB(sdlScreen->format, (rgb & 0xff0000) >> 16, (rgb & 0xff00) >> 8, rgb & 0xff);
 }
 
+void gfxSetCursorColor(int rgb) {
+  cursorColor = SDL_MapRGB(sdlScreen->format, (rgb & 0xff0000) >> 16, (rgb & 0xff00) >> 8, rgb & 0xff);
+}
+
+void gfxSetSelectionColor(int rgb) {
+  selectionColor = SDL_MapRGB(sdlScreen->format, (rgb & 0xff0000) >> 16, (rgb & 0xff00) >> 8, rgb & 0xff);
+}
+
+
 void gfxClear(void) {
   SDL_FillRect(sdlScreen, NULL, bgColor);
   isDirty = 1;
 }
 
-void gfxPoint(int x, int y) {
-  ((Uint32 *)sdlScreen->pixels)[y * sdlScreen->w + x] = fgColor;
+void gfxPoint(int x, int y, uint32_t color) {
+  ((Uint32 *)sdlScreen->pixels)[y * sdlScreen->w + x] = color;
   isDirty = 1;
 }
 
@@ -130,6 +141,29 @@ void gfxPrintf(int x, int y, const char * format, ...) {
   vsnprintf(printBuffer, PRINT_BUFFER_SIZE, format, args);
   va_end(args);
   gfxPrint(x, y, printBuffer);
+}
+
+void gfxCursor(int x, int y, int w) {
+  int cx = CHAR_X(x);
+  int cy = CHAR_Y(y) + fontH - 1;
+  for (int c = 0; c < CHAR_X(w); c++) {
+    gfxPoint(cx + c, cy, cursorColor);
+  }
+}
+
+void gfxSelection(int x, int y, int w, int h) {
+  int cx = CHAR_X(x);
+  int cy = CHAR_Y(y);
+  int cw = CHAR_X(w);
+  int ch = CHAR_Y(h);
+  for (int c = 0; c < cw; c++) {
+    gfxPoint(cx + c, cy, selectionColor);
+    gfxPoint(cx + c, cy + ch - 1, selectionColor);
+  }
+  for (int c = 0; c < ch; c++) {
+    gfxPoint(cx, cy + c, selectionColor);
+    gfxPoint(cx + cw - 1, cy + c, selectionColor);
+  }
 }
 
 void gfxUpdateScreen(void) {

@@ -19,6 +19,13 @@ static void draw(void) {
 
 }
 
+static void onKey(int keys, int isDoubleTap) {
+  //printf("%d\n", event.data.key.keys);
+  if (keys == (keyLeft | keyShift)) {
+    setupScreen(screenInstrument, 0);
+  }
+}
+
 int screenTable(struct AppEvent event) {
   switch (event.type) {
     case appEventSetup:
@@ -31,6 +38,7 @@ int screenTable(struct AppEvent event) {
       draw();
       break;
     case appEventKey:
+      onKey(event.data.key.keys, event.data.key.isDoubleTap);
       break;
   }
 
