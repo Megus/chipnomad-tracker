@@ -13,21 +13,13 @@ ChipNomad is a multi-chip tracker for real chips. What chips I consider supporti
 ## UI Concept
 
 Tracker "screen" resolution: 40x20 characters. The core UI concept and song structure is the same as in LSDJ or M8 Tracker:
-multiple screens, each screen is dedicated to a single function. All screens, except for the Screen,
-don't have any scrolling content, so length of chains, phrases, and tables is naturally limited to 16.
+multiple screens, each screen is dedicated to a single function. All screens, except for the **SONG**,
+don't have any scrolling content, so the length of chains, phrases, and tables is naturally limited to 16.
 
-Main screens:
+- Main screens: **S**ong, **C**hain, **P**hrase, **I**nstrument, **T**able
+- Additional sceens: **P**roject, **G**roove
 
-- **S**ong
-- **C**hain
-- **P**hrase
-- **I**nstrument
-- **T**able
-
-Additional sceens:
-
-- **P**roject
-- **G**roove
+Screen map:
 
 ```
 P G
