@@ -10,11 +10,26 @@ void projectInit() {
   // Clean song structure
   for (int c = 0; c < PROJECT_MAX_LENGTH; c++) {
     for (int d = 0; d < PROJECT_MAX_TRACKS; d++) {
-      project.song[c][d] = 0xff; // FF is empty
+      project.song[c][d] = EMPTY_VALUE;
     }
   }
 
-  project.song[0][0] = 0x00;
+  // Clean chains
+  for (int c = 0; c < PROJECT_MAX_CHAINS; c++) {
+    project.chains[c].isEmpty = 1;
+    for (int d = 0; d < 16; d++) {
+      project.chains[c].phrases[0] = EMPTY_VALUE;
+      project.chains[c].transpose[0] = 0;
+    }
+  }
+
+  // Clean phrases
+
+
+  // Clean instruments
+
+
+  // Clean tables
 
 }
 

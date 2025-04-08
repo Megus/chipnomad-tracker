@@ -10,6 +10,8 @@
 #define PROJECT_MAX_INSTRUMENTS (128)
 #define PROJECT_MAX_TABLES (128)
 
+#define EMPTY_VALUE (255)
+
 ///////////////////////////////////////////////////////////////////////////////
 // Song data structures
 
@@ -70,7 +72,7 @@ struct Phrase {
 struct Chain {
   int isEmpty;
   int phrases[16];
-  int transpose[16];
+  int8_t transpose[16];
 };
 
 struct Project {
