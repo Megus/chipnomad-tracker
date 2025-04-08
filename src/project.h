@@ -10,7 +10,8 @@
 #define PROJECT_MAX_INSTRUMENTS (128)
 #define PROJECT_MAX_TABLES (128)
 
-#define EMPTY_VALUE (255)
+#define EMPTY_VALUE_8 (255)
+#define EMPTY_VALUE_16 (32767)
 
 ///////////////////////////////////////////////////////////////////////////////
 // Song data structures
@@ -22,38 +23,20 @@ enum InstrumentType {
 
 // Tables
 struct TableRow {
-  uint8_t pitchOffset;
-  uint8_t fx[3][2];
+  uint8_t pitchFlag;
+  int8_t pitchOffset;
+  int8_t volumeOffset;
+  uint8_t fx[4][2];
 };
 
 struct Table {
   struct TableRow rows[16];
 };
 
-// Instruments
-struct InstrumentRowAY {
-  uint8_t tone;
-  uint8_t noise;
-  uint8_t env;
-  uint8_t volume;
-  uint8_t volumeChange;
-};
-
-union InstrumentRowChipFeature {
-  struct InstrumentRowAY ay;
-};
-
-struct InstrumentRow {
-  uint8_t isAbsolutePitch;
-  uint8_t pitch;
-  union InstrumentRowChipFeature chip;
-  uint8_t fx[3][2];
-};
-
 struct Instrument {
   enum InstrumentType type;
   uint8_t tableSpeed;
-  struct InstrumentRow rows[16];
+  uint8_t transposeEnabled;
 };
 
 // Music
@@ -65,13 +48,13 @@ struct PhraseRow {
 };
 
 struct Phrase {
-  int isEmpty;
+  int8_t hasNoNotes;
   struct PhraseRow rows[16];
 };
 
 struct Chain {
-  int isEmpty;
-  int phrases[16];
+  int8_t hasNoNotes;
+  uint16_t phrases[16];
   int8_t transpose[16];
 };
 
@@ -79,7 +62,7 @@ struct Project {
   int tracksCount;
   // TODO: Chip setup, pitch table
 
-  int song[PROJECT_MAX_LENGTH][PROJECT_MAX_TRACKS];
+  uint16_t song[PROJECT_MAX_LENGTH][PROJECT_MAX_TRACKS];
   struct Chain chains[PROJECT_MAX_CHAINS];
   struct Phrase phrases[PROJECT_MAX_PHRASES];
   struct Instrument instruments[PROJECT_MAX_INSTRUMENTS];
@@ -98,5 +81,8 @@ void projectInit(void);
 int projectLoad(const char* path);
 // Save project to a file
 int projectSave(const char* path);
+
+int isChainEmpty(int chain);
+
 
 #endif

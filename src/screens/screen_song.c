@@ -34,15 +34,15 @@ static void drawChain(int track, int row) {
 
   if (track == cursorTrack && row == cursorRow) {
     gfxSetFgColor(cs.textDefault);
-  } else if (chain == EMPTY_VALUE) {
+  } else if (chain == EMPTY_VALUE_16) {
     gfxSetFgColor(cs.textEmpty);
-  } else if (project.chains[chain].isEmpty) {
+  } else if (project.chains[chain].hasNoNotes) {
     gfxSetFgColor(cs.textInfo);
   } else {
     gfxSetFgColor(cs.textValue);
   }
 
-  gfxPrint(3 + track * 3, 3 + (row - topRow), chain == PROJECT_MAX_CHAINS ? "--" : byteToHex(chain));
+  gfxPrint(3 + track * 3, 3 + (row - topRow), chain == EMPTY_VALUE_16 ? "--" : byteToHex(chain));
 }
 
 static void drawAllChains() {
@@ -95,15 +95,15 @@ static void draw(void) {
 static int inputScreenNavigation(int keys, int isDoubleTap) {
   if (keys == (keyRight | keyShift)) {
     int chain = project.song[cursorRow][cursorTrack];
-    if (chain == EMPTY_VALUE) {
+    if (chain == EMPTY_VALUE_16) {
       // If chain at cursor is empty, look up the track. If it's empty too, show message, don't let them go
       for (int c = cursorRow; c >= 0; c--) {
         chain = project.song[c][cursorTrack];
-        if (chain != EMPTY_VALUE) break;
+        if (chain != EMPTY_VALUE_16) break;
       }
     }
 
-    if (chain != EMPTY_VALUE) {
+    if (chain != EMPTY_VALUE_16) {
       setupScreen(screenChain, chain);
     } else {
       screenMessage("Create a chain");
@@ -172,12 +172,21 @@ static int inputEdit(int keys, int isDoubleTap) {
   int current = project.song[cursorRow][cursorTrack];
 
   if (keys == keyEdit && isDoubleTap == 0) {
-    if (project.song[cursorRow][cursorTrack] == EMPTY_VALUE) {
+    if (current == EMPTY_VALUE_16) {
       project.song[cursorRow][cursorTrack] = lastValue;
     }
     handled = 1;
   } else if (keys == keyEdit && isDoubleTap == 1) {
-
+    // Find the first chain with no phrases
+    if (current != EMPTY_VALUE_16) {
+      for (int c = current + 1; c < PROJECT_MAX_CHAINS; c++) {
+        if (isChainEmpty(c)) {
+          project.song[cursorRow][cursorTrack] = c;
+          break;
+        }
+      }
+    }
+    handled = 1;
   } else if (keys == (keyRight | keyEdit)) {
     project.song[cursorRow][cursorTrack] = current == PROJECT_MAX_CHAINS - 1 ? current : current + 1;
     handled = 1;
@@ -191,12 +200,12 @@ static int inputEdit(int keys, int isDoubleTap) {
     project.song[cursorRow][cursorTrack] = current < 16 ? 0 : current - 16;
     handled = 1;
   } else if (keys == (keyEdit | keyOpt)) {
-    project.song[cursorRow][cursorTrack] = EMPTY_VALUE;
+    project.song[cursorRow][cursorTrack] = EMPTY_VALUE_16;
     handled = 1;
   }
 
   if (handled) {
-    if (project.song[cursorRow][cursorTrack] != EMPTY_VALUE) {
+    if (project.song[cursorRow][cursorTrack] != EMPTY_VALUE_16) {
       lastValue = project.song[cursorRow][cursorTrack];
     }
     drawChain(cursorTrack, cursorRow);
