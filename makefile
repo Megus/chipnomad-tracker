@@ -1,6 +1,6 @@
 DOCKER = docker run --platform linux/amd64 --rm -it --user $$(id -u):$$(id -g) -v`pwd`:/src -w/src
 
-LIBS = external/ayumi src/chips src/corelib src/screens src app-sdl
+LIBS = external/ayumi src/chips src/corelib src/screens src platforms/sdl12
 BUILD = build
 
 ifeq ($(CROSS_COMPILE),)
