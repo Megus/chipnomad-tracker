@@ -4,15 +4,17 @@
 #include <utils.h>
 #include <project.h>
 
-static void setup(int input) {
+int chain;
 
+static void setup(int input) {
+  chain = input;
 }
 
 static void fullRedraw(void) {
   const struct ColorScheme cs = appSettings.colorScheme;
 
   gfxSetFgColor(cs.textTitles);
-  gfxPrint(0, 0, "CHAIN");
+  gfxPrintf(0, 0, "CHAIN %02x", chain);
 }
 
 static void draw(void) {

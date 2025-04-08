@@ -42,5 +42,6 @@ int screenTable(struct AppEvent event);
 extern AppScreen currentScreen;
 
 void setupScreen(const AppScreen screen, int input);
+void screenMessage(const char* format, ...);
 
 #endif

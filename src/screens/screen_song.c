@@ -4,23 +4,33 @@
 #include <utils.h>
 #include <project.h>
 
+// Screen state variables
 int cursorRow = 0;
 int cursorTrack = 0;
 int topRow = 0;
-
-uint8_t lastValue = 0;
-
+int lastValue = 0;
 int isSelect = 0;
 
-static void setup() {
-
+void setup(int input) {
+  if (input == 0x1234) { // Just a random value for now
+    cursorRow = 0;
+    cursorTrack = 0;
+    topRow = 0;
+    lastValue = 0;
+    isSelect = 0;
+  }
 }
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Drawing functions
+//
 
 static void drawChain(int track, int row) {
   if (row < topRow || row >= (topRow + 16)) return; // Don't draw outside of the viewing area
 
   const struct ColorScheme cs = appSettings.colorScheme;
-  uint8_t chain = project.song[row][track];
+  int chain = project.song[row][track];
 
   if (track == cursorTrack && row == cursorRow) {
     gfxSetFgColor(cs.textDefault);
@@ -77,10 +87,27 @@ static void draw(void) {
 
 }
 
+///////////////////////////////////////////////////////////////////////////////
+//
+// Input handling
+//
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {
   if (keys == (keyRight | keyShift)) {
-    setupScreen(screenChain, 0);
+    int chain = project.song[cursorRow][cursorTrack];
+    if (chain == EMPTY_VALUE) {
+      // If chain at cursor is empty, look up the track. If it's empty too, show message, don't let them go
+      for (int c = cursorRow; c >= 0; c--) {
+        chain = project.song[c][cursorTrack];
+        if (chain != EMPTY_VALUE) break;
+      }
+    }
+
+    if (chain != EMPTY_VALUE) {
+      setupScreen(screenChain, chain);
+    } else {
+      screenMessage("Create a chain");
+    }
     return 1;
   } else if (keys == (keyUp | keyShift)) {
     setupScreen(screenProject, 0);
@@ -142,6 +169,7 @@ static int inputCursor(int keys, int isDoubleTap) {
 
 static int inputEdit(int keys, int isDoubleTap) {
   int handled = 0;
+  int current = project.song[cursorRow][cursorTrack];
 
   if (keys == keyEdit && isDoubleTap == 0) {
     if (project.song[cursorRow][cursorTrack] == EMPTY_VALUE) {
@@ -151,20 +179,16 @@ static int inputEdit(int keys, int isDoubleTap) {
   } else if (keys == keyEdit && isDoubleTap == 1) {
 
   } else if (keys == (keyRight | keyEdit)) {
-    uint8_t c = project.song[cursorRow][cursorTrack];
-    project.song[cursorRow][cursorTrack] = c == PROJECT_MAX_CHAINS - 1 ? c : c + 1;
+    project.song[cursorRow][cursorTrack] = current == PROJECT_MAX_CHAINS - 1 ? current : current + 1;
     handled = 1;
   } else if (keys == (keyLeft | keyEdit)) {
-    uint8_t c = project.song[cursorRow][cursorTrack];
-    project.song[cursorRow][cursorTrack] = c == 0 ? c : c - 1;
+    project.song[cursorRow][cursorTrack] = current == 0 ? current : current - 1;
     handled = 1;
   } else if (keys == (keyUp | keyEdit)) {
-    uint8_t c = project.song[cursorRow][cursorTrack];
-    project.song[cursorRow][cursorTrack] = c > PROJECT_MAX_CHAINS - 16 ? PROJECT_MAX_CHAINS - 1 : c + 16;
+    project.song[cursorRow][cursorTrack] = current > PROJECT_MAX_CHAINS - 16 ? PROJECT_MAX_CHAINS - 1 : current + 16;
     handled = 1;
   } else if (keys == (keyDown | keyEdit)) {
-    uint8_t c = project.song[cursorRow][cursorTrack];
-    project.song[cursorRow][cursorTrack] = c < 16 ? 0 : c - 16;
+    project.song[cursorRow][cursorTrack] = current < 16 ? 0 : current - 16;
     handled = 1;
   } else if (keys == (keyEdit | keyOpt)) {
     project.song[cursorRow][cursorTrack] = EMPTY_VALUE;
@@ -181,7 +205,6 @@ static int inputEdit(int keys, int isDoubleTap) {
   return handled;
 }
 
-
 static void onKey(int keys, int isDoubleTap) {
   //printf("%d\n", event.data.key.keys);
   if (inputScreenNavigation(keys, isDoubleTap)) return;
@@ -189,10 +212,12 @@ static void onKey(int keys, int isDoubleTap) {
   if (inputEdit(keys, isDoubleTap)) return;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 int screenSong(struct AppEvent event) {
   switch (event.type) {
     case appEventSetup:
-      setup();
+      setup(event.data.setup.input);
       break;
     case appEventFullRedraw:
       fullRedraw();

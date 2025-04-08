@@ -63,6 +63,8 @@ void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
       pressedButtons &= ~value;
       // Double tap is only applicable to Edit button
       if (value == keyEdit) editDoubleTapCount = appSettings.doubleTapFrames;
+      // Clean screen message when nothing is pressed. Consider clearing it on any key up
+      if (pressedButtons == 0) screenMessage("");
       break;
     case eventTick:
       if (editDoubleTapCount > 0) editDoubleTapCount--;

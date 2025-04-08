@@ -79,7 +79,7 @@ struct Project {
   int tracksCount;
   // TODO: Chip setup, pitch table
 
-  uint8_t song[PROJECT_MAX_LENGTH][PROJECT_MAX_TRACKS];
+  int song[PROJECT_MAX_LENGTH][PROJECT_MAX_TRACKS];
   struct Chain chains[PROJECT_MAX_CHAINS];
   struct Phrase phrases[PROJECT_MAX_PHRASES];
   struct Instrument instruments[PROJECT_MAX_INSTRUMENTS];

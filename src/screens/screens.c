@@ -1,6 +1,8 @@
+#include <stdarg.h>
 #include <screens.h>
 #include <project.h>
 #include <corelib_gfx.h>
+
 
 AppScreen currentScreen = NULL;
 
@@ -43,11 +45,21 @@ void drawScreenMap() {
 
 void setupScreen(const AppScreen screen, int input) {
   currentScreen = screen;
-  currentScreen((struct AppEvent){appEventSetup, {.setup = {0}}});
+  currentScreen((struct AppEvent){appEventSetup, {.setup = {input}}});
   gfxSetBgColor(appSettings.colorScheme.background);
   gfxSetSelectionColor(appSettings.colorScheme.selection);
   gfxSetCursorColor(appSettings.colorScheme.cursor);
   gfxClearRect(0, 0, 40, 20);
   currentScreen((struct AppEvent){appEventFullRedraw});
   drawScreenMap();
+}
+
+void screenMessage(const char* format, ...) {
+  gfxSetFgColor(appSettings.colorScheme.textDefault);
+  gfxClearRect(0, 19, 40, 1);
+
+  va_list args;
+  va_start(args, format);
+  gfxPrintf(0, 19, format, args);
+  va_end(args);
 }
