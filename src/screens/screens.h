@@ -3,45 +3,59 @@
 
 #include <common.h>
 
-enum AppEventType {
-  appEventSetup,
-  appEventFullRedraw,
-  appEventDraw,
-  appEventKey,
+struct AppScreen {
+  void (*setup)(int input);
+  void (*fullRedraw)(void);
+  void (*draw)(void);
+  void (*onInput)(int keys, int isDoubleTap);
 };
 
-struct AppEventKey {
-  int keys;
-  int isDoubleTap;
+enum CellState {
+  stateFocus = 1,
+  stateSelected = 2,
 };
 
-struct AppEventSetup {
-  int input;
+enum CellEditAction {
+  editClear,
+  editTap,
+  editDoubleTap,
+  editIncrease,
+  editDecrease,
+  editIncreaseBig,
+  editDecreaseBig,
 };
 
-union AppEventData {
-  struct AppEventKey key;
-  struct AppEventSetup setup;
+struct SpreadsheetScreenData {
+  int cols;
+  int rows;
+  int cursorRow;
+  int cursorCol;
+  int topRow; // For scrollable screens
+  void (*drawCursor)(int col, int row);
+  void (*drawRowHeader)(int row, int state);
+  void (*drawColHeader)(int col, int state);
+  void (*drawCell)(int col, int row, int state);
+  int (*onEdit)(int col, int row, enum CellEditAction action);
 };
 
-struct AppEvent {
-  enum AppEventType type;
-  union AppEventData data;
-};
+extern const struct AppScreen screenProject;
+extern const struct AppScreen screenSong;
+extern const struct AppScreen screenChain;
+extern const struct AppScreen screenPhrase;
+extern const struct AppScreen screenGroove;
+extern const struct AppScreen screenInstrument;
+extern const struct AppScreen screenTable;
 
-typedef int (*AppScreen)(struct AppEvent event);
+extern const struct AppScreen* currentScreen;
 
-int screenProject(struct AppEvent event);
-int screenSong(struct AppEvent event);
-int screenChain(struct AppEvent event);
-int screenPhrase(struct AppEvent event);
-int screenGroove(struct AppEvent event);
-int screenInstrument(struct AppEvent event);
-int screenTable(struct AppEvent event);
-
-extern AppScreen currentScreen;
-
-void setupScreen(const AppScreen screen, int input);
+void screenSetup(const struct AppScreen* screen, int input);
 void screenMessage(const char* format, ...);
+
+// Spreadsheet functions
+void spreadsheetFullRedraw(struct SpreadsheetScreenData* sheet);
+int spreadsheetInput(struct SpreadsheetScreenData* sheet, int keys, int isDoubleTap);
+
+// Utility functions
+void setCellColor(int state, int isEmpty, int isContentEmpty);
 
 #endif

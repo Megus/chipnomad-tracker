@@ -22,7 +22,7 @@ void appSetup(void) {
   audioManager.initChips();
   //audioManager.setFrameCallback(psgFrameCallback, NULL);
   projectInit();
-  setupScreen(screenSong, 0);
+  screenSetup(&screenSong, 0);
 }
 
 void appCleanup(void) {
@@ -32,7 +32,7 @@ void appCleanup(void) {
 void appDraw(void) {
   const struct ColorScheme cs = appSettings.colorScheme;
 
-  currentScreen((struct AppEvent){appEventDraw});
+  currentScreen->draw();
 
   // Tracks
   char digit[2] = "0";
@@ -54,7 +54,7 @@ void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
       pressedButtons |= value;
       // Double tap is only applicable to Edit button
       int isDoubleTap = (value == keyEdit && editDoubleTapCount > 0) ? 1 : 0;
-      currentScreen((struct AppEvent){appEventKey, {.key = {pressedButtons, isDoubleTap}}});
+      currentScreen->onInput(pressedButtons, isDoubleTap);
       editDoubleTapCount = 0;
       // Key repeats are only applicable to d-pad
       if (value & dPadMask) keyRepeatCount = appSettings.keyRepeatDelay;
@@ -75,7 +75,7 @@ void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
           keyRepeatCount--;
           if (keyRepeatCount == 0) {
             keyRepeatCount = appSettings.keyRepeatSpeed;
-            currentScreen((struct AppEvent){appEventKey, {.key = {pressedButtons, 0}}});
+            currentScreen->onInput(pressedButtons, 0);
           }
         } else {
           keyRepeatCount = 0;

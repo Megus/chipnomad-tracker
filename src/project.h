@@ -48,12 +48,12 @@ struct PhraseRow {
 };
 
 struct Phrase {
-  int8_t hasNoNotes;
+  uint8_t hasNoNotes;
   struct PhraseRow rows[16];
 };
 
 struct Chain {
-  int8_t hasNoNotes;
+  uint8_t hasNoNotes;
   uint16_t phrases[16];
   int8_t transpose[16];
 };
@@ -83,6 +83,7 @@ int projectLoad(const char* path);
 int projectSave(const char* path);
 
 int isChainEmpty(int chain);
+int isPhraseEmpty(int phrase);
 
 
 #endif

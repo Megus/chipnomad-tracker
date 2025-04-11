@@ -19,29 +19,17 @@ static void draw(void) {
 
 }
 
-static void onKey(int keys, int isDoubleTap) {
+static void onInput(int keys, int isDoubleTap) {
   //printf("%d\n", event.data.key.keys);
   if (keys == (keyDown | keyShift)) {
-    setupScreen(screenPhrase, 0);
+    screenSetup(&screenPhrase, 0);
   }
 }
 
 
-int screenGroove(struct AppEvent event) {
-  switch (event.type) {
-    case appEventSetup:
-      setup(event.data.setup.input);
-      break;
-    case appEventFullRedraw:
-      fullRedraw();
-      break;
-    case appEventDraw:
-      draw();
-      break;
-    case appEventKey:
-      onKey(event.data.key.keys, event.data.key.isDoubleTap);
-      break;
-  }
-
-  return 0;
-}
+const struct AppScreen screenGroove = {
+  .setup = setup,
+  .fullRedraw = fullRedraw,
+  .draw = draw,
+  .onInput = onInput
+};

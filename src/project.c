@@ -59,3 +59,8 @@ int isChainEmpty(int chain) {
 
   return isEmpty;
 }
+
+int isPhraseEmpty(int phrase) {
+
+  return 0;
+}

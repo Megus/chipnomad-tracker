@@ -5,19 +5,35 @@
 #include <project.h>
 
 // Screen state variables
-int cursorRow = 0;
-int cursorTrack = 0;
-int topRow = 0;
-int lastValue = 0;
-int isSelect = 0;
+static int lastChainValue = 0;
+
+static void drawCell(int col, int row, int state);
+static void drawRowHeader(int row, int state);
+static void drawColHeader(int col, int state);
+static void drawCursor(int col, int row);
+static int onEdit(int col, int row, enum CellEditAction action);
+
+static struct SpreadsheetScreenData sheet = {
+  .rows = PROJECT_MAX_LENGTH,
+  .cols = 1, // Will overwrite in setup
+  .cursorRow = 0,
+  .cursorCol = 0,
+  .topRow = 0,
+  .drawCursor = drawCursor,
+  .drawRowHeader = drawRowHeader,
+  .drawColHeader = drawColHeader,
+  .drawCell = drawCell,
+  .onEdit = onEdit,
+};
 
 void setup(int input) {
+  sheet.cols = project.tracksCount;
+
   if (input == 0x1234) { // Just a random value for now
-    cursorRow = 0;
-    cursorTrack = 0;
-    topRow = 0;
-    lastValue = 0;
-    isSelect = 0;
+    sheet.cursorRow = 0;
+    sheet.cursorCol = 0;
+    sheet.topRow = 0;
+    lastChainValue = 0;
   }
 }
 
@@ -26,61 +42,39 @@ void setup(int input) {
 // Drawing functions
 //
 
-static void drawChain(int track, int row) {
-  if (row < topRow || row >= (topRow + 16)) return; // Don't draw outside of the viewing area
+static void drawCell(int col, int row, int state) {
+  if (row < sheet.topRow || row >= (sheet.topRow + 16)) return; // Don't draw outside of the viewing area
 
-  const struct ColorScheme cs = appSettings.colorScheme;
-  int chain = project.song[row][track];
-
-  if (track == cursorTrack && row == cursorRow) {
-    gfxSetFgColor(cs.textDefault);
-  } else if (chain == EMPTY_VALUE_16) {
-    gfxSetFgColor(cs.textEmpty);
-  } else if (project.chains[chain].hasNoNotes) {
-    gfxSetFgColor(cs.textInfo);
-  } else {
-    gfxSetFgColor(cs.textValue);
-  }
-
-  gfxPrint(3 + track * 3, 3 + (row - topRow), chain == EMPTY_VALUE_16 ? "--" : byteToHex(chain));
+  int chain = project.song[row][col];
+  setCellColor(state, chain == EMPTY_VALUE_16, chain != EMPTY_VALUE_16 && project.chains[chain].hasNoNotes);
+  gfxPrint(3 + col * 3, 3 + row - sheet.topRow, chain == EMPTY_VALUE_16 ? "--" : byteToHex(chain));
 }
 
-static void drawAllChains() {
-  for (int c = topRow; c < topRow + 16; c++) {
-    for (int d = 0; d < project.tracksCount; d++) {
-      drawChain(d, c);
-    }
-  }
-}
-
-static void drawCursor() {
+static void drawRowHeader(int row, int state) {
   const struct ColorScheme cs = appSettings.colorScheme;
 
-  gfxCursor(3 + cursorTrack * 3, 3 + (cursorRow - topRow), 2);
+  gfxSetFgColor((state & stateFocus) ? cs.textDefault : cs.textInfo);
+  gfxPrint(0, 3 + row - sheet.topRow, byteToHex(row));
+}
 
-  // Row numbers
-  for (int c = 0; c < 16; c++) {
-    gfxSetFgColor(topRow + c == cursorRow ? cs.textDefault : cs.textInfo);
-    gfxPrint(0, 3 + c, byteToHex(topRow + c));
-  }
+static void drawColHeader(int col, int state) {
+  static char digit[2] = "0";
+  const struct ColorScheme cs = appSettings.colorScheme;
 
-  // Track names
-  char digit[2] = "0";
-  for (int c = 0; c < project.tracksCount; c++) {
-    gfxSetFgColor(c == cursorTrack ? cs.textDefault : cs.textInfo);
-    digit[0] = c + 49;
-    gfxPrint(3 + c * 3, 2, digit);
-  }
+  gfxSetFgColor((state & stateFocus) ? cs.textDefault : cs.textInfo);
+  digit[0] = col + 49;
+  gfxPrint(3 + col * 3, 2, digit);
+}
+
+static void drawCursor(int col, int row) {
+  gfxCursor(3 + col * 3, 3 + row - sheet.topRow, 2);
 }
 
 static void fullRedraw(void) {
   gfxSetFgColor(appSettings.colorScheme.textTitles);
   gfxPrint(0, 0, "SONG");
 
-
-  // Chains
-  drawAllChains();
-  drawCursor();
+  spreadsheetFullRedraw(&sheet);
 }
 
 static void draw(void) {
@@ -93,151 +87,104 @@ static void draw(void) {
 //
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {
+  // Go to Chain screen
   if (keys == (keyRight | keyShift)) {
-    int chain = project.song[cursorRow][cursorTrack];
+    int chain = project.song[sheet.cursorRow][sheet.cursorCol];
     if (chain == EMPTY_VALUE_16) {
       // If chain at cursor is empty, look up the track. If it's empty too, show message, don't let them go
-      for (int c = cursorRow; c >= 0; c--) {
-        chain = project.song[c][cursorTrack];
+      for (int c = sheet.cursorRow; c >= 0; c--) {
+        chain = project.song[c][sheet.cursorCol];
         if (chain != EMPTY_VALUE_16) break;
       }
     }
 
     if (chain != EMPTY_VALUE_16) {
-      setupScreen(screenChain, chain);
+      screenSetup(&screenChain, chain);
     } else {
       screenMessage("Create a chain");
     }
     return 1;
-  } else if (keys == (keyUp | keyShift)) {
-    setupScreen(screenProject, 0);
+  }
+
+  // Go to Project screen
+  if (keys == (keyUp | keyShift)) {
+    screenSetup(&screenProject, 0);
     return 1;
   }
+
   return 0;
 }
 
-static int inputCursor(int keys, int isDoubleTap) {
-  int oldCursorTrack = cursorTrack;
-  int oldCursorRow = cursorRow;
-
+static int onEdit(int col, int row, enum CellEditAction action) {
+  int current = project.song[row][col];
   int handled = 0;
-  if (keys == keyLeft) {
-    cursorTrack = cursorTrack == 0 ? cursorTrack : cursorTrack - 1;
-    handled = 1;
-  } else if (keys == keyRight) {
-    cursorTrack = cursorTrack == project.tracksCount - 1 ? cursorTrack : cursorTrack + 1;
-    handled = 1;
-  } else if (keys == keyUp) {
-    cursorRow = cursorRow == 0 ? cursorRow : cursorRow - 1;
-    if (cursorRow < topRow) {
-      topRow--;
-      drawAllChains();
-    }
-    handled = 1;
-  } else if (keys == keyDown) {
-    cursorRow = cursorRow == PROJECT_MAX_LENGTH - 1 ? cursorRow : cursorRow + 1;
-    if (cursorRow >= topRow + 16) {
-      topRow++;
-      drawAllChains();
-    }
-    handled = 1;
-  } else if (keys == (keyDown | keyOpt)) {
-    if (cursorRow + 16 < PROJECT_MAX_LENGTH) {
-      cursorRow += 16;
-      topRow += 16;
-      if (topRow + 16 >= PROJECT_MAX_LENGTH) topRow = PROJECT_MAX_LENGTH - 16;
-      drawAllChains();
+
+  switch (action) {
+    case editClear:
+      project.song[row][col] = EMPTY_VALUE_16;
       handled = 1;
-    }
-  } else if (keys == (keyUp | keyOpt)) {
-    if (cursorRow - 16 >= 0) {
-      cursorRow -= 16;
-      topRow -= 16;
-      if (topRow < 0) topRow = 0;
-      drawAllChains();
-      handled = 1;
-    }
-  }
-
-  if (handled) {
-    drawChain(oldCursorTrack, oldCursorRow);
-    drawChain(cursorTrack, cursorRow);
-    drawCursor();
-  }
-  return handled;
-}
-
-static int inputEdit(int keys, int isDoubleTap) {
-  int handled = 0;
-  int current = project.song[cursorRow][cursorTrack];
-
-  if (keys == keyEdit && isDoubleTap == 0) {
-    if (current == EMPTY_VALUE_16) {
-      project.song[cursorRow][cursorTrack] = lastValue;
-    }
-    handled = 1;
-  } else if (keys == keyEdit && isDoubleTap == 1) {
-    // Find the first chain with no phrases
-    if (current != EMPTY_VALUE_16) {
-      for (int c = current + 1; c < PROJECT_MAX_CHAINS; c++) {
-        if (isChainEmpty(c)) {
-          project.song[cursorRow][cursorTrack] = c;
-          break;
+      break;
+    case editTap:
+      if (current == EMPTY_VALUE_16) {
+        project.song[row][col] = lastChainValue;
+        handled = 1;
+      }
+      break;
+    case editDoubleTap:
+      // Find the first chain with no phrases
+      if (current != EMPTY_VALUE_16) {
+        for (int c = current + 1; c < PROJECT_MAX_CHAINS; c++) {
+          if (isChainEmpty(c)) {
+            project.song[row][col] = c;
+            handled = 1;
+            break;
+          }
         }
       }
-    }
-    handled = 1;
-  } else if (keys == (keyRight | keyEdit)) {
-    project.song[cursorRow][cursorTrack] = current == PROJECT_MAX_CHAINS - 1 ? current : current + 1;
-    handled = 1;
-  } else if (keys == (keyLeft | keyEdit)) {
-    project.song[cursorRow][cursorTrack] = current == 0 ? current : current - 1;
-    handled = 1;
-  } else if (keys == (keyUp | keyEdit)) {
-    project.song[cursorRow][cursorTrack] = current > PROJECT_MAX_CHAINS - 16 ? PROJECT_MAX_CHAINS - 1 : current + 16;
-    handled = 1;
-  } else if (keys == (keyDown | keyEdit)) {
-    project.song[cursorRow][cursorTrack] = current < 16 ? 0 : current - 16;
-    handled = 1;
-  } else if (keys == (keyEdit | keyOpt)) {
-    project.song[cursorRow][cursorTrack] = EMPTY_VALUE_16;
-    handled = 1;
+      break;
+    case editIncrease:
+      if (current != EMPTY_VALUE_16 && current < PROJECT_MAX_CHAINS - 1) {
+        project.song[row][col]++;
+        handled = 1;
+      }
+      break;
+    case editDecrease:
+      if (current != EMPTY_VALUE_16 && current > 0) {
+        project.song[row][col]--;
+        handled = 1;
+      }
+      break;
+    case editIncreaseBig:
+      if (current != EMPTY_VALUE_16) {
+        project.song[row][col] = current > PROJECT_MAX_CHAINS - 16 ? PROJECT_MAX_CHAINS - 1 : current + 16;
+        handled = 1;
+      }
+      break;
+    case editDecreaseBig:
+      if (current != EMPTY_VALUE_16) {
+        project.song[row][col] = current < 16 ? 0 : current - 16;
+        handled = 1;
+      }
+      break;
   }
 
-  if (handled) {
-    if (project.song[cursorRow][cursorTrack] != EMPTY_VALUE_16) {
-      lastValue = project.song[cursorRow][cursorTrack];
-    }
-    drawChain(cursorTrack, cursorRow);
-    drawCursor();
+  if (handled && project.song[row][col] != EMPTY_VALUE_16) {
+    lastChainValue = project.song[row][col];
   }
+
   return handled;
 }
 
-static void onKey(int keys, int isDoubleTap) {
-  //printf("%d\n", event.data.key.keys);
+static void onInput(int keys, int isDoubleTap) {
   if (inputScreenNavigation(keys, isDoubleTap)) return;
-  if (inputCursor(keys, isDoubleTap)) return;
-  if (inputEdit(keys, isDoubleTap)) return;
+  if (spreadsheetInput(&sheet, keys, isDoubleTap)) return;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int screenSong(struct AppEvent event) {
-  switch (event.type) {
-    case appEventSetup:
-      setup(event.data.setup.input);
-      break;
-    case appEventFullRedraw:
-      fullRedraw();
-      break;
-    case appEventDraw:
-      draw();
-      break;
-    case appEventKey:
-      onKey(event.data.key.keys, event.data.key.isDoubleTap);
-      break;
-  }
-
-  return 0;
-}
+const struct AppScreen screenSong = {
+  .setup = setup,
+  .fullRedraw = fullRedraw,
+  .draw = draw,
+  .onInput = onInput
+};

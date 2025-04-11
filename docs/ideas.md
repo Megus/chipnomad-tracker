@@ -76,8 +76,8 @@ A chain is a list of phrases with optional transposition for each phrase. A chai
 .        .         .         .
 012346789012345678901234567890123456789
 
-   P  T
-00 12 03                          1 ---
+   P   T
+00 012 03                         1 ---
 ```
 
 ## Phrase
@@ -135,6 +135,7 @@ For future: Generative elements: randomization, scale following (like on M8).
 - EPL, EPH - Env period as a value, Low and High regs
 - EPA - Env auto-pitch: off, or rate
 - NOI - Noise offset
+- NOA - Noise absolute value
 
 ## Instruments
 
@@ -149,7 +150,7 @@ Common instrument settings:
 ### AY
 
 - Volume ADSR envelope
-- Env auto-pitch: off, or rate
+- Env auto-pitch: off, or rate (1:1, 2:1, etc)
 
 ## Tables
 
@@ -159,7 +160,7 @@ what tables are.
 
 Pitch column can have relative or absolute pitch values in semitones. Volume is relative to the main ADSR
 envelope. Four FX lanes are generally equal to FX lanes in phrase, however, there can be minor differences
-in the behavior of instruments in phrases and tables.
+in the behavior of FX in phrases and tables.
 
 ```
 .        .         .         .
