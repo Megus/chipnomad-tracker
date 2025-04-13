@@ -58,4 +58,6 @@ int spreadsheetInput(struct SpreadsheetScreenData* sheet, int keys, int isDouble
 // Utility functions
 void setCellColor(int state, int isEmpty, int isContentEmpty);
 
+
+
 #endif

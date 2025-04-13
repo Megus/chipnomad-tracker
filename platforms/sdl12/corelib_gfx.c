@@ -135,10 +135,10 @@ void gfxPrint(int x, int y, const char* text) {
   isDirty = 1;
 }
 
-void gfxPrintf(int x, int y, const char * format, ...) {
+void gfxPrintf(int x, int y, const char* format, ...) {
   va_list args;
   va_start(args, format);
-  vsnprintf(printBuffer, PRINT_BUFFER_SIZE, format, args);
+  vsnprintf(printBuffer, 256, format, args);
   va_end(args);
   gfxPrint(x, y, printBuffer);
 }

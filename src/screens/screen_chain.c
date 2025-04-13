@@ -205,7 +205,12 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {
   if (keys == (keyRight | keyShift)) {
-    screenSetup(&screenPhrase, 0);
+    int phrase = project.chains[chain].phrases[sheet.cursorRow];
+    if (phrase == EMPTY_VALUE_16) {
+      screenMessage("Enter a phrase");
+    } else {
+      screenSetup(&screenPhrase, phrase);
+    }
     return 1;
   } else if (keys == (keyLeft | keyShift)) {
     screenSetup(&screenSong, 0);
@@ -213,8 +218,6 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
   }
   return 0;
 }
-
-
 
 static void onInput(int keys, int isDoubleTap) {
   if (inputScreenNavigation(keys, isDoubleTap)) return;

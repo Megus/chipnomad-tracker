@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <corelib_mainloop.h>
 
+#define AUTOSAVE_FILENAME "autosave.cnm"
+
 struct ColorScheme {
   int background;
   int textEmpty;

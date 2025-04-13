@@ -90,18 +90,11 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
   // Go to Chain screen
   if (keys == (keyRight | keyShift)) {
     int chain = project.song[sheet.cursorRow][sheet.cursorCol];
-    if (chain == EMPTY_VALUE_16) {
-      // If chain at cursor is empty, look up the track. If it's empty too, show message, don't let them go
-      for (int c = sheet.cursorRow; c >= 0; c--) {
-        chain = project.song[c][sheet.cursorCol];
-        if (chain != EMPTY_VALUE_16) break;
-      }
-    }
 
-    if (chain != EMPTY_VALUE_16) {
-      screenSetup(&screenChain, chain);
+    if (chain == EMPTY_VALUE_16) {
+      screenMessage("Enter a chain");
     } else {
-      screenMessage("Create a chain");
+      screenSetup(&screenChain, chain);
     }
     return 1;
   }

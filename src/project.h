@@ -85,5 +85,6 @@ int projectSave(const char* path);
 int isChainEmpty(int chain);
 int isPhraseEmpty(int phrase);
 
+const char* noteString(uint8_t note);
 
 #endif

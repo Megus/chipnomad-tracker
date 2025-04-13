@@ -18,10 +18,15 @@ void appSetup(void) {
 
   gfxSetBgColor(appSettings.colorScheme.background);
   gfxClear();
+
+  // Try to load an auto-saved project
+  if (projectLoad(AUTOSAVE_FILENAME)) {
+    projectInit();
+  }
+
   audioManager.start(appSettings.audioSampleRate, appSettings.audioBufferSize, 50.0);
   audioManager.initChips();
   //audioManager.setFrameCallback(psgFrameCallback, NULL);
-  projectInit();
   screenSetup(&screenSong, 0);
 }
 
@@ -83,6 +88,8 @@ void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
       }
       break;
     case eventExit:
+      // Auto-save the current project on exit
+      projectSave(AUTOSAVE_FILENAME);
       break;
   }
 }

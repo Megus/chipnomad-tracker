@@ -184,6 +184,7 @@ int spreadsheetInput(struct SpreadsheetScreenData* sheet, int keys, int isDouble
   return spreadsheetInputEdit(sheet, keys, isDoubleTap);
 }
 
+
 // Utility functions
 
 void setCellColor(int state, int isEmpty, int contentEmpty) {
