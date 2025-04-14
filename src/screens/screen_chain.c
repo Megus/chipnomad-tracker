@@ -46,7 +46,7 @@ static void drawCell(int col, int row, int state) {
 
   if (col == 0) {
     // Phrase
-    setCellColor(state, phrase == EMPTY_VALUE_16, phrase != EMPTY_VALUE_16 && project.phrases[phrase].hasNoNotes);
+    setCellColor(state, phrase == EMPTY_VALUE_16, phrase != EMPTY_VALUE_16 && phraseHasNotes(phrase));
     if (phrase == EMPTY_VALUE_16) {
       gfxPrint(2, 3 + row, "---");
     } else {
@@ -54,7 +54,7 @@ static void drawCell(int col, int row, int state) {
     }
   } else {
     // Transpose
-    setCellColor(state, 0, phrase == EMPTY_VALUE_16 || project.phrases[phrase].hasNoNotes);
+    setCellColor(state, 0, phrase == EMPTY_VALUE_16 || phraseHasNotes(phrase));
     gfxPrint(6, 3 + row, byteToHex(project.chains[chain].transpose[row]));
   }
 }
@@ -125,7 +125,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
         if (current != EMPTY_VALUE_16) {
           // Find first fully empty phrase
           for (int c = current + 1; c < PROJECT_MAX_PHRASES; c++) {
-            if (isPhraseEmpty(c)) {
+            if (phraseIsEmpty(c)) {
               project.chains[chain].phrases[row] = c;
               handled = 1;
               break;

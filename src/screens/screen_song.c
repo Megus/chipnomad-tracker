@@ -46,7 +46,7 @@ static void drawCell(int col, int row, int state) {
   if (row < sheet.topRow || row >= (sheet.topRow + 16)) return; // Don't draw outside of the viewing area
 
   int chain = project.song[row][col];
-  setCellColor(state, chain == EMPTY_VALUE_16, chain != EMPTY_VALUE_16 && project.chains[chain].hasNoNotes);
+  setCellColor(state, chain == EMPTY_VALUE_16, chain != EMPTY_VALUE_16 && chainHasNotes(chain));
   gfxPrint(3 + col * 3, 3 + row - sheet.topRow, chain == EMPTY_VALUE_16 ? "--" : byteToHex(chain));
 }
 
@@ -127,7 +127,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       // Find the first chain with no phrases
       if (current != EMPTY_VALUE_16) {
         for (int c = current + 1; c < PROJECT_MAX_CHAINS; c++) {
-          if (isChainEmpty(c)) {
+          if (chainIsEmpty(c)) {
             project.song[row][col] = c;
             handled = 1;
             break;

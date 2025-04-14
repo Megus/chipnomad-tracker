@@ -9,6 +9,8 @@
 #define PROJECT_MAX_PHRASES (1024)
 #define PROJECT_MAX_INSTRUMENTS (128)
 #define PROJECT_MAX_TABLES (128)
+#define PROJECT_MAX_CHIPS (3)
+#define PROJECT_MAX_PITCHES (255)
 
 #define EMPTY_VALUE_8 (255)
 #define EMPTY_VALUE_16 (32767)
@@ -16,12 +18,26 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Song data structures
 
-enum InstrumentType {
-  instNone,
-  instAY,
+// Chips
+
+enum ChipType {
+  chipAY,
+};
+
+struct ChipSetupAY {
+  int clock;
+  int isYM;
+  uint8_t panA;
+  uint8_t panB;
+  uint8_t panC;
+};
+
+union ChipSetup {
+  struct ChipSetupAY ay;
 };
 
 // Tables
+
 struct TableRow {
   uint8_t pitchFlag;
   int8_t pitchOffset;
@@ -33,13 +49,21 @@ struct Table {
   struct TableRow rows[16];
 };
 
+// Instruments
+
+enum InstrumentType {
+  instNone,
+  instAY,
+};
+
 struct Instrument {
   enum InstrumentType type;
   uint8_t tableSpeed;
   uint8_t transposeEnabled;
 };
 
-// Music
+// Phrases
+
 struct PhraseRow {
   uint8_t note;
   uint8_t instrument;
@@ -52,15 +76,34 @@ struct Phrase {
   struct PhraseRow rows[16];
 };
 
+// Chains
+
 struct Chain {
   uint8_t hasNoNotes;
   uint16_t phrases[16];
   int8_t transpose[16];
 };
 
+// Project
+
+struct PitchTable {
+  char tableName[32];
+  int16_t values[PROJECT_MAX_PITCHES];
+  char names[PROJECT_MAX_PITCHES][4];
+};
+
 struct Project {
+  char title[32];
+  char author[32];
+
+  float frameRate;
+  enum ChipType chipType;
+  union ChipSetup chipSetup;
+  int chipsCount;
+
   int tracksCount;
-  // TODO: Chip setup, pitch table
+
+  struct PitchTable pitchTable;
 
   uint16_t song[PROJECT_MAX_LENGTH][PROJECT_MAX_TRACKS];
   struct Chain chains[PROJECT_MAX_CHAINS];
@@ -82,9 +125,13 @@ int projectLoad(const char* path);
 // Save project to a file
 int projectSave(const char* path);
 
-int isChainEmpty(int chain);
-int isPhraseEmpty(int phrase);
-
-const char* noteString(uint8_t note);
+// Is chain empty?
+int chainIsEmpty(int chain);
+// Does chain have notes?
+int chainHasNotes(int chain);
+// Is phrase empty?
+int phraseIsEmpty(int phrase);
+// Does phrase have notes?
+int phraseHasNotes(int phrase);
 
 #endif

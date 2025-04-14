@@ -1,25 +1,71 @@
 #include <stdio.h>
+#include <math.h>
 #include <string.h>
 #include <project.h>
 #include <corelib_file.h>
 #include <utils.h>
 
-const char noteStrings[8 * 12][4] = {
-  "C-1", "C#1", "D-1", "D#1", "E-1", "F-1", "F#1", "G-1", "G#1", "A-1", "A#1", "B-1",
-  "C-2", "C#2", "D-2", "D#2", "E-2", "F-2", "F#2", "G-2", "G#2", "A-2", "A#2", "B-2",
-  "C-3", "C#3", "D-3", "D#3", "E-3", "F-3", "F#3", "G-3", "G#3", "A-3", "A#3", "B-3",
-  "C-4", "C#4", "D-4", "D#4", "E-4", "F-4", "F#4", "G-4", "G#4", "A-4", "A#4", "B-4",
-  "C-5", "C#5", "D-5", "D#5", "E-5", "F-5", "F#5", "G-5", "G#5", "A-5", "A#5", "B-5",
-  "C-6", "C#6", "D-6", "D#6", "E-6", "F-6", "F#6", "G-6", "G#6", "A-6", "A#6", "B-6",
-  "C-7", "C#7", "D-7", "D#7", "E-7", "F-7", "F#7", "G-7", "G#7", "A-7", "A#7", "B-7",
-  "C-8", "C#8", "D-8", "D#8", "E-8", "F-8", "F#8", "G-8", "G#8", "A-8", "A#8", "B-8",
-};
-
 struct Project project;
 
+// Create 12TET scale
+void calculatePitchTableAY() {
+  char noteStrings[12][4] = { "C-1", "C#1", "D-1", "D#1", "E-1", "F-1", "F#1", "G-1", "G#1", "A-1", "A#1", "B-1" };
+
+  float clock = (float)(project.chipSetup.ay.clock);
+  int octaves = 9;
+  float cfreq = 16.35159783; // C-0 frequency for A4 = 440Hz. It's too low for 1.75MHz AY, but we'll keep it
+  float freq = cfreq;
+  float semitone = powf(2., 1. / 12.);
+
+  sprintf(project.pitchTable.tableName, "12TET %dHz", project.chipSetup.ay.clock);
+
+  printf("%s\n", project.pitchTable.tableName);
+
+  for (int o = 0; o < octaves; o++) {
+    for (int c = 0; c < 12; c++) {
+      noteStrings[c][2] = 48 + o;
+
+      float periodf = clock / 16. / freq;
+
+      float freqL = clock / 16. / floorf(periodf);
+      float freqH = clock / 16. / ceilf(periodf);
+
+      int period = (fabsf(freqL - freq) < fabsf(freqH - freq)) ? floorf(periodf) : ceilf(periodf);
+      if (period > 4095) period = 4095; // AY only has 12 bits for period
+
+      project.pitchTable.values[o * 12 + c] = period;
+      strcpy(project.pitchTable.names[o * 12 + c], noteStrings[c]);
+
+      freq *= semitone;
+    }
+
+    // Reset frequency calculation on each octave to minimize rounding errors
+    cfreq *= 2.;
+    freq = cfreq;
+  }
+}
+
+// Initialize project
 void projectInit() {
   // Init for AY
-  project.tracksCount = 3;
+  project.chipType = chipAY;
+  project.chipsCount = 1;
+  project.chipSetup.ay = (struct ChipSetupAY){
+    .clock = 1750000,
+    .isYM = 1,
+    .panA = 64,
+    .panB = 128,
+    .panC = 192,
+  };
+
+  project.tracksCount = project.chipsCount * 3; // AY/YM has 3 channels
+
+  calculatePitchTableAY();
+
+  // Title
+  strcpy(project.title, "");
+  strcpy(project.author, "");
+
 
   // Clean song structure
   for (int c = 0; c < PROJECT_MAX_LENGTH; c++) {
@@ -30,7 +76,7 @@ void projectInit() {
 
   // Clean chains
   for (int c = 0; c < PROJECT_MAX_CHAINS; c++) {
-    project.chains[c].hasNoNotes = 1;
+    project.chains[c].hasNoNotes = -1;
     for (int d = 0; d < 16; d++) {
       project.chains[c].phrases[d] = EMPTY_VALUE_16;
       project.chains[c].transpose[d] = 0;
@@ -39,21 +85,31 @@ void projectInit() {
 
   // Clean phrases
   for (int c = 0; c < PROJECT_MAX_PHRASES; c++) {
-    project.phrases[c].hasNoNotes = 1;
+    project.phrases[c].hasNoNotes = -1;
     for (int d = 0; d < 16; d++) {
 
     }
   }
 
-
   // Clean instruments
-
+  for (int c = 0; c < PROJECT_MAX_INSTRUMENTS; c++) {
+    project.instruments[c].type = instNone;
+  }
 
   // Clean tables
+  for (int c = 0; c < PROJECT_MAX_TABLES; c++) {
+
+  }
 
 }
 
-int isChainEmpty(int chain) {
+///////////////////////////////////////////////////////////////////////////////
+//
+// Utility functions
+//
+
+// Is chain empty?
+int chainIsEmpty(int chain) {
   int isEmpty = 1;
 
   for (int c = 0; c < 16; c++) {
@@ -66,13 +122,19 @@ int isChainEmpty(int chain) {
   return isEmpty;
 }
 
-int isPhraseEmpty(int phrase) {
-
+// Does chain have notes?
+int chainHasNotes(int chain) {
   return 0;
 }
 
-const char* noteString(uint8_t note) {
-  return noteStrings[note];
+// Is phrase empty?
+int phraseIsEmpty(int phrase) {
+  return 0;
+}
+
+// Does phrase have notes?
+int phraseHasNotes(int phrase) {
+  return 0;
 }
 
 
@@ -130,7 +192,7 @@ static int projectSaveChains(int fileId) {
   filePrintf(fileId, "\n## Chains\n");
 
   for (int c = 0; c < PROJECT_MAX_CHAINS; c++) {
-    if (!isChainEmpty(c)) {
+    if (!chainIsEmpty(c)) {
       filePrintf(fileId, "### Chain %X\n", c);
       for (int d = 0; d < 16; d++) {
         int phrase = project.chains[c].phrases[d];

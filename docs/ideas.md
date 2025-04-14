@@ -47,9 +47,11 @@ Project also has chip setup. I'm starting with AY/YM only. Chip parameters for A
 - Stereo layout (ABC, ACB, BAC...)
 - Number of chips (1-3)
 - Pitch table:
+  - Up to 255 pitches in the table (opening microtonal possibilities)
+  - Custom pitch names (for microtonal scales)
   - Auto-calculated for clock speed
   - Selection of classic tables (ST, ASC, PT...)
-  - Load table from a text file
+  - Load table from a CSV file
 
 ## Song
 
