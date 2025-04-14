@@ -22,3 +22,15 @@ static const char hexBytes[256][3] = {
 const char* byteToHex(uint8_t byte) {
   return hexBytes[byte];
 }
+
+// DJB2 algorithm, truncating hash to just byte
+// Taken from http://www.cse.yorku.ca/~oz/hash.html
+uint8_t hash(uint8_t* str) {
+  uint32_t hash = 5381;
+  int c;
+
+  while ((c = *str++))
+    hash = ((hash << 5) + hash) + c; // Variant: XOR c instead of PLUS c
+
+  return (uint8_t)(hash & 0xff);
+}

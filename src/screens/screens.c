@@ -194,9 +194,9 @@ void setCellColor(int state, int isEmpty, int hasContent) {
     gfxSetFgColor(cs.textDefault);
   } else if (isEmpty) {
     gfxSetFgColor(cs.textEmpty);
-  } else if (!hasContent) {
-    gfxSetFgColor(cs.textInfo);
-  } else {
+  } else if (hasContent) {
     gfxSetFgColor(cs.textValue);
+  } else {
+    gfxSetFgColor(cs.textInfo);
   }
 }

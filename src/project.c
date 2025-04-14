@@ -7,9 +7,23 @@
 
 struct Project project;
 
+// Start from 0
+char fxCommon[][4] = {
+  "ARP", "ARC", "PVB", "PBN", "PSL", "PIT", // Pitch
+  "RET", "DEL", "OFF", "KIL", // Sequencer
+  "TIC", "TBL", "TBX", "THO", // Table
+  "GRV", "GGR", "SNG",
+};
+
+// Start from 32
+char fxAY[][4] = {
+  "AYM", "ERT", "NOI", "NOA",
+  "EAU", "EVB", "EBN", "ESL", "ENA", "ENR", "EPR", "EPL", "EPH",
+};
+
 // Create 12TET scale
 void calculatePitchTableAY(struct Project* p) {
-  char noteStrings[12][4] = { "C-1", "C#1", "D-1", "D#1", "E-1", "F-1", "F#1", "G-1", "G#1", "A-1", "A#1", "B-1" };
+  static char noteStrings[12][4] = { "C-1", "C#1", "D-1", "D#1", "E-1", "F-1", "F#1", "G-1", "G#1", "A-1", "A#1", "B-1" };
 
   float clock = (float)(p->chipSetup.ay.clock);
   int octaves = 9;
@@ -19,6 +33,7 @@ void calculatePitchTableAY(struct Project* p) {
 
   sprintf(p->pitchTable.title, "12TET %dHz", p->chipSetup.ay.clock);
   p->pitchTable.length = octaves * 12;
+  p->pitchTable.octaveSize = 12;
 
   for (int o = 0; o < octaves; o++) {
     for (int c = 0; c < 12; c++) {
@@ -75,7 +90,7 @@ void projectInit(struct Project* p) {
 
   // Clean chains
   for (int c = 0; c < PROJECT_MAX_CHAINS; c++) {
-    p->chains[c].hasNoNotes = -1;
+    p->chains[c].hasNotes = -1;
     for (int d = 0; d < 16; d++) {
       p->chains[c].phrases[d] = EMPTY_VALUE_16;
       p->chains[c].transpose[d] = 0;
@@ -96,9 +111,15 @@ void projectInit(struct Project* p) {
 
   // Clean phrases
   for (int c = 0; c < PROJECT_MAX_PHRASES; c++) {
-    p->phrases[c].hasNoNotes = -1;
+    p->phrases[c].hasNotes = -1;
     for (int d = 0; d < 16; d++) {
-
+      p->phrases[c].notes[d] = EMPTY_VALUE_8;
+      p->phrases[c].instruments[d] = EMPTY_VALUE_8;
+      p->phrases[c].volumes[d] = EMPTY_VALUE_8;
+      for (int e = 0; e < 3; e++) {
+        p->phrases[c].fx[d][e][0] = EMPTY_VALUE_8;
+        p->phrases[c].fx[d][e][1] = 0;
+      }
     }
   }
 
@@ -109,7 +130,15 @@ void projectInit(struct Project* p) {
 
   // Clean tables
   for (int c = 0; c < PROJECT_MAX_TABLES; c++) {
-
+    for (int d = 0; d < 16; d++) {
+      p->tables[c].pitchFlags[d] = 0;
+      p->tables[c].pitchOffsets[d] = 0;
+      p->tables[c].volumeOffsets[d] = 0;
+      for (int e = 0; e < 4; e++) {
+        p->tables[c].fx[d][e][0] = EMPTY_VALUE_8;
+        p->tables[c].fx[d][e][1] = 0;
+      }
+    }
   }
 }
 
@@ -119,56 +148,90 @@ void projectInit(struct Project* p) {
 //
 
 // Is chain empty?
-int chainIsEmpty(int chain) {
-  int isEmpty = 1;
-
+int8_t chainIsEmpty(int chain) {
   for (int c = 0; c < 16; c++) {
-    if (project.chains[chain].phrases[c] != EMPTY_VALUE_16) {
-      isEmpty = 0;
-      break;
-    }
+    if (project.chains[chain].phrases[c] != EMPTY_VALUE_16) return 0;
   }
 
-  return isEmpty;
+  return 1;
 }
 
 // Does chain have notes?
-int chainHasNotes(int chain) {
-  return 0;
+int8_t chainHasNotes(int chain) {
+  int8_t v = project.chains[chain].hasNotes;
+  if (v != -1) return v;
+
+  v = 0;
+  for (int c = 0; c < 16; c++) {
+    int phrase = project.chains[chain].phrases[c];
+    if (phrase != EMPTY_VALUE_16) v = phraseHasNotes(phrase);
+    if (v == 1) break;
+  }
+
+  project.chains[chain].hasNotes = v;
+
+  return v;
 }
 
 // Is phrase empty?
-int phraseIsEmpty(int phrase) {
+int8_t phraseIsEmpty(int phrase) {
+  for (int c = 0; c < 16; c++) {
+    if (project.phrases[phrase].notes[c] != EMPTY_VALUE_8) return 0;
+    if (project.phrases[phrase].instruments[c] != EMPTY_VALUE_8) return 0;
+    if (project.phrases[phrase].volumes[c] != EMPTY_VALUE_8) return 0;
+    for (int d = 0; d < 3; d++) {
+      if (project.phrases[phrase].fx[c][d][0] != EMPTY_VALUE_8) return 0;
+      if (project.phrases[phrase].fx[c][d][1] != 0) return 0;
+    }
+  }
+
   return 1;
 }
 
 // Does phrase have notes?
-int phraseHasNotes(int phrase) {
-  return 0;
-}
+int8_t phraseHasNotes(int phrase) {
+  int8_t v = project.phrases[phrase].hasNotes;
+  if (v != -1) return v;
 
-// Is instrument empty?
-int instrumentIsEmpty(int instrument) {
-  return project.instruments[instrument].type == instNone;
-}
-
-// Is table empty?
-int tableIsEmpty(int table) {
-  return 1;
-}
-
-// Is groove empty?
-int grooveIsEmpty(int groove) {
-  int isEmpty = 1;
-
+  v = 0;
   for (int c = 0; c < 16; c++) {
-    if (project.grooves[groove].speed[c] != EMPTY_VALUE_8) {
-      isEmpty = 0;
+    if (project.phrases[phrase].notes[c] != EMPTY_VALUE_8) {
+      v = 1;
       break;
     }
   }
 
-  return isEmpty;
+  project.phrases[phrase].hasNotes = v;
+
+  return v;
+}
+
+// Is instrument empty?
+int8_t instrumentIsEmpty(int instrument) {
+  return project.instruments[instrument].type == instNone;
+}
+
+// Is table empty?
+int8_t tableIsEmpty(int table) {
+  for (int c = 0; c < 16; c++) {
+    if (project.tables[table].pitchFlags[c] != 0) return 0;
+    if (project.tables[table].pitchOffsets[c] != 0) return 0;
+    if (project.tables[table].volumeOffsets[c] != 0) return 0;
+    for (int d = 0; d < 4; d++) {
+      if (project.tables[table].fx[c][d][0] != EMPTY_VALUE_8) return 0;
+      if (project.tables[table].fx[c][d][1] != 0) return 0;
+    }
+  }
+
+  return 1;
+}
+
+// Is groove empty?
+int8_t grooveIsEmpty(int groove) {
+  for (int c = 0; c < 16; c++) {
+    if (project.grooves[groove].speed[c] != EMPTY_VALUE_8) return 0;
+  }
+  return 1;
 }
 
 
@@ -214,6 +277,15 @@ int projectLoadPitchTable(int fileId, struct Project* p) {
   }
   p->pitchTable.length = idx;
 
+  // Detect octave size
+  char oct = p->pitchTable.names[0][2];
+  for (int c = 0; c < p->pitchTable.length; c++) {
+    if (p->pitchTable.names[c][2] != oct) {
+      p->pitchTable.octaveSize = c;
+      break;
+    }
+  }
+
   return 0;
 }
 
@@ -252,7 +324,7 @@ int projectLoadChains(int fileId, struct Project* p) {
     if (strncmp(lpstr, "### Chain", 9)) break;
     if (sscanf(lpstr, "### Chain %X", &idx) != 1) return 1;
 
-    p->chains[idx].hasNoNotes = -1;
+    p->chains[idx].hasNotes = -1;
     for (int c = 0; c < 16; c++) {
       READ_STRING;
       if (strlen(lpstr) != 6) return 1;
@@ -508,8 +580,6 @@ static int projectSaveTables(int fileId) {
 }
 
 int projectSave(const char* path) {
-  printf("Size of project structure in memory: %lu\n", sizeof(project));
-
   int fileId = fileOpen(path, 1);
   if (fileId == -1) return 1;
 

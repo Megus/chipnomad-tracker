@@ -104,21 +104,21 @@ UI to pick FX allows to define chip-specific FX easily.
 
 - ARP - Arpeggio
 - ARC - Arpeggio config
-- THO - Table hop
-- SNG - Song hop
 - PVB - Pitch Vibrato
 - PBN - Pitch bend
 - PSL - Pitch slide (portamento)
 - PIT - 1-time pitch offset
-- TBL - Table (replaces default instrument table)
-- TBX - Additional table (adds another table)
 - RET - Retrigger
 - DEL - Note delay
 - OFF - Note off after X ticks
 - KIL - Kill note after X ticks
+- TIC - Set table speed
+- TBL - Table (replaces default instrument table)
+- TBX - Additional table (adds another table)
+- THO - Table hop
 - GRV - Select track groove
 - GGR - Select global groove
-- TIC - Set table speed
+- SNG - Song hop
 
 For future: Generative elements: randomization, scale following (like on M8).
 
@@ -127,17 +127,17 @@ For future: Generative elements: randomization, scale following (like on M8).
 #### AY
 
 - AYM - Mixer settings (tone, noise, env shape)
-- EVB - Env Vibrato
 - ERT - Env retrig
+- NOI - Noise offset
+- NOA - Noise absolute value
+- EAU - Env auto-pitch, offset in semitones (80 - off)
+- EVB - Env Vibrato
 - EBN - Env pitch bend
 - ESL - Env pitch slide (portamento)
 - ENA - Env pitch as a note, absolute
 - ENR - Env pitch as a note, relative (for arpeggios in tables, for example)
 - EPR - Env pitch value relative
 - EPL, EPH - Env period as a value, Low and High regs
-- EPA - Env auto-pitch: off, or rate
-- NOI - Noise offset
-- NOA - Noise absolute value
 
 ## Instruments
 

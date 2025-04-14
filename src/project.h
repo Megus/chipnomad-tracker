@@ -11,7 +11,7 @@
 #define PROJECT_MAX_INSTRUMENTS (128)
 #define PROJECT_MAX_TABLES (128)
 #define PROJECT_MAX_CHIPS (3)
-#define PROJECT_MAX_PITCHES (255)
+#define PROJECT_MAX_PITCHES (254)
 
 #define EMPTY_VALUE_8 (255)
 #define EMPTY_VALUE_16 (32767)
@@ -40,15 +40,11 @@ union ChipSetup {
 
 // Tables
 
-struct TableRow {
-  uint8_t pitchFlag;
-  int8_t pitchOffset;
-  int8_t volumeOffset;
-  uint8_t fx[4][2];
-};
-
 struct Table {
-  struct TableRow rows[16];
+  uint8_t pitchFlags[16];
+  int8_t pitchOffsets[16];
+  int8_t volumeOffsets[16];
+  uint8_t fx[16][4][2];
 };
 
 // Instruments
@@ -58,10 +54,23 @@ enum InstrumentType {
   instAY = 1,
 };
 
+struct InstrumentAY {
+  uint8_t veA;
+  uint8_t veD;
+  uint8_t veS;
+  uint8_t veR;
+  uint8_t autoEnvOffset;
+};
+
+union InstrumentChipData {
+  struct InstrumentAY ay;
+};
+
 struct Instrument {
   enum InstrumentType type;
   uint8_t tableSpeed;
   uint8_t transposeEnabled;
+  union InstrumentChipData chip;
 };
 
 // Grooves
@@ -71,22 +80,18 @@ struct Groove {
 
 // Phrases
 
-struct PhraseRow {
-  uint8_t note;
-  uint8_t instrument;
-  uint8_t volume;
-  uint8_t fx[3][2];
-};
-
 struct Phrase {
-  uint8_t hasNoNotes;
-  struct PhraseRow rows[16];
+  int8_t hasNotes;
+  uint8_t notes[16];
+  uint8_t instruments[16];
+  uint8_t volumes[16];
+  uint8_t fx[16][3][2];
 };
 
 // Chains
 
 struct Chain {
-  uint8_t hasNoNotes;
+  int8_t hasNotes;
   uint16_t phrases[16];
   int8_t transpose[16];
 };
@@ -95,8 +100,9 @@ struct Chain {
 
 struct PitchTable {
   char title[32];
-  int16_t length;
-  int16_t values[PROJECT_MAX_PITCHES];
+  uint16_t octaveSize;
+  uint16_t length;
+  uint16_t values[PROJECT_MAX_PITCHES];
   char names[PROJECT_MAX_PITCHES][4];
 };
 
@@ -135,18 +141,18 @@ int projectLoad(const char* path);
 int projectSave(const char* path);
 
 // Is chain empty?
-int chainIsEmpty(int chain);
+int8_t chainIsEmpty(int chain);
 // Does chain have notes?
-int chainHasNotes(int chain);
+int8_t chainHasNotes(int chain);
 // Is phrase empty?
-int phraseIsEmpty(int phrase);
+int8_t phraseIsEmpty(int phrase);
 // Does phrase have notes?
-int phraseHasNotes(int phrase);
+int8_t phraseHasNotes(int phrase);
 // Is instrument empty?
-int instrumentIsEmpty(int instrument);
+int8_t instrumentIsEmpty(int instrument);
 // Is table empty?
-int tableIsEmpty(int table);
+int8_t tableIsEmpty(int table);
 // Is groove empty?
-int grooveIsEmpty(int groove);
+int8_t grooveIsEmpty(int groove);
 
 #endif
