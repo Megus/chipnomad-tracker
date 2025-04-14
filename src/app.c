@@ -21,7 +21,7 @@ void appSetup(void) {
 
   // Try to load an auto-saved project
   if (projectLoad(AUTOSAVE_FILENAME)) {
-    projectInit();
+    projectInit(&project);
   }
 
   audioManager.start(appSettings.audioSampleRate, appSettings.audioBufferSize, 50.0);

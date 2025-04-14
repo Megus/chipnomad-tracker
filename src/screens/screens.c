@@ -187,14 +187,14 @@ int spreadsheetInput(struct SpreadsheetScreenData* sheet, int keys, int isDouble
 
 // Utility functions
 
-void setCellColor(int state, int isEmpty, int contentEmpty) {
+void setCellColor(int state, int isEmpty, int hasContent) {
   const struct ColorScheme cs = appSettings.colorScheme;
 
   if (state & stateFocus) {
     gfxSetFgColor(cs.textDefault);
   } else if (isEmpty) {
     gfxSetFgColor(cs.textEmpty);
-  } else if (contentEmpty) {
+  } else if (!hasContent) {
     gfxSetFgColor(cs.textInfo);
   } else {
     gfxSetFgColor(cs.textValue);

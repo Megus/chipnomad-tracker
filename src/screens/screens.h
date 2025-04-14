@@ -56,7 +56,7 @@ void spreadsheetFullRedraw(struct SpreadsheetScreenData* sheet);
 int spreadsheetInput(struct SpreadsheetScreenData* sheet, int keys, int isDoubleTap);
 
 // Utility functions
-void setCellColor(int state, int isEmpty, int isContentEmpty);
+void setCellColor(int state, int isEmpty, int hasContent);
 
 
 

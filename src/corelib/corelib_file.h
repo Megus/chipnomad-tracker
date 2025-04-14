@@ -9,9 +9,12 @@ int fileClose(int fileId);
 
 // Returns number of bytes read
 int fileRead(int fileId, void* buffer, int maxLength);
+// Reads a text line from the file
+char* fileReadString(int fileId);
 
 // Returns number of bytes written
 int fileWrite(int fileId, void* data, int length);
+// Returns number of bytes written
 int filePrintf(int fileId, const char* format, ...);
 
 #endif

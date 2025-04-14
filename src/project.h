@@ -7,6 +7,7 @@
 #define PROJECT_MAX_LENGTH (256)
 #define PROJECT_MAX_CHAINS (255)
 #define PROJECT_MAX_PHRASES (1024)
+#define PROJECT_MAX_GROOVES (16)
 #define PROJECT_MAX_INSTRUMENTS (128)
 #define PROJECT_MAX_TABLES (128)
 #define PROJECT_MAX_CHIPS (3)
@@ -21,7 +22,8 @@
 // Chips
 
 enum ChipType {
-  chipAY,
+  chipAY = 0,
+  chipTotalCount,
 };
 
 struct ChipSetupAY {
@@ -52,14 +54,19 @@ struct Table {
 // Instruments
 
 enum InstrumentType {
-  instNone,
-  instAY,
+  instNone = 0,
+  instAY = 1,
 };
 
 struct Instrument {
   enum InstrumentType type;
   uint8_t tableSpeed;
   uint8_t transposeEnabled;
+};
+
+// Grooves
+struct Groove {
+  uint8_t speed[16];
 };
 
 // Phrases
@@ -87,7 +94,8 @@ struct Chain {
 // Project
 
 struct PitchTable {
-  char tableName[32];
+  char title[32];
+  int16_t length;
   int16_t values[PROJECT_MAX_PITCHES];
   char names[PROJECT_MAX_PITCHES][4];
 };
@@ -108,6 +116,7 @@ struct Project {
   uint16_t song[PROJECT_MAX_LENGTH][PROJECT_MAX_TRACKS];
   struct Chain chains[PROJECT_MAX_CHAINS];
   struct Phrase phrases[PROJECT_MAX_PHRASES];
+  struct Groove grooves[PROJECT_MAX_GROOVES];
   struct Instrument instruments[PROJECT_MAX_INSTRUMENTS];
   struct Table tables[PROJECT_MAX_TABLES];
 };
@@ -119,7 +128,7 @@ extern struct Project project;
 // Project functions
 
 // Initialize an empty project
-void projectInit(void);
+void projectInit(struct Project* p);
 // Load project from a file
 int projectLoad(const char* path);
 // Save project to a file
@@ -133,5 +142,11 @@ int chainHasNotes(int chain);
 int phraseIsEmpty(int phrase);
 // Does phrase have notes?
 int phraseHasNotes(int phrase);
+// Is instrument empty?
+int instrumentIsEmpty(int instrument);
+// Is table empty?
+int tableIsEmpty(int table);
+// Is groove empty?
+int grooveIsEmpty(int groove);
 
 #endif

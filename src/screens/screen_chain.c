@@ -54,7 +54,7 @@ static void drawCell(int col, int row, int state) {
     }
   } else {
     // Transpose
-    setCellColor(state, 0, phrase == EMPTY_VALUE_16 || phraseHasNotes(phrase));
+    setCellColor(state, 0, !(phrase == EMPTY_VALUE_16 || phraseHasNotes(phrase)));
     gfxPrint(6, 3 + row, byteToHex(project.chains[chain].transpose[row]));
   }
 }

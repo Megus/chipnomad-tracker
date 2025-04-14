@@ -2,10 +2,12 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <corelib_file.h>
 
 static FILE* files[CORELIB_MAX_OPEN_FILES];
 static int currentFileId = 0;
+static char stringBuffer[1024];
 
 int fileOpen(const char* path, int isWriting) {
   int fileId = currentFileId;
@@ -32,6 +34,21 @@ int fileClose(int fileId) {
 
 int fileRead(int fileId, void* buffer, int maxLength) {
   return fread(buffer, 1, maxLength, files[fileId]);
+}
+
+char* fileReadString(int fileId) {
+  char* r = fgets(stringBuffer, 1024, files[fileId]);
+
+  if (r == NULL) return NULL;
+
+  // Trim (if needed) EOL and space characters
+  int idx = strlen(stringBuffer) - 1;
+  while (idx >= 0 && isspace(stringBuffer[idx])) {
+    stringBuffer[idx] = 0;
+    idx--;
+  }
+
+  return stringBuffer;
 }
 
 int fileWrite(int fileId, void* data, int length) {
