@@ -15,7 +15,7 @@ char fxCommon[][4] = {
   "GRV", "GGR", "SNG",
 };
 
-// Start from 32
+// Start from 64
 char fxAY[][4] = {
   "AYM", "ERT", "NOI", "NOA",
   "EAU", "EVB", "EBN", "ESL", "ENA", "ENR", "EPR", "EPL", "EPH",
@@ -232,6 +232,17 @@ int8_t grooveIsEmpty(int groove) {
     if (project.grooves[groove].speed[c] != EMPTY_VALUE_8) return 0;
   }
   return 1;
+}
+
+// FX name
+char* fxName(uint8_t fx) {
+  if (fx < 0x40) {
+    // Common FX
+    return (fx >= sizeof(fxCommon) / 4) ? "???" : fxCommon[fx];
+  } else {
+    // Chip-specific FX. Currently AY-only
+    return (fx - 0x40 >= sizeof(fxAY) / 4) ? "???" : fxAY[fx - 0x40];
+  }
 }
 
 

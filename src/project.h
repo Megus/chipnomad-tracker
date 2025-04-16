@@ -154,5 +154,7 @@ int8_t instrumentIsEmpty(int instrument);
 int8_t tableIsEmpty(int table);
 // Is groove empty?
 int8_t grooveIsEmpty(int groove);
+// FX name
+char* fxName(uint8_t fx);
 
 #endif
