@@ -9,7 +9,7 @@ static int phrase = 0;
 static uint8_t lastNote = 48;
 static uint8_t lastInstrument = 0;
 static uint8_t lastVolume = 15;
-static uint8_t lastFX[3][2];
+static uint8_t lastFX[2];
 
 static void drawCell(int col, int row, int state);
 static void drawRowHeader(int row, int state);
@@ -51,7 +51,15 @@ static void drawCell(int col, int row, int state) {
     // Note
     uint8_t note = project.phrases[phrase].notes[row];
     setCellColor(state, note == EMPTY_VALUE_8, 1);
-    gfxPrint(2, 3 + row, note == EMPTY_VALUE_8 ? "---" : project.pitchTable.names[note]);
+    char* noteStr;
+    if (note == EMPTY_VALUE_8) {
+      noteStr = "---";
+    } else if (note == NOTE_OFF) {
+      noteStr = "OFF";
+    } else {
+      noteStr = project.pitchTable.names[note];
+    }
+    gfxPrint(2, 3 + row, noteStr);
   } else if (col == 1 || col == 2) {
     // Instrument and volume
     uint8_t value = (col == 1) ? project.phrases[phrase].instruments[row] : project.phrases[phrase].volumes[row];
@@ -61,12 +69,12 @@ static void drawCell(int col, int row, int state) {
     // FX name
     uint8_t fx = project.phrases[phrase].fx[row][(col - 3) / 2][0];
     setCellColor(state, fx == EMPTY_VALUE_8, 1);
-    gfxPrint(12 + (col - 3) * 3, 3 + row, fx == EMPTY_VALUE_8 ? "---" : fxName(fx));
+    gfxPrint(3 + col * 3, 3 + row, fx == EMPTY_VALUE_8 ? "---" : fxName(fx));
   } else if (col == 4 || col == 6 || col == 8) {
     // FX value
     uint8_t value = project.phrases[phrase].fx[row][(col - 4) / 2][1];
     setCellColor(state, 0, project.phrases[phrase].fx[row][(col - 3) / 2][0] != EMPTY_VALUE_8);
-    gfxPrint(15 + (col - 4) * 3, 3 + row, byteToHex(value));
+    gfxPrint(3 + col * 3, 3 + row, byteToHex(value));
   }
 }
 
@@ -108,12 +116,9 @@ static void drawColHeader(int col, int state) {
 }
 
 static void drawCursor(int col, int row) {
-
-}
-
-static int onEdit(int col, int row, enum CellEditAction action) {
-
-  return 0;
+  int width = 2;
+  if (col == 0 || col == 3 || col == 5 || col == 7) width = 3;
+  gfxCursor(col == 0 ? 2 : 3 + col * 3, 3 + row, width);
 }
 
 static void draw(void) {
@@ -124,6 +129,66 @@ static void draw(void) {
 //
 // Input handling
 //
+
+static int onEdit(int col, int row, enum CellEditAction action) {
+  int handled = 0;
+  uint8_t maxVolume = 16; // This is for AY, will add m ore conditions in the future
+
+  if (col == 0) {
+    // Note
+    if (action == editClear && project.phrases[phrase].notes[row] == EMPTY_VALUE_8) {
+      // Special case: inserting OFF
+      project.phrases[phrase].notes[row] = NOTE_OFF;
+      handled = 1;
+    } else if (action == editClear) {
+      // When clearing note, we also need to clear instrument and volume
+      handled = edit8withLimit(action, &project.phrases[phrase].notes[row], &lastNote, project.pitchTable.octaveSize, project.pitchTable.length);
+      edit8withLimit(action, &project.phrases[phrase].instruments[row], &lastInstrument, 16, PROJECT_MAX_INSTRUMENTS);
+      edit8withLimit(action, &project.phrases[phrase].volumes[row], &lastVolume, 16, maxVolume);
+    } else if (action == editTap && project.phrases[phrase].notes[row] == EMPTY_VALUE_8) {
+      // When inserting note, also insert instrument and volume
+      project.phrases[phrase].notes[row] = lastNote;
+      project.phrases[phrase].instruments[row] = lastInstrument;
+      project.phrases[phrase].volumes[row] = lastVolume;
+      handled = 1;
+    } else if (project.phrases[phrase].notes[row] != NOTE_OFF) {
+      handled = edit8withLimit(action, &project.phrases[phrase].notes[row], &lastNote, project.pitchTable.octaveSize, project.pitchTable.length);
+    }
+
+    if (handled) {
+      // Also draw instrument and volume as they could change
+      drawCell(1, row, 0);
+      drawCell(2, row, 0);
+    }
+  } else if (col == 1) {
+    // Instrument
+    if (action == editDoubleTap) {
+
+    } else {
+      handled = edit8withLimit(action, &project.phrases[phrase].instruments[row], &lastInstrument, 16, PROJECT_MAX_INSTRUMENTS);
+    }
+  } else if (col == 2) {
+    // Volume
+    handled = edit8withLimit(action, &project.phrases[phrase].volumes[row], &lastVolume, 16, maxVolume);
+  } else if (col == 3 || col == 5 || col == 7) {
+    // FX
+    int fxIdx = (col - 3) / 2;
+    handled = editFX(action, project.phrases[phrase].fx[row][fxIdx], lastFX);
+  } else if (col == 4 || col == 6 || col == 8) {
+    // FX value
+    int fxIdx = (col - 4) / 2;
+    if (project.phrases[phrase].fx[row][fxIdx][0] != EMPTY_VALUE_8) {
+      handled = edit8noLimit(action, &project.phrases[phrase].fx[row][fxIdx][1], &lastFX[1], 16);
+    }
+  }
+
+  if (handled) {
+    project.phrases[phrase].hasNotes = -1;
+  }
+
+  return handled;
+}
+
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {
   if (keys == (keyRight | keyShift)) {

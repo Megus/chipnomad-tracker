@@ -58,6 +58,10 @@ int spreadsheetInput(struct SpreadsheetScreenData* sheet, int keys, int isDouble
 // Utility functions
 void setCellColor(int state, int isEmpty, int hasContent);
 
-
+// Common edit functions
+int edit16withLimit(enum CellEditAction action, uint16_t* value, uint16_t* lastValue, uint16_t bigIncrease, uint16_t upperLimit);
+int edit8withLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigIncrease, uint8_t upperLimit);
+int edit8noLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigIncrease);
+int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX);
 
 #endif

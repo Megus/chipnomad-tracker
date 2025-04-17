@@ -13,6 +13,7 @@
 #define PROJECT_MAX_CHIPS (3)
 #define PROJECT_MAX_PITCHES (254)
 
+#define NOTE_OFF (254)
 #define EMPTY_VALUE_8 (255)
 #define EMPTY_VALUE_16 (32767)
 
@@ -93,7 +94,7 @@ struct Phrase {
 struct Chain {
   int8_t hasNotes;
   uint16_t phrases[16];
-  int8_t transpose[16];
+  uint8_t transpose[16];
 };
 
 // Project

@@ -5,8 +5,8 @@
 #include <project.h>
 
 static int chain = 0;
-static int lastPhraseValue = 0;
-static int8_t lastTransposeValue = 0;
+static uint16_t lastPhraseValue = 0;
+static uint8_t lastTransposeValue = 0;
 
 static void drawCell(int col, int row, int state);
 static void drawRowHeader(int row, int state);
@@ -26,7 +26,6 @@ static struct SpreadsheetScreenData sheet = {
   .drawCell = drawCell,
   .onEdit = onEdit,
 };
-
 
 static void setup(int input) {
   if (input != chain) {
@@ -108,97 +107,30 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   int handled = 0;
 
   if (col == 0) {
-    int current = project.chains[chain].phrases[row];
-    // Phrase
-    switch (action) {
-      case editClear:
-        project.chains[chain].phrases[row] = EMPTY_VALUE_16;
-        handled = 1;
-        break;
-      case editTap:
-        if (current == EMPTY_VALUE_16) {
-          project.chains[chain].phrases[row] = lastPhraseValue;
-          handled = 1;
-        }
-        break;
-      case editDoubleTap:
-        if (current != EMPTY_VALUE_16) {
-          // Find first fully empty phrase
-          for (int c = current + 1; c < PROJECT_MAX_PHRASES; c++) {
-            if (phraseIsEmpty(c)) {
-              project.chains[chain].phrases[row] = c;
-              handled = 1;
-              break;
-            }
+    if (action == editDoubleTap) {
+      uint16_t current = project.chains[chain].phrases[row];
+
+      if (current != EMPTY_VALUE_16) {
+        // Find first fully empty phrase
+        for (int c = current + 1; c < PROJECT_MAX_PHRASES; c++) {
+          if (phraseIsEmpty(c)) {
+            project.chains[chain].phrases[row] = c;
+            lastPhraseValue = c;
+            handled = 1;
+            break;
           }
         }
-        break;
-      case editIncrease:
-        if (current != EMPTY_VALUE_16 && current < PROJECT_MAX_PHRASES - 1) {
-          project.chains[chain].phrases[row]++;
-          handled = 1;
-        }
-        break;
-      case editDecrease:
-        if (current != EMPTY_VALUE_16 && current > 0) {
-          project.chains[chain].phrases[row]--;
-          handled = 1;
-        }
-        break;
-      case editIncreaseBig:
-        if (current != EMPTY_VALUE_16) {
-          project.chains[chain].phrases[row] = current > PROJECT_MAX_PHRASES - 16 ? PROJECT_MAX_PHRASES - 1 : current + 16;
-          handled = 1;
-        }
-        break;
-      case editDecreaseBig:
-        if (current != EMPTY_VALUE_16) {
-          project.chains[chain].phrases[row] = current < 16 ? 0 : current - 16;
-          handled = 1;
-        }
-        break;
+      }
+    } else {
+      handled = edit16withLimit(action, &project.chains[chain].phrases[row], &lastPhraseValue, 16, PROJECT_MAX_PHRASES);
     }
 
-    if (handled && project.chains[chain].phrases[row] != EMPTY_VALUE_16) {
-      lastPhraseValue = project.chains[chain].phrases[row];
+    if (handled) {
       project.chains[chain].hasNotes = -1;
     }
   } else {
     // Transpose
-    int8_t current = project.chains[chain].transpose[row];
-
-    switch (action) {
-      case editClear:
-        project.chains[chain].transpose[row] = 0;
-        handled = 1;
-        break;
-      case editTap:
-        if (current == 0) project.chains[chain].transpose[row] = lastTransposeValue;
-        handled = 1;
-        break;
-      case editIncrease:
-        project.chains[chain].transpose[row]++;
-        handled = 1;
-        break;
-      case editDecrease:
-        project.chains[chain].transpose[row]--;
-        handled = 1;
-        break;
-      case editIncreaseBig:
-        project.chains[chain].transpose[row] += 12;
-        handled = 1;
-        break;
-      case editDecreaseBig:
-        project.chains[chain].transpose[row] -= 12;
-        handled = 1;
-        break;
-      default:
-        break;
-    }
-
-    if (handled) {
-      lastTransposeValue = project.chains[chain].transpose[row];
-    }
+    handled = edit8noLimit(action, &project.chains[chain].transpose[row], &lastTransposeValue, project.pitchTable.octaveSize);
   }
 
   return handled;

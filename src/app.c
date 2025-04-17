@@ -59,10 +59,15 @@ void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
       pressedButtons |= value;
       // Double tap is only applicable to Edit button
       int isDoubleTap = (value == keyEdit && editDoubleTapCount > 0) ? 1 : 0;
+
+      if (value & dPadMask) {
+        // Key repeats are only applicable to d-pad
+        keyRepeatCount = appSettings.keyRepeatDelay;
+        // As we don't support multiple d-pad keys, keep only the last pressed one
+        pressedButtons = (pressedButtons & ~dPadMask) | value;
+      }
       currentScreen->onInput(pressedButtons, isDoubleTap);
       editDoubleTapCount = 0;
-      // Key repeats are only applicable to d-pad
-      if (value & dPadMask) keyRepeatCount = appSettings.keyRepeatDelay;
       break;
     case eventKeyUp:
       pressedButtons &= ~value;

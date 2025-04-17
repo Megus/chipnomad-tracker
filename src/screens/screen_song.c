@@ -5,7 +5,7 @@
 #include <project.h>
 
 // Screen state variables
-static int lastChainValue = 0;
+static uint16_t lastChainValue = 0;
 
 static void drawCell(int col, int row, int state);
 static void drawRowHeader(int row, int state);
@@ -109,60 +109,24 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
 }
 
 static int onEdit(int col, int row, enum CellEditAction action) {
-  int current = project.song[row][col];
   int handled = 0;
 
-  switch (action) {
-    case editClear:
-      project.song[row][col] = EMPTY_VALUE_16;
-      handled = 1;
-      break;
-    case editTap:
-      if (current == EMPTY_VALUE_16) {
-        project.song[row][col] = lastChainValue;
-        handled = 1;
-      }
-      break;
-    case editDoubleTap:
-      // Find the first chain with no phrases
-      if (current != EMPTY_VALUE_16) {
-        for (int c = current + 1; c < PROJECT_MAX_CHAINS; c++) {
-          if (chainIsEmpty(c)) {
-            project.song[row][col] = c;
-            handled = 1;
-            break;
-          }
+  if (action == editDoubleTap) {
+    // Find the first chain with no phrases
+    int current = project.song[row][col];
+
+    if (current != EMPTY_VALUE_16) {
+      for (int c = current + 1; c < PROJECT_MAX_CHAINS; c++) {
+        if (chainIsEmpty(c)) {
+          project.song[row][col] = c;
+          lastChainValue = c;
+          break;
         }
       }
-      break;
-    case editIncrease:
-      if (current != EMPTY_VALUE_16 && current < PROJECT_MAX_CHAINS - 1) {
-        project.song[row][col]++;
-        handled = 1;
-      }
-      break;
-    case editDecrease:
-      if (current != EMPTY_VALUE_16 && current > 0) {
-        project.song[row][col]--;
-        handled = 1;
-      }
-      break;
-    case editIncreaseBig:
-      if (current != EMPTY_VALUE_16) {
-        project.song[row][col] = current > PROJECT_MAX_CHAINS - 16 ? PROJECT_MAX_CHAINS - 1 : current + 16;
-        handled = 1;
-      }
-      break;
-    case editDecreaseBig:
-      if (current != EMPTY_VALUE_16) {
-        project.song[row][col] = current < 16 ? 0 : current - 16;
-        handled = 1;
-      }
-      break;
-  }
-
-  if (handled && project.song[row][col] != EMPTY_VALUE_16) {
-    lastChainValue = project.song[row][col];
+    }
+    handled = 1;
+  } else {
+    handled = edit16withLimit(action, &project.song[row][col], &lastChainValue, 16, PROJECT_MAX_CHAINS);
   }
 
   return handled;
