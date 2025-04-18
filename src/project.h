@@ -69,6 +69,7 @@ union InstrumentChipData {
 
 struct Instrument {
   enum InstrumentType type;
+  char name[16];
   uint8_t tableSpeed;
   uint8_t transposeEnabled;
   union InstrumentChipData chip;
@@ -100,11 +101,11 @@ struct Chain {
 // Project
 
 struct PitchTable {
-  char title[32];
+  char name[32];
   uint16_t octaveSize;
   uint16_t length;
   uint16_t values[PROJECT_MAX_PITCHES];
-  char names[PROJECT_MAX_PITCHES][4];
+  char noteNames[PROJECT_MAX_PITCHES][4];
 };
 
 struct Project {
@@ -134,6 +135,8 @@ extern struct Project project;
 ///////////////////////////////////////////////////////////////////////////////
 // Project functions
 
+extern char projectFileError[41];
+
 // Initialize an empty project
 void projectInit(struct Project* p);
 // Load project from a file
@@ -157,5 +160,7 @@ int8_t tableIsEmpty(int table);
 int8_t grooveIsEmpty(int groove);
 // FX name
 char* fxName(uint8_t fx);
+// Instrument name
+char* instrumentName(uint8_t instrument);
 
 #endif

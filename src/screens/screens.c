@@ -55,13 +55,15 @@ void screenSetup(const struct AppScreen* screen, int input) {
 }
 
 void screenMessage(const char* format, ...) {
+  static char buffer[42];
   gfxSetFgColor(appSettings.colorScheme.textDefault);
   gfxClearRect(0, 19, 40, 1);
 
   va_list args;
   va_start(args, format);
-  gfxPrintf(0, 19, format, args);
+  vsnprintf(buffer, 41, format, args);
   va_end(args);
+  gfxPrint(0, 19, buffer);
 }
 
 

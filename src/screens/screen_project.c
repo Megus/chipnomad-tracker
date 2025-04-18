@@ -21,8 +21,17 @@ static void draw(void) {
 
 static void onInput(int keys, int isDoubleTap) {
   //printf("%d\n", event.data.key.keys);
+  gfxSetFgColor(appSettings.colorScheme.textInfo);
   if (keys == (keyDown | keyShift)) {
     screenSetup(&screenSong, 0);
+  } else if (keys == keyEdit) {
+    int result = projectSave(AUTOSAVE_FILENAME);
+    gfxPrintf(0, 1, "Save: %d   ", result);
+    gfxPrintf(0, 2, "%s", projectFileError);
+  } else if (keys == keyOpt) {
+    int result = projectLoad(AUTOSAVE_FILENAME);
+    gfxPrintf(0, 1, "Load: %d   ", result);
+    gfxPrintf(0, 2, "%s", projectFileError);
   }
 }
 

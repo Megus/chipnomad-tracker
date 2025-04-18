@@ -31,7 +31,7 @@ void calculatePitchTableAY(struct Project* p) {
   float freq = cfreq;
   float semitone = powf(2., 1. / 12.);
 
-  sprintf(p->pitchTable.title, "12TET %dHz", p->chipSetup.ay.clock);
+  sprintf(p->pitchTable.name, "12TET %dHz", p->chipSetup.ay.clock);
   p->pitchTable.length = octaves * 12;
   p->pitchTable.octaveSize = 12;
 
@@ -48,7 +48,7 @@ void calculatePitchTableAY(struct Project* p) {
       if (period > 4095) period = 4095; // AY only has 12 bits for period
 
       p->pitchTable.values[o * 12 + c] = period;
-      strcpy(p->pitchTable.names[o * 12 + c], noteStrings[c]);
+      strcpy(p->pitchTable.noteNames[o * 12 + c], noteStrings[c]);
 
       freq *= semitone;
     }
@@ -126,6 +126,7 @@ void projectInit(struct Project* p) {
   // Clean instruments
   for (int c = 0; c < PROJECT_MAX_INSTRUMENTS; c++) {
     p->instruments[c].type = instNone;
+    p->instruments[c].name[0] = 0;
   }
 
   // Clean tables
@@ -195,7 +196,7 @@ int8_t phraseHasNotes(int phrase) {
 
   v = 0;
   for (int c = 0; c < 16; c++) {
-    if (project.phrases[phrase].notes[c] != EMPTY_VALUE_8) {
+    if (project.phrases[phrase].notes[c] < PROJECT_MAX_PITCHES) {
       v = 1;
       break;
     }
@@ -245,6 +246,24 @@ char* fxName(uint8_t fx) {
   }
 }
 
+// Instrument name
+char* instrumentName(uint8_t instrument) {
+  if (project.instruments[instrument].type == instNone) return "None";
+  if (strlen(project.instruments[instrument].name) == 0) {
+    switch (project.instruments[instrument].type) {
+      case instAY:
+        return "AY";
+        break;
+      default:
+        return "";
+        break;
+    }
+  } else {
+    return project.instruments[instrument].name;
+  }
+}
+
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -253,6 +272,7 @@ char* fxName(uint8_t fx) {
 
 static char *lpstr;
 static char chipNames[][16] = { "AY8910" };
+char projectFileError[41];
 
 ///////////////////////////////////////////////////////////////////////////////
 // Load
@@ -261,20 +281,25 @@ static char chipNames[][16] = { "AY8910" };
 static char* readString(int fileId) {
   while (1) {
     lpstr = fileReadString(fileId);
-    if (lpstr == NULL) return NULL;
+    if (lpstr == NULL) {
+      sprintf(projectFileError, "Couldn't read string");
+      return NULL;
+    }
     // Skip empty lines and lines with ```
     if (strlen(lpstr) > 0 && strcmp(lpstr, "```")) break;
   }
+  sprintf(projectFileError, "%s", lpstr);
+
   return lpstr;
 }
 
 #define READ_STRING readString(fileId); if (lpstr == NULL) return 1;
 
-int projectLoadPitchTable(int fileId, struct Project* p) {
+static int projectLoadPitchTable(int fileId, struct Project* p) {
   char buf[128];
 
   READ_STRING; if (strcmp(lpstr, "## Pitch table")) return 1;
-  READ_STRING; if (sscanf(lpstr, "- Title: %[^\n]", p->pitchTable.title) != 1) return 1;
+  READ_STRING; if (sscanf(lpstr, "- Title: %[^\n]", p->pitchTable.name) != 1) return 1;
 
   int idx = 0;
   int period;
@@ -282,16 +307,16 @@ int projectLoadPitchTable(int fileId, struct Project* p) {
     READ_STRING;
     if (sscanf(lpstr, "%s %d", buf, &period) != 2) break;
     if (strlen(buf) != 3) return 1;
-    strcpy(p->pitchTable.names[idx], buf);
+    strcpy(p->pitchTable.noteNames[idx], buf);
     p->pitchTable.values[idx] = period;
     idx++;
   }
   p->pitchTable.length = idx;
 
   // Detect octave size
-  char oct = p->pitchTable.names[0][2];
+  char oct = p->pitchTable.noteNames[0][2];
   for (int c = 0; c < p->pitchTable.length; c++) {
-    if (p->pitchTable.names[c][2] != oct) {
+    if (p->pitchTable.noteNames[c][2] != oct) {
       p->pitchTable.octaveSize = c;
       break;
     }
@@ -300,7 +325,7 @@ int projectLoadPitchTable(int fileId, struct Project* p) {
   return 0;
 }
 
-int projectLoadSong(int fileId, struct Project* p) {
+static int projectLoadSong(int fileId, struct Project* p) {
   char buf[3];
   if (strcmp(lpstr, "## Song")) return 1;
 
@@ -325,7 +350,7 @@ int projectLoadSong(int fileId, struct Project* p) {
   return 0;
 }
 
-int projectLoadChains(int fileId, struct Project* p) {
+static int projectLoadChains(int fileId, struct Project* p) {
   int idx;
 
   if (strcmp(lpstr, "## Chains")) return 1;
@@ -352,7 +377,7 @@ int projectLoadChains(int fileId, struct Project* p) {
   return 0;
 }
 
-int projectLoadGrooves(int fileId, struct Project* p) {
+static int projectLoadGrooves(int fileId, struct Project* p) {
   int idx;
 
   if (strcmp(lpstr, "## Grooves")) return 1;
@@ -377,33 +402,43 @@ int projectLoadGrooves(int fileId, struct Project* p) {
   return 0;
 }
 
-int projectLoadPhrases(int fileId, struct Project* p) {
+static int projectLoadPhrases(int fileId, struct Project* p) {
 
   return 0;
 }
 
-int projectLoadInstruments(int fileId, struct Project* p) {
+static int projectLoadInstruments(int fileId, struct Project* p) {
 
   return 0;
 }
 
-int projectLoadTables(int fileId, struct Project* p) {
+static int projectLoadTables(int fileId, struct Project* p) {
 
   return 0;
 }
 
-int projectLoad(const char* path) {
+static int projectLoadInternal(int fileId) {
   char buf[128];
   struct Project p;
 
-  int fileId = fileOpen(path, 0);
-  if (fileId == -1) return 1;
-
   projectInit(&p);
 
+  sprintf(projectFileError, "Module header");
   READ_STRING; if (strcmp(lpstr, "# ChipNomad Tracker Module 1.0")) return 1;
-  READ_STRING; if (sscanf(lpstr, "- Title: %[^\n]", p.title) != 1) return 1;
-  READ_STRING; if (sscanf(lpstr, "- Author: %[^\n]", p.author) != 1) return 1;
+  READ_STRING;
+  if (!strncmp(lpstr, "- Title:", 8)) {
+    if (sscanf(lpstr, "- Title: %[^\n]", p.title) != 1) {
+      p.title[0] = 0; // Empty title
+    }
+  } else {
+    return 1;
+  }
+  READ_STRING;
+  if (!strncmp(lpstr, "- Author:", 9)) {
+    if (sscanf(lpstr, "- Author: %[^\n]", p.author) != 1) {
+      p.title[0] = 0; // Empty author
+    }
+  }
 
   READ_STRING; if (sscanf(lpstr, "- Frame rate: %f", &p.frameRate) != 1) return 1;
   READ_STRING; if (sscanf(lpstr, "- Chips count: %d", &p.chipsCount) != 1) return 1;
@@ -433,6 +468,8 @@ int projectLoad(const char* path) {
 
   p.tracksCount = p.chipsCount * 3; // Hardcoded for AY for now
 
+  sprintf(projectFileError, "Pitch table");
+
   if (projectLoadPitchTable(fileId, &p)) return 1;
   if (projectLoadSong(fileId, &p)) return 1;
   if (projectLoadChains(fileId, &p)) return 1;
@@ -447,15 +484,30 @@ int projectLoad(const char* path) {
   return 0;
 }
 
+int projectLoad(const char* path) {
+
+  projectFileError[0] = 0;
+
+  int fileId = fileOpen(path, 0);
+  if (fileId == -1) {
+    sprintf(projectFileError, "Can't open file");
+    return 1;
+  }
+
+  int result = projectLoadInternal(fileId);
+  fileClose(fileId);
+  return result;
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // Save
 
 static int projectSavePitchTable(int fileId) {
   filePrintf(fileId, "\n## Pitch table\n\n");
-  filePrintf(fileId, "- Title: %s\n\n```\n", project.pitchTable.title);
+  filePrintf(fileId, "- Title: %s\n\n```\n", project.pitchTable.name);
 
   for (int c = 0; c < project.pitchTable.length; c++) {
-    filePrintf(fileId, "%s %d\n", project.pitchTable.names[c], project.pitchTable.values[c]);
+    filePrintf(fileId, "%s %d\n", project.pitchTable.noteNames[c], project.pitchTable.values[c]);
   }
 
   filePrintf(fileId, "```\n");
@@ -590,10 +642,7 @@ static int projectSaveTables(int fileId) {
   return 0;
 }
 
-int projectSave(const char* path) {
-  int fileId = fileOpen(path, 1);
-  if (fileId == -1) return 1;
-
+static int projectSaveInternal(int fileId) {
   filePrintf(fileId, "# ChipNomad Tracker Module 1.0\n\n");
 
   filePrintf(fileId, "- Title: %s\n", project.title);
@@ -622,7 +671,16 @@ int projectSave(const char* path) {
   projectSavePhrases(fileId);
   projectSaveInstruments(fileId);
   projectSaveTables(fileId);
-
-  fileClose(fileId);
   return 0;
+}
+
+int projectSave(const char* path) {
+  projectFileError[0] = 0;
+
+  int fileId = fileOpen(path, 1);
+  if (fileId == -1) return 1;
+
+  int result = projectSaveInternal(fileId);
+  fileClose(fileId);
+  return result;
 }

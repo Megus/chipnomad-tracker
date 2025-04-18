@@ -61,6 +61,7 @@ static int decodeKey(int sym) {
     case BTN_B: return keyOpt;
     case BTN_START: return keyPlay;
     case BTN_SELECT: return keyShift;
+    case BTN_R1: return keyShift;
     case BTN_VOLUME_UP: return keyVolumeUp;
     case BTN_VOLUME_DOWN: return keyVolumeDown;
     default: return -1;

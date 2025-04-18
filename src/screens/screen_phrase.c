@@ -57,7 +57,7 @@ static void drawCell(int col, int row, int state) {
     } else if (note == NOTE_OFF) {
       noteStr = "OFF";
     } else {
-      noteStr = project.pitchTable.names[note];
+      noteStr = project.pitchTable.noteNames[note];
     }
     gfxPrint(2, 3 + row, noteStr);
   } else if (col == 1 || col == 2) {
@@ -167,6 +167,12 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     } else {
       handled = edit8withLimit(action, &project.phrases[phrase].instruments[row], &lastInstrument, 16, PROJECT_MAX_INSTRUMENTS);
     }
+
+    uint8_t instrument = project.phrases[phrase].instruments[row];
+    if (handled && instrument != EMPTY_VALUE_8) {
+      screenMessage("%s: %s", byteToHex(instrument), instrumentName(instrument));
+    }
+
   } else if (col == 2) {
     // Volume
     handled = edit8withLimit(action, &project.phrases[phrase].volumes[row], &lastVolume, 16, maxVolume);
