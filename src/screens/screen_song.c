@@ -3,6 +3,7 @@
 #include <corelib_gfx.h>
 #include <utils.h>
 #include <project.h>
+#include <playback.h>
 
 // Screen state variables
 static uint16_t lastChainValue = 0;
@@ -27,6 +28,9 @@ static struct SpreadsheetScreenData sheet = {
 };
 
 void setup(int input) {
+  pSongRow = &sheet.cursorRow;
+  pSongTrack = &sheet.cursorCol;
+
   sheet.cols = project.tracksCount;
 
   if (input == 0x1234) { // Just a random value for now
@@ -132,9 +136,20 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   return handled;
 }
 
+static int inputPlayback(int keys, int isDoubleTap) {
+  int handled = 0;
+
+  if (keys & keyPlay) {
+
+  }
+
+  return handled;
+}
+
 static void onInput(int keys, int isDoubleTap) {
   if (inputScreenNavigation(keys, isDoubleTap)) return;
   if (spreadsheetInput(&sheet, keys, isDoubleTap)) return;
+  inputPlayback(keys, isDoubleTap);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

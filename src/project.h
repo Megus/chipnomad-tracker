@@ -60,7 +60,8 @@ struct InstrumentAY {
   uint8_t veD;
   uint8_t veS;
   uint8_t veR;
-  uint8_t autoEnvOffset;
+  uint8_t autoEnvN; // 0 - no auto-env
+  uint8_t autoEnvD;
 };
 
 union InstrumentChipData {
@@ -162,5 +163,7 @@ int8_t grooveIsEmpty(int groove);
 char* fxName(uint8_t fx);
 // Instrument name
 char* instrumentName(uint8_t instrument);
+// Note name in phrase
+char* noteName(uint8_t note);
 
 #endif

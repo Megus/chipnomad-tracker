@@ -129,6 +129,18 @@ void projectInit(struct Project* p) {
     p->instruments[c].name[0] = 0;
   }
 
+  // Simple default instrument
+  p->instruments[0].type = instAY;
+  strcpy(p->instruments[0].name, "Lead1");
+  p->instruments[0].tableSpeed = 1;
+  p->instruments[0].transposeEnabled = 1;
+  p->instruments[0].chip.ay.veA = 0;
+  p->instruments[0].chip.ay.veD = 12;
+  p->instruments[0].chip.ay.veS = 10;
+  p->instruments[0].chip.ay.veR = 12;
+  p->instruments[0].chip.ay.autoEnvN = 0;
+  p->instruments[0].chip.ay.autoEnvD = 0;
+
   // Clean tables
   for (int c = 0; c < PROJECT_MAX_TABLES; c++) {
     for (int d = 0; d < 16; d++) {
@@ -237,12 +249,14 @@ int8_t grooveIsEmpty(int groove) {
 
 // FX name
 char* fxName(uint8_t fx) {
-  if (fx < 0x40) {
+  if (fx == EMPTY_VALUE_8) {
+    return "---";
+  } else if (fx < 0x40) {
     // Common FX
-    return (fx >= sizeof(fxCommon) / 4) ? "???" : fxCommon[fx];
+    return (fx >= sizeof(fxCommon) / 4) ? "---" : fxCommon[fx];
   } else {
     // Chip-specific FX. Currently AY-only
-    return (fx - 0x40 >= sizeof(fxAY) / 4) ? "???" : fxAY[fx - 0x40];
+    return (fx - 0x40 >= sizeof(fxAY) / 4) ? "---" : fxAY[fx - 0x40];
   }
 }
 
@@ -263,6 +277,16 @@ char* instrumentName(uint8_t instrument) {
   }
 }
 
+// Note name in phrase
+char* noteName(uint8_t note) {
+  if (note == EMPTY_VALUE_8) {
+    return "---";
+  } else if (note == NOTE_OFF) {
+    return "OFF";
+  } else {
+    return project.pitchTable.noteNames[note];
+  }
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -291,6 +315,61 @@ static char* readString(int fileId) {
   sprintf(projectFileError, "%s", lpstr);
 
   return lpstr;
+}
+
+static uint8_t scanByteOrEmpty(char* str) {
+  static char buf[3];
+  buf[0] = str[0];
+  buf[1] = str[1];
+  buf[2] = 0;
+  if (buf[0] == '-' && buf[1] == '-') {
+    return EMPTY_VALUE_8;
+  } else {
+    uint8_t result;
+    if (sscanf(buf, "%hhX", &result) != 1) return EMPTY_VALUE_8;
+    return result;
+  }
+}
+
+static uint8_t scanNote(char* str, struct Project* p) {
+  // Silly linear search through pitch table. To replace with a simple hash
+  static char buf[4];
+  buf[0] = str[0];
+  buf[1] = str[1];
+  buf[2] = str[2];
+  buf[3] = 0;
+
+  if (!strcmp(buf, "---")) return EMPTY_VALUE_8;
+  if (!strcmp(buf, "OFF")) return NOTE_OFF;
+
+  for (int c = 0; c < p->pitchTable.length; c++) {
+    if (!strcmp(buf, p->pitchTable.noteNames[c])) return c;
+  }
+
+  return EMPTY_VALUE_8;
+}
+
+static uint8_t scanFX(char* str, struct Project* p) {
+  // Silly linear search through the list of FX. To replace with a simple hash
+  static char buf[4];
+  buf[0] = str[0];
+  buf[1] = str[1];
+  buf[2] = str[2];
+  buf[3] = 0;
+
+  if (!strcmp(buf, "---")) return EMPTY_VALUE_8;
+
+  // Common FX
+  for (int c = 0; c < sizeof(fxCommon) / 4; c++) {
+    if (!strcmp(buf, fxCommon[c])) return c;
+  }
+
+  // AY FX
+  for (int c = 0; c < sizeof(fxAY) / 4; c++) {
+    if (!strcmp(buf, fxAY[c])) return c + 64;
+  }
+
+  return EMPTY_VALUE_8;
 }
 
 #define READ_STRING readString(fileId); if (lpstr == NULL) return 1;
@@ -390,12 +469,7 @@ static int projectLoadGrooves(int fileId, struct Project* p) {
     for (int c = 0; c < 16; c++) {
       READ_STRING;
       if (strlen(lpstr) != 2) return 1;
-
-      if (lpstr[0] == '-') {
-        p->grooves[idx].speed[c] = EMPTY_VALUE_8;
-      } else {
-        if (sscanf(lpstr, "%hhX", &p->grooves[idx].speed[c]) != 1) return 1;
-      }
+      p->grooves[idx].speed[c] = scanByteOrEmpty(lpstr);
     }
   }
 
@@ -403,6 +477,35 @@ static int projectLoadGrooves(int fileId, struct Project* p) {
 }
 
 static int projectLoadPhrases(int fileId, struct Project* p) {
+  int idx;
+
+  if (strcmp(lpstr, "## Phrases")) return 1;
+
+  while (1) {
+    READ_STRING;
+    if (strncmp(lpstr, "### Phrase", 10)) break;
+    if (sscanf(lpstr, "### Phrase %X", &idx) != 1) return 1;
+
+    for (int c = 0; c < 16; c++) {
+      READ_STRING;
+      if (strlen(lpstr) != 30) return 1;
+      // Note
+      p->phrases[idx].notes[c] = scanNote(lpstr, p);
+      // Instrument
+      p->phrases[idx].instruments[c] = scanByteOrEmpty(lpstr + 4);
+      // Volume
+      p->phrases[idx].volumes[c] = scanByteOrEmpty(lpstr + 7);
+      // FX1
+      p->phrases[idx].fx[c][0][0] = scanFX(lpstr + 10, p);
+      p->phrases[idx].fx[c][0][1] = scanByteOrEmpty(lpstr + 14);
+      // FX2
+      p->phrases[idx].fx[c][1][0] = scanFX(lpstr + 17, p);
+      p->phrases[idx].fx[c][1][1] = scanByteOrEmpty(lpstr + 21);
+      // FX3
+      p->phrases[idx].fx[c][2][0] = scanFX(lpstr + 24, p);
+      p->phrases[idx].fx[c][2][1] = scanByteOrEmpty(lpstr + 28);
+    }
+  }
 
   return 0;
 }
@@ -579,12 +682,7 @@ static int projectSaveGrooves(int fileId) {
     if (!grooveIsEmpty(c)) {
       filePrintf(fileId, "\n### Groove %X\n\n```\n", c);
       for (int d = 0; d < 16; d++) {
-        int phrase = project.grooves[c].speed[d];
-        if (phrase == EMPTY_VALUE_8) {
-          filePrintf(fileId, "--\n");
-        } else {
-          filePrintf(fileId, "%s\n", byteToHex(project.grooves[c].speed[d]));
-        }
+        filePrintf(fileId, "%s\n", byteToHexOrEmpty(project.grooves[c].speed[d]));
       }
       filePrintf(fileId, "```\n");
     }
@@ -601,7 +699,17 @@ static int projectSavePhrases(int fileId) {
     if (!phraseIsEmpty(c)) {
       filePrintf(fileId, "### Phrase %X\n\n```\n", c);
       for (int d = 0; d < 16; d++) {
-
+        filePrintf(fileId, "%s %s %s %s %s %s %s %s %s\n",
+          noteName(project.phrases[c].notes[d]),
+          byteToHexOrEmpty(project.phrases[c].instruments[d]),
+          byteToHexOrEmpty(project.phrases[c].volumes[d]),
+          fxName(project.phrases[c].fx[d][0][0]),
+          byteToHex(project.phrases[c].fx[d][0][1]),
+          fxName(project.phrases[c].fx[d][1][0]),
+          byteToHex(project.phrases[c].fx[d][1][1]),
+          fxName(project.phrases[c].fx[d][2][0]),
+          byteToHex(project.phrases[c].fx[d][2][1])
+        );
       }
       filePrintf(fileId, "```\n");
     }

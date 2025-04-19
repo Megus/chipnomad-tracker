@@ -28,6 +28,8 @@ static struct SpreadsheetScreenData sheet = {
 };
 
 static void setup(int input) {
+  pChainRow = &sheet.cursorRow;
+
   if (input != chain) {
     sheet.cursorRow = 0;
     sheet.cursorCol = 0;
@@ -47,21 +49,21 @@ static void drawCell(int col, int row, int state) {
     // Phrase
     setCellColor(state, phrase == EMPTY_VALUE_16, phrase != EMPTY_VALUE_16 && phraseHasNotes(phrase));
     if (phrase == EMPTY_VALUE_16) {
-      gfxPrint(2, 3 + row, "---");
+      gfxPrint(3, 3 + row, "---");
     } else {
-      gfxPrintf(2, 3 + row, "%03X", phrase);
+      gfxPrintf(3, 3 + row, "%03X", phrase);
     }
   } else {
     // Transpose
     setCellColor(state, 0, phrase != EMPTY_VALUE_16 && phraseHasNotes(phrase));
-    gfxPrint(6, 3 + row, byteToHex(project.chains[chain].transpose[row]));
+    gfxPrint(7, 3 + row, byteToHex(project.chains[chain].transpose[row]));
   }
 }
 
 static void drawRowHeader(int row, int state) {
   const struct ColorScheme cs = appSettings.colorScheme;
   gfxSetFgColor((state & stateFocus) ? cs.textDefault : cs.textInfo);
-  gfxPrintf(0, 3 + row, "%X", row);
+  gfxPrintf(1, 3 + row, "%X", row);
 }
 
 static void drawColHeader(int col, int state) {
@@ -70,20 +72,20 @@ static void drawColHeader(int col, int state) {
 
   if (col == 0) {
     // Phrase
-    gfxPrint(2, 2, "P");
+    gfxPrint(3, 2, "P");
   } else {
     // Transpose
-    gfxPrint(6, 2, "T");
+    gfxPrint(7, 2, "T");
   }
 }
 
 static void drawCursor(int col, int row) {
   if (col == 0) {
     // Phrase
-    gfxCursor(2, 3 + row, 3);
+    gfxCursor(3, 3 + row, 3);
   } else {
     // Transpose
-    gfxCursor(6, 3 + row, 2);
+    gfxCursor(7, 3 + row, 2);
   }
 }
 

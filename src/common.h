@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <corelib_mainloop.h>
+#include <playback.h>
 
 #define AUTOSAVE_FILENAME "autosave.cnm"
 
@@ -30,5 +31,10 @@ struct AppSettings {
 };
 
 extern struct AppSettings appSettings;
+extern int* pSongRow;
+extern int* pSongTrack;
+extern int* pChainRow;
+
+extern struct PlaybackState playback;
 
 #endif

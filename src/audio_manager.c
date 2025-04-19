@@ -2,6 +2,7 @@
 #include <audio_manager.h>
 #include <corelib_audio.h>
 #include <chips.h>
+#include <project.h>
 
 static int aSampleRate;
 static int aBufferSize;
@@ -45,7 +46,7 @@ static int start(int sampleRate, int bufferSize, float frameRate) {
 }
 
 static void initChips(void) {
-  audioManager.chips[0] = createAyumi(aSampleRate);
+  audioManager.chips[0] = createChipAY(aSampleRate, project.chipSetup);
 }
 
 static void setFrameCallback(FrameCallback *callback, void* userdata) {

@@ -4,11 +4,17 @@
 #include <app.h>
 #include <screens.h>
 #include <project.h>
+#include <playback.h>
 
 // Input handling vars
 static int pressedButtons;
 static int editDoubleTapCount;
 static int keyRepeatCount;
+
+
+static void frameCallback(void* userdata) {
+  playbackNextFrame(&playback);
+}
 
 void appSetup(void) {
   // Keyboard input reset
@@ -24,9 +30,11 @@ void appSetup(void) {
     projectInit(&project);
   }
 
+  playbackInit(&playback, &project);
+
   audioManager.start(appSettings.audioSampleRate, appSettings.audioBufferSize, 50.0);
   audioManager.initChips();
-  //audioManager.setFrameCallback(psgFrameCallback, NULL);
+  audioManager.setFrameCallback(frameCallback, NULL);
   screenSetup(&screenSong, 0);
 }
 

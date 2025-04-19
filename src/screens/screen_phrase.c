@@ -49,39 +49,31 @@ static void fullRedraw(void) {
 static void drawCell(int col, int row, int state) {
   if (col == 0) {
     // Note
-    uint8_t note = project.phrases[phrase].notes[row];
-    setCellColor(state, note == EMPTY_VALUE_8, 1);
-    char* noteStr;
-    if (note == EMPTY_VALUE_8) {
-      noteStr = "---";
-    } else if (note == NOTE_OFF) {
-      noteStr = "OFF";
-    } else {
-      noteStr = project.pitchTable.noteNames[note];
-    }
-    gfxPrint(2, 3 + row, noteStr);
+    uint8_t value = project.phrases[phrase].notes[row];
+    setCellColor(state, value == EMPTY_VALUE_8, 1);
+    gfxPrint(3, 3 + row, noteName(value));
   } else if (col == 1 || col == 2) {
     // Instrument and volume
     uint8_t value = (col == 1) ? project.phrases[phrase].instruments[row] : project.phrases[phrase].volumes[row];
     setCellColor(state, value == EMPTY_VALUE_8, 1);
-    gfxPrint(3 + col * 3, 3 + row, value == EMPTY_VALUE_8 ? "--" : byteToHex(value));
+    gfxPrint(4 + col * 3, 3 + row, byteToHexOrEmpty(value));
   } else if (col == 3 || col == 5 || col == 7) {
     // FX name
     uint8_t fx = project.phrases[phrase].fx[row][(col - 3) / 2][0];
     setCellColor(state, fx == EMPTY_VALUE_8, 1);
-    gfxPrint(3 + col * 3, 3 + row, fx == EMPTY_VALUE_8 ? "---" : fxName(fx));
+    gfxPrint(4 + col * 3, 3 + row, fxName(fx));
   } else if (col == 4 || col == 6 || col == 8) {
     // FX value
     uint8_t value = project.phrases[phrase].fx[row][(col - 4) / 2][1];
     setCellColor(state, 0, project.phrases[phrase].fx[row][(col - 3) / 2][0] != EMPTY_VALUE_8);
-    gfxPrint(3 + col * 3, 3 + row, byteToHex(value));
+    gfxPrint(4 + col * 3, 3 + row, byteToHex(value));
   }
 }
 
 static void drawRowHeader(int row, int state) {
   const struct ColorScheme cs = appSettings.colorScheme;
   gfxSetFgColor((state & stateFocus) ? cs.textDefault : ((row & 3) == 0 ? cs.textValue : cs.textInfo));
-  gfxPrintf(0, 3 + row, "%X", row);
+  gfxPrintf(1, 3 + row, "%X", row);
 }
 
 static void drawColHeader(int col, int state) {
@@ -90,25 +82,25 @@ static void drawColHeader(int col, int state) {
 
   switch (col) {
     case 0:
-      gfxPrint(2, 2, "N");
+      gfxPrint(3, 2, "N");
       break;
     case 1:
-      gfxPrint(6, 2, "I");
+      gfxPrint(7, 2, "I");
       break;
     case 2:
-      gfxPrint(9, 2, "V");
+      gfxPrint(10, 2, "V");
       break;
     case 3:
     case 4:
-      gfxPrint(12, 2, "FX1");
+      gfxPrint(13, 2, "FX1");
       break;
     case 5:
     case 6:
-      gfxPrint(18, 2, "FX2");
+      gfxPrint(19, 2, "FX2");
       break;
     case 7:
     case 8:
-      gfxPrint(24, 2, "FX3");
+      gfxPrint(25, 2, "FX3");
       break;
     default:
       break;
@@ -118,7 +110,7 @@ static void drawColHeader(int col, int state) {
 static void drawCursor(int col, int row) {
   int width = 2;
   if (col == 0 || col == 3 || col == 5 || col == 7) width = 3;
-  gfxCursor(col == 0 ? 2 : 3 + col * 3, 3 + row, width);
+  gfxCursor(col == 0 ? 3 : 4 + col * 3, 3 + row, width);
 }
 
 static void draw(void) {

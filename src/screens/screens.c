@@ -3,7 +3,6 @@
 #include <project.h>
 #include <corelib_gfx.h>
 
-
 const struct AppScreen* currentScreen = NULL;
 
 void drawScreenMap() {

@@ -1,4 +1,5 @@
 #include <utils.h>
+#include <project.h>
 
 static const char hexBytes[256][3] = {
   "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0A", "0B", "0C", "0D", "0E", "0F",
@@ -21,6 +22,14 @@ static const char hexBytes[256][3] = {
 
 const char* byteToHex(uint8_t byte) {
   return hexBytes[byte];
+}
+
+const char* byteToHexOrEmpty(uint8_t byte) {
+  if (byte == EMPTY_VALUE_8) {
+    return "--";
+  } else {
+    return hexBytes[byte];
+  }
 }
 
 // DJB2 algorithm, truncating hash to just byte

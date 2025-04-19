@@ -18,3 +18,8 @@ struct AppSettings appSettings = {
     .selection = 0x00d090,
   }
 };
+
+int* pSongRow;
+int* pSongTrack;
+int* pChainRow;
+struct PlaybackState playback;
