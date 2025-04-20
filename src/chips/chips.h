@@ -6,6 +6,7 @@
 
 struct SoundChip {
   void* userdata;
+  uint8_t regs[256];  // Space for 256 chip registers
 
   int (*init)(struct SoundChip* self);
   void (*setRegister)(struct SoundChip* self, uint16_t reg, uint8_t value);

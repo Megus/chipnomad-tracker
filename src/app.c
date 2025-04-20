@@ -13,7 +13,7 @@ static int keyRepeatCount;
 
 
 static void frameCallback(void* userdata) {
-  playbackNextFrame(&playback);
+  playbackNextFrame(&playback, &audioManager.chips[0]);
 }
 
 void appSetup(void) {

@@ -2,6 +2,7 @@
 #define __PLAYBACK_H__
 
 #include <project.h>
+#include <chips.h>
 
 struct PlaybackFXState {
 
@@ -14,7 +15,7 @@ struct PlaybackTableState {
 struct PlaybackNoteState {
   uint8_t baseNote;
   uint8_t noteOffset;
-  uint16_t fineOffset;
+  int16_t fineOffset;
 
   uint8_t instrument;
   uint8_t volume;
@@ -38,12 +39,11 @@ struct PlaybackTrackState {
 
 struct PlaybackState {
   struct Project* p;
-  int isPlaying;
-
   struct PlaybackTrackState tracks[PROJECT_MAX_TRACKS];
 };
 
 int playbackInit(struct PlaybackState* state, struct Project* project);
+int playbackIsPlaying(struct PlaybackState* state);
 int playbackStartSong(struct PlaybackState* state, int songRow, int chainRow);
 int playbackStartChain(struct PlaybackState* state, int track, int songRow);
 int playbackStartPhrase(struct PlaybackState* state, int track, int songRow, int chainRow);
@@ -51,6 +51,6 @@ int playbackStartNote(struct PlaybackState* state, int track, int phrase, int ph
 int playbackQueuePhrase(struct PlaybackState* state, int track, int songRow, int chainRow);
 int playbackStop(struct PlaybackState* state);
 
-int playbackNextFrame(struct PlaybackState* state);
+int playbackNextFrame(struct PlaybackState* state, struct SoundChip* chips);
 
 #endif

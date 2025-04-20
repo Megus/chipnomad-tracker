@@ -139,8 +139,12 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 static int inputPlayback(int keys, int isDoubleTap) {
   int handled = 0;
 
-  if (keys & keyPlay) {
-
+  if (!playbackIsPlaying(&playback) && (keys & keyPlay)) {
+    playbackStartSong(&playback, sheet.cursorRow, 0);
+    handled = 1;
+  } else if (playbackIsPlaying(&playback) && (keys == keyPlay)) {
+    playbackStop(&playback);
+    handled = 1;
   }
 
   return handled;
