@@ -67,7 +67,6 @@ RG35xx-adb-install: .check-adb RG35xx .RG35xx-sh
 	${ADB} push ${BUILD}/chipnomad.rg35xx ${APPS}/${APP}
 	${ADB} push ${BUILD}/launcher.sh ${APPS}/${APP}.sh
 	${ADB} push ${BUILD}/j2k.so ${APPS}/${APP}
-	${ADB} push ${BUILD}/test.psg ${APPS}/${APP}
 	${ADB} shell chmod 755 ${APPS}/${APP}/chipnomad.rg35xx
 	${ADB} shell chmod 755 ${APPS}/${APP}.sh
 

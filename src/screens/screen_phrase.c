@@ -114,7 +114,14 @@ static void drawCursor(int col, int row) {
 }
 
 static void draw(void) {
-
+  if (playbackIsPlaying(&playback)) {
+    int row = playback.tracks[*pSongTrack].phraseRow;
+    if (row < 16) {
+      gfxClearRect(2, 3, 1, 16);
+      gfxSetFgColor(appSettings.colorScheme.playMarkers);
+      gfxPrint(2, 3 + row, ">");
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
