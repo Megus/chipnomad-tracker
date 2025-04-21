@@ -204,6 +204,8 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 
   if (handled) {
     project.phrases[phrase].hasNotes = -1;
+    project.chains[project.song[*pSongRow][*pSongTrack]].hasNotes = -1;
+    playbackStartPhraseRow(&playback, *pSongTrack, *pSongRow, *pChainRow, sheet.cursorRow);
   }
 
   return handled;

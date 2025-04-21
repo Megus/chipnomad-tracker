@@ -54,9 +54,11 @@ void appDraw(void) {
     digit[0] = c + 49;
     gfxPrint(35, 3 + c, digit);
 
-    char* note = noteName(playback.tracks[c].note.baseNote);
-    gfxSetFgColor(note[0] == '-' ? cs.textEmpty : cs.textValue);
-    gfxPrint(37, 3 + c, note);
+    uint8_t note = playback.tracks[c].note.finalNote;
+    char* noteStr = noteName(note);
+
+    gfxSetFgColor(noteStr[0] == '-' ? cs.textEmpty : cs.textValue);
+    gfxPrint(37, 3 + c, noteStr);
   }
 }
 
@@ -82,8 +84,14 @@ void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
       pressedButtons &= ~value;
       // Double tap is only applicable to Edit button
       if (value == keyEdit) editDoubleTapCount = appSettings.doubleTapFrames;
-      // Clean screen message when nothing is pressed. Consider clearing it on any key up
-      if (pressedButtons == 0) screenMessage("");
+
+      if (pressedButtons == 0) {
+        // TODO: It feels hacky to put this logic here, consider refactoring it
+        // Clean screen message when nothing is pressed. Consider clearing it on any key up
+        screenMessage("");
+        // Stop phrase row playback
+        if (playback.mode == playbackModePhraseRow) playbackStop(&playback);
+      }
       break;
     case eventTick:
       if (editDoubleTapCount > 0) editDoubleTapCount--;

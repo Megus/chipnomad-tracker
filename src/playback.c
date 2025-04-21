@@ -1,6 +1,8 @@
 #include <playback.h>
 #include <stdio.h>
 
+static int globalFrameCounter = 0;
+
 static void resetTrack(struct PlaybackState* state, int trackIdx) {
   struct PlaybackTrackState* track = &state->tracks[trackIdx];
   track->songRow = EMPTY_VALUE_16;
@@ -10,6 +12,7 @@ static void resetTrack(struct PlaybackState* state, int trackIdx) {
   track->grooveIdx = 0;
   track->grooveRow = 0;
   track->note.baseNote = EMPTY_VALUE_8;
+  track->note.finalNote = EMPTY_VALUE_8;
   track->note.noteOffset = 0;
   track->note.fineOffset = 0;
   track->note.instrument = EMPTY_VALUE_8;
@@ -77,13 +80,18 @@ static void nextFrameAY(struct PlaybackState* state, int trackIdx, int ayChannel
 
   // Is the channel playing?
   if (track->note.baseNote == EMPTY_VALUE_8) {
+    track->note.finalNote = EMPTY_VALUE_8;
     chip->setRegister(chip, 8 + ayChannel, 0);  // Silence channel
     return;
   }
 
   // Tone period
-  uint8_t note = track->note.baseNote + track->note.noteOffset;
+  uint8_t phraseTranspose = p->chains[p->song[track->songRow][trackIdx]].transpose[track->chainRow];
+
+  uint8_t note = track->note.baseNote + track->note.noteOffset + phraseTranspose;
   if (note >= p->pitchTable.length) note -= p->pitchTable.length;
+  track->note.finalNote = note;
+
   int16_t period = p->pitchTable.values[note] + track->note.fineOffset;
   if (period < 0) period = 0;
   if (period > 4095) period = 4095;
@@ -93,7 +101,7 @@ static void nextFrameAY(struct PlaybackState* state, int trackIdx, int ayChannel
   // Volume
   chip->setRegister(chip, 8 + ayChannel, track->note.volume);
 
-  if (track->note.volume > 0 && (track->frameCounter & 1)) track->note.volume--;
+  if (track->note.volume > 0 && (globalFrameCounter & 1)) track->note.volume--;
 
   // Mixer
   uint8_t mixer = chip->regs[7];
@@ -164,13 +172,14 @@ void playbackStartPhrase(struct PlaybackState* state, int trackIdx, int songRow,
 }
 
 void playbackStartPhraseRow(struct PlaybackState* state, int trackIdx, int songRow, int chainRow, int phraseRow) {
-  if (state->mode != playbackModeStopped) return;
+  if (!(state->mode == playbackModePhraseRow || state->mode == playbackModeStopped)) return;
   struct PlaybackTrackState* track = &state->tracks[trackIdx];
   resetTrack(state, trackIdx);
   track->songRow = songRow;
   track->chainRow = chainRow;
   track->phraseRow = phraseRow;
   state->mode = playbackModePhraseRow;
+  processPhraseRow(state, trackIdx);
 }
 
 void playbackQueuePhrase(struct PlaybackState* state, int trackIdx, int songRow, int chainRow) {
@@ -188,6 +197,8 @@ void playbackStop(struct PlaybackState* state) {
 }
 
 int playbackNextFrame(struct PlaybackState* state, struct SoundChip* chips) {
+  globalFrameCounter++;
+
   struct Project* p = state->p;
   int hasActiveTracks = 0;
 

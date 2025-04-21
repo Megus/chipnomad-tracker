@@ -22,6 +22,7 @@ struct PlaybackTableState {
 };
 
 struct PlaybackNoteState {
+  uint8_t finalNote; // Calculated value
   uint8_t baseNote;
   uint8_t noteOffset;
   int16_t fineOffset;
