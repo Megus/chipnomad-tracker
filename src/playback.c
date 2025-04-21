@@ -79,7 +79,7 @@ static void nextFrameAY(struct PlaybackState* state, int trackIdx, int ayChannel
   struct Project* p = state->p;
 
   // Is the channel playing?
-  if (track->note.baseNote == EMPTY_VALUE_8) {
+  if (track->songRow == EMPTY_VALUE_16 || track->note.baseNote == EMPTY_VALUE_8) {
     track->note.finalNote = EMPTY_VALUE_8;
     chip->setRegister(chip, 8 + ayChannel, 0);  // Silence channel
     return;
@@ -207,12 +207,12 @@ int playbackNextFrame(struct PlaybackState* state, struct SoundChip* chips) {
     int chipIdx = 0; // TODO: Multichip setups
 
     // Don't do any playhead movement for phrase row
-    if (state->mode != playbackModePhraseRow) {
+    if (state->mode != playbackModePhraseRow && track->songRow != EMPTY_VALUE_16) {
       track->frameCounter--;
       // Go to the next phrase row
       if (track->frameCounter <= 0) {
         track->phraseRow++;
-        if (track->phraseRow == 16) {
+        if (track->phraseRow >= 16) {
           track->phraseRow = 0;
           // Play mode logic:
           // Song playback
