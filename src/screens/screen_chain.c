@@ -29,12 +29,7 @@ static struct SpreadsheetScreenData sheet = {
 
 static void setup(int input) {
   pChainRow = &sheet.cursorRow;
-
-  if (input != chain) {
-    sheet.cursorRow = 0;
-    sheet.cursorCol = 0;
-  }
-  chain = input;
+  chain = project.song[*pSongRow][*pSongTrack];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -140,16 +135,53 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {
   if (keys == (keyRight | keyShift)) {
+    // To Phrase screen
     int phrase = project.chains[chain].phrases[sheet.cursorRow];
     if (phrase == EMPTY_VALUE_16) {
       screenMessage("Enter a phrase");
     } else {
-      screenSetup(&screenPhrase, phrase);
+      screenSetup(&screenPhrase, -1);
     }
     return 1;
   } else if (keys == (keyLeft | keyShift)) {
+    // To Song screen
     screenSetup(&screenSong, 0);
     return 1;
+  } else if (keys == (keyLeft | keyOpt)) {
+    // Previous track
+    if (*pSongTrack == 0) return 1;
+    if (project.song[*pSongRow][*pSongTrack - 1] != EMPTY_VALUE_16) {
+      *pSongTrack -= 1;
+      setup(-1);
+      fullRedraw();
+    }
+    return 1;
+  } else if (keys == (keyRight | keyOpt)) {
+    // Next track
+    if (*pSongTrack == project.tracksCount - 1) return 1;
+    if (project.song[*pSongRow][*pSongTrack + 1] != EMPTY_VALUE_16) {
+      *pSongTrack += 1;
+      setup(-1);
+      fullRedraw();
+    }
+    return 1;
+  } else if (keys == (keyUp | keyOpt)) {
+    // Previous song row
+    if (*pSongRow == 0) return 1;
+    if (project.song[*pSongRow - 1][*pSongTrack] != EMPTY_VALUE_16) {
+      *pSongRow -= 1;
+      setup(-1);
+      fullRedraw();
+    }
+    return 1;
+  } else if (keys == (keyDown | keyOpt)) {
+    // Next song row
+    if (*pSongRow == PROJECT_MAX_LENGTH - 1) return 1;
+    if (project.song[*pSongRow + 1][*pSongTrack] != EMPTY_VALUE_16) {
+      *pSongRow += 1;
+      setup(-1);
+      fullRedraw();
+    }
   }
   return 0;
 }

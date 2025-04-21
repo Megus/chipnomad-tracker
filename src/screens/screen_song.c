@@ -98,7 +98,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
     if (chain == EMPTY_VALUE_16) {
       screenMessage("Enter a chain");
     } else {
-      screenSetup(&screenChain, chain);
+      screenSetup(&screenChain, -1);
     }
     return 1;
   }

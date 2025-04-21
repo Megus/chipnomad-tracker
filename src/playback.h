@@ -23,6 +23,8 @@ struct PlaybackNoteState {
   struct PlaybackTableState instrumentTable;
   struct PlaybackTableState auxTable;
   struct PlaybackFXState fx[3];
+
+  // TODO: Chip-specific state
 };
 
 struct PlaybackTrackState {

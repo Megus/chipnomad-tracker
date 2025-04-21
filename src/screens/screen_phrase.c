@@ -31,7 +31,7 @@ static struct SpreadsheetScreenData sheet = {
 };
 
 static void setup(int input) {
-  phrase = input;
+  phrase = project.chains[project.song[*pSongRow][*pSongTrack]].phrases[*pChainRow];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -44,6 +44,10 @@ static void fullRedraw(void) {
   gfxPrintf(0, 0, "PHRASE %03X", phrase);
 
   spreadsheetFullRedraw(&sheet);
+
+  gfxClearRect(0, 3, 1, 16);
+  gfxSetFgColor(appSettings.colorScheme.textInfo);
+  gfxPrint(0, 3 + *pChainRow, "<");
 }
 
 static void drawCell(int col, int row, int state) {
@@ -197,13 +201,70 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {
   if (keys == (keyRight | keyShift)) {
+    // To Instrument screen
+    // TODO: Select instrument from the current row
     screenSetup(&screenInstrument, 0);
     return 1;
   } else if (keys == (keyLeft | keyShift)) {
-    screenSetup(&screenChain, 0);
+    // To Chain screen
+    screenSetup(&screenChain, -1);
     return 1;
   } else if (keys == (keyUp | keyShift)) {
+    // To Groove screen
+    // TODO: If we currently on the groove command, go to this groove
     screenSetup(&screenGroove, 0);
+    return 1;
+  } else if (keys == (keyLeft | keyOpt)) {
+    // Previous track
+    if (*pSongTrack == 0) return 1;
+    uint16_t chain = project.song[*pSongRow][*pSongTrack - 1];
+    if (chain != EMPTY_VALUE_16 && !chainIsEmpty(chain)) {
+      *pSongTrack -= 1;
+      while (project.chains[chain].phrases[*pChainRow] == EMPTY_VALUE_16) {
+        *pChainRow -= 1;
+        if (*pChainRow == 0) break;
+      }
+      setup(-1);
+      fullRedraw();
+    }
+    return 1;
+  } else if (keys == (keyRight | keyOpt)) {
+    // Next track
+    if (*pSongTrack == project.tracksCount - 1) return 1;
+    uint16_t chain = project.song[*pSongRow][*pSongTrack + 1];
+    if (chain != EMPTY_VALUE_16 && !chainIsEmpty(chain)) {
+      *pSongTrack += 1;
+      while (project.chains[chain].phrases[*pChainRow] == EMPTY_VALUE_16) {
+        *pChainRow -= 1;
+        if (*pChainRow == 0) break;
+      }
+      setup(-1);
+      fullRedraw();
+    }
+    return 1;
+  } else if ((keys == (keyUp | keyOpt)) || (keys == keyUp && sheet.cursorRow == 0)) {
+    // Previous phrase in the chain
+    if (*pChainRow == 0) return 1;
+    if (project.chains[project.song[*pSongRow][*pSongTrack]].phrases[*pChainRow - 1] != EMPTY_VALUE_16) {
+      *pChainRow -= 1;
+      if (keys == keyUp) sheet.cursorRow = 15;
+      setup(-1);
+      fullRedraw();
+      // TODO: If a phrase is playing, queue it
+      // playbackQueuePhrase
+    }
+    return 1;
+  } else if (keys == (keyDown | keyOpt) || (keys == keyDown && sheet.cursorRow == 15)) {
+    // Next phrase in the chain
+    if (*pChainRow == 15) return 1;
+    if (project.chains[project.song[*pSongRow][*pSongTrack]].phrases[*pChainRow + 1] != EMPTY_VALUE_16) {
+      *pChainRow += 1;
+      if (keys == keyDown) sheet.cursorRow = 0;
+      setup(-1);
+      fullRedraw();
+      // TODO: If a phrase is playing, queue it
+      // playbackQueuePhrase
+    }
     return 1;
   }
   return 0;

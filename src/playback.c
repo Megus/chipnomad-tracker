@@ -19,6 +19,7 @@ static void processPhraseRow(struct PlaybackState* state, int trackIdx) {
       if (note != EMPTY_VALUE_8) {
         if (note == NOTE_OFF) {
           // TODO: Note off logic
+          track->note.baseNote = EMPTY_VALUE_8;
         } else {
           track->note.baseNote = note;
           track->note.fineOffset = 0;
@@ -59,7 +60,7 @@ static void nextFrameAY(struct PlaybackState* state, int trackIdx, int ayChannel
 
   // Is the channel playing?
   if (track->note.baseNote == EMPTY_VALUE_8) {
-    return;
+    chip->setRegister(chip, 8 + ayChannel, 0);  // Silence channel
   }
 
   // Tone period
@@ -72,7 +73,7 @@ static void nextFrameAY(struct PlaybackState* state, int trackIdx, int ayChannel
   chip->setRegister(chip, ayChannel * 2 + 1, (period & 0xf00) >> 8);
 
   // Volume
-  chip->setRegister(chip, 8 + ayChannel, 15);
+  chip->setRegister(chip, 8 + ayChannel, track->note.volume);
 
   // Mixer
   uint8_t mixer = chip->regs[7];

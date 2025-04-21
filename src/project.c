@@ -279,12 +279,12 @@ char* instrumentName(uint8_t instrument) {
 
 // Note name in phrase
 char* noteName(uint8_t note) {
-  if (note == EMPTY_VALUE_8) {
-    return "---";
-  } else if (note == NOTE_OFF) {
+  if (note == NOTE_OFF) {
     return "OFF";
-  } else {
+  } else if (note < project.pitchTable.length) {
     return project.pitchTable.noteNames[note];
+  } else {
+    return "---";
   }
 }
 

@@ -50,12 +50,13 @@ void appDraw(void) {
   // Tracks
   char digit[2] = "0";
   for (int c = 0; c < project.tracksCount; c++) {
-    gfxSetFgColor(cs.textInfo);
+    gfxSetFgColor(*pSongTrack == c ? cs.textDefault : cs.textInfo);
     digit[0] = c + 49;
     gfxPrint(35, 3 + c, digit);
 
-    gfxSetFgColor(cs.textEmpty);
-    gfxPrint(37, 3 + c, "---");
+    char* note = noteName(playback.tracks[c].note.baseNote);
+    gfxSetFgColor(note[0] == '-' ? cs.textEmpty : cs.textValue);
+    gfxPrint(37, 3 + c, note);
   }
 }
 
