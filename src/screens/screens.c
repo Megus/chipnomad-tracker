@@ -43,6 +43,8 @@ void drawScreenMap() {
 }
 
 void screenSetup(const struct AppScreen* screen, int input) {
+  projectSave(AUTOSAVE_FILENAME); // Temporary measure against random crashes
+
   currentScreen = screen;
   currentScreen->setup(input);
   gfxSetBgColor(appSettings.colorScheme.background);
