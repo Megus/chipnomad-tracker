@@ -92,7 +92,14 @@ static void fullRedraw(void) {
 }
 
 static void draw(void) {
-
+  gfxClearRect(2, 3, 1, 16);
+  if (playback.tracks[*pSongTrack].songRow == *pSongRow) {
+    int chainRow = playback.tracks[*pSongTrack].chainRow;
+    if (chainRow >= 0 && chainRow < 16) {
+      gfxSetFgColor(appSettings.colorScheme.playMarkers);
+      gfxPrint(2, 3 + chainRow, ">");
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -186,9 +193,24 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
   return 0;
 }
 
+static int inputPlayback(int keys, int isDoubleTap) {
+  if (playback.mode == playbackModeStopped && (keys == keyPlay)) {
+    playbackStartChain(&playback, *pSongTrack, *pSongRow, sheet.cursorRow);
+    return 1;
+  } else if (playback.mode == playbackModeStopped && (keys == (keyPlay | keyShift))) {
+    playbackStartSong(&playback, *pSongRow, *pChainRow);
+    return 1;
+  } else if (playback.mode != playbackModeStopped && (keys == keyPlay)) {
+    playbackStop(&playback);
+    return 1;
+  }
+  return 0;
+}
+
 static void onInput(int keys, int isDoubleTap) {
   if (inputScreenNavigation(keys, isDoubleTap)) return;
   if (spreadsheetInput(&sheet, keys, isDoubleTap)) return;
+  inputPlayback(keys, isDoubleTap);
 }
 
 const struct AppScreen screenChain = {

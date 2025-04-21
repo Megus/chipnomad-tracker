@@ -44,10 +44,6 @@ static void fullRedraw(void) {
   gfxPrintf(0, 0, "PHRASE %03X", phrase);
 
   spreadsheetFullRedraw(&sheet);
-
-  gfxClearRect(0, 3, 1, 16);
-  gfxSetFgColor(appSettings.colorScheme.textInfo);
-  gfxPrint(0, 3 + *pChainRow, "<");
 }
 
 static void drawCell(int col, int row, int state) {
@@ -118,14 +114,29 @@ static void drawCursor(int col, int row) {
 }
 
 static void draw(void) {
-  if (playbackIsPlaying(&playback)) {
-    int row = playback.tracks[*pSongTrack].phraseRow;
-    if (row < 16) {
-      gfxClearRect(2, 3, 1, 16);
+  gfxClearRect(0, 3, 1, 16);
+  gfxSetFgColor(appSettings.colorScheme.textInfo);
+  gfxPrint(0, 3 + *pChainRow, "<");
+
+  gfxClearRect(2, 3, 1, 16);
+  struct PlaybackTrackState* track = &playback.tracks[*pSongTrack];
+  if (playback.mode != playbackModeStopped && track->songRow != EMPTY_VALUE_16) {
+    // Chain row
+    if (*pSongRow == track->songRow) {
       gfxSetFgColor(appSettings.colorScheme.playMarkers);
-      gfxPrint(2, 3 + row, ">");
+      gfxPrint(0, 3 + track->chainRow, "<");
     }
-  }
+
+    // Phrase row
+    int playingPhrase = project.chains[project.song[track->songRow][*pSongTrack]].phrases[track->chainRow];
+    if (playingPhrase == phrase) {
+      int row = track->phraseRow;
+      if (row >= 0 && row < 16) {
+        gfxSetFgColor(appSettings.colorScheme.playMarkers);
+        gfxPrint(2, 3 + row, ">");
+      }
+    }
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -249,9 +260,8 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
       *pChainRow -= 1;
       if (keys == keyUp) sheet.cursorRow = 15;
       setup(-1);
+      playbackQueuePhrase(&playback, *pSongTrack, *pSongRow, *pChainRow);
       fullRedraw();
-      // TODO: If a phrase is playing, queue it
-      // playbackQueuePhrase
     }
     return 1;
   } else if (keys == (keyDown | keyOpt) || (keys == keyDown && sheet.cursorRow == 15)) {
@@ -261,10 +271,23 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
       *pChainRow += 1;
       if (keys == keyDown) sheet.cursorRow = 0;
       setup(-1);
+      playbackQueuePhrase(&playback, *pSongTrack, *pSongRow, *pChainRow);
       fullRedraw();
-      // TODO: If a phrase is playing, queue it
-      // playbackQueuePhrase
     }
+    return 1;
+  }
+  return 0;
+}
+
+static int inputPlayback(int keys, int isDoubleTap) {
+  if (playback.mode == playbackModeStopped && (keys == keyPlay)) {
+    playbackStartPhrase(&playback, *pSongTrack, *pSongRow, *pChainRow);
+    return 1;
+  } else if (playback.mode == playbackModeStopped && (keys == (keyPlay | keyShift))) {
+    playbackStartSong(&playback, *pSongRow, *pChainRow);
+    return 1;
+  } else if (playback.mode != playbackModeStopped && (keys == keyPlay)) {
+    playbackStop(&playback);
     return 1;
   }
   return 0;
@@ -273,6 +296,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
 static void onInput(int keys, int isDoubleTap) {
   if (inputScreenNavigation(keys, isDoubleTap)) return;
   if (spreadsheetInput(&sheet, keys, isDoubleTap)) return;
+  inputPlayback(keys, isDoubleTap);
 }
 
 const struct AppScreen screenPhrase = {

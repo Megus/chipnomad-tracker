@@ -1,7 +1,7 @@
 #include <screens.h>
 #include <project.h>
 
-int edit16withLimit(enum CellEditAction action, uint16_t* value, uint16_t* lastValue, uint16_t bigIncrease, uint16_t upperLimit) {
+int edit16withLimit(enum CellEditAction action, uint16_t* value, uint16_t* lastValue, uint16_t bigStep, uint16_t upperLimit) {
   int handled = 0;
 
   switch (action) {
@@ -25,11 +25,11 @@ int edit16withLimit(enum CellEditAction action, uint16_t* value, uint16_t* lastV
       handled = 1;
       break;
     case editIncreaseBig:
-      if (*value != EMPTY_VALUE_16) *value = *value >= upperLimit - bigIncrease ? upperLimit - 1 : *value + bigIncrease;
+      if (*value != EMPTY_VALUE_16) *value = *value >= upperLimit - bigStep ? upperLimit - 1 : *value + bigStep;
       handled = 1;
       break;
     case editDecreaseBig:
-      if (*value != EMPTY_VALUE_16) *value = *value < bigIncrease ? 0 : *value - bigIncrease;
+      if (*value != EMPTY_VALUE_16) *value = *value < bigStep ? 0 : *value - bigStep;
       handled = 1;
       break;
     default:
@@ -43,7 +43,7 @@ int edit16withLimit(enum CellEditAction action, uint16_t* value, uint16_t* lastV
   return handled;
 }
 
-int edit8withLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigIncrease, uint8_t upperLimit) {
+int edit8withLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep, uint8_t upperLimit) {
   uint16_t value16 = *value;
   uint16_t lastValue16 = *lastValue;
 
@@ -51,7 +51,7 @@ int edit8withLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValu
     value16 = EMPTY_VALUE_16;
   }
 
-  int handled = edit16withLimit(action, &value16, &lastValue16, bigIncrease, upperLimit);
+  int handled = edit16withLimit(action, &value16, &lastValue16, bigStep, upperLimit);
 
   *value = (uint8_t)value16;
   *lastValue = (uint8_t)lastValue16;
@@ -59,7 +59,7 @@ int edit8withLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValu
   return handled;
 }
 
-int edit8noLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigIncrease) {
+int edit8noLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep) {
   int handled = 0;
 
   switch (action) {
@@ -83,11 +83,11 @@ int edit8noLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue,
       handled = 1;
       break;
     case editIncreaseBig:
-      *value += bigIncrease;
+      *value += bigStep;
       handled = 1;
       break;
     case editDecreaseBig:
-      *value -= bigIncrease;
+      *value -= bigStep;
       handled = 1;
       break;
     default:

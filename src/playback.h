@@ -4,6 +4,15 @@
 #include <project.h>
 #include <chips.h>
 
+enum PlaybackMode {
+  playbackModeStopped,
+  playbackModeSong,
+  playbackModeChain,
+  playbackModePhrase,
+  playbackModePhraseRow,
+  playbackModeLoop,
+};
+
 struct PlaybackFXState {
 
 };
@@ -41,17 +50,18 @@ struct PlaybackTrackState {
 
 struct PlaybackState {
   struct Project* p;
+  enum PlaybackMode mode;
   struct PlaybackTrackState tracks[PROJECT_MAX_TRACKS];
+  uint16_t queuedChainRow; // For playbackModePhrase
 };
 
-int playbackInit(struct PlaybackState* state, struct Project* project);
-int playbackIsPlaying(struct PlaybackState* state);
-int playbackStartSong(struct PlaybackState* state, int songRow, int chainRow);
-int playbackStartChain(struct PlaybackState* state, int track, int songRow);
-int playbackStartPhrase(struct PlaybackState* state, int track, int songRow, int chainRow);
-int playbackStartNote(struct PlaybackState* state, int track, int phrase, int phraseRow);
-int playbackQueuePhrase(struct PlaybackState* state, int track, int songRow, int chainRow);
-int playbackStop(struct PlaybackState* state);
+void playbackInit(struct PlaybackState* state, struct Project* project);
+void playbackStartSong(struct PlaybackState* state, int songRow, int chainRow);
+void playbackStartChain(struct PlaybackState* state, int trackIdx, int songRow, int chainRow);
+void playbackStartPhrase(struct PlaybackState* state, int trackIdx, int songRow, int chainRow);
+void playbackQueuePhrase(struct PlaybackState* state, int trackIdx, int songRow, int chainRow);
+void playbackStartPhraseRow(struct PlaybackState* state, int trackIdx, int songRow, int chainRow, int phraseRow);
+void playbackStop(struct PlaybackState* state);
 
 int playbackNextFrame(struct PlaybackState* state, struct SoundChip* chips);
 

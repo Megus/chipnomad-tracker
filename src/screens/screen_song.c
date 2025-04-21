@@ -82,7 +82,16 @@ static void fullRedraw(void) {
 }
 
 static void draw(void) {
-
+  for (int c = 0; c < project.tracksCount; c++) {
+    gfxClearRect(2 + c * 3, 3, 1, 16);
+    if (playback.tracks[c].songRow != EMPTY_VALUE_16) {
+      int row = playback.tracks[c].songRow - sheet.topRow;
+      if (row >= 0 && row < 16) {
+        gfxSetFgColor(appSettings.colorScheme.playMarkers);
+        gfxPrint(2 + c * 3, 3 + row, ">");
+      }
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -113,8 +122,6 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
 }
 
 static int onEdit(int col, int row, enum CellEditAction action) {
-  int handled = 0;
-
   if (action == editDoubleTap) {
     // Find the first chain with no phrases
     int current = project.song[row][col];
@@ -128,26 +135,22 @@ static int onEdit(int col, int row, enum CellEditAction action) {
         }
       }
     }
-    handled = 1;
+    return 1;
   } else {
-    handled = edit16withLimit(action, &project.song[row][col], &lastChainValue, 16, PROJECT_MAX_CHAINS);
+    return edit16withLimit(action, &project.song[row][col], &lastChainValue, 16, PROJECT_MAX_CHAINS);
   }
-
-  return handled;
+  return 0;
 }
 
 static int inputPlayback(int keys, int isDoubleTap) {
-  int handled = 0;
-
-  if (!playbackIsPlaying(&playback) && (keys & keyPlay)) {
+  if (playback.mode == playbackModeStopped && (keys & keyPlay)) {
     playbackStartSong(&playback, sheet.cursorRow, 0);
-    handled = 1;
-  } else if (playbackIsPlaying(&playback) && (keys == keyPlay)) {
+    return 1;
+  } else if (playback.mode != playbackModeStopped && (keys == keyPlay)) {
     playbackStop(&playback);
-    handled = 1;
+    return 1;
   }
-
-  return handled;
+  return 0;
 }
 
 static void onInput(int keys, int isDoubleTap) {

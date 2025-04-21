@@ -1,7 +1,24 @@
 #include <playback.h>
 #include <stdio.h>
 
+static void resetTrack(struct PlaybackState* state, int trackIdx) {
+  struct PlaybackTrackState* track = &state->tracks[trackIdx];
+  track->songRow = EMPTY_VALUE_16;
+  track->chainRow = 0;
+  track->phraseRow = 0;
+  track->frameCounter = 0;
+  track->grooveIdx = 0;
+  track->grooveRow = 0;
+  track->note.baseNote = EMPTY_VALUE_8;
+  track->note.noteOffset = 0;
+  track->note.fineOffset = 0;
+  track->note.instrument = EMPTY_VALUE_8;
+  track->note.volume = 15; // TODO: This is for AY only
+}
+
 static void processPhraseRow(struct PlaybackState* state, int trackIdx) {
+  if (state->mode == playbackModeStopped) return;
+
   struct PlaybackTrackState* track = &state->tracks[trackIdx];
   struct Project* p = state->p;
 
@@ -61,6 +78,7 @@ static void nextFrameAY(struct PlaybackState* state, int trackIdx, int ayChannel
   // Is the channel playing?
   if (track->note.baseNote == EMPTY_VALUE_8) {
     chip->setRegister(chip, 8 + ayChannel, 0);  // Silence channel
+    return;
   }
 
   // Tone period
@@ -75,6 +93,8 @@ static void nextFrameAY(struct PlaybackState* state, int trackIdx, int ayChannel
   // Volume
   chip->setRegister(chip, 8 + ayChannel, track->note.volume);
 
+  if (track->note.volume > 0 && (track->frameCounter & 1)) track->note.volume--;
+
   // Mixer
   uint8_t mixer = chip->regs[7];
   mixer = mixer & (~(9 << ayChannel));
@@ -88,101 +108,164 @@ static void nextFrameAY(struct PlaybackState* state, int trackIdx, int ayChannel
 // Public interface
 //
 
-int playbackInit(struct PlaybackState* state, struct Project* project) {
+void playbackInit(struct PlaybackState* state, struct Project* project) {
   state->p = project;
+
   for (int c = 0; c < PROJECT_MAX_TRACKS; c++) {
-    state->tracks[c].songRow = EMPTY_VALUE_16;
-    state->tracks[c].chainRow = 0;
-    state->tracks[c].phraseRow = 0;
-    state->tracks[c].frameCounter = 0;
-    state->tracks[c].grooveIdx = 0;
-    state->tracks[c].grooveRow = 0;
-    state->tracks[c].note.baseNote = EMPTY_VALUE_8;
-    state->tracks[c].note.noteOffset = 0;
-    state->tracks[c].note.fineOffset = 0;
-    state->tracks[c].note.instrument = EMPTY_VALUE_8;
-    state->tracks[c].note.volume = 15; // TODO: This is for AY only
+    resetTrack(state, c);
   }
-
-  return 0;
 }
 
-int playbackIsPlaying(struct PlaybackState* state) {
-  for (int c = 0; c < state->p->tracksCount; c++) {
-    if (state->tracks[c].songRow != EMPTY_VALUE_16) return 1;
-  }
-
-  return 0;
-}
-
-int playbackStartSong(struct PlaybackState* state, int songRow, int chainRow) {
-  if (playbackIsPlaying(state)) return 1;
-  printf("Start: %d %d\n", songRow, chainRow);
+void playbackStartSong(struct PlaybackState* state, int songRow, int chainRow) {
+  if (state->mode != playbackModeStopped) return;
+  int started = 0;
 
   struct Project* p = state->p;
   for (int trackIdx = 0; trackIdx < p->tracksCount; trackIdx++) {
     struct PlaybackTrackState* track = &state->tracks[trackIdx];
-    // As we're starting, resetting the groove
-    track->grooveIdx = 0;
-    track->grooveRow = 0;
+    resetTrack(state, trackIdx);
 
     // Regular setup
-    if (p->song[songRow][trackIdx] == EMPTY_VALUE_16 || p->chains[p->song[songRow][trackIdx]].phrases[0] == EMPTY_VALUE_16) {
+    if (p->song[songRow][trackIdx] == EMPTY_VALUE_16 || p->chains[p->song[songRow][trackIdx]].phrases[chainRow] == EMPTY_VALUE_16) {
       // No chain value or empty chain
       track->songRow = EMPTY_VALUE_16;
     } else {
       track->songRow = songRow;
+      track->chainRow = chainRow;
+      track->phraseRow = -1;
+      started = 1;
     }
-    track->chainRow = 0;
-    track->phraseRow = 0;
-    // TODO: Reset notes, FX, etc in the track
-
-    processPhraseRow(state, trackIdx);
   }
 
-  return 0;
+  if (started) {
+    state->mode = playbackModeSong;
+  }
 }
 
-int playbackStartChain(struct PlaybackState* state, int track, int songRow) {
-  return 0;
+void playbackStartChain(struct PlaybackState* state, int trackIdx, int songRow, int chainRow) {
+  if (state->mode != playbackModeStopped) return;
+  struct PlaybackTrackState* track = &state->tracks[trackIdx];
+  resetTrack(state, trackIdx);
+  track->songRow = songRow;
+  track->chainRow = chainRow;
+  track->phraseRow = -1;
+  state->mode = playbackModeChain;
 }
 
-int playbackStartPhrase(struct PlaybackState* state, int track, int songRow, int chainRow) {
-
-  return 0;
+void playbackStartPhrase(struct PlaybackState* state, int trackIdx, int songRow, int chainRow) {
+  if (state->mode != playbackModeStopped) return;
+  struct PlaybackTrackState* track = &state->tracks[trackIdx];
+  resetTrack(state, trackIdx);
+  track->songRow = songRow;
+  track->chainRow = chainRow;
+  state->queuedChainRow = chainRow;
+  track->phraseRow = -1;
+  state->mode = playbackModePhrase;
 }
 
-int playbackStartNote(struct PlaybackState* state, int track, int phrase, int phraseRow) {
-
-  return 0;
+void playbackStartPhraseRow(struct PlaybackState* state, int trackIdx, int songRow, int chainRow, int phraseRow) {
+  if (state->mode != playbackModeStopped) return;
+  struct PlaybackTrackState* track = &state->tracks[trackIdx];
+  resetTrack(state, trackIdx);
+  track->songRow = songRow;
+  track->chainRow = chainRow;
+  track->phraseRow = phraseRow;
+  state->mode = playbackModePhraseRow;
 }
 
-int playbackQueuePhrase(struct PlaybackState* state, int track, int songRow, int chainRow) {
-
-  return 0;
+void playbackQueuePhrase(struct PlaybackState* state, int trackIdx, int songRow, int chainRow) {
+  if (state->mode != playbackModePhrase) return;
+  struct PlaybackTrackState* track = &state->tracks[trackIdx];
+  if (track->songRow != songRow) return;
+  state->queuedChainRow = chainRow;
 }
 
-int playbackStop(struct PlaybackState* state) {
-  printf("Stop\n");
-
-  return 0;
+void playbackStop(struct PlaybackState* state) {
+  for (int c = 0; c < PROJECT_MAX_TRACKS; c++) {
+    state->tracks[c].songRow = EMPTY_VALUE_16;
+    state->tracks[c].note.baseNote = EMPTY_VALUE_8;
+  }
 }
 
 int playbackNextFrame(struct PlaybackState* state, struct SoundChip* chips) {
   struct Project* p = state->p;
+  int hasActiveTracks = 0;
 
   for (int trackIdx = 0; trackIdx < state->p->tracksCount; trackIdx++) {
     struct PlaybackTrackState* track = &state->tracks[trackIdx];
     int chipIdx = 0; // TODO: Multichip setups
-    nextFrameAY(state, trackIdx, trackIdx, chips + chipIdx);
-    track->frameCounter--;
-    if (track->frameCounter <= 0) {
-      track->phraseRow++;
-      if (track->phraseRow == 16) {
-        track->phraseRow = 0;
+
+    // Don't do any playhead movement for phrase row
+    if (state->mode != playbackModePhraseRow) {
+      track->frameCounter--;
+      // Go to the next phrase row
+      if (track->frameCounter <= 0) {
+        track->phraseRow++;
+        if (track->phraseRow == 16) {
+          track->phraseRow = 0;
+          // Play mode logic:
+          // Song playback
+          if (state->mode == playbackModeSong) {
+            // Next chain row
+            int chain = p->song[track->songRow][trackIdx];
+            int chainRow = track->chainRow;
+            chainRow++;
+            if (chainRow >= 16 || p->chains[chain].phrases[chainRow] == EMPTY_VALUE_16) {
+              // Next song row
+              int songRow = track->songRow;
+              songRow++;
+              track->chainRow = 0;
+              if (songRow >= PROJECT_MAX_LENGTH || p->song[songRow][trackIdx] == EMPTY_VALUE_16) {
+                while (songRow > 0) {
+                  songRow--;
+                  if (p->song[songRow][trackIdx] == EMPTY_VALUE_16) {
+                    songRow++;
+                    break;
+                  }
+                }
+              }
+              if (p->song[songRow][trackIdx] == EMPTY_VALUE_16) {
+                // No chains, stop track playback
+                resetTrack(state, trackIdx);
+              } else {
+                track->songRow = songRow;
+              }
+            } else {
+              track->chainRow = chainRow;
+            }
+          }
+          // Chain playback
+          else if (state->mode == playbackModeChain) {
+            int chain = p->song[track->songRow][trackIdx];
+            int chainRow = track->chainRow;
+            chainRow++;
+            if (chainRow >= 16 || p->chains[chain].phrases[chainRow] == EMPTY_VALUE_16) chainRow = 0;
+            if (p->chains[chain].phrases[chainRow] == EMPTY_VALUE_16) {
+              // Empty chain, stop playback
+              resetTrack(state, trackIdx);
+              state->mode = playbackModeStopped;
+            } else {
+              track->chainRow = chainRow;
+            }
+          }
+          // Phrase playback
+          else if (state->mode == playbackModePhrase) {
+            track->chainRow = state->queuedChainRow;
+          }
+        }
+        processPhraseRow(state, trackIdx);
       }
-      processPhraseRow(state, trackIdx);
     }
+
+    nextFrameAY(state, trackIdx, trackIdx, chips + chipIdx);
+
+    // Check if the track is still playing something
+    if (track->songRow != EMPTY_VALUE_16) hasActiveTracks = 1;
+  }
+
+  if (!hasActiveTracks) {
+    state->mode = playbackModeStopped;
+    return 1;
   }
 
   return 0;
