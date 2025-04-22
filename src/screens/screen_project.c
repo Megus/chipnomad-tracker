@@ -3,6 +3,7 @@
 #include <corelib_gfx.h>
 #include <utils.h>
 #include <project.h>
+#include <version.h>
 
 static void setup(int input) {
 
@@ -13,6 +14,9 @@ static void fullRedraw(void) {
 
   gfxSetFgColor(cs.textTitles);
   gfxPrint(0, 0, "PROJECT");
+
+  gfxSetFgColor(cs.textDefault);
+  gfxPrintf(8, 0, "%s v%s (%s)", appTitle, appVersion, appBuild);
 }
 
 static void draw(void) {
@@ -20,21 +24,10 @@ static void draw(void) {
 }
 
 static void onInput(int keys, int isDoubleTap) {
-  //printf("%d\n", event.data.key.keys);
-  gfxSetFgColor(appSettings.colorScheme.textInfo);
   if (keys == (keyDown | keyShift)) {
     screenSetup(&screenSong, 0);
-  } else if (keys == keyEdit) {
-    int result = projectSave(AUTOSAVE_FILENAME);
-    gfxPrintf(0, 1, "Save: %d   ", result);
-    gfxPrintf(0, 2, "%s", projectFileError);
-  } else if (keys == keyOpt) {
-    int result = projectLoad(AUTOSAVE_FILENAME);
-    gfxPrintf(0, 1, "Load: %d   ", result);
-    gfxPrintf(0, 2, "%s", projectFileError);
   }
 }
-
 
 const struct AppScreen screenProject = {
   .setup = setup,

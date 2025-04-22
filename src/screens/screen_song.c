@@ -142,21 +142,9 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   return 0;
 }
 
-static int inputPlayback(int keys, int isDoubleTap) {
-  if (playback.mode == playbackModeStopped && (keys & keyPlay)) {
-    playbackStartSong(&playback, sheet.cursorRow, 0);
-    return 1;
-  } else if (playback.mode != playbackModeStopped && (keys == keyPlay)) {
-    playbackStop(&playback);
-    return 1;
-  }
-  return 0;
-}
-
 static void onInput(int keys, int isDoubleTap) {
   if (inputScreenNavigation(keys, isDoubleTap)) return;
   if (spreadsheetInput(&sheet, keys, isDoubleTap)) return;
-  inputPlayback(keys, isDoubleTap);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

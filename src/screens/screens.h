@@ -38,6 +38,17 @@ struct SpreadsheetScreenData {
   int (*onEdit)(int col, int row, enum CellEditAction action);
 };
 
+struct FormScreenData {
+  int rows;
+  int cursorRow;
+  int cursorCol;
+  int (*getColumnCount)(int row);
+  void (*drawForm)(void);
+  void (*drawCursor)(int col, int row);
+  void (*drawField)(int col, int row);
+  int (*onEdit)(int col, int row, enum CellEditAction action);
+};
+
 extern const struct AppScreen screenProject;
 extern const struct AppScreen screenSong;
 extern const struct AppScreen screenChain;
@@ -55,6 +66,8 @@ void screenMessage(const char* format, ...);
 void spreadsheetFullRedraw(struct SpreadsheetScreenData* sheet);
 int spreadsheetInput(struct SpreadsheetScreenData* sheet, int keys, int isDoubleTap);
 
+// Form functions
+
 // Utility functions
 void setCellColor(int state, int isEmpty, int hasContent);
 
@@ -63,5 +76,6 @@ int edit16withLimit(enum CellEditAction action, uint16_t* value, uint16_t* lastV
 int edit8withLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep, uint8_t upperLimit);
 int edit8noLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep);
 int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX);
+int editCharacter(enum CellEditAction action, char* ch);
 
 #endif

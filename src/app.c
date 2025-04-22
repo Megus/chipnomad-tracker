@@ -6,22 +6,95 @@
 #include <project.h>
 #include <playback.h>
 
-// Input handling vars
+// Input handling vars:
+
+/** Currently pressed buttons */
 static int pressedButtons;
+/** Frame counter for double tap detection */
 static int editDoubleTapCount;
+/** Frame counter for key repeats */
 static int keyRepeatCount;
 
-
+/**
+ * @brief Update chip registers for the next frame
+ *
+ * @param userdata Arbitraty user data. Not used
+ */
 static void frameCallback(void* userdata) {
   playbackNextFrame(&playback, &audioManager.chips[0]);
 }
 
+/**
+ * @brief Handle play/stop key commands
+ *
+ * @param keys Pressed keys
+ * @param isDoubleTap is it a double tap?
+ * @return int 0 - input not handled, 1 - input handled
+ */
+static int inputPlayback(int keys, int isDoubleTap) {
+  // Stop phrase row
+  if (playback.mode == playbackModePhraseRow && keys == 0) {
+    playbackStop(&playback);
+  }
+  // Play song/chain/phrase depending on the current screen
+  else if (playback.mode == playbackModeStopped && keys == keyPlay) {
+    if (currentScreen == &screenSong || currentScreen == &screenProject) {
+      playbackStartSong(&playback, *pSongRow, 0);
+    } else if (currentScreen == &screenChain) {
+      playbackStartChain(&playback, *pSongTrack, *pSongRow, *pChainRow);
+    } else {
+      playbackStartPhrase(&playback, *pSongTrack, *pSongRow, *pChainRow);
+    }
+    return 1;
+  }
+  // Play song from any screen
+  else if (playback.mode == playbackModeStopped && keys == (keyPlay | keyShift)) {
+    if (currentScreen == &screenSong || currentScreen == &screenProject) {
+      playbackStartSong(&playback, *pSongRow, 0);
+    } else {
+      playbackStartSong(&playback, *pSongRow, *pChainRow);
+    }
+    return 1;
+  }
+  // Stop playback
+  else if (playback.mode != playbackModeStopped && keys == keyPlay) {
+    playbackStop(&playback);
+    return 1;
+  }
+  return 0;
+}
+
+/**
+ * @brief App input handler. Handles app-wide commands and then forwards the call to the current screen
+ *
+ * @param keys Pressed buttons
+ * @param isDoubleTap is it a double tap?
+ */
+static void appInput(int keys, int isDoubleTap) {
+  if (keys == 0) {
+    // Clean screen message when nothing is pressed
+    screenMessage("");
+  }
+  if (inputPlayback(keys, isDoubleTap)) return;
+  currentScreen->onInput(keys, isDoubleTap);
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// High-level application functions
+//
+
+/**
+ * @brief Initialize the application: setup audio system, load auto-saved project, show the first screen
+ */
 void appSetup(void) {
   // Keyboard input reset
   pressedButtons = 0;
   editDoubleTapCount = 0;
   keyRepeatCount = 0;
 
+  // Clear screen
   gfxSetBgColor(appSettings.colorScheme.background);
   gfxClear();
 
@@ -30,18 +103,24 @@ void appSetup(void) {
     projectInit(&project);
   }
 
+  // Initialize audio system
   playbackInit(&playback, &project);
-
-  audioManager.start(appSettings.audioSampleRate, appSettings.audioBufferSize, 50.0);
+  audioManager.start(appSettings.audioSampleRate, appSettings.audioBufferSize, project.frameRate);
   audioManager.initChips();
   audioManager.setFrameCallback(frameCallback, NULL);
   screenSetup(&screenSong, 0);
 }
 
+/**
+ * @brief Release all resources before closing the application
+ */
 void appCleanup(void) {
   audioManager.stop();
 }
 
+/**
+ * @brief Main draw function. Draws playback status
+ */
 void appDraw(void) {
   const struct ColorScheme cs = appSettings.colorScheme;
 
@@ -62,6 +141,13 @@ void appDraw(void) {
   }
 }
 
+/**
+ * @brief Main event handler
+ *
+ * @param event Event
+ * @param value Event value
+ * @param userdata Arbitraty event data
+ */
 void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
   static int dPadMask = keyLeft | keyRight | keyUp | keyDown;
 
@@ -77,7 +163,7 @@ void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
         // As we don't support multiple d-pad keys, keep only the last pressed one
         pressedButtons = (pressedButtons & ~dPadMask) | value;
       }
-      currentScreen->onInput(pressedButtons, isDoubleTap);
+      appInput(pressedButtons, isDoubleTap);
       editDoubleTapCount = 0;
       break;
     case eventKeyUp:
@@ -86,11 +172,7 @@ void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
       if (value == keyEdit) editDoubleTapCount = appSettings.doubleTapFrames;
 
       if (pressedButtons == 0) {
-        // TODO: It feels hacky to put this logic here, consider refactoring it
-        // Clean screen message when nothing is pressed. Consider clearing it on any key up
-        screenMessage("");
-        // Stop phrase row playback
-        if (playback.mode == playbackModePhraseRow) playbackStop(&playback);
+        appInput(pressedButtons, 0);
       }
       break;
     case eventTick:
@@ -102,7 +184,7 @@ void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
           keyRepeatCount--;
           if (keyRepeatCount == 0) {
             keyRepeatCount = appSettings.keyRepeatSpeed;
-            currentScreen->onInput(pressedButtons, 0);
+            appInput(pressedButtons, 0);
           }
         } else {
           keyRepeatCount = 0;

@@ -4,8 +4,21 @@
 #include <utils.h>
 #include <project.h>
 
-static void setup(int input) {
+int instrument = 0;
 
+///////////////////////////////////////////////////////////////////////////////
+//
+// AY Instrument
+//
+
+struct FormScreenData formInstrumentAY = {
+
+};
+
+// Screen common code
+
+static void setup(int input) {
+  instrument = input;
 }
 
 static void fullRedraw(void) {
@@ -20,11 +33,10 @@ static void draw(void) {
 }
 
 static void onInput(int keys, int isDoubleTap) {
-  //printf("%d\n", event.data.key.keys);
   if (keys == (keyRight | keyShift)) {
-    screenSetup(&screenTable, 0);
+    screenSetup(&screenTable, instrument);
   } else if (keys == (keyLeft | keyShift)) {
-    screenSetup(&screenPhrase, 0);
+    screenSetup(&screenPhrase, -1);
   }
 }
 
