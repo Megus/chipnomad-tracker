@@ -104,3 +104,7 @@ int edit8noLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue,
 int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastValue) {
   return 0;
 }
+
+int editCharacter(enum CellEditAction action, char* ch) {
+  return 0;
+}

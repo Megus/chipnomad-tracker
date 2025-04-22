@@ -187,8 +187,34 @@ int spreadsheetInput(struct SpreadsheetScreenData* sheet, int keys, int isDouble
   return spreadsheetInputEdit(sheet, keys, isDoubleTap);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+//
+// Form screen functions
+//
 
+void formFullRedraw(struct FormScreenData* form) {
+
+}
+
+static int formInputCursor(struct FormScreenData* form, int keys, int isDoubleTap) {
+  return 0;
+}
+
+static int formInputEdit(struct FormScreenData* form, int keys, int isDoubleTap) {
+
+  return 0;
+}
+
+int formInput(struct FormScreenData* form, int keys, int isDoubleTap) {
+  if (formInputCursor(form, keys, isDoubleTap)) return 1;
+  return formInputEdit(form, keys, isDoubleTap);
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
 // Utility functions
+//
 
 void setCellColor(int state, int isEmpty, int hasContent) {
   const struct ColorScheme cs = appSettings.colorScheme;

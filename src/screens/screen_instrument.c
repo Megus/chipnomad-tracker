@@ -3,19 +3,20 @@
 #include <corelib_gfx.h>
 #include <utils.h>
 #include <project.h>
+#include <screen_instrument.h>
 
 int instrument = 0;
 
-///////////////////////////////////////////////////////////////////////////////
-//
-// AY Instrument
-//
-
-struct FormScreenData formInstrumentAY = {
-
+static struct FormScreenData formInstrumentNone = {
+  .rows = 1,
+  .cursorRow = 0,
+  .cursorCol = 0,
+  .getColumnCount = formInstrumentCommonColumnCount,
+  .drawForm = formInstrumentCommonDrawForm,
+  .drawCursor = formInstrumentCommonDrawCursor,
+  .drawField = formInstrumentCommonDrawField,
+  .onEdit = formInstrumentCommonOnEdit,
 };
-
-// Screen common code
 
 static void setup(int input) {
   instrument = input;
@@ -25,19 +26,72 @@ static void fullRedraw(void) {
   const struct ColorScheme cs = appSettings.colorScheme;
 
   gfxSetFgColor(cs.textTitles);
-  gfxPrint(0, 0, "INSTRUMENT");
+  gfxPrintf(0, 0, "INSTRUMENT %02X", instrument);
 }
 
 static void draw(void) {
 
 }
 
-static void onInput(int keys, int isDoubleTap) {
+///////////////////////////////////////////////////////////////////////////////
+//
+// Common part of the form
+//
+
+int formInstrumentCommonColumnCount(int row) {
+  if (row == 0) {
+    return 3; // Instrument type, load, save
+  } else if (row == 1) {
+    return 15; // Instrument name
+  } else if (row == 2) {
+    return 2; // Transpose on/off, Table tic speed
+  }
+  return 1; // Default value
+}
+
+void formInstrumentCommonDrawForm(void) {
+
+}
+
+void formInstrumentCommonDrawCursor(int col, int row) {
+
+}
+
+void formInstrumentCommonDrawField(int col, int row) {
+
+}
+
+int formInstrumentCommonOnEdit(int col, int row, enum CellEditAction action) {
+
+  return 0;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Input handling
+//
+
+static int inputScreenNavigation(int keys, int isDoubleTap) {
   if (keys == (keyRight | keyShift)) {
     screenSetup(&screenTable, instrument);
+    return 1;
   } else if (keys == (keyLeft | keyShift)) {
     screenSetup(&screenPhrase, -1);
+    return 1;
   }
+  return 0;
+}
+
+static void onInput(int keys, int isDoubleTap) {
+  if (inputScreenNavigation(keys, isDoubleTap)) return;
+
+  struct FormScreenData* form = &formInstrumentNone;
+  if (project.instruments[instrument].type == instAY) {
+    form = &formInstrumentAY;
+  }
+
+  if (formInput(form, keys, isDoubleTap)) return;
 }
 
 const struct AppScreen screenInstrument = {

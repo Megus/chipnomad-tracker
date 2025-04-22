@@ -67,6 +67,8 @@ void spreadsheetFullRedraw(struct SpreadsheetScreenData* sheet);
 int spreadsheetInput(struct SpreadsheetScreenData* sheet, int keys, int isDoubleTap);
 
 // Form functions
+void formFullRedraw(struct FormScreenData* form);
+int formInput(struct FormScreenData* form, int keys, int isDoubleTap);
 
 // Utility functions
 void setCellColor(int state, int isEmpty, int hasContent);
