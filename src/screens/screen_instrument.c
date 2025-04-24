@@ -7,15 +7,20 @@
 
 int instrument = 0;
 
-static struct FormScreenData formInstrumentNone = {
+static void drawRowHeader(int row, int state);
+static void drawColHeader(int col, int state);
+
+static struct ScreenData formInstrumentNone = {
   .rows = 1,
   .cursorRow = 0,
   .cursorCol = 0,
-  .getColumnCount = formInstrumentCommonColumnCount,
-  .drawForm = formInstrumentCommonDrawForm,
-  .drawCursor = formInstrumentCommonDrawCursor,
-  .drawField = formInstrumentCommonDrawField,
-  .onEdit = formInstrumentCommonOnEdit,
+  .getColumnCount = instrumentCommonColumnCount,
+  .drawStatic = instrumentCommonDrawStatic,
+  .drawCursor = instrumentCommonDrawCursor,
+  .drawRowHeader = drawRowHeader,
+  .drawColHeader = drawColHeader,
+  .drawField = instrumentCommonDrawField,
+  .onEdit = instrumentCommonOnEdit,
 };
 
 static void setup(int input) {
@@ -38,7 +43,15 @@ static void draw(void) {
 // Common part of the form
 //
 
-int formInstrumentCommonColumnCount(int row) {
+static void drawRowHeader(int row, int state) {
+
+}
+
+static void drawColHeader(int col, int state) {
+
+}
+
+int instrumentCommonColumnCount(int row) {
   if (row == 0) {
     return 3; // Instrument type, load, save
   } else if (row == 1) {
@@ -49,19 +62,19 @@ int formInstrumentCommonColumnCount(int row) {
   return 1; // Default value
 }
 
-void formInstrumentCommonDrawForm(void) {
+void instrumentCommonDrawStatic(void) {
 
 }
 
-void formInstrumentCommonDrawCursor(int col, int row) {
+void instrumentCommonDrawCursor(int col, int row) {
 
 }
 
-void formInstrumentCommonDrawField(int col, int row) {
+void instrumentCommonDrawField(int col, int row, int state) {
 
 }
 
-int formInstrumentCommonOnEdit(int col, int row, enum CellEditAction action) {
+int instrumentCommonOnEdit(int col, int row, enum CellEditAction action) {
 
   return 0;
 }
@@ -86,12 +99,12 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
 static void onInput(int keys, int isDoubleTap) {
   if (inputScreenNavigation(keys, isDoubleTap)) return;
 
-  struct FormScreenData* form = &formInstrumentNone;
+  struct ScreenData* form = &formInstrumentNone;
   if (project.instruments[instrument].type == instAY) {
     form = &formInstrumentAY;
   }
 
-  if (formInput(form, keys, isDoubleTap)) return;
+  if (screenInput(form, keys, isDoubleTap)) return;
 }
 
 const struct AppScreen screenInstrument = {

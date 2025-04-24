@@ -8,22 +8,25 @@ static int chain = 0;
 static uint16_t lastPhraseValue = 0;
 static uint8_t lastTransposeValue = 0;
 
-static void drawCell(int col, int row, int state);
+static int getColumnCount(int row);
+static void drawStatic(void);
+static void drawField(int col, int row, int state);
 static void drawRowHeader(int row, int state);
 static void drawColHeader(int col, int state);
 static void drawCursor(int col, int row);
 static int onEdit(int col, int row, enum CellEditAction action);
 
-static struct SpreadsheetScreenData sheet = {
+static struct ScreenData sheet = {
   .rows = 16,
-  .cols = 2,
   .cursorRow = 0,
   .cursorCol = 0,
   .topRow = 0,
+  .getColumnCount = getColumnCount,
+  .drawStatic = drawStatic,
   .drawCursor = drawCursor,
   .drawRowHeader = drawRowHeader,
   .drawColHeader = drawColHeader,
-  .drawCell = drawCell,
+  .drawField = drawField,
   .onEdit = onEdit,
 };
 
@@ -37,7 +40,15 @@ static void setup(int input) {
 // Drawing functions
 //
 
-static void drawCell(int col, int row, int state) {
+static int getColumnCount(int row) {
+  return 2;
+}
+
+static void drawStatic(void) {
+
+}
+
+static void drawField(int col, int row, int state) {
   uint16_t phrase = project.chains[chain].phrases[row];
 
   if (col == 0) {
@@ -88,7 +99,7 @@ static void fullRedraw(void) {
   gfxSetFgColor(appSettings.colorScheme.textTitles);
   gfxPrintf(0, 0, "CHAIN %02X", chain);
 
-  spreadsheetFullRedraw(&sheet);
+  screenFullRedraw(&sheet);
 }
 
 static void draw(void) {
@@ -195,7 +206,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
 
 static void onInput(int keys, int isDoubleTap) {
   if (inputScreenNavigation(keys, isDoubleTap)) return;
-  if (spreadsheetInput(&sheet, keys, isDoubleTap)) return;
+  if (screenInput(&sheet, keys, isDoubleTap)) return;
 }
 
 const struct AppScreen screenChain = {

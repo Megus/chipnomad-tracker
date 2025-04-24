@@ -25,27 +25,18 @@ enum CellEditAction {
   editDecreaseBig,
 };
 
-struct SpreadsheetScreenData {
-  int cols;
+struct ScreenData {
+  //int cols;
   int rows;
   int cursorRow;
   int cursorCol;
   int topRow; // For scrollable screens
+  int (*getColumnCount)(int row);
+  void (*drawStatic)(void);
   void (*drawCursor)(int col, int row);
   void (*drawRowHeader)(int row, int state);
   void (*drawColHeader)(int col, int state);
-  void (*drawCell)(int col, int row, int state);
-  int (*onEdit)(int col, int row, enum CellEditAction action);
-};
-
-struct FormScreenData {
-  int rows;
-  int cursorRow;
-  int cursorCol;
-  int (*getColumnCount)(int row);
-  void (*drawForm)(void);
-  void (*drawCursor)(int col, int row);
-  void (*drawField)(int col, int row);
+  void (*drawField)(int col, int row, int state);
   int (*onEdit)(int col, int row, enum CellEditAction action);
 };
 
@@ -63,12 +54,8 @@ void screenSetup(const struct AppScreen* screen, int input);
 void screenMessage(const char* format, ...);
 
 // Spreadsheet functions
-void spreadsheetFullRedraw(struct SpreadsheetScreenData* sheet);
-int spreadsheetInput(struct SpreadsheetScreenData* sheet, int keys, int isDoubleTap);
-
-// Form functions
-void formFullRedraw(struct FormScreenData* form);
-int formInput(struct FormScreenData* form, int keys, int isDoubleTap);
+void screenFullRedraw(struct ScreenData* screen);
+int screenInput(struct ScreenData* screen, int keys, int isDoubleTap);
 
 // Utility functions
 void setCellColor(int state, int isEmpty, int hasContent);

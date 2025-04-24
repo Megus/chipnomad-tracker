@@ -11,22 +11,25 @@ static uint8_t lastInstrument = 0;
 static uint8_t lastVolume = 15;
 static uint8_t lastFX[2];
 
-static void drawCell(int col, int row, int state);
+static int getColumnCount(int row);
+static void drawStatic(void);
+static void drawField(int col, int row, int state);
 static void drawRowHeader(int row, int state);
 static void drawColHeader(int col, int state);
 static void drawCursor(int col, int row);
 static int onEdit(int col, int row, enum CellEditAction action);
 
-static struct SpreadsheetScreenData sheet = {
+static struct ScreenData sheet = {
   .rows = 16,
-  .cols = 9,
   .cursorRow = 0,
   .cursorCol = 0,
   .topRow = 0,
+  .getColumnCount = getColumnCount,
+  .drawStatic = drawStatic,
   .drawCursor = drawCursor,
   .drawRowHeader = drawRowHeader,
   .drawColHeader = drawColHeader,
-  .drawCell = drawCell,
+  .drawField = drawField,
   .onEdit = onEdit,
 };
 
@@ -39,14 +42,22 @@ static void setup(int input) {
 // Drawing functions
 //
 
+static int getColumnCount(int row) {
+  return 9;
+}
+
+static void drawStatic(void) {
+
+}
+
 static void fullRedraw(void) {
   gfxSetFgColor(appSettings.colorScheme.textTitles);
   gfxPrintf(0, 0, "PHRASE %03X", phrase);
 
-  spreadsheetFullRedraw(&sheet);
+  screenFullRedraw(&sheet);
 }
 
-static void drawCell(int col, int row, int state) {
+static void drawField(int col, int row, int state) {
   if (col == 0) {
     // Note
     uint8_t value = project.phrases[phrase].notes[row];
@@ -171,8 +182,8 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 
     if (handled) {
       // Also draw instrument and volume as they could change
-      drawCell(1, row, 0);
-      drawCell(2, row, 0);
+      drawField(1, row, 0);
+      drawField(2, row, 0);
     }
   } else if (col == 1) {
     // Instrument
@@ -283,7 +294,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
 
 static void onInput(int keys, int isDoubleTap) {
   if (inputScreenNavigation(keys, isDoubleTap)) return;
-  if (spreadsheetInput(&sheet, keys, isDoubleTap)) return;
+  if (screenInput(&sheet, keys, isDoubleTap)) return;
 }
 
 const struct AppScreen screenPhrase = {

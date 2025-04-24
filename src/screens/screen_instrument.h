@@ -3,12 +3,12 @@
 
 #include <screens.h>
 
-int formInstrumentCommonColumnCount(int row);
-void formInstrumentCommonDrawForm(void);
-void formInstrumentCommonDrawCursor(int col, int row);
-void formInstrumentCommonDrawField(int col, int row);
-int formInstrumentCommonOnEdit(int col, int row, enum CellEditAction action);
+int instrumentCommonColumnCount(int row);
+void instrumentCommonDrawStatic(void);
+void instrumentCommonDrawCursor(int col, int row);
+void instrumentCommonDrawField(int col, int row, int state);
+int instrumentCommonOnEdit(int col, int row, enum CellEditAction action);
 
-extern struct FormScreenData formInstrumentAY;
+extern struct ScreenData formInstrumentAY;
 
 #endif

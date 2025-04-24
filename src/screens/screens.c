@@ -73,70 +73,82 @@ void screenMessage(const char* format, ...) {
 // Spreadsheet screen functions
 //
 
-void spreadsheetFullRedraw(struct SpreadsheetScreenData* sheet) {
+void screenFullRedraw(struct ScreenData* screen) {
+  // Static content
+  screen->drawStatic();
+
   // Cells
-  for (int row = sheet->topRow; row < sheet->topRow + 16; row++) {
-    for (int col = 0; col < sheet->cols; col++) {
-      sheet->drawCell(col, row, (sheet->cursorCol == col && sheet->cursorRow == row) ? stateFocus : 0);
+  for (int row = screen->topRow; row < screen->topRow + 16; row++) {
+    for (int col = 0; col < screen->getColumnCount(row); col++) {
+      screen->drawField(col, row, (screen->cursorCol == col && screen->cursorRow == row) ? stateFocus : 0);
     }
   }
 
-  // Headers
-  for (int row = sheet->topRow; row < sheet->topRow + 16; row++) {
-    sheet->drawRowHeader(row, (sheet->cursorRow == row) ? stateFocus : 0);
+  // Row headers
+  for (int row = screen->topRow; row < screen->topRow + 16; row++) {
+    screen->drawRowHeader(row, (screen->cursorRow == row) ? stateFocus : 0);
   }
 
-  for (int col = 0; col < sheet->cols; col++) {
-    sheet->drawColHeader(col, (sheet->cursorCol == col) ? stateFocus : 0);
+  // Column headers make sense only for spreadsheet-like screens, so we get the number of columns of the first row
+  for (int col = 0; col < screen->getColumnCount(0); col++) {
+    screen->drawColHeader(col, (screen->cursorCol == col) ? stateFocus : 0);
   }
 
   // Cursor
-  sheet->drawCursor(sheet->cursorCol, sheet->cursorRow);
+  screen->drawCursor(screen->cursorCol, screen->cursorRow);
 }
 
-static int spreadsheetInputCursor(struct SpreadsheetScreenData* sheet, int keys, int isDoubleTap) {
-  int oldCursorCol = sheet->cursorCol;
-  int oldCursorRow = sheet->cursorRow;
+static int spreadsheetInputCursor(struct ScreenData* screen, int keys, int isDoubleTap) {
+  int oldCursorCol = screen->cursorCol;
+  int oldCursorRow = screen->cursorRow;
   int handled = 0;
   int redrawn = 0;
 
   if (keys == keyLeft) {
-    if (sheet->cursorCol > 0) sheet->cursorCol--;
+    if (screen->cursorCol > 0) screen->cursorCol--;
     handled = 1;
   } else if (keys == keyRight) {
-    if (sheet->cursorCol < sheet->cols - 1) sheet->cursorCol++;
+    if (screen->cursorCol < screen->getColumnCount(screen->cursorRow) - 1) screen->cursorCol++;
     handled = 1;
   } else if (keys == keyUp) {
-    if (sheet->cursorRow > 0) sheet->cursorRow--;
-    if (sheet->cursorRow < sheet->topRow) {
-      sheet->topRow--;
-      spreadsheetFullRedraw(sheet);
+    if (screen->cursorRow > 0) screen->cursorRow--;
+    if (screen->cursorRow < screen->topRow) {
+      screen->topRow--;
+      screenFullRedraw(screen);
       redrawn = 1;
     }
+    int columns = screen->getColumnCount(screen->cursorRow);
+    if (screen->cursorCol >= columns) screen->cursorCol = columns - 1;
     handled = 1;
   } else if (keys == keyDown) {
-    if (sheet->cursorRow < sheet->rows - 1) sheet->cursorRow++;
-    if (sheet->cursorRow >= sheet->topRow + 16) {
-      sheet->topRow++;
-      spreadsheetFullRedraw(sheet);
+    if (screen->cursorRow < screen->rows - 1) screen->cursorRow++;
+    if (screen->cursorRow >= screen->topRow + 16) {
+      screen->topRow++;
+      screenFullRedraw(screen);
       redrawn = 1;
     }
+    int columns = screen->getColumnCount(screen->cursorRow);
+    if (screen->cursorCol >= columns) screen->cursorCol = columns - 1;
     handled = 1;
   } else if (keys == (keyDown | keyOpt)) {
-    if (sheet->cursorRow + 16 < sheet->rows) {
-      sheet->cursorRow += 16;
-      sheet->topRow += 16;
-      if (sheet->topRow + 16 >= sheet->rows) sheet->topRow = sheet->rows - 16;
-      spreadsheetFullRedraw(sheet);
+    if (screen->cursorRow + 16 < screen->rows) {
+      screen->cursorRow += 16;
+      screen->topRow += 16;
+      if (screen->topRow + 16 >= screen->rows) screen->topRow = screen->rows - 16;
+      screenFullRedraw(screen);
+      int columns = screen->getColumnCount(screen->cursorRow);
+      if (screen->cursorCol >= columns) screen->cursorCol = columns - 1;
       redrawn = 1;
       handled = 1;
     }
   } else if (keys == (keyUp | keyOpt)) {
-    if (sheet->cursorRow - 16 >= 0) {
-      sheet->cursorRow -= 16;
-      sheet->topRow -= 16;
-      if (sheet->topRow < 0) sheet->topRow = 0;
-      spreadsheetFullRedraw(sheet);
+    if (screen->cursorRow - 16 >= 0) {
+      screen->cursorRow -= 16;
+      screen->topRow -= 16;
+      if (screen->topRow < 0) screen->topRow = 0;
+      screenFullRedraw(screen);
+      int columns = screen->getColumnCount(screen->cursorRow);
+      if (screen->cursorCol >= columns) screen->cursorCol = columns - 1;
       redrawn = 1;
       handled = 1;
     }
@@ -144,70 +156,47 @@ static int spreadsheetInputCursor(struct SpreadsheetScreenData* sheet, int keys,
 
   if (handled && !redrawn) {
     // Erase old cursor
-    sheet->drawCell(oldCursorCol, oldCursorRow, 0);
-    sheet->drawRowHeader(oldCursorRow, 0);
-    sheet->drawColHeader(oldCursorCol, 0);
+    screen->drawField(oldCursorCol, oldCursorRow, 0);
+    screen->drawRowHeader(oldCursorRow, 0);
+    screen->drawColHeader(oldCursorCol, 0);
     // Draw new cursor
-    sheet->drawCell(sheet->cursorCol, sheet->cursorRow, stateFocus);
-    sheet->drawRowHeader(sheet->cursorRow, stateFocus);
-    sheet->drawColHeader(sheet->cursorCol, stateFocus);
-    sheet->drawCursor(sheet->cursorCol, sheet->cursorRow);
+    screen->drawField(screen->cursorCol, screen->cursorRow, stateFocus);
+    screen->drawRowHeader(screen->cursorRow, stateFocus);
+    screen->drawColHeader(screen->cursorCol, stateFocus);
+    screen->drawCursor(screen->cursorCol, screen->cursorRow);
   }
   return handled;
 }
 
-static int spreadsheetInputEdit(struct SpreadsheetScreenData* sheet, int keys, int isDoubleTap) {
+static int spreadsheetInputEdit(struct ScreenData* screen, int keys, int isDoubleTap) {
   int handled = 0;
 
   if (keys == keyEdit && isDoubleTap == 0) {
-    handled = sheet->onEdit(sheet->cursorCol, sheet->cursorRow, editTap);
+    handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editTap);
   } else if (keys == keyEdit && isDoubleTap == 1) {
-    handled = sheet->onEdit(sheet->cursorCol, sheet->cursorRow, editDoubleTap);
+    handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editDoubleTap);
   } else if (keys == (keyRight | keyEdit)) {
-    handled = sheet->onEdit(sheet->cursorCol, sheet->cursorRow, editIncrease);
+    handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editIncrease);
   } else if (keys == (keyLeft | keyEdit)) {
-    handled = sheet->onEdit(sheet->cursorCol, sheet->cursorRow, editDecrease);
+    handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editDecrease);
   } else if (keys == (keyUp | keyEdit)) {
-    handled = sheet->onEdit(sheet->cursorCol, sheet->cursorRow, editIncreaseBig);
+    handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editIncreaseBig);
   } else if (keys == (keyDown | keyEdit)) {
-    handled = sheet->onEdit(sheet->cursorCol, sheet->cursorRow, editDecreaseBig);
+    handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editDecreaseBig);
   } else if (keys == (keyEdit | keyOpt)) {
-    handled = sheet->onEdit(sheet->cursorCol, sheet->cursorRow, editClear);
+    handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editClear);
   }
 
   if (handled) {
-    sheet->drawCell(sheet->cursorCol, sheet->cursorRow, stateFocus);
-    sheet->drawCursor(sheet->cursorCol, sheet->cursorRow);
+    screen->drawField(screen->cursorCol, screen->cursorRow, stateFocus);
+    screen->drawCursor(screen->cursorCol, screen->cursorRow);
   }
   return handled;
 }
 
-int spreadsheetInput(struct SpreadsheetScreenData* sheet, int keys, int isDoubleTap) {
-  if (spreadsheetInputCursor(sheet, keys, isDoubleTap)) return 1;
-  return spreadsheetInputEdit(sheet, keys, isDoubleTap);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// Form screen functions
-//
-
-void formFullRedraw(struct FormScreenData* form) {
-
-}
-
-static int formInputCursor(struct FormScreenData* form, int keys, int isDoubleTap) {
-  return 0;
-}
-
-static int formInputEdit(struct FormScreenData* form, int keys, int isDoubleTap) {
-
-  return 0;
-}
-
-int formInput(struct FormScreenData* form, int keys, int isDoubleTap) {
-  if (formInputCursor(form, keys, isDoubleTap)) return 1;
-  return formInputEdit(form, keys, isDoubleTap);
+int screenInput(struct ScreenData* screen, int keys, int isDoubleTap) {
+  if (spreadsheetInputCursor(screen, keys, isDoubleTap)) return 1;
+  return spreadsheetInputEdit(screen, keys, isDoubleTap);
 }
 
 

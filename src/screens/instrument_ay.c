@@ -2,36 +2,34 @@
 
 
 static int getColumnCount(int row) {
-  if (row < 3) return formInstrumentCommonColumnCount(row);
+  if (row < 3) return instrumentCommonColumnCount(row);
   return 1;
 }
 
-static void drawForm(void) {
-  formInstrumentCommonDrawForm();
-
+static void drawStatic(void) {
+  instrumentCommonDrawStatic();
 }
 
 static void drawCursor(int col, int row) {
-  if (row < 3) return formInstrumentCommonDrawCursor(col, row);
+  if (row < 3) return instrumentCommonDrawCursor(col, row);
 }
 
-static void drawField(int col, int row) {
-  if (row < 3) return formInstrumentCommonDrawField(col, row);
+static void drawField(int col, int row, int state) {
+  if (row < 3) return instrumentCommonDrawField(col, row, state);
 }
 
 static int onEdit(int col, int row, enum CellEditAction action) {
-  if (row < 3) return formInstrumentCommonOnEdit(col, row, action);
+  if (row < 3) return instrumentCommonOnEdit(col, row, action);
 
   return 0;
 }
 
-
-struct FormScreenData formInstrumentAY = {
+struct ScreenData formInstrumentAY = {
   .rows = 7,
   .cursorRow = 0,
   .cursorCol = 0,
   .getColumnCount = getColumnCount,
-  .drawForm = drawForm,
+  .drawStatic = drawStatic,
   .drawCursor = drawCursor,
   .drawField = drawField,
   .onEdit = onEdit,

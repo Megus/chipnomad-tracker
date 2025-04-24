@@ -8,22 +8,25 @@
 // Screen state variables
 static uint16_t lastChainValue = 0;
 
-static void drawCell(int col, int row, int state);
+static int getColumnCount(int row);
+static void drawStatic(void);
+static void drawField(int col, int row, int state);
 static void drawRowHeader(int row, int state);
 static void drawColHeader(int col, int state);
 static void drawCursor(int col, int row);
 static int onEdit(int col, int row, enum CellEditAction action);
 
-static struct SpreadsheetScreenData sheet = {
+static struct ScreenData sheet = {
   .rows = PROJECT_MAX_LENGTH,
-  .cols = 1, // Will overwrite in setup
   .cursorRow = 0,
   .cursorCol = 0,
   .topRow = 0,
+  .getColumnCount = getColumnCount,
+  .drawStatic = drawStatic,
   .drawCursor = drawCursor,
   .drawRowHeader = drawRowHeader,
   .drawColHeader = drawColHeader,
-  .drawCell = drawCell,
+  .drawField = drawField,
   .onEdit = onEdit,
 };
 
@@ -31,7 +34,6 @@ void setup(int input) {
   pSongRow = &sheet.cursorRow;
   pSongTrack = &sheet.cursorCol;
 
-  sheet.cols = project.tracksCount;
 
   if (input == 0x1234) { // Just a random value for now
     sheet.cursorRow = 0;
@@ -46,7 +48,15 @@ void setup(int input) {
 // Drawing functions
 //
 
-static void drawCell(int col, int row, int state) {
+static int getColumnCount(int row) {
+  return project.tracksCount;
+}
+
+static void drawStatic(void) {
+
+}
+
+static void drawField(int col, int row, int state) {
   if (row < sheet.topRow || row >= (sheet.topRow + 16)) return; // Don't draw outside of the viewing area
 
   int chain = project.song[row][col];
@@ -78,7 +88,7 @@ static void fullRedraw(void) {
   gfxSetFgColor(appSettings.colorScheme.textTitles);
   gfxPrint(0, 0, "SONG");
 
-  spreadsheetFullRedraw(&sheet);
+  screenFullRedraw(&sheet);
 }
 
 static void draw(void) {
@@ -144,7 +154,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 
 static void onInput(int keys, int isDoubleTap) {
   if (inputScreenNavigation(keys, isDoubleTap)) return;
-  if (spreadsheetInput(&sheet, keys, isDoubleTap)) return;
+  if (screenInput(&sheet, keys, isDoubleTap)) return;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
