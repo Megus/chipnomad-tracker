@@ -72,7 +72,7 @@ char charEditInput(int keys, int isDoubleTap, char* str, int idx, int maxLen);
 
 // FX edit
 int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX);
-int fxEditInput(int keys, int isDoubleTap);
+int fxEditInput(int keys, int isDoubleTap, uint8_t* fx, uint8_t* lastFX);
 
 #endif
 

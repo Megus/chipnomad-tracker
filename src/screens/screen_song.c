@@ -16,7 +16,7 @@ static void drawColHeader(int col, int state);
 static void drawCursor(int col, int row);
 static int onEdit(int col, int row, enum CellEditAction action);
 
-static struct ScreenData sheet = {
+static struct ScreenData screen = {
   .rows = PROJECT_MAX_LENGTH,
   .cursorRow = 0,
   .cursorCol = 0,
@@ -31,14 +31,14 @@ static struct ScreenData sheet = {
 };
 
 void setup(int input) {
-  pSongRow = &sheet.cursorRow;
-  pSongTrack = &sheet.cursorCol;
+  pSongRow = &screen.cursorRow;
+  pSongTrack = &screen.cursorCol;
 
 
   if (input == 0x1234) { // Just a random value for now
-    sheet.cursorRow = 0;
-    sheet.cursorCol = 0;
-    sheet.topRow = 0;
+    screen.cursorRow = 0;
+    screen.cursorCol = 0;
+    screen.topRow = 0;
     lastChainValue = 0;
   }
 }
@@ -58,18 +58,18 @@ static void drawStatic(void) {
 }
 
 static void drawField(int col, int row, int state) {
-  if (row < sheet.topRow || row >= (sheet.topRow + 16)) return; // Don't draw outside of the viewing area
+  if (row < screen.topRow || row >= (screen.topRow + 16)) return; // Don't draw outside of the viewing area
 
   int chain = project.song[row][col];
   setCellColor(state, chain == EMPTY_VALUE_16, chain != EMPTY_VALUE_16 && chainHasNotes(chain));
-  gfxPrint(3 + col * 3, 3 + row - sheet.topRow, chain == EMPTY_VALUE_16 ? "--" : byteToHex(chain));
+  gfxPrint(3 + col * 3, 3 + row - screen.topRow, chain == EMPTY_VALUE_16 ? "--" : byteToHex(chain));
 }
 
 static void drawRowHeader(int row, int state) {
   const struct ColorScheme cs = appSettings.colorScheme;
 
   gfxSetFgColor((state & stateFocus) ? cs.textDefault : cs.textInfo);
-  gfxPrint(0, 3 + row - sheet.topRow, byteToHex(row));
+  gfxPrint(0, 3 + row - screen.topRow, byteToHex(row));
 }
 
 static void drawColHeader(int col, int state) {
@@ -82,18 +82,18 @@ static void drawColHeader(int col, int state) {
 }
 
 static void drawCursor(int col, int row) {
-  gfxCursor(3 + col * 3, 3 + row - sheet.topRow, 2);
+  gfxCursor(3 + col * 3, 3 + row - screen.topRow, 2);
 }
 
 static void fullRedraw(void) {
-  screenFullRedraw(&sheet);
+  screenFullRedraw(&screen);
 }
 
 static void draw(void) {
   for (int c = 0; c < project.tracksCount; c++) {
     gfxClearRect(2 + c * 3, 3, 1, 16);
     if (playback.tracks[c].songRow != EMPTY_VALUE_16) {
-      int row = playback.tracks[c].songRow - sheet.topRow;
+      int row = playback.tracks[c].songRow - screen.topRow;
       if (row >= 0 && row < 16) {
         gfxSetFgColor(appSettings.colorScheme.playMarkers);
         gfxPrint(2 + c * 3, 3 + row, ">");
@@ -110,7 +110,7 @@ static void draw(void) {
 static int inputScreenNavigation(int keys, int isDoubleTap) {
   // Go to Chain screen
   if (keys == (keyRight | keyShift)) {
-    int chain = project.song[sheet.cursorRow][sheet.cursorCol];
+    int chain = project.song[screen.cursorRow][screen.cursorCol];
 
     if (chain == EMPTY_VALUE_16) {
       screenMessage("Enter a chain");
@@ -152,7 +152,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 
 static void onInput(int keys, int isDoubleTap) {
   if (inputScreenNavigation(keys, isDoubleTap)) return;
-  if (screenInput(&sheet, keys, isDoubleTap)) return;
+  if (screenInput(&screen, keys, isDoubleTap)) return;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

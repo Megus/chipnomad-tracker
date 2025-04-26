@@ -7,19 +7,42 @@
 
 struct Project project;
 
-// Start from 0
-char fxCommon[][4] = {
-  "ARP", "ARC", "PVB", "PBN", "PSL", "PIT", // Pitch
-  "RET", "DEL", "OFF", "KIL", // Sequencer
-  "TIC", "TBL", "TBX", "THO", // Table
-  "GRV", "GGR", "SNG",
-};
+struct FXName fxNames[256];
 
-// Start from 64
-char fxAY[][4] = {
-  "AYM", "ERT", "NOI", "NOA",
-  "EAU", "EVB", "EBN", "ESL", "ENA", "ENR", "EPR", "EPL", "EPH",
+// FX Names (in the order as they appear in FX select screen)
+struct FXName fxCommon[] = {
+  {fxARP, "ARP"}, {fxARC, "ARC"}, {fxPVB, "PVB"}, {fxPBN, "PBN"}, {fxPSL, "PSL"}, {fxPIT, "PIT"}, // Pitch
+  {fxRET, "RET"}, {fxDEL, "DEL"}, {fxOFF, "OFF"}, {fxKIL, "KIL"}, // Sequencer
+  {fxTIC, "TIC"}, {fxTBL, "TBL"}, {fxTBX, "TBX"}, {fxTHO, "THO"}, // Table
+  {fxGRV, "GRV"}, {fxGGR, "GGR"}, {fxSNG, "SNG"},
 };
+int fxCommonCount = sizeof(fxCommon) / sizeof(struct FXName);
+
+struct FXName fxAY[] = {
+  {fxAYM, "AYM"}, {fxERT, "ERT"}, {fxNOI, "NOI"}, {fxNOA, "NOA"},
+  {fxEAU, "EAU"}, {fxEVB, "EVB"}, {fxEBN, "EBN"}, {fxESL, "ESL"},
+  {fxENA, "ENA"}, {fxENR, "ENR"}, {fxEPR, "EPR"}, {fxEPL, "EPL"}, {fxEPH, "EPH"},
+};
+int fxAYCount = sizeof(fxAY) / sizeof(struct FXName);
+
+// Fill FX names
+void fillFXNames() {
+  for (int c = 0; c < 256; c++) {
+    strcpy(fxNames[c].name, "---");
+    fxNames[c].fx = c;
+  }
+
+  for (int c = 0; c < fxCommonCount; c++) {
+    strcpy(fxNames[fxCommon[c].fx].name, fxCommon[c].name);
+    fxNames[fxCommon[c].fx].fx = fxCommon[c].fx;
+  }
+
+  for (int c = 0; c < fxAYCount; c++) {
+    strcpy(fxNames[fxAY[c].fx].name, fxAY[c].name);
+    fxNames[fxAY[c].fx].fx = fxAY[c].fx;
+  }
+}
+
 
 // Create 12TET scale
 void calculatePitchTableAY(struct Project* p) {
@@ -247,19 +270,6 @@ int8_t grooveIsEmpty(int groove) {
   return 1;
 }
 
-// FX name
-char* fxName(uint8_t fx) {
-  if (fx == EMPTY_VALUE_8) {
-    return "---";
-  } else if (fx < 0x40) {
-    // Common FX
-    return (fx >= sizeof(fxCommon) / 4) ? "---" : fxCommon[fx];
-  } else {
-    // Chip-specific FX. Currently AY-only
-    return (fx - 0x40 >= sizeof(fxAY) / 4) ? "---" : fxAY[fx - 0x40];
-  }
-}
-
 // Instrument name
 char* instrumentName(uint8_t instrument) {
   if (project.instruments[instrument].type == instNone) return "None";
@@ -360,13 +370,13 @@ static uint8_t scanFX(char* str, struct Project* p) {
   if (!strcmp(buf, "---")) return EMPTY_VALUE_8;
 
   // Common FX
-  for (int c = 0; c < sizeof(fxCommon) / 4; c++) {
-    if (!strcmp(buf, fxCommon[c])) return c;
+  for (int c = 0; c < fxCommonCount; c++) {
+    if (!strcmp(buf, fxCommon[c].name)) return fxCommon[c].fx;
   }
 
   // AY FX
-  for (int c = 0; c < sizeof(fxAY) / 4; c++) {
-    if (!strcmp(buf, fxAY[c])) return c + 64;
+  for (int c = 0; c < fxAYCount; c++) {
+    if (!strcmp(buf, fxAY[c].name)) return fxAY[c].fx;
   }
 
   return EMPTY_VALUE_8;
@@ -703,11 +713,11 @@ static int projectSavePhrases(int fileId) {
           noteName(project.phrases[c].notes[d]),
           byteToHexOrEmpty(project.phrases[c].instruments[d]),
           byteToHexOrEmpty(project.phrases[c].volumes[d]),
-          fxName(project.phrases[c].fx[d][0][0]),
+          fxNames[project.phrases[c].fx[d][0][0]].name,
           byteToHex(project.phrases[c].fx[d][0][1]),
-          fxName(project.phrases[c].fx[d][1][0]),
+          fxNames[project.phrases[c].fx[d][1][0]].name,
           byteToHex(project.phrases[c].fx[d][1][1]),
-          fxName(project.phrases[c].fx[d][2][0]),
+          fxNames[project.phrases[c].fx[d][2][0]].name,
           byteToHex(project.phrases[c].fx[d][2][1])
         );
       }

@@ -16,7 +16,7 @@ static void drawColHeader(int col, int state);
 static void drawCursor(int col, int row);
 static int onEdit(int col, int row, enum CellEditAction action);
 
-static struct ScreenData sheet = {
+static struct ScreenData screen = {
   .rows = 16,
   .cursorRow = 0,
   .cursorCol = 0,
@@ -31,7 +31,7 @@ static struct ScreenData sheet = {
 };
 
 static void setup(int input) {
-  pChainRow = &sheet.cursorRow;
+  pChainRow = &screen.cursorRow;
   chain = project.song[*pSongRow][*pSongTrack];
 }
 
@@ -97,7 +97,7 @@ static void drawCursor(int col, int row) {
 }
 
 static void fullRedraw(void) {
-  screenFullRedraw(&sheet);
+  screenFullRedraw(&screen);
 }
 
 static void draw(void) {
@@ -152,7 +152,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 static int inputScreenNavigation(int keys, int isDoubleTap) {
   if (keys == (keyRight | keyShift)) {
     // To Phrase screen
-    int phrase = project.chains[chain].phrases[sheet.cursorRow];
+    int phrase = project.chains[chain].phrases[screen.cursorRow];
     if (phrase == EMPTY_VALUE_16) {
       screenMessage("Enter a phrase");
     } else {
@@ -204,7 +204,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
 
 static void onInput(int keys, int isDoubleTap) {
   if (inputScreenNavigation(keys, isDoubleTap)) return;
-  if (screenInput(&sheet, keys, isDoubleTap)) return;
+  if (screenInput(&screen, keys, isDoubleTap)) return;
 }
 
 const struct AppScreen screenChain = {

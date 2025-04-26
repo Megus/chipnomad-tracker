@@ -229,7 +229,7 @@ static void onInput(int keys, int isDoubleTap) {
   if (isCharEdit) {
     struct ScreenData* screen = instrumentScreen();
     char result = charEditInput(keys, isDoubleTap, project.instruments[cInstrument].name, screen->cursorCol, PROJECT_INSTRUMENT_NAME_LENGTH);
-    if (result != 0) {
+    if (result) {
       isCharEdit = 0;
       if (screen->cursorCol < 15) screen->cursorCol++;
       fullRedraw();

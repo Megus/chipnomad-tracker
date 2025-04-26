@@ -83,6 +83,53 @@ struct Groove {
 };
 
 // Phrases
+enum FX {
+  fxARP,
+  fxARC,
+  fxPVB,
+  fxPBN,
+  fxPSL,
+  fxPIT,
+  fxRET,
+  fxDEL,
+  fxOFF,
+  fxKIL,
+  fxTIC,
+  fxTBL,
+  fxTBX,
+  fxTHO,
+  fxGRV,
+  fxGGR,
+  fxSNG,
+  // AY-specific FX
+  fxAYM,
+  fxERT,
+  fxNOI,
+  fxNOA,
+  fxEAU,
+  fxEVB,
+  fxEBN,
+  fxESL,
+  fxENA,
+  fxENR,
+  fxEPR,
+  fxEPL,
+  fxEPH,
+  // Terminate
+  fxTotalCount
+};
+
+// Start from 0
+struct FXName {
+  enum FX fx;
+  char name[4];
+};
+
+extern struct FXName fxNames[256]; // All names
+extern struct FXName fxCommon[]; // Common FX names
+extern int fxCommonCount;
+extern struct FXName fxAY[]; // AY FX names
+extern int fxAYCount;
 
 struct Phrase {
   int8_t hasNotes;
@@ -160,11 +207,12 @@ int8_t instrumentIsEmpty(int instrument);
 int8_t tableIsEmpty(int table);
 // Is groove empty?
 int8_t grooveIsEmpty(int groove);
-// FX name
-char* fxName(uint8_t fx);
 // Instrument name
 char* instrumentName(uint8_t instrument);
 // Note name in phrase
 char* noteName(uint8_t note);
+
+// Fill FX names
+void fillFXNames();
 
 #endif

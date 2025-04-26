@@ -98,6 +98,8 @@ void appSetup(void) {
   gfxSetBgColor(appSettings.colorScheme.background);
   gfxClear();
 
+  fillFXNames();
+
   // Try to load an auto-saved project
   if (projectLoad(AUTOSAVE_FILENAME)) {
     projectInit(&project);

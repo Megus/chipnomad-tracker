@@ -5,11 +5,12 @@
 #include <project.h>
 
 static int phrase = 0;
+static int isFxEdit = 0;
 
 static uint8_t lastNote = 48;
 static uint8_t lastInstrument = 0;
 static uint8_t lastVolume = 15;
-static uint8_t lastFX[2];
+static uint8_t lastFX[2] = {0, 0};
 
 static int getColumnCount(int row);
 static void drawStatic(void);
@@ -19,7 +20,7 @@ static void drawColHeader(int col, int state);
 static void drawCursor(int col, int row);
 static int onEdit(int col, int row, enum CellEditAction action);
 
-static struct ScreenData sheet = {
+static struct ScreenData screen = {
   .rows = 16,
   .cursorRow = 0,
   .cursorCol = 0,
@@ -35,6 +36,7 @@ static struct ScreenData sheet = {
 
 static void setup(int input) {
   phrase = project.chains[project.song[*pSongRow][*pSongTrack]].phrases[*pChainRow];
+  isFxEdit = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -52,7 +54,7 @@ static void drawStatic(void) {
 }
 
 static void fullRedraw(void) {
-  screenFullRedraw(&sheet);
+  screenFullRedraw(&screen);
 }
 
 static void drawField(int col, int row, int state) {
@@ -70,7 +72,7 @@ static void drawField(int col, int row, int state) {
     // FX name
     uint8_t fx = project.phrases[phrase].fx[row][(col - 3) / 2][0];
     setCellColor(state, fx == EMPTY_VALUE_8, 1);
-    gfxPrint(4 + col * 3, 3 + row, fxName(fx));
+    gfxPrint(4 + col * 3, 3 + row, fxNames[fx].name);
   } else if (col == 4 || col == 6 || col == 8) {
     // FX value
     uint8_t value = project.phrases[phrase].fx[row][(col - 4) / 2][1];
@@ -123,6 +125,8 @@ static void drawCursor(int col, int row) {
 }
 
 static void draw(void) {
+  if (isFxEdit) return;
+
   gfxClearRect(0, 3, 1, 16);
   gfxSetFgColor(appSettings.colorScheme.textInfo);
   gfxPrint(0, 3 + *pChainRow, "<");
@@ -145,7 +149,7 @@ static void draw(void) {
         gfxPrint(2, 3 + row, ">");
       }
     }
-    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -202,7 +206,16 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   } else if (col == 3 || col == 5 || col == 7) {
     // FX
     int fxIdx = (col - 3) / 2;
-    handled = editFX(action, project.phrases[phrase].fx[row][fxIdx], lastFX);
+    int result = editFX(action, project.phrases[phrase].fx[row][fxIdx], lastFX);
+    if (result == 2) {
+      // Edited FX without showing FX select screen
+      drawField(col + 1, row, 0);
+      handled = 1;
+    } else if (result == 1) {
+      // Showing FX select screen
+      isFxEdit = 1;
+      handled = 0;
+    }
   } else if (col == 4 || col == 6 || col == 8) {
     // FX value
     int fxIdx = (col - 4) / 2;
@@ -214,7 +227,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   if (handled) {
     project.phrases[phrase].hasNotes = -1;
     project.chains[project.song[*pSongRow][*pSongTrack]].hasNotes = -1;
-    playbackStartPhraseRow(&playback, *pSongTrack, *pSongRow, *pChainRow, sheet.cursorRow);
+    playbackStartPhraseRow(&playback, *pSongTrack, *pSongRow, *pChainRow, screen.cursorRow);
   }
 
   return handled;
@@ -264,23 +277,23 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
       fullRedraw();
     }
     return 1;
-  } else if ((keys == (keyUp | keyOpt)) || (keys == keyUp && sheet.cursorRow == 0)) {
+  } else if ((keys == (keyUp | keyOpt)) || (keys == keyUp && screen.cursorRow == 0)) {
     // Previous phrase in the chain
     if (*pChainRow == 0) return 1;
     if (project.chains[project.song[*pSongRow][*pSongTrack]].phrases[*pChainRow - 1] != EMPTY_VALUE_16) {
       *pChainRow -= 1;
-      if (keys == keyUp) sheet.cursorRow = 15;
+      if (keys == keyUp) screen.cursorRow = 15;
       setup(-1);
       playbackQueuePhrase(&playback, *pSongTrack, *pSongRow, *pChainRow);
       fullRedraw();
     }
     return 1;
-  } else if (keys == (keyDown | keyOpt) || (keys == keyDown && sheet.cursorRow == 15)) {
+  } else if (keys == (keyDown | keyOpt) || (keys == keyDown && screen.cursorRow == 15)) {
     // Next phrase in the chain
     if (*pChainRow == 15) return 1;
     if (project.chains[project.song[*pSongRow][*pSongTrack]].phrases[*pChainRow + 1] != EMPTY_VALUE_16) {
       *pChainRow += 1;
-      if (keys == keyDown) sheet.cursorRow = 0;
+      if (keys == keyDown) screen.cursorRow = 0;
       setup(-1);
       playbackQueuePhrase(&playback, *pSongTrack, *pSongRow, *pChainRow);
       fullRedraw();
@@ -291,8 +304,17 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
 }
 
 static void onInput(int keys, int isDoubleTap) {
+  if (isFxEdit) {
+    int fxIdx = (screen.cursorCol - 3) / 2;
+    int result = fxEditInput(keys, isDoubleTap, project.phrases[phrase].fx[screen.cursorRow][fxIdx], lastFX);
+    if (result) {
+      isFxEdit = 0;
+      fullRedraw();
+    }
+  }
+
   if (inputScreenNavigation(keys, isDoubleTap)) return;
-  if (screenInput(&sheet, keys, isDoubleTap)) return;
+  if (screenInput(&screen, keys, isDoubleTap)) return;
 }
 
 const struct AppScreen screenPhrase = {
