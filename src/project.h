@@ -69,7 +69,7 @@ union InstrumentChipData {
 };
 
 struct Instrument {
-  enum InstrumentType type;
+  uint8_t type; // enum InstrumentType
   char name[16];
   uint8_t tableSpeed;
   uint8_t transposeEnabled;

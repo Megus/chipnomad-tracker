@@ -52,20 +52,18 @@
 #endif
 
 static int decodeKey(int sym) {
-  switch (sym) {
-    case BTN_UP: return keyUp;
-    case BTN_DOWN: return keyDown;
-    case BTN_LEFT: return keyLeft;
-    case BTN_RIGHT: return keyRight;
-    case BTN_A: return keyEdit;
-    case BTN_B: return keyOpt;
-    case BTN_START: return keyPlay;
-    case BTN_SELECT: return keyShift;
-    case BTN_R1: return keyShift;
-    case BTN_VOLUME_UP: return keyVolumeUp;
-    case BTN_VOLUME_DOWN: return keyVolumeDown;
-    default: return -1;
-  }
+  // If a key is not recognized, return zero
+  if (sym == BTN_UP) return keyUp;
+  if (sym == BTN_DOWN) return keyDown;
+  if (sym == BTN_LEFT) return keyLeft;
+  if (sym == BTN_RIGHT) return keyRight;
+  if (sym == BTN_A) return keyEdit;
+  if (sym == BTN_B) return keyOpt;
+  if (sym == BTN_START) return keyPlay;
+  if (sym == BTN_SELECT || sym == BTN_R1 || sym == BTN_L1) return keyShift;
+  if (sym == BTN_VOLUME_UP) return keyVolumeUp;
+  if (sym == BTN_VOLUME_DOWN) return keyVolumeDown;
+  return 0;
 }
 
 void mainLoopRun(void (*draw)(void), void (*onEvent)(enum MainLoopEvent event, int value, void* userdata)) {

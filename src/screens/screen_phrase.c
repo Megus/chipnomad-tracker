@@ -47,13 +47,11 @@ static int getColumnCount(int row) {
 }
 
 static void drawStatic(void) {
-
+  gfxSetFgColor(appSettings.colorScheme.textTitles);
+  gfxPrintf(0, 0, "PHRASE %03X", phrase);
 }
 
 static void fullRedraw(void) {
-  gfxSetFgColor(appSettings.colorScheme.textTitles);
-  gfxPrintf(0, 0, "PHRASE %03X", phrase);
-
   screenFullRedraw(&sheet);
 }
 
@@ -157,7 +155,7 @@ static void draw(void) {
 
 static int onEdit(int col, int row, enum CellEditAction action) {
   int handled = 0;
-  uint8_t maxVolume = 16; // This is for AY, will add m ore conditions in the future
+  uint8_t maxVolume = 15; // This is for AY, will add m ore conditions in the future
 
   if (col == 0) {
     // Note
@@ -167,8 +165,8 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       handled = 1;
     } else if (action == editClear) {
       // When clearing note, we also need to clear instrument and volume
-      handled = edit8withLimit(action, &project.phrases[phrase].notes[row], &lastNote, project.pitchTable.octaveSize, project.pitchTable.length);
-      edit8withLimit(action, &project.phrases[phrase].instruments[row], &lastInstrument, 16, PROJECT_MAX_INSTRUMENTS);
+      handled = edit8withLimit(action, &project.phrases[phrase].notes[row], &lastNote, project.pitchTable.octaveSize, project.pitchTable.length - 1);
+      edit8withLimit(action, &project.phrases[phrase].instruments[row], &lastInstrument, 16, PROJECT_MAX_INSTRUMENTS - 1);
       edit8withLimit(action, &project.phrases[phrase].volumes[row], &lastVolume, 16, maxVolume);
     } else if (action == editTap && project.phrases[phrase].notes[row] == EMPTY_VALUE_8) {
       // When inserting note, also insert instrument and volume
@@ -177,7 +175,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       project.phrases[phrase].volumes[row] = lastVolume;
       handled = 1;
     } else if (project.phrases[phrase].notes[row] != NOTE_OFF) {
-      handled = edit8withLimit(action, &project.phrases[phrase].notes[row], &lastNote, project.pitchTable.octaveSize, project.pitchTable.length);
+      handled = edit8withLimit(action, &project.phrases[phrase].notes[row], &lastNote, project.pitchTable.octaveSize, project.pitchTable.length - 1);
     }
 
     if (handled) {
@@ -190,7 +188,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     if (action == editDoubleTap) {
 
     } else {
-      handled = edit8withLimit(action, &project.phrases[phrase].instruments[row], &lastInstrument, 16, PROJECT_MAX_INSTRUMENTS);
+      handled = edit8withLimit(action, &project.phrases[phrase].instruments[row], &lastInstrument, 16, PROJECT_MAX_INSTRUMENTS - 1);
     }
 
     uint8_t instrument = project.phrases[phrase].instruments[row];

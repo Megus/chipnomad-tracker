@@ -4,13 +4,19 @@
 #include <utils.h>
 #include <project.h>
 #include <screen_instrument.h>
+#include <string.h>
 
-int instrument = 0;
+int cInstrument = 0;
 
 static void drawRowHeader(int row, int state);
 static void drawColHeader(int col, int state);
 
-static struct ScreenData formInstrumentNone = {
+static char instrumentTypeNames[][16] = {
+  "None",
+  "AY",
+};
+
+static struct ScreenData screenInstrumentNone = {
   .rows = 1,
   .cursorRow = 0,
   .cursorCol = 0,
@@ -23,15 +29,24 @@ static struct ScreenData formInstrumentNone = {
   .onEdit = instrumentCommonOnEdit,
 };
 
+static struct ScreenData* instrumentScreen(void) {
+  struct ScreenData* data = &screenInstrumentNone;
+  if (project.instruments[cInstrument].type == instAY) {
+    data = &screenInstrumentAY;
+  }
+  data->drawRowHeader = drawRowHeader;
+  data->drawColHeader = drawColHeader;
+
+  return data;
+}
+
 static void setup(int input) {
-  instrument = input;
+  cInstrument = input;
 }
 
 static void fullRedraw(void) {
-  const struct ColorScheme cs = appSettings.colorScheme;
-
-  gfxSetFgColor(cs.textTitles);
-  gfxPrintf(0, 0, "INSTRUMENT %02X", instrument);
+  struct ScreenData* screen = instrumentScreen();
+  screenFullRedraw(screen);
 }
 
 static void draw(void) {
@@ -43,13 +58,8 @@ static void draw(void) {
 // Common part of the form
 //
 
-static void drawRowHeader(int row, int state) {
-
-}
-
-static void drawColHeader(int col, int state) {
-
-}
+static void drawRowHeader(int row, int state) {}
+static void drawColHeader(int col, int state) {}
 
 int instrumentCommonColumnCount(int row) {
   if (row == 0) {
@@ -63,20 +73,103 @@ int instrumentCommonColumnCount(int row) {
 }
 
 void instrumentCommonDrawStatic(void) {
+  const struct ColorScheme cs = appSettings.colorScheme;
 
+  gfxSetFgColor(cs.textTitles);
+  gfxPrintf(0, 0, "INSTRUMENT %02X", cInstrument);
+
+  gfxSetFgColor(cs.textDefault);
+  gfxPrint(0, 2, "Type");
+
+  if (project.instruments[cInstrument].type == instNone) return;
+
+  gfxPrint(0, 3, "Name");
+  gfxPrint(0, 4, "Transp.");
+  gfxPrint(17, 4, "Tbl. Tic");
 }
 
 void instrumentCommonDrawCursor(int col, int row) {
-
+  if (row == 0 && col == 0) {
+    // Type
+    gfxCursor(8, 2, strlen(instrumentTypeNames[project.instruments[cInstrument].type]));
+  } else if (row == 0 && col == 1) {
+    // Load
+    gfxCursor(17, 2, 4);
+  } else if (row == 0 && col == 2) {
+    // Save
+    gfxCursor(23, 2, 4);
+  } else if (row == 1) {
+    // Instrument name
+    gfxCursor(8 + col, 3, 1);
+  } else if (row == 2 && col == 0) {
+    // Transpose on/off
+    gfxCursor(8, 4, 3);
+  } else if (row == 2 && col == 1) {
+    // Table tic speed
+    gfxCursor(26, 4, 2);
+  }
 }
 
 void instrumentCommonDrawField(int col, int row, int state) {
+  gfxSetFgColor(appSettings.colorScheme.textDefault);
 
+  if (row == 0 && col == 0) {
+    // Instrument type
+    gfxClearRect(8, 2, 8, 1);
+    gfxPrint(8, 2, instrumentTypeNames[project.instruments[cInstrument].type]);
+  } else if (row == 0 && col == 1) {
+    // Load
+    gfxPrint(17, 2, "Load");
+  } else if (row == 0 && col == 2) {
+    // Save
+    gfxPrint(23, 2, "Save");
+  } else if (row == 1) {
+    // Instrument name
+    gfxClearRect(8, 3, 15, 1);
+    gfxPrintf(8, 3, "%s", project.instruments[cInstrument].name);
+  } else if (row == 2 && col == 0) {
+    // Transpose
+    gfxPrintf(8, 4, project.instruments[cInstrument].transposeEnabled ? "On " : "Off");
+  } else if (row == 2 && col == 1) {
+    // Table tic speed
+    gfxPrint(26, 4, byteToHex(project.instruments[cInstrument].tableSpeed));
+  }
 }
 
 int instrumentCommonOnEdit(int col, int row, enum CellEditAction action) {
+  int handled = 0;
+  if (row == 0 && col == 0) {
+    // Instrument type
+    uint8_t oldType = project.instruments[cInstrument].type;
+    handled = edit8noLast(action, &project.instruments[cInstrument].type, 1, 0, 1);
+    if (oldType != project.instruments[cInstrument].type) {
+      switch (project.instruments[cInstrument].type) {
+        case instNone:
+          break;
+        case instAY:
+          initAYInstrument(cInstrument);
+          break;
+      }
+      fullRedraw();
+    }
+  } else if (row == 0 && col == 1) {
+    // Load
+    // TODO: Screen setup for instrument load
+  } else if (row == 0 && col == 2) {
+    // Save
+    // TODO: Screen setup for instrument save
+  } else if (row == 1) {
+    // Instrument name
+    //handled = editString(action, project.instruments[cInstrument].name, 15);
+  } else if (row == 2 && col == 0) {
+    // Transpose
+    handled = edit8noLast(action, &project.instruments[cInstrument].transposeEnabled, 1, 0, 1);
+  } else if (row == 2 && col == 1) {
+    // Table tic speed
+    handled = edit8noLast(action, &project.instruments[cInstrument].tableSpeed, 16, 1, 255);
+  }
 
-  return 0;
+  return handled;
 }
 
 
@@ -87,10 +180,38 @@ int instrumentCommonOnEdit(int col, int row, enum CellEditAction action) {
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {
   if (keys == (keyRight | keyShift)) {
-    screenSetup(&screenTable, instrument);
+    // To Table screen with the default instrument table
+    screenSetup(&screenTable, cInstrument);
     return 1;
   } else if (keys == (keyLeft | keyShift)) {
+    // To Phrase screen
     screenSetup(&screenPhrase, -1);
+    return 1;
+  } else if (keys == (keyOpt | keyLeft)) {
+    // To the previous instrument
+    if (cInstrument != 0) {
+      cInstrument--;
+      fullRedraw();
+    }
+    return 1;
+  } else if (keys == (keyOpt | keyRight)) {
+    // To the next instrument
+    if (cInstrument != PROJECT_MAX_INSTRUMENTS - 1) {
+      cInstrument++;
+      fullRedraw();
+    }
+    return 1;
+  } else if (keys == (keyOpt | keyUp)) {
+    // +16 instruments
+    cInstrument += 16;
+    if (cInstrument >= PROJECT_MAX_INSTRUMENTS) cInstrument = PROJECT_MAX_INSTRUMENTS - 1;
+    fullRedraw();
+    return 1;
+  } else if (keys == (keyOpt | keyDown)) {
+    // -16 instruments
+    cInstrument -= 16;
+    if (cInstrument < 0) cInstrument = 0;
+    fullRedraw();
     return 1;
   }
   return 0;
@@ -99,12 +220,8 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
 static void onInput(int keys, int isDoubleTap) {
   if (inputScreenNavigation(keys, isDoubleTap)) return;
 
-  struct ScreenData* form = &formInstrumentNone;
-  if (project.instruments[instrument].type == instAY) {
-    form = &formInstrumentAY;
-  }
-
-  if (screenInput(form, keys, isDoubleTap)) return;
+  struct ScreenData* screen = instrumentScreen();
+  if (screenInput(screen, keys, isDoubleTap)) return;
 }
 
 const struct AppScreen screenInstrument = {

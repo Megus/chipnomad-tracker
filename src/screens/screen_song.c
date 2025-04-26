@@ -53,7 +53,8 @@ static int getColumnCount(int row) {
 }
 
 static void drawStatic(void) {
-
+  gfxSetFgColor(appSettings.colorScheme.textTitles);
+  gfxPrint(0, 0, "SONG");
 }
 
 static void drawField(int col, int row, int state) {
@@ -85,9 +86,6 @@ static void drawCursor(int col, int row) {
 }
 
 static void fullRedraw(void) {
-  gfxSetFgColor(appSettings.colorScheme.textTitles);
-  gfxPrint(0, 0, "SONG");
-
   screenFullRedraw(&sheet);
 }
 
@@ -147,7 +145,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     }
     return 1;
   } else {
-    return edit16withLimit(action, &project.song[row][col], &lastChainValue, 16, PROJECT_MAX_CHAINS);
+    return edit16withLimit(action, &project.song[row][col], &lastChainValue, 16, PROJECT_MAX_CHAINS - 1);
   }
   return 0;
 }

@@ -74,18 +74,23 @@ void screenMessage(const char* format, ...) {
 //
 
 void screenFullRedraw(struct ScreenData* screen) {
+  gfxClearRect(0, 0, 40, 20);
+
   // Static content
   screen->drawStatic();
 
   // Cells
-  for (int row = screen->topRow; row < screen->topRow + 16; row++) {
+  int maxRow = screen->topRow + 16;
+  if (maxRow > screen->rows) maxRow = screen->rows;
+
+  for (int row = screen->topRow; row < maxRow; row++) {
     for (int col = 0; col < screen->getColumnCount(row); col++) {
       screen->drawField(col, row, (screen->cursorCol == col && screen->cursorRow == row) ? stateFocus : 0);
     }
   }
 
   // Row headers
-  for (int row = screen->topRow; row < screen->topRow + 16; row++) {
+  for (int row = screen->topRow; row < maxRow; row++) {
     screen->drawRowHeader(row, (screen->cursorRow == row) ? stateFocus : 0);
   }
 
