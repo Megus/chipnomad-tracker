@@ -68,4 +68,11 @@ int edit8noLast(enum CellEditAction action, uint8_t* value, uint8_t bigStep, uin
 int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX);
 int editCharacter(enum CellEditAction action, char* ch);
 
+// Special edit screen
+char charEditInput(int keys, int isDoubleTap);
+void charEditFullDraw(char startChar);
+int fxEditInput(int keys, int isDoubleTap);
+void fxEditFullDraw(int startFX);
+
 #endif
+

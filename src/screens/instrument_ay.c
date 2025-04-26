@@ -156,7 +156,6 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       uint8_t value = project.instruments[cInstrument].chip.ay.autoEnvN != 0;
       uint8_t oldValue = value;
       handled = edit8noLast(action, &value, 1, 0, 1);
-      printf("%hhd\n", value);
       if (oldValue != value && value == 1) {
         project.instruments[cInstrument].chip.ay.autoEnvN = 1;
         project.instruments[cInstrument].chip.ay.autoEnvD = 1;

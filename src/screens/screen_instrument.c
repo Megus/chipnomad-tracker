@@ -7,6 +7,7 @@
 #include <string.h>
 
 int cInstrument = 0;
+int isCharEdit = 0;
 
 static void drawRowHeader(int row, int state);
 static void drawColHeader(int col, int state);
@@ -41,6 +42,7 @@ static struct ScreenData* instrumentScreen(void) {
 }
 
 static void setup(int input) {
+  isCharEdit = 0;
   cInstrument = input;
 }
 
@@ -113,6 +115,8 @@ void instrumentCommonDrawCursor(int col, int row) {
 void instrumentCommonDrawField(int col, int row, int state) {
   gfxSetFgColor(appSettings.colorScheme.textDefault);
 
+  gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+
   if (row == 0 && col == 0) {
     // Instrument type
     gfxClearRect(8, 2, 8, 1);
@@ -160,6 +164,17 @@ int instrumentCommonOnEdit(int col, int row, enum CellEditAction action) {
     // TODO: Screen setup for instrument save
   } else if (row == 1) {
     // Instrument name
+    if (action == editClear) {
+
+    } else if (action == editTap) {
+      isCharEdit = 1;
+      char current = project.instruments[cInstrument].name[col];
+      if (col >= strlen(project.instruments[cInstrument].name)) {
+        current = -1;
+      }
+      charEditFullDraw(current);
+      return 0;
+    }
     //handled = editString(action, project.instruments[cInstrument].name, 15);
   } else if (row == 2 && col == 0) {
     // Transpose
@@ -218,6 +233,36 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
 }
 
 static void onInput(int keys, int isDoubleTap) {
+  if (isCharEdit) {
+    char result = charEditInput(keys, isDoubleTap);
+    if (result != 0) {
+      struct ScreenData* screen = instrumentScreen();
+      isCharEdit = 0;
+      project.instruments[cInstrument].name[15] = 0; // EOL for safety
+      // Safely insert the character to the string
+      int idx = screen->cursorCol;
+      if (idx >= strlen(project.instruments[cInstrument].name)) {
+        project.instruments[cInstrument].name[idx + 1] = 0; // Terminate string
+        // Extend string with spaces to this character
+        for (int i = strlen(project.instruments[cInstrument].name); i <= idx; i++) {
+          project.instruments[cInstrument].name[i] = ' ';
+        }
+      }
+      project.instruments[cInstrument].name[idx] = result;
+      // Trim empty characters from the end of the string
+      idx = strlen(project.instruments[cInstrument].name) - 1;
+      while (idx >= 0 && project.instruments[cInstrument].name[idx] == ' ') {
+        project.instruments[cInstrument].name[idx] = 0;
+        idx--;
+      }
+
+      if (screen->cursorCol < 15) screen->cursorCol++;
+
+      fullRedraw();
+    }
+    return;
+  }
+
   if (inputScreenNavigation(keys, isDoubleTap)) return;
 
   struct ScreenData* screen = instrumentScreen();

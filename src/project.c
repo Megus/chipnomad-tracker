@@ -131,7 +131,7 @@ void projectInit(struct Project* p) {
 
   // Simple default instrument
   p->instruments[0].type = instAY;
-  strcpy(p->instruments[0].name, "Lead1");
+  strcpy(p->instruments[0].name, "LEAD1");
   p->instruments[0].tableSpeed = 1;
   p->instruments[0].transposeEnabled = 1;
   p->instruments[0].chip.ay.veA = 0;
