@@ -129,7 +129,7 @@ void instrumentCommonDrawField(int col, int row, int state) {
     gfxPrint(23, 2, "Save");
   } else if (row == 1) {
     // Instrument name
-    gfxClearRect(8, 3, 15, 1);
+    gfxClearRect(8, 3, PROJECT_INSTRUMENT_NAME_LENGTH, 1);
     gfxPrintf(8, 3, "%s", project.instruments[cInstrument].name);
   } else if (row == 2 && col == 0) {
     // Transpose
@@ -164,18 +164,12 @@ int instrumentCommonOnEdit(int col, int row, enum CellEditAction action) {
     // TODO: Screen setup for instrument save
   } else if (row == 1) {
     // Instrument name
-    if (action == editClear) {
-
-    } else if (action == editTap) {
+    int res = editCharacter(action, project.instruments[cInstrument].name, col, PROJECT_INSTRUMENT_NAME_LENGTH);
+    if (res == 1) {
       isCharEdit = 1;
-      char current = project.instruments[cInstrument].name[col];
-      if (col >= strlen(project.instruments[cInstrument].name)) {
-        current = -1;
-      }
-      charEditFullDraw(current);
-      return 0;
+    } else if (res > 1) {
+      handled = 1;
     }
-    //handled = editString(action, project.instruments[cInstrument].name, 15);
   } else if (row == 2 && col == 0) {
     // Transpose
     handled = edit8noLast(action, &project.instruments[cInstrument].transposeEnabled, 1, 0, 1);
@@ -186,7 +180,6 @@ int instrumentCommonOnEdit(int col, int row, enum CellEditAction action) {
 
   return handled;
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -234,39 +227,19 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
 
 static void onInput(int keys, int isDoubleTap) {
   if (isCharEdit) {
-    char result = charEditInput(keys, isDoubleTap);
+    struct ScreenData* screen = instrumentScreen();
+    char result = charEditInput(keys, isDoubleTap, project.instruments[cInstrument].name, screen->cursorCol, PROJECT_INSTRUMENT_NAME_LENGTH);
     if (result != 0) {
-      struct ScreenData* screen = instrumentScreen();
       isCharEdit = 0;
-      project.instruments[cInstrument].name[15] = 0; // EOL for safety
-      // Safely insert the character to the string
-      int idx = screen->cursorCol;
-      if (idx >= strlen(project.instruments[cInstrument].name)) {
-        project.instruments[cInstrument].name[idx + 1] = 0; // Terminate string
-        // Extend string with spaces to this character
-        for (int i = strlen(project.instruments[cInstrument].name); i <= idx; i++) {
-          project.instruments[cInstrument].name[i] = ' ';
-        }
-      }
-      project.instruments[cInstrument].name[idx] = result;
-      // Trim empty characters from the end of the string
-      idx = strlen(project.instruments[cInstrument].name) - 1;
-      while (idx >= 0 && project.instruments[cInstrument].name[idx] == ' ') {
-        project.instruments[cInstrument].name[idx] = 0;
-        idx--;
-      }
-
       if (screen->cursorCol < 15) screen->cursorCol++;
-
       fullRedraw();
     }
-    return;
+  } else {
+    if (inputScreenNavigation(keys, isDoubleTap)) return;
+
+    struct ScreenData* screen = instrumentScreen();
+    if (screenInput(screen, keys, isDoubleTap)) return;
   }
-
-  if (inputScreenNavigation(keys, isDoubleTap)) return;
-
-  struct ScreenData* screen = instrumentScreen();
-  if (screenInput(screen, keys, isDoubleTap)) return;
 }
 
 const struct AppScreen screenInstrument = {

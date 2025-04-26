@@ -19,6 +19,29 @@ static int prevCol = 0;
 static int lastSelectedChar = 0;
 
 void updateCursorPosition();
+void charEditFullDraw(char startChar);
+
+// Trim empty characters from the end of the string
+void trimStr(char* str) {
+  int idx = strlen(str) - 1;
+  while (idx >= 0 && str[idx] == ' ') {
+    str[idx--] = 0;
+  }
+}
+
+int editCharacter(enum CellEditAction action, char* str, int idx, int maxLen) {
+  if (action == editClear) {
+    str[idx] = ' ';
+    trimStr(str);
+    return 2;
+  } else if (action == editTap) {
+    char current = str[idx];
+    if (idx  >= strlen(str)) current = -1;
+    charEditFullDraw(current);
+    return 1;
+  }
+  return 0;
+}
 
 /**
 * @brief Handle input for character selection screen
@@ -27,7 +50,7 @@ void updateCursorPosition();
 * @param isDoubleTap Is it a double tap?
 * @return char Selected character (0 if no selection made)
 */
-char charEditInput(int keys, int isDoubleTap) {
+char charEditInput(int keys, int isDoubleTap, char* str, int idx, int maxLen) {
   // If no keys are pressed, return the currently selected character
   if (keys == 0) {
     char selectedChar = 0;
@@ -42,6 +65,17 @@ char charEditInput(int keys, int isDoubleTap) {
         lastSelectedChar = selectedChar;
       }
     }
+
+    // Safely insert the character to the string
+    str[maxLen] = 0; // EOL for safety
+    if (idx >= strlen(str)) {
+      str[idx + 1] = 0; // Terminate string
+      // Extend string with spaces to this character
+      for (int i = strlen(str); i <= idx; i++) {
+        str[i] = ' ';
+      }
+    }
+    str[idx] = selectedChar;
 
     return selectedChar;
   }

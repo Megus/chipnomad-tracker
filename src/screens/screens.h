@@ -65,14 +65,14 @@ int edit16withLimit(enum CellEditAction action, uint16_t* value, uint16_t* lastV
 int edit8withLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep, uint8_t max);
 int edit8noLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep);
 int edit8noLast(enum CellEditAction action, uint8_t* value, uint8_t bigStep, uint8_t min, uint8_t max);
-int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX);
-int editCharacter(enum CellEditAction action, char* ch);
 
-// Special edit screen
-char charEditInput(int keys, int isDoubleTap);
-void charEditFullDraw(char startChar);
+// Character edit
+int editCharacter(enum CellEditAction action, char* str, int idx, int maxLen);
+char charEditInput(int keys, int isDoubleTap, char* str, int idx, int maxLen);
+
+// FX edit
+int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX);
 int fxEditInput(int keys, int isDoubleTap);
-void fxEditFullDraw(int startFX);
 
 #endif
 

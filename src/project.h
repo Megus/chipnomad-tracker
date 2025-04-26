@@ -12,6 +12,7 @@
 #define PROJECT_MAX_TABLES (128)
 #define PROJECT_MAX_CHIPS (3)
 #define PROJECT_MAX_PITCHES (254)
+#define PROJECT_INSTRUMENT_NAME_LENGTH (15)
 
 #define NOTE_OFF (254)
 #define EMPTY_VALUE_8 (255)
@@ -70,7 +71,7 @@ union InstrumentChipData {
 
 struct Instrument {
   uint8_t type; // enum InstrumentType
-  char name[16];
+  char name[PROJECT_INSTRUMENT_NAME_LENGTH + 1];
   uint8_t tableSpeed;
   uint8_t transposeEnabled;
   union InstrumentChipData chip;
