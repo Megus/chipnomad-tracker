@@ -9,7 +9,7 @@
 #define PROJECT_MAX_PHRASES (1024)
 #define PROJECT_MAX_GROOVES (32)
 #define PROJECT_MAX_INSTRUMENTS (128)
-#define PROJECT_MAX_TABLES (128)
+#define PROJECT_MAX_TABLES (255)
 #define PROJECT_MAX_CHIPS (3)
 #define PROJECT_MAX_PITCHES (254)
 #define PROJECT_INSTRUMENT_NAME_LENGTH (15)
@@ -44,8 +44,8 @@ union ChipSetup {
 
 struct Table {
   uint8_t pitchFlags[16];
-  int8_t pitchOffsets[16];
-  int8_t volumeOffsets[16];
+  uint8_t pitchOffsets[16];
+  uint8_t volumeOffsets[16];
   uint8_t fx[16][4][2];
 };
 

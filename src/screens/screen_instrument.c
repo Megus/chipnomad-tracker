@@ -43,7 +43,9 @@ static struct ScreenData* instrumentScreen(void) {
 
 static void setup(int input) {
   isCharEdit = 0;
-  cInstrument = input;
+  if (input != -1) {
+    cInstrument = input;
+  }
 }
 
 static void fullRedraw(void) {
