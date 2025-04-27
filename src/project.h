@@ -45,7 +45,7 @@ union ChipSetup {
 struct Table {
   uint8_t pitchFlags[16];
   uint8_t pitchOffsets[16];
-  uint8_t volumeOffsets[16];
+  uint8_t volumes[16];
   uint8_t fx[16][4][2];
 };
 

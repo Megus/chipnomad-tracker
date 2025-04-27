@@ -169,7 +169,7 @@ void projectInit(struct Project* p) {
     for (int d = 0; d < 16; d++) {
       p->tables[c].pitchFlags[d] = 0;
       p->tables[c].pitchOffsets[d] = 0;
-      p->tables[c].volumeOffsets[d] = 0;
+      p->tables[c].volumes[d] = EMPTY_VALUE_8;
       for (int e = 0; e < 4; e++) {
         p->tables[c].fx[d][e][0] = EMPTY_VALUE_8;
         p->tables[c].fx[d][e][1] = 0;
@@ -252,7 +252,7 @@ int8_t tableIsEmpty(int table) {
   for (int c = 0; c < 16; c++) {
     if (project.tables[table].pitchFlags[c] != 0) return 0;
     if (project.tables[table].pitchOffsets[c] != 0) return 0;
-    if (project.tables[table].volumeOffsets[c] != 0) return 0;
+    if (project.tables[table].volumes[c] != EMPTY_VALUE_8) return 0;
     for (int d = 0; d < 4; d++) {
       if (project.tables[table].fx[c][d][0] != EMPTY_VALUE_8) return 0;
       if (project.tables[table].fx[c][d][1] != 0) return 0;
@@ -521,11 +521,95 @@ static int projectLoadPhrases(int fileId, struct Project* p) {
 }
 
 static int projectLoadInstruments(int fileId, struct Project* p) {
+  int idx;
+
+  if (strcmp(lpstr, "## Instruments")) return 1;
+
+  while (1) {
+    READ_STRING;
+    if (strncmp(lpstr, "### Instrument", 13)) break;
+    if (sscanf(lpstr, "### Instrument %X", &idx) != 1) return 1;
+
+    // Read name
+    READ_STRING;
+    if (!strncmp(lpstr, "- Name:", 7)) {
+      if (sscanf(lpstr, "- Name: %[^\n]", p->instruments[idx].name) != 1) {
+        p->instruments[idx].name[0] = 0; // Empty instrument name
+      }
+    }
+
+    // Read type
+    READ_STRING;
+    if (sscanf(lpstr, "- Type: %hhd", &p->instruments[idx].type) != 1) return 1;
+
+    // Read table speed
+    READ_STRING;
+    if (sscanf(lpstr, "- Table speed: %hhu", &p->instruments[idx].tableSpeed) != 1) return 1;
+
+    // Read transpose enabled
+    READ_STRING;
+    if (sscanf(lpstr, "- Transpose: %hhu", &p->instruments[idx].transposeEnabled) != 1) return 1;
+
+    if (p->instruments[idx].type == instAY) {
+      // Read volume envelope
+      READ_STRING;
+      if (sscanf(lpstr, "- Volume envelope: %hhu,%hhu,%hhu,%hhu",
+          &p->instruments[idx].chip.ay.veA,
+          &p->instruments[idx].chip.ay.veD,
+          &p->instruments[idx].chip.ay.veS,
+          &p->instruments[idx].chip.ay.veR) != 4) return 1;
+
+      // Read auto envelope
+      READ_STRING;
+      if (sscanf(lpstr, "- Auto envelope: %hhu,%hhu",
+          &p->instruments[idx].chip.ay.autoEnvN,
+          &p->instruments[idx].chip.ay.autoEnvD) != 2) return 1;
+    }
+  }
 
   return 0;
 }
 
 static int projectLoadTables(int fileId, struct Project* p) {
+  int idx;
+
+  if (strcmp(lpstr, "## Tables")) return 1;
+
+  while (1) {
+    READ_STRING;
+    if (strncmp(lpstr, "### Table", 9)) break;
+    if (sscanf(lpstr, "### Table %X", &idx) != 1) return 1;
+
+    for (int d = 0; d < 16; d++) {
+      READ_STRING;
+      if (strlen(lpstr) < 35) return 1;  // Minimum length check
+
+      // Read pitch flag (single char)
+      p->tables[idx].pitchFlags[d] = (lpstr[0] == '=') ? 1 : 0;
+
+      // Read pitch offset
+      p->tables[idx].pitchOffsets[d] = scanByteOrEmpty(lpstr + 2);
+
+      // Read volume offset
+      p->tables[idx].volumes[d] = scanByteOrEmpty(lpstr + 5);
+
+      // Read FX1
+      p->tables[idx].fx[d][0][0] = scanFX(lpstr + 8, p);
+      p->tables[idx].fx[d][0][1] = scanByteOrEmpty(lpstr + 12);
+
+      // Read FX2
+      p->tables[idx].fx[d][1][0] = scanFX(lpstr + 15, p);
+      p->tables[idx].fx[d][1][1] = scanByteOrEmpty(lpstr + 19);
+
+      // Read FX3
+      p->tables[idx].fx[d][2][0] = scanFX(lpstr + 22, p);
+      p->tables[idx].fx[d][2][1] = scanByteOrEmpty(lpstr + 26);
+
+      // Read FX4
+      p->tables[idx].fx[d][3][0] = scanFX(lpstr + 29, p);
+      p->tables[idx].fx[d][3][1] = scanByteOrEmpty(lpstr + 33);
+    }
+  }
 
   return 0;
 }
@@ -729,15 +813,29 @@ static int projectSavePhrases(int fileId) {
 }
 
 static int projectSaveInstruments(int fileId) {
-  filePrintf(fileId, "\n## Instruments\n\n");
+  filePrintf(fileId, "\n## Instruments\n");
 
   for (int c = 0; c < PROJECT_MAX_INSTRUMENTS; c++) {
     if (!instrumentIsEmpty(c)) {
-      filePrintf(fileId, "### Instrument %X\n\n```\n", c);
-      for (int d = 0; d < 16; d++) {
+      filePrintf(fileId, "\n### Instrument %X\n\n", c);
+      filePrintf(fileId, "- Name: %s\n", project.instruments[c].name);
+      filePrintf(fileId, "- Type: %hhd\n", project.instruments[c].type);
+      filePrintf(fileId, "- Table speed: %hhu\n", project.instruments[c].tableSpeed);
+      filePrintf(fileId, "- Transpose: %hhu\n", project.instruments[c].transposeEnabled);
 
+      if (project.instruments[c].type == instAY) {
+        // Save AY-specific parameters
+        filePrintf(fileId, "- Volume envelope: %hhu,%hhu,%hhu,%hhu\n",
+          project.instruments[c].chip.ay.veA,
+          project.instruments[c].chip.ay.veD,
+          project.instruments[c].chip.ay.veS,
+          project.instruments[c].chip.ay.veR
+        );
+        filePrintf(fileId, "- Auto envelope: %hhd,%hhd\n",
+          project.instruments[c].chip.ay.autoEnvN,
+          project.instruments[c].chip.ay.autoEnvD
+        );
       }
-      filePrintf(fileId, "```\n");
     }
   }
 
@@ -745,13 +843,26 @@ static int projectSaveInstruments(int fileId) {
 }
 
 static int projectSaveTables(int fileId) {
-  filePrintf(fileId, "\n## Tables\n\n");
+  filePrintf(fileId, "\n## Tables\n");
 
   for (int c = 0; c < PROJECT_MAX_TABLES; c++) {
     if (!tableIsEmpty(c)) {
-      filePrintf(fileId, "### Table %X\n\n```\n", c);
+      filePrintf(fileId, "\n### Table %X\n\n```\n", c);
       for (int d = 0; d < 16; d++) {
-
+        // Save pitch flag as ~ or =
+        filePrintf(fileId, "%c %s %s %s %s %s %s %s %s %s %s\n",
+          project.tables[c].pitchFlags[d] ? '=' : '~',
+          byteToHex(project.tables[c].pitchOffsets[d]),
+          byteToHexOrEmpty(project.tables[c].volumes[d]),
+          fxNames[project.tables[c].fx[d][0][0]].name,
+          byteToHex(project.tables[c].fx[d][0][1]),
+          fxNames[project.tables[c].fx[d][1][0]].name,
+          byteToHex(project.tables[c].fx[d][1][1]),
+          fxNames[project.tables[c].fx[d][2][0]].name,
+          byteToHex(project.tables[c].fx[d][2][1]),
+          fxNames[project.tables[c].fx[d][3][0]].name,
+          byteToHex(project.tables[c].fx[d][3][1])
+        );
       }
       filePrintf(fileId, "```\n");
     }
@@ -759,6 +870,7 @@ static int projectSaveTables(int fileId) {
 
   return 0;
 }
+
 
 static int projectSaveInternal(int fileId) {
   filePrintf(fileId, "# ChipNomad Tracker Module 1.0\n\n");
@@ -789,6 +901,7 @@ static int projectSaveInternal(int fileId) {
   projectSavePhrases(fileId);
   projectSaveInstruments(fileId);
   projectSaveTables(fileId);
+  filePrintf(fileId, "EOF\n");
   return 0;
 }
 
