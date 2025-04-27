@@ -311,6 +311,7 @@ static void onInput(int keys, int isDoubleTap) {
       isFxEdit = 0;
       fullRedraw();
     }
+    return;
   }
 
   if (inputScreenNavigation(keys, isDoubleTap)) return;

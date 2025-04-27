@@ -1,10 +1,18 @@
 #include <screens.h>
 #include <corelib_gfx.h>
 
-uint8_t currentFX;
+#define FX_COLS 8
 
-void fxEditFullDraw();
+int currentGroup;
+int currentIdx;
 
+// FX Groups and layout
+static const char* fxHeaders[] = {
+  "Sequencer FX",
+  "AY FX"
+};
+
+void fxEditFullDraw(uint8_t currentFX);
 
 int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastValue) {
   if (action == editClear) {
@@ -24,7 +32,7 @@ int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastValue) {
       lastValue[0] = fx[0];
       lastValue[1] = fx[1];
     }
-  return 2;
+    return 2;
   } else if (action == editIncrease) {
     // Next FX
     if (fx[0] < fxTotalCount - 1) fx[0]++;
@@ -37,22 +45,114 @@ int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastValue) {
     return 2;
   } else if (action == editIncreaseBig || action == editDecreaseBig) {
     // Show FX select screen
-    currentFX = fx[0];
-    fxEditFullDraw();
+    fxEditFullDraw(fx[0]);
     return 1;
   }
   return 0;
 }
+
+// Uses the ordered FX list
+struct FXName* getGroup(int group) {
+  return group == 0 ? fxNamesCommon : fxNamesAY;
+}
+
+int getGroupSize(int group) {
+  return group == 0 ? fxCommonCount : fxAYCount;
+}
+
+void drawGroupHeader(int group) {
+  gfxSetFgColor(appSettings.colorScheme.textTitles);
+
+  int y = (group == 0) ? 7 : 13;
+
+  gfxPrint(1, y, fxHeaders[group]);
+}
+
+void drawFX(int group, int idx, int state) {
+  int y = (group == 0) ? 8 : 14;
+
+  gfxSetFgColor(state == stateFocus? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+
+  int row = idx / FX_COLS;
+  int col = idx % FX_COLS;
+
+  gfxPrint(1 + col * 4, 1 + y + row, getGroup(group)[idx].name);
+
+  if (state == stateFocus) {
+    gfxCursor(1 + col * 4, 1 + y + row, 3);
+  }
+}
+
+void fxEditFullDraw(uint8_t currentFX) {
+  gfxClearRect(0, 0, 40, 20);
+  currentGroup = 0;
+  currentIdx = 0;
+
+  // Draw each FX group
+  for (int groupIdx = 0; groupIdx < 2; groupIdx++) {
+    drawGroupHeader(groupIdx);
+    struct FXName *group = getGroup(groupIdx);
+
+    for (int idx = 0; idx < getGroupSize(groupIdx); idx++) {
+      if (currentFX == group[idx].fx) {
+        currentGroup = groupIdx;
+        currentIdx = idx;
+      }
+
+      drawFX(groupIdx, idx, group[idx].fx == currentFX);
+    }
+  }
+}
+
 
 int fxEditInput(int keys, int isDoubleTap, uint8_t* fx, uint8_t* lastFX) {
   if (keys == 0) {
+    // Selection complete - update the FX value
+    fx[0] = getGroup(currentGroup)[currentIdx].fx;
+    lastFX[0] = fx[0];
     return 1;
   }
 
+  if (keys & keyEdit) {
+    drawFX(currentGroup, currentIdx, 0);
+
+    if (keys & keyRight) {
+      if (currentIdx < getGroupSize(currentGroup) - 1) {
+        currentIdx++;
+      } else if (currentGroup < 1) {
+        currentGroup++;
+        currentIdx = 0;
+      }
+    } else if (keys & keyLeft) {
+      if (currentIdx > 0) {
+        currentIdx--;
+      } else if (currentGroup > 0) {
+        currentGroup--;
+        currentIdx = getGroupSize(currentGroup) - 1;
+      }
+    } else if (keys & keyUp) {
+      currentIdx -= FX_COLS;
+      if (currentIdx < 0) {
+        if (currentGroup > 0) {
+          currentGroup--;
+          currentIdx = getGroupSize(currentGroup) - 1;
+        } else {
+          currentIdx = 0;
+        }
+      }
+    } else if (keys & keyDown) {
+      currentIdx += FX_COLS;
+      if (currentIdx >= getGroupSize(currentGroup)) {
+        if (currentGroup < 1) {
+          currentGroup++;
+          currentIdx = 0;
+        } else {
+          currentIdx = getGroupSize(currentGroup) - 1;
+        }
+      }
+    }
+    drawFX(currentGroup, currentIdx, stateFocus);
+  }
+
   return 0;
-}
-
-void fxEditFullDraw() {
-  gfxClearRect(0, 0, 40, 20);
-
 }

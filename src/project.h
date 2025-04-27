@@ -126,9 +126,9 @@ struct FXName {
 };
 
 extern struct FXName fxNames[256]; // All names
-extern struct FXName fxCommon[]; // Common FX names
+extern struct FXName fxNamesCommon[]; // Common FX names
 extern int fxCommonCount;
-extern struct FXName fxAY[]; // AY FX names
+extern struct FXName fxNamesAY[]; // AY FX names
 extern int fxAYCount;
 
 struct Phrase {

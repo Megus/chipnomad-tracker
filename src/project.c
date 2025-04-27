@@ -10,20 +10,20 @@ struct Project project;
 struct FXName fxNames[256];
 
 // FX Names (in the order as they appear in FX select screen)
-struct FXName fxCommon[] = {
+struct FXName fxNamesCommon[] = {
   {fxARP, "ARP"}, {fxARC, "ARC"}, {fxPVB, "PVB"}, {fxPBN, "PBN"}, {fxPSL, "PSL"}, {fxPIT, "PIT"}, // Pitch
   {fxRET, "RET"}, {fxDEL, "DEL"}, {fxOFF, "OFF"}, {fxKIL, "KIL"}, // Sequencer
   {fxTIC, "TIC"}, {fxTBL, "TBL"}, {fxTBX, "TBX"}, {fxTHO, "THO"}, // Table
   {fxGRV, "GRV"}, {fxGGR, "GGR"}, {fxSNG, "SNG"},
 };
-int fxCommonCount = sizeof(fxCommon) / sizeof(struct FXName);
+int fxCommonCount = sizeof(fxNamesCommon) / sizeof(struct FXName);
 
-struct FXName fxAY[] = {
+struct FXName fxNamesAY[] = {
   {fxAYM, "AYM"}, {fxERT, "ERT"}, {fxNOI, "NOI"}, {fxNOA, "NOA"},
   {fxEAU, "EAU"}, {fxEVB, "EVB"}, {fxEBN, "EBN"}, {fxESL, "ESL"},
   {fxENA, "ENA"}, {fxENR, "ENR"}, {fxEPR, "EPR"}, {fxEPL, "EPL"}, {fxEPH, "EPH"},
 };
-int fxAYCount = sizeof(fxAY) / sizeof(struct FXName);
+int fxAYCount = sizeof(fxNamesAY) / sizeof(struct FXName);
 
 // Fill FX names
 void fillFXNames() {
@@ -33,13 +33,13 @@ void fillFXNames() {
   }
 
   for (int c = 0; c < fxCommonCount; c++) {
-    strcpy(fxNames[fxCommon[c].fx].name, fxCommon[c].name);
-    fxNames[fxCommon[c].fx].fx = fxCommon[c].fx;
+    strcpy(fxNames[fxNamesCommon[c].fx].name, fxNamesCommon[c].name);
+    fxNames[fxNamesCommon[c].fx].fx = fxNamesCommon[c].fx;
   }
 
   for (int c = 0; c < fxAYCount; c++) {
-    strcpy(fxNames[fxAY[c].fx].name, fxAY[c].name);
-    fxNames[fxAY[c].fx].fx = fxAY[c].fx;
+    strcpy(fxNames[fxNamesAY[c].fx].name, fxNamesAY[c].name);
+    fxNames[fxNamesAY[c].fx].fx = fxNamesAY[c].fx;
   }
 }
 
@@ -371,12 +371,12 @@ static uint8_t scanFX(char* str, struct Project* p) {
 
   // Common FX
   for (int c = 0; c < fxCommonCount; c++) {
-    if (!strcmp(buf, fxCommon[c].name)) return fxCommon[c].fx;
+    if (!strcmp(buf, fxNamesCommon[c].name)) return fxNamesCommon[c].fx;
   }
 
   // AY FX
   for (int c = 0; c < fxAYCount; c++) {
-    if (!strcmp(buf, fxAY[c].name)) return fxAY[c].fx;
+    if (!strcmp(buf, fxNamesAY[c].name)) return fxNamesAY[c].fx;
   }
 
   return EMPTY_VALUE_8;
