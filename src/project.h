@@ -90,6 +90,7 @@ enum FX {
   fxPBN,
   fxPSL,
   fxPIT,
+  fxVOL,
   fxRET,
   fxDEL,
   fxOFF,

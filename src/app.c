@@ -135,7 +135,7 @@ void appDraw(void) {
     digit[0] = c + 49;
     gfxPrint(35, 3 + c, digit);
 
-    uint8_t note = playback.tracks[c].note.finalNote;
+    uint8_t note = playback.tracks[c].note.noteFinal;
     char* noteStr = noteName(note);
 
     gfxSetFgColor(noteStr[0] == '-' ? cs.textEmpty : cs.textValue);

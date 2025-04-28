@@ -18,34 +18,57 @@ struct PlaybackFXState {
 };
 
 struct PlaybackTableState {
+  uint8_t tableIdx;
+  struct PlaybackFXState fx[4];
+};
 
+struct PlaybackAYNoteState {
+  uint8_t mixer; // bit 0 - Tone, bit 1 - Noise, bit 2 - Envelope
+  uint8_t tonePeriod;
+  uint8_t adsrStep;
+  uint8_t adsrCounter;
+  uint8_t adsrFrom;
+  uint8_t adsrTo;
+  uint16_t envBase;
+  uint16_t envOffset;
+  uint8_t noiseBase;
+  uint8_t noiseOffset;
+};
+
+union PlaybackChipNoteState {
+  struct PlaybackAYNoteState ay;
 };
 
 struct PlaybackNoteState {
-  uint8_t finalNote; // Calculated value
-  uint8_t baseNote;
-  uint8_t noteOffset;
-  int16_t fineOffset;
-
+  uint8_t noteBase;
   uint8_t instrument;
   uint8_t volume;
+
+  uint8_t noteFinal; // Calculated value
+  int8_t noteOffset; // Calculated when processing FX
+  int16_t pitchOffset; // Calculated when processing FX
+
+  int8_t volumeOffset; // Calculated when processing FX
 
   struct PlaybackTableState instrumentTable;
   struct PlaybackTableState auxTable;
   struct PlaybackFXState fx[3];
-
-  // TODO: Chip-specific state
+  union PlaybackChipNoteState chip;
 };
 
 struct PlaybackTrackState {
   // Position in the song
-  uint8_t grooveIdx;
   int songRow;
   int chainRow;
   int phraseRow;
+
+  // Groove
+  uint8_t grooveIdx;
   int grooveRow;
+
   int frameCounter;
 
+  // Currently playing note
   struct PlaybackNoteState note;
 };
 

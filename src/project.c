@@ -11,9 +11,9 @@ struct FXName fxNames[256];
 
 // FX Names (in the order as they appear in FX select screen)
 struct FXName fxNamesCommon[] = {
-  {fxARP, "ARP"}, {fxARC, "ARC"}, {fxPVB, "PVB"}, {fxPBN, "PBN"}, {fxPSL, "PSL"}, {fxPIT, "PIT"}, // Pitch
-  {fxRET, "RET"}, {fxDEL, "DEL"}, {fxOFF, "OFF"}, {fxKIL, "KIL"}, // Sequencer
-  {fxTIC, "TIC"}, {fxTBL, "TBL"}, {fxTBX, "TBX"}, {fxTHO, "THO"}, // Table
+  {fxARP, "ARP"}, {fxARC, "ARC"}, {fxPVB, "PVB"}, {fxPBN, "PBN"}, {fxPSL, "PSL"}, {fxPIT, "PIT"},
+  {fxVOL, "VOL"}, {fxRET, "RET"}, {fxDEL, "DEL"}, {fxOFF, "OFF"}, {fxKIL, "KIL"},
+  {fxTIC, "TIC"}, {fxTBL, "TBL"}, {fxTBX, "TBX"}, {fxTHO, "THO"},
   {fxGRV, "GRV"}, {fxGGR, "GGR"}, {fxSNG, "SNG"},
 };
 int fxCommonCount = sizeof(fxNamesCommon) / sizeof(struct FXName);
