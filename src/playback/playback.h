@@ -24,11 +24,11 @@ struct PlaybackTableState {
 
 struct PlaybackAYNoteState {
   uint8_t mixer; // bit 0 - Tone, bit 1 - Noise, bit 2 - Envelope
-  uint8_t tonePeriod;
   uint8_t adsrStep;
   uint8_t adsrCounter;
   uint8_t adsrFrom;
   uint8_t adsrTo;
+  uint8_t adsrVolume;
   uint16_t envBase;
   uint16_t envOffset;
   uint8_t noiseBase;

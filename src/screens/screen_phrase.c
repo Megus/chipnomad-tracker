@@ -237,8 +237,14 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 static int inputScreenNavigation(int keys, int isDoubleTap) {
   if (keys == (keyRight | keyShift)) {
     // To Instrument screen
-    // TODO: Select instrument from the current row
-    screenSetup(&screenInstrument, 0);
+    int instrument = 0;
+    for (int row = screen.cursorRow; row >= 0; row--) {
+      if (project.phrases[phrase].instruments[row] != EMPTY_VALUE_8) {
+        instrument = project.phrases[phrase].instruments[row];
+        break;
+      }
+    }
+    screenSetup(&screenInstrument, instrument);
     return 1;
   } else if (keys == (keyLeft | keyShift)) {
     // To Chain screen

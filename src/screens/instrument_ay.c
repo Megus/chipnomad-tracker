@@ -143,7 +143,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       handled = edit8noLast(action, &project.instruments[cInstrument].chip.ay.veD, 16, 0, 255);
     } else if (row == 5) {
       // Sustain
-      handled = edit8noLast(action, &project.instruments[cInstrument].chip.ay.veS, 16, 0, 255);
+      handled = edit8noLast(action, &project.instruments[cInstrument].chip.ay.veS, 18, 0, 15);
     } else if (row == 6) {
       // Release
       handled = edit8noLast(action, &project.instruments[cInstrument].chip.ay.veR, 16, 0, 255);

@@ -1,7 +1,142 @@
 #include <playback.h>
 #include <stdio.h>
 
-static int globalFrameCounter = 0;
+///////////////////////////////////////////////////////////////////////////////
+//
+// AY-specific logic
+//
+
+static void setupInstrumentAY(struct PlaybackState* state, int trackIdx) {
+  struct PlaybackTrackState* track = &state->tracks[trackIdx];
+  //struct Project* p = state->p;
+
+  track->note.chip.ay.adsrCounter = 0;
+  track->note.chip.ay.envBase = 0;
+  track->note.chip.ay.envOffset = 0;
+  track->note.chip.ay.noiseBase = 0;
+  track->note.chip.ay.noiseOffset = 0;
+  track->note.chip.ay.mixer = 1;
+  // ADSR: Attack
+  track->note.chip.ay.adsrStep = 0;
+  track->note.chip.ay.adsrFrom = 1;
+  track->note.chip.ay.adsrTo = 15;
+}
+
+static void noteOffInstrumentAY(struct PlaybackState* state, int trackIdx) {
+  struct PlaybackTrackState* track = &state->tracks[trackIdx];
+  struct Project* p = state->p;
+
+  if (track->note.instrument == EMPTY_VALUE_8 || track->note.chip.ay.adsrStep == 3) return;
+
+  // ADSR: Release
+  track->note.chip.ay.adsrStep = 3;
+  track->note.chip.ay.adsrFrom = track->note.chip.ay.adsrVolume;
+  track->note.chip.ay.adsrTo = 0;
+  track->note.chip.ay.adsrCounter = 0;
+}
+
+static void handleInstrumentAY(struct PlaybackState* state, int trackIdx) {
+  struct PlaybackTrackState* track = &state->tracks[trackIdx];
+  struct Project* p = state->p;
+
+  if (track->note.noteBase == EMPTY_VALUE_8) {
+    track->note.chip.ay.adsrVolume = 0;
+    return;
+  }
+
+  // Volume ADSR
+  uint8_t adsrVolume = 0;
+  while (1) {
+    if (track->note.chip.ay.adsrStep > 3) break; // Just in case...
+
+    // Sustain phase
+    if (track->note.chip.ay.adsrStep == 2) {
+      adsrVolume = p->instruments[track->note.instrument].chip.ay.veS;
+      break;
+    }
+
+    int duration = 0;
+    // Attack
+    if (track->note.chip.ay.adsrStep == 0) duration = p->instruments[track->note.instrument].chip.ay.veA;
+    // Decay
+    else if (track->note.chip.ay.adsrStep == 1) duration = p->instruments[track->note.instrument].chip.ay.veD;
+    // Release
+    else if (track->note.chip.ay.adsrStep == 3) duration = p->instruments[track->note.instrument].chip.ay.veR;
+
+    if (duration == 0 || track->note.chip.ay.adsrCounter >= duration) {
+      // Move to the next ADSR step
+      if (track->note.chip.ay.adsrStep == 3) {
+        // Release phase end
+        adsrVolume = 0;
+        track->note.noteBase = EMPTY_VALUE_8;
+        break;
+      } else {
+        track->note.chip.ay.adsrStep++;
+        track->note.chip.ay.adsrCounter = 0;
+        // Decay to sustain
+        if (track->note.chip.ay.adsrStep == 1) {
+          track->note.chip.ay.adsrFrom = 15;
+          track->note.chip.ay.adsrTo = p->instruments[track->note.instrument].chip.ay.veS;
+        }
+      }
+    } else {
+      // LERP between adsrFrom and adsrTo
+      track->note.chip.ay.adsrCounter++;
+      int from = track->note.chip.ay.adsrFrom;
+      int to = track->note.chip.ay.adsrTo;
+      int delta = to - from;
+      adsrVolume = from + ((delta * ((track->note.chip.ay.adsrCounter << 8) / (duration + 1))) >> 8);
+      break;
+    }
+  }
+  track->note.chip.ay.adsrVolume = adsrVolume;
+}
+
+static void outputRegistersAY(struct PlaybackState* state, int trackIdx, struct SoundChip* chip) {
+  struct Project* p = state->p;
+  int ayChannel = 0;
+
+  uint8_t mixer = 0;
+
+  for (int t = trackIdx; t < trackIdx + 3; t++) {
+    struct PlaybackTrackState* track = &state->tracks[t];
+
+    if (track->note.noteFinal == EMPTY_VALUE_8) {
+      // Silence channel
+      chip->setRegister(chip, 8 + ayChannel, 0);
+    } else {
+      int16_t period = p->pitchTable.values[track->note.noteFinal] - track->note.pitchOffset;
+      // TODO: Design decision: allow period overflow or not. Can it be a setting?
+      //if (period < 0) period = 0;
+      //if (period > 4095) period = 4095;
+      chip->setRegister(chip, ayChannel * 2, period & 0xff);
+      chip->setRegister(chip, ayChannel * 2 + 1, (period & 0xf00) >> 8);
+
+      // Volume
+      int volume = track->note.volume * track->note.chip.ay.adsrVolume;
+      // Normalize volume
+      volume = volume / 15;
+
+      chip->setRegister(chip, 8 + ayChannel, volume);
+
+      // Mixer
+      mixer = mixer & (~(9 << ayChannel));
+      mixer = mixer | (8 << ayChannel);
+    }
+
+    ayChannel++;
+  }
+
+  chip->setRegister(chip, 7, mixer);
+}
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Common logic
+//
 
 static void resetTrack(struct PlaybackState* state, int trackIdx) {
   struct PlaybackTrackState* track = &state->tracks[trackIdx];
@@ -38,8 +173,7 @@ static void processPhraseRow(struct PlaybackState* state, int trackIdx) {
       uint8_t note = phrase->notes[phraseRow];
       if (note != EMPTY_VALUE_8) {
         if (note == NOTE_OFF) {
-          // TODO: Note off logic
-          track->note.noteBase = EMPTY_VALUE_8;
+          noteOffInstrumentAY(state, trackIdx);
         } else {
           track->note.noteBase = note;
           track->note.pitchOffset = 0;
@@ -48,7 +182,10 @@ static void processPhraseRow(struct PlaybackState* state, int trackIdx) {
           uint8_t instrument = phrase->instruments[phraseRow];
           if (instrument != EMPTY_VALUE_8) {
             track->note.instrument = instrument;
+            setupInstrumentAY(state, trackIdx);
             // track->note.instrumentTable - reset instrument table
+          } else {
+            track->note.noteBase = EMPTY_VALUE_8;
           }
           uint8_t volume = phrase->volumes[phraseRow];
           if (instrument != EMPTY_VALUE_8) {
@@ -67,51 +204,29 @@ static void nextFrame(struct PlaybackState* state, int trackIdx) {
   struct Project* p = state->p;
 
   // Is the channel playing?
-  if (track->songRow == EMPTY_VALUE_16 || track->note.noteBase == EMPTY_VALUE_8) {
+  if (track->songRow == EMPTY_VALUE_16) {
     track->note.noteFinal = EMPTY_VALUE_8;
     return;
   }
 
-  // Note
-  int8_t phraseTranspose = p->chains[p->song[track->songRow][trackIdx]].transpose[track->chainRow];
-  int16_t note = track->note.noteBase + (int8_t)track->note.noteOffset + phraseTranspose;
-  if (note >= p->pitchTable.length) note = note % p->pitchTable.length;
-  track->note.noteFinal = note;
-}
+  // Instrument
+  handleInstrumentAY(state, trackIdx);
 
-static void outputRegistersAY(struct PlaybackState* state, int trackIdx, struct SoundChip* chip) {
-  struct Project* p = state->p;
-  int ayChannel = 0;
+  // FX
 
-  uint8_t mixer = 0;
+  // Tables
 
-  for (int t = trackIdx; t < trackIdx + 3; t++) {
-    struct PlaybackTrackState* track = &state->tracks[t];
-
-    if (track->note.noteFinal == EMPTY_VALUE_8) {
-      // Silence channel
-      chip->setRegister(chip, 8 + ayChannel, 0);
-    } else {
-      int16_t period = p->pitchTable.values[track->note.noteFinal] + track->note.pitchOffset;
-      if (period < 0) period = 0;
-      if (period > 4095) period = 4095;
-      chip->setRegister(chip, ayChannel * 2, period & 0xff);
-      chip->setRegister(chip, ayChannel * 2 + 1, (period & 0xf00) >> 8);
-
-      // Volume
-      chip->setRegister(chip, 8 + ayChannel, track->note.volume);
-
-      if (track->note.volume > 0 && (globalFrameCounter & 1)) track->note.volume--;
-
-      // Mixer
-      mixer = mixer & (~(9 << ayChannel));
-      mixer = mixer | (8 << ayChannel);
-    }
-
-    ayChannel++;
+  // Final note calculation
+  if (track->note.noteBase == EMPTY_VALUE_8) {
+    track->note.noteFinal = EMPTY_VALUE_8;
+  } else {
+    int8_t phraseTranspose = p->chains[p->song[track->songRow][trackIdx]].transpose[track->chainRow];
+    int16_t note = track->note.noteBase + (int8_t)track->note.noteOffset + phraseTranspose;
+    // TODO: Design decision: allow note overflow or not. Can it be a setting?
+    if (note < 0) note = p->pitchTable.length + (note % p->pitchTable.length);
+    if (note >= p->pitchTable.length) note = note % p->pitchTable.length;
+    track->note.noteFinal = note;
   }
-
-  chip->setRegister(chip, 7, mixer);
 }
 
 static int moveToNextPhraseRow(struct PlaybackState* state, int trackIdx) {
@@ -177,6 +292,7 @@ static int moveToNextPhraseRow(struct PlaybackState* state, int trackIdx) {
 
   return stopped;
 }
+
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -265,8 +381,6 @@ void playbackStop(struct PlaybackState* state) {
 }
 
 int playbackNextFrame(struct PlaybackState* state, struct SoundChip* chips) {
-  globalFrameCounter++;
-
   struct Project* p = state->p;
   int hasActiveTracks = 0;
 
