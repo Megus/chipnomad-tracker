@@ -49,12 +49,12 @@ static void drawField(int col, int row, int state) {
   if (col == 0) {
     // Pitch flag
     uint8_t pitchFlag = project.tables[table].pitchFlags[row];
-    setCellColor(state, pitchFlag == EMPTY_VALUE_8, 1);
+    setCellColor(state, 0, 1);
     gfxPrint(3, 3 + row, pitchFlag ? "=" : "~");
   } else if (col == 1) {
     // Pitch offset
     uint8_t pitch = project.tables[table].pitchOffsets[row];
-    setCellColor(state, pitch == EMPTY_VALUE_8, 1);
+    setCellColor(state, 0, 1);
     gfxPrint(4, 3 + row, byteToHex(pitch));
   } else if (col == 2) {
     // Volume
@@ -181,6 +181,38 @@ static void fullRedraw(void) {
 
 static void draw(void) {
   if (isFxEdit) return;
+
+  gfxClearRect(2, 3, 1, 16);
+  gfxClearRect(9, 3, 1, 16);
+  gfxClearRect(15, 3, 1, 16);
+  gfxClearRect(21, 3, 1, 16);
+  gfxClearRect(27, 3, 1, 16);
+
+  struct PlaybackTrackState* track = &playback.tracks[*pSongTrack];
+  struct PlaybackTableState* pTable = NULL;
+  if (playback.mode != playbackModeStopped) {
+    int instrumentTableIdx = track->note.instrumentTable.tableIdx;
+    int auxTableIdx = track->note.auxTable.tableIdx;
+    if (table == instrumentTableIdx) {
+      pTable = &track->note.instrumentTable;
+    } else if (table == auxTableIdx) {
+      pTable = &track->note.auxTable;
+    }
+  }
+  if (pTable != NULL) {
+    gfxSetFgColor(appSettings.colorScheme.playMarkers);
+    int row = pTable->rows[0];
+    if (row >= 0 && row < 16) {
+      gfxPrint(2, 3 + row, ">");
+      gfxPrint(9, 3 + row, ">");
+    }
+    row = pTable->rows[1];
+    gfxPrint(15, 3 + row, ">");
+    row = pTable->rows[2];
+    gfxPrint(21, 3 + row, ">");
+    row = pTable->rows[3];
+    gfxPrint(27, 3 + row, ">");
+  }
 }
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {

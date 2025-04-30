@@ -3,6 +3,7 @@
 
 #include <project.h>
 #include <chips.h>
+#include <playback_fx.h>
 
 enum PlaybackMode {
   playbackModeStopped,
@@ -13,12 +14,11 @@ enum PlaybackMode {
   playbackModeLoop,
 };
 
-struct PlaybackFXState {
-
-};
-
 struct PlaybackTableState {
   uint8_t tableIdx;
+  uint8_t rows[4];
+  uint8_t counters[4];
+  uint8_t speed[4];
   struct PlaybackFXState fx[4];
 };
 
@@ -88,5 +88,11 @@ void playbackStartPhraseRow(struct PlaybackState* state, int trackIdx, int songR
 void playbackStop(struct PlaybackState* state);
 
 int playbackNextFrame(struct PlaybackState* state, struct SoundChip* chips);
+
+// Chip-specific functions
+void setupInstrumentAY(struct PlaybackState* state, int trackIdx);
+void noteOffInstrumentAY(struct PlaybackState* state, int trackIdx);
+void handleInstrumentAY(struct PlaybackState* state, int trackIdx);
+void outputRegistersAY(struct PlaybackState* state, int trackIdx, struct SoundChip* chip);
 
 #endif
