@@ -133,7 +133,7 @@ static void draw(void) {
 
   gfxClearRect(2, 3, 1, 16);
   struct PlaybackTrackState* track = &playback.tracks[*pSongTrack];
-  if (playback.mode != playbackModeStopped && playback.mode != playbackModePhraseRow && track->songRow != EMPTY_VALUE_16) {
+  if (track->mode != playbackModeStopped && track->mode != playbackModePhraseRow && track->songRow != EMPTY_VALUE_16) {
     // Chain row
     if (*pSongRow == track->songRow) {
       gfxSetFgColor(appSettings.colorScheme.playMarkers);

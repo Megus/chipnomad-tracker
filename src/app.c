@@ -32,12 +32,14 @@ static void frameCallback(void* userdata) {
  * @return int 0 - input not handled, 1 - input handled
  */
 static int inputPlayback(int keys, int isDoubleTap) {
+  int isPlaying = playbackIsPlaying(&playback);
+
   // Stop phrase row
-  if (playback.mode == playbackModePhraseRow && keys == 0) {
+  if (playback.tracks[*pSongTrack].mode == playbackModePhraseRow && keys == 0) {
     playbackStop(&playback);
   }
   // Play song/chain/phrase depending on the current screen
-  else if (playback.mode == playbackModeStopped && keys == keyPlay) {
+  else if (!isPlaying && keys == keyPlay) {
     if (currentScreen == &screenSong || currentScreen == &screenProject) {
       playbackStartSong(&playback, *pSongRow, 0);
     } else if (currentScreen == &screenChain) {
@@ -48,7 +50,7 @@ static int inputPlayback(int keys, int isDoubleTap) {
     return 1;
   }
   // Play song from any screen
-  else if (playback.mode == playbackModeStopped && keys == (keyPlay | keyShift)) {
+  else if (!isPlaying && keys == (keyPlay | keyShift)) {
     if (currentScreen == &screenSong || currentScreen == &screenProject) {
       playbackStartSong(&playback, *pSongRow, 0);
     } else {
@@ -57,7 +59,7 @@ static int inputPlayback(int keys, int isDoubleTap) {
     return 1;
   }
   // Stop playback
-  else if (playback.mode != playbackModeStopped && keys == keyPlay) {
+  else if (isPlaying && keys == keyPlay) {
     playbackStop(&playback);
     return 1;
   }

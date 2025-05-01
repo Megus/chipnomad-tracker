@@ -190,7 +190,7 @@ static void draw(void) {
 
   struct PlaybackTrackState* track = &playback.tracks[*pSongTrack];
   struct PlaybackTableState* pTable = NULL;
-  if (playback.mode != playbackModeStopped) {
+  if (track->mode != playbackModeStopped) {
     int instrumentTableIdx = track->note.instrumentTable.tableIdx;
     int auxTableIdx = track->note.auxTable.tableIdx;
     if (table == instrumentTableIdx) {

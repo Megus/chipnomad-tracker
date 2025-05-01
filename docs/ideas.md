@@ -115,10 +115,10 @@ UI to pick FX allows to define chip-specific FX easily.
 - TIC - Set table speed
 - TBL - Table (replaces default instrument table)
 - TBX - Additional table (adds another table)
+- HOP - Song hop. In table: hop to table row in a single FX lain
 - THO - Table hop
 - GRV - Select track groove
 - GGR - Select global groove
-- SNG - Song hop
 
 For future: Generative elements: randomization, scale following (like on M8).
 

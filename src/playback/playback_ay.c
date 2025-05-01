@@ -6,6 +6,17 @@
 // AY-specific logic
 //
 
+void resetTrackAY(struct PlaybackState* state, int trackIdx) {
+  struct PlaybackTrackState* track = &state->tracks[trackIdx];
+
+  track->note.chip.ay.mixer = 0; // All disabled
+  track->note.chip.ay.noiseBase = EMPTY_VALUE_8;
+  track->note.chip.ay.noiseOffset = 0;
+  track->note.chip.ay.envShape = EMPTY_VALUE_8;
+  track->note.chip.ay.envBase = EMPTY_VALUE_16;
+  track->note.chip.ay.envOffset = 0;
+}
+
 void setupInstrumentAY(struct PlaybackState* state, int trackIdx) {
   struct PlaybackTrackState* track = &state->tracks[trackIdx];
   //struct Project* p = state->p;
