@@ -114,7 +114,7 @@ void outputRegistersAY(struct PlaybackState* state, int trackIdx, struct SoundCh
       // Silence channel
       chip->setRegister(chip, 8 + ayChannel, 0);
     } else {
-      int16_t period = p->pitchTable.values[track->note.noteFinal] - track->note.pitchOffset;
+      int16_t period = p->pitchTable.values[track->note.noteFinal] - track->note.pitchOffset - track->note.pitchOffsetAcc;
       // TODO: Design decision: allow period overflow or not. Can it be a setting?
       //if (period < 0) period = 0;
       //if (period > 4095) period = 4095;
@@ -122,7 +122,10 @@ void outputRegistersAY(struct PlaybackState* state, int trackIdx, struct SoundCh
       chip->setRegister(chip, ayChannel * 2 + 1, (period & 0xf00) >> 8);
 
       // Volume
-      int volume = track->note.volume * track->note.chip.ay.adsrVolume;
+      int volume = track->note.volume + track->note.volumeOffsetAcc;
+      if (volume < 0) volume = 0;
+      if (volume > 15) volume = 15;
+      volume *= track->note.chip.ay.adsrVolume;
 
       // Instrument table volume
       int tableIdx = track->note.instrumentTable.tableIdx;

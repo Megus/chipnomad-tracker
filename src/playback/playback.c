@@ -1,5 +1,6 @@
 #include <playback.h>
 #include <stdio.h>
+#include <string.h>
 #include <playback_internal.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -9,6 +10,7 @@
 
 static void resetTrack(struct PlaybackState* state, int trackIdx) {
   struct PlaybackTrackState* track = &state->tracks[trackIdx];
+
   track->songRow = EMPTY_VALUE_16;
   track->chainRow = 0;
   track->phraseRow = 0;
@@ -18,26 +20,37 @@ static void resetTrack(struct PlaybackState* state, int trackIdx) {
   track->note.noteBase = EMPTY_VALUE_8;
   track->note.noteFinal = EMPTY_VALUE_8;
   track->note.noteOffset = 0;
+  track->note.noteOffsetAcc = 0;
   track->note.pitchOffset = 0;
+  track->note.pitchOffsetAcc = 0;
   track->note.instrument = EMPTY_VALUE_8;
   track->note.volume = 0;
+  track->note.volumeOffsetAcc = 0;
+  track->note.volume1 = 0;
+  track->note.volume2 = 0;
+  track->note.volume3 = 0;
+  for (int i = 0; i < 3; i++) {
+    track->note.fx[i].fx = EMPTY_VALUE_8;
+  }
+
   resetTrackAY(state, trackIdx);
 }
 
-static void tableInit(struct PlaybackState* state, struct PlaybackTableState* table, int tableIdx, int speed) {
+void tableInit(struct PlaybackState* state, struct PlaybackTableState* table, int tableIdx, int speed) {
+  struct Project* p = state->p;
+
   table->tableIdx = tableIdx;
   if (tableIdx == EMPTY_VALUE_8) return;
 
-  for (int c = 0; c < 4; c++) {
-    table->counters[c] = 0;
-    table->rows[c] = 0;
-    table->speed[c] = speed;
+  for (int i = 0; i < 4; i++) {
+    table->counters[i] = 0;
+    table->rows[i] = 0;
+    table->speed[i] = speed;
+
+    memset(&table->fx[i], 0, sizeof(struct PlaybackFXState));
+    table->fx[i].fx = p->tables[tableIdx].fx[0][i][0];
+    table->fx[i].value = p->tables[tableIdx].fx[0][i][1];
   }
-}
-
-static void tableHandleFX(struct PlaybackState* state, int trackIdx, struct PlaybackTableState* table) {
-  if (table->tableIdx == EMPTY_VALUE_8) return;
-
 }
 
 static void tableProgress(struct PlaybackState* state, int trackIdx, struct PlaybackTableState* table) {
@@ -49,6 +62,13 @@ static void tableProgress(struct PlaybackState* state, int trackIdx, struct Play
     if (table->counters[i] >= table->speed[i]) {
       table->counters[i] = 0;
       table->rows[i] = (table->rows[i] + 1) & 15;
+
+      struct Project* p = state->p;
+      if (p->tables[table->tableIdx].fx[table->rows[i]][i][0] != EMPTY_VALUE_8) {
+        memset(&table->fx[i], 0, sizeof(struct PlaybackFXState));
+        table->fx[i].fx = p->tables[table->tableIdx].fx[table->rows[i]][i][0];
+        table->fx[i].value = p->tables[table->tableIdx].fx[table->rows[i]][i][1];
+      }
     }
   }
 }
@@ -66,17 +86,25 @@ static void processPhraseRow(struct PlaybackState* state, int trackIdx) {
     if (phraseIdx != EMPTY_VALUE_16) {
       int phraseRow = track->phraseRow;
       struct Phrase* phrase = &p->phrases[phraseIdx];
+      uint8_t note = phrase->notes[phraseRow];
       // FX
+      for (int i = 0; i < 3; i++) {
+        if (phrase->fx[phraseRow][i][0] != EMPTY_VALUE_8 || note != EMPTY_VALUE_8) {
+          memset(&track->note.fx[i], 0, sizeof(struct PlaybackFXState));
+          track->note.fx[i].fx = phrase->fx[phraseRow][i][0];
+          track->note.fx[i].value = phrase->fx[phraseRow][i][1];
+        }
+      }
 
       // Note
-      uint8_t note = phrase->notes[phraseRow];
       if (note != EMPTY_VALUE_8) {
         if (note == NOTE_OFF) {
           noteOffInstrumentAY(state, trackIdx);
         } else {
           track->note.noteBase = note;
-          track->note.pitchOffset = 0;
-          track->note.noteOffset = 0;
+          track->note.pitchOffsetAcc = 0;
+          track->note.noteOffsetAcc = 0;
+          track->note.volumeOffsetAcc = 0;
           tableInit(state, &track->note.auxTable, EMPTY_VALUE_8, 1);
        }
       }
@@ -109,14 +137,15 @@ static void nextFrame(struct PlaybackState* state, int trackIdx) {
     return;
   }
 
+  // Clear re-calculated fields
+  track->note.noteOffset = 0;
+  track->note.pitchOffset = 0;
+
   // Instrument
   handleInstrumentAY(state, trackIdx);
 
   // FX
-
-  // Tables
-  tableHandleFX(state, trackIdx, &track->note.instrumentTable);
-  tableHandleFX(state, trackIdx, &track->note.auxTable);
+  handleFX(state, trackIdx);
 
   // Final note calculation
   if (track->note.noteBase == EMPTY_VALUE_8) {
@@ -151,6 +180,7 @@ static void nextFrame(struct PlaybackState* state, int trackIdx) {
 
     // Offset from FX
     note += track->note.noteOffset;
+    note += track->note.noteOffsetAcc;
 
     // TODO: Design decision: allow note overflow or not. Can it be a setting?
     if (note < 0) note = p->pitchTable.length + (note % p->pitchTable.length);
@@ -346,7 +376,7 @@ int playbackNextFrame(struct PlaybackState* state, struct SoundChip* chips) {
 
     // Check queued play event for stopped track or when a track is in phrase row playback mode
     if ((track->mode == playbackModeStopped && track->queue.mode != playbackModeNone) ||
-      (track->mode == playbackModePhraseRow && track->queue.mode != playbackModePhraseRow)) {
+      (track->mode == playbackModePhraseRow && track->queue.mode == playbackModePhraseRow)) {
       resetTrack(state, trackIdx);
       track->mode = track->queue.mode;
       track->songRow = track->queue.songRow;

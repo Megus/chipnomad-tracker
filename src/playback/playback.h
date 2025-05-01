@@ -51,8 +51,10 @@ struct PlaybackNoteState {
   int8_t noteOffsetAcc; // Accumulated over time
   int16_t pitchOffset; // Re-calculated each frame
   int16_t pitchOffsetAcc; // Accumulated over time
-
-  int8_t volumeOffset; // Calculated when processing FX
+  uint8_t volume1; // Instrument volume
+  uint8_t volume2; // Instrument table volume
+  uint8_t volume3; // Aux table volume
+  int8_t volumeOffsetAcc; // Accumulated over time
 
   struct PlaybackTableState instrumentTable;
   struct PlaybackTableState auxTable;

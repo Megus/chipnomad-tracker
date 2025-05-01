@@ -12,4 +12,7 @@ void handleInstrumentAY(struct PlaybackState* state, int trackIdx);
 void outputRegistersAY(struct PlaybackState* state, int trackIdx, struct SoundChip* chip);
 void resetTrackAY(struct PlaybackState* state, int trackIdx);
 
+void tableInit(struct PlaybackState* state, struct PlaybackTableState* table, int tableIdx, int speed);
+int handleFX(struct PlaybackState* state, int trackIdx);
+
 #endif
