@@ -3,6 +3,80 @@
 #include <stdio.h>
 
 static int handleFXInternal(struct PlaybackState* state, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState);
+static int handleAllTableFX(struct PlaybackState* state, int trackIdx);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FX implementations
+//
+
+// PBN - pitch bend
+static void handleFX_PBN(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  // TODO: the value is not per tick, but per row
+  track->note.pitchOffsetAcc += (int8_t)fx->value;
+}
+
+// TBX - aux table
+static void handleFX_TBX(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  tableInit(state, &track->note.auxTable, fx->value, 1);
+  fx->fx = EMPTY_VALUE_8;
+}
+
+// THO - Table hop
+static void handleFX_THO(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  fx->fx = EMPTY_VALUE_8;
+  if (tableState == NULL) {
+    // FX is in Phrase
+    if (track->note.instrumentTable.tableIdx != EMPTY_VALUE_8) {
+      for (int i = 0; i < 4; i++) {
+        track->note.instrumentTable.counters[i] = 0;
+        track->note.instrumentTable.rows[i] = fx->value & 0xf;
+        tableReadFX(state, &track->note.instrumentTable, i, 0);
+      }
+    }
+    if (track->note.auxTable.tableIdx != EMPTY_VALUE_8) {
+      for (int i = 0; i < 4; i++) {
+        track->note.auxTable.counters[i] = 0;
+        track->note.auxTable.rows[i] = fx->value & 0xf;
+        tableReadFX(state, &track->note.auxTable, i, 0);
+      }
+    }
+    handleAllTableFX(state, trackIdx);
+  }
+}
+
+// TIC - Table speed
+static void handleFX_TIC(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  fx->fx = EMPTY_VALUE_8;
+  if (tableState == NULL) {
+    // TIC in Phrase - set TIC speed for all FX lanes in both instrument and aux tables
+    if (track->note.instrumentTable.tableIdx != EMPTY_VALUE_8) {
+      for (int i = 0; i < 4; i++) {
+        track->note.instrumentTable.speed[i] = fx->value;
+      }
+    }
+    if (track->note.auxTable.tableIdx != EMPTY_VALUE_8) {
+      for (int i = 0; i < 4; i++) {
+        track->note.auxTable.speed[i] = fx->value;
+      }
+    }
+  } else {
+    // TIC in table - set it only for the current FX lane
+    for (int c = 0; c < 4; c++) {
+      if (&tableState->fx[c] == fx) {
+        tableState->speed[c] = fx->value;
+        break;
+      }
+    }
+  }
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// General FX handling functions
+//
 
 static int handleAllTableFX(struct PlaybackState* state, int trackIdx) {
   struct PlaybackTrackState* track = &state->tracks[trackIdx];
@@ -28,69 +102,14 @@ static int handleFXInternal(struct PlaybackState* state, int trackIdx, struct Pl
   struct PlaybackTrackState* track = &state->tracks[trackIdx];
 
   // Common FX
-  if (fx->fx == EMPTY_VALUE_8) {
-    return 0;
-  }
-  // PBN - pitch bend
-  else if (fx->fx == fxPBN) {
-    // TODO: the value is not per tick, but per row
-    track->note.pitchOffsetAcc += (int8_t)fx->value;
-  }
-  // TBX - aux table
-  else if (fx->fx == fxTBX) {
-    tableInit(state, &track->note.instrumentTable, fx->value, 1);
-    fx->fx = EMPTY_VALUE_8;
-  }
-  // THO - Table hop
-  else if (fx->fx == fxTHO) {
-    fx->fx = EMPTY_VALUE_8;
-    if (tableState == NULL) {
-      // FX is in Phrase
-      if (track->note.instrumentTable.tableIdx != EMPTY_VALUE_8) {
-        for (int i = 0; i < 4; i++) {
-          track->note.instrumentTable.counters[i] = 0;
-          track->note.instrumentTable.rows[i] = fx->value & 0xf;
-          tableReadFX(state, &track->note.instrumentTable, i, 0);
-        }
-      }
-      if (track->note.auxTable.tableIdx != EMPTY_VALUE_8) {
-        for (int i = 0; i < 4; i++) {
-          track->note.auxTable.counters[i] = 0;
-          track->note.auxTable.rows[i] = fx->value & 0xf;
-          tableReadFX(state, &track->note.auxTable, i, 0);
-        }
-      }
-      handleAllTableFX(state, trackIdx);
-    }
-  }
-  // TIC - Table speed
-  else if (fx->fx == fxTIC) {
-    fx->fx = EMPTY_VALUE_8;
-    if (tableState == NULL) {
-      // TIC in Phrase - set TIC speed for all FX lanes in both instrument and aux tables
-      if (track->note.instrumentTable.tableIdx != EMPTY_VALUE_8) {
-        for (int i = 0; i < 4; i++) {
-          track->note.instrumentTable.speed[i] = fx->value;
-        }
-      }
-      if (track->note.auxTable.tableIdx != EMPTY_VALUE_8) {
-        for (int i = 0; i < 4; i++) {
-          track->note.auxTable.speed[i] = fx->value;
-        }
-      }
-    } else {
-      // TIC in table - set it only for the current FX lane
-      for (int c = 0; c < 4; c++) {
-        if (&tableState->fx[c] == fx) {
-          tableState->speed[c] = fx->value;
-          break;
-        }
-      }
-    }
-  }
+  if (fx->fx == EMPTY_VALUE_8) return 0;
+  else if (fx->fx == fxPBN) handleFX_PBN(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxTBX) handleFX_TBX(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxTHO) handleFX_THO(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxTIC) handleFX_TIC(state, track, trackIdx, fx, tableState);
   // Chip specific FX
   else {
-
+    handleFX_AY(state, trackIdx, fx, tableState);
   }
 
   return 0;

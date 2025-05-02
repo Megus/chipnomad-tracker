@@ -11,10 +11,10 @@ void resetTrackAY(struct PlaybackState* state, int trackIdx) {
 
   track->note.chip.ay.mixer = 0; // All disabled
   track->note.chip.ay.noiseBase = EMPTY_VALUE_8;
-  track->note.chip.ay.noiseOffset = 0;
+  track->note.chip.ay.noiseOffsetAcc = 0;
   track->note.chip.ay.envShape = EMPTY_VALUE_8;
   track->note.chip.ay.envBase = EMPTY_VALUE_16;
-  track->note.chip.ay.envOffset = 0;
+  track->note.chip.ay.envOffsetAcc = 0;
 }
 
 void setupInstrumentAY(struct PlaybackState* state, int trackIdx) {
@@ -23,10 +23,10 @@ void setupInstrumentAY(struct PlaybackState* state, int trackIdx) {
 
   track->note.chip.ay.adsrCounter = 0;
   track->note.chip.ay.envBase = 0;
-  track->note.chip.ay.envOffset = 0;
-  track->note.chip.ay.noiseBase = 0;
-  track->note.chip.ay.noiseOffset = 0;
-  track->note.chip.ay.mixer = 1;
+  track->note.chip.ay.envOffsetAcc = 0;
+  track->note.chip.ay.noiseBase = EMPTY_VALUE_8;
+  track->note.chip.ay.noiseOffsetAcc = 0;
+  track->note.chip.ay.mixer = 8;
   track->note.chip.ay.adsrStep = 0; // ADSR: Attack
   track->note.chip.ay.adsrFrom = 1;
   track->note.chip.ay.adsrTo = 15;
@@ -106,6 +106,7 @@ void outputRegistersAY(struct PlaybackState* state, int trackIdx, struct SoundCh
   int ayChannel = 0;
 
   uint8_t mixer = 0;
+  uint8_t noise = 0;
 
   for (int t = trackIdx; t < trackIdx + 3; t++) {
     struct PlaybackTrackState* track = &state->tracks[t];
@@ -151,13 +152,19 @@ void outputRegistersAY(struct PlaybackState* state, int trackIdx, struct SoundCh
 
       chip->setRegister(chip, 8 + ayChannel, volume);
 
+      // Noise
+      if ((track->note.chip.ay.mixer & 8) == 0 && track->note.chip.ay.noiseBase != EMPTY_VALUE_8) {
+        noise = track->note.chip.ay.noiseBase + track->note.chip.ay.noiseOffsetAcc;
+      }
+
       // Mixer
       mixer = mixer & (~(9 << ayChannel));
-      mixer = mixer | (8 << ayChannel);
+      mixer = mixer | ((track->note.chip.ay.mixer & 9) << ayChannel);
     }
 
     ayChannel++;
   }
 
+  chip->setRegister(chip, 6, noise);
   chip->setRegister(chip, 7, mixer);
 }

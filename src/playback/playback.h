@@ -32,9 +32,9 @@ struct PlaybackAYNoteState {
   uint8_t adsrVolume;
   uint8_t envShape;
   uint16_t envBase;
-  uint16_t envOffset;
+  int16_t envOffsetAcc;
   uint8_t noiseBase;
-  uint8_t noiseOffset;
+  int8_t noiseOffsetAcc;
 };
 
 union PlaybackChipNoteState {
