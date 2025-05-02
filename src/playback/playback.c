@@ -37,8 +37,6 @@ static void resetTrack(struct PlaybackState* state, int trackIdx) {
 }
 
 void tableInit(struct PlaybackState* state, struct PlaybackTableState* table, int tableIdx, int speed) {
-  struct Project* p = state->p;
-
   table->tableIdx = tableIdx;
   if (tableIdx == EMPTY_VALUE_8) return;
 
@@ -47,28 +45,68 @@ void tableInit(struct PlaybackState* state, struct PlaybackTableState* table, in
     table->rows[i] = 0;
     table->speed[i] = speed;
 
-    memset(&table->fx[i], 0, sizeof(struct PlaybackFXState));
-    table->fx[i].fx = p->tables[tableIdx].fx[0][i][0];
-    table->fx[i].value = p->tables[tableIdx].fx[0][i][1];
+    tableReadFX(state, table, i, 1);
+  }
+}
+
+void tableReadFX(struct PlaybackState* state, struct PlaybackTableState* table, int fxIdx, int forceRead) {
+  uint8_t tableIdx = table->tableIdx;
+  if (tableIdx == EMPTY_VALUE_8) return;
+  struct Project* p = state->p;
+
+  int tableRow = table->rows[fxIdx];
+  if (forceRead || p->tables[tableIdx].fx[tableRow][fxIdx][0] != EMPTY_VALUE_8) {
+    memset(&table->fx[fxIdx], 0, sizeof(struct PlaybackFXState));
+    table->fx[fxIdx].fx = p->tables[tableIdx].fx[tableRow][fxIdx][0];
+    table->fx[fxIdx].value = p->tables[tableIdx].fx[tableRow][fxIdx][1];
   }
 }
 
 static void tableProgress(struct PlaybackState* state, int trackIdx, struct PlaybackTableState* table) {
   if (table->tableIdx == EMPTY_VALUE_8) return;
+  struct Project* p = state->p;
 
   for (int i = 0; i < 4; i++) {
     table->counters[i]++;
 
     if (table->counters[i] >= table->speed[i]) {
       table->counters[i] = 0;
-      table->rows[i] = (table->rows[i] + 1) & 15;
 
-      struct Project* p = state->p;
-      if (p->tables[table->tableIdx].fx[table->rows[i]][i][0] != EMPTY_VALUE_8) {
-        memset(&table->fx[i], 0, sizeof(struct PlaybackFXState));
-        table->fx[i].fx = p->tables[table->tableIdx].fx[table->rows[i]][i][0];
-        table->fx[i].value = p->tables[table->tableIdx].fx[table->rows[i]][i][1];
+      uint8_t fxType = p->tables[table->tableIdx].fx[table->rows[i]][i][0];
+      uint8_t fxValue = p->tables[table->tableIdx].fx[table->rows[i]][i][1];
+
+      // Special case for THO/HOP pointing to the same row - we should not progress further
+      if (fxType == fxTHO && (fxValue & 0xf) == table->rows[i]) {
+        for (int c = 0; c < 4; c++) {
+          table->counters[c] = 0;
+          table->rows[c] = fxValue & 0xf;
+          tableReadFX(state, table, c, 0);
+        }
+        break;
+      } else if (fxType == fxHOP && (fxValue & 0xf) == table->rows[i]) {
+        // Do nothing here, we just don't progres further and stay on the same row
+      } else {
+        // Progres further in the table
+        table->rows[i] = (table->rows[i] + 1) & 15;
+
+        // Handle THO and HOP table FX right nere
+        fxType = p->tables[table->tableIdx].fx[table->rows[i]][i][0];
+        fxValue = p->tables[table->tableIdx].fx[table->rows[i]][i][1];
+        if (fxType == fxTHO) {
+          // Hop on all FX lanes
+          for (int c = 0; c < 4; c++) {
+            table->counters[c] = 0;
+            table->rows[c] = fxValue & 0xf;
+            tableReadFX(state, table, i, 0);
+          }
+          break;
+        } else if (fxType == fxHOP) {
+          // Hop only on the current lane
+          table->counters[i] = 0;
+          table->rows[i] = fxValue & 0xf;
+        }
       }
+      tableReadFX(state, table, i, 0);
     }
   }
 }

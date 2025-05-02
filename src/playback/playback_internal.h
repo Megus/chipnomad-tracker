@@ -13,6 +13,7 @@ void outputRegistersAY(struct PlaybackState* state, int trackIdx, struct SoundCh
 void resetTrackAY(struct PlaybackState* state, int trackIdx);
 
 void tableInit(struct PlaybackState* state, struct PlaybackTableState* table, int tableIdx, int speed);
+void tableReadFX(struct PlaybackState* state, struct PlaybackTableState* table, int fxIdx, int forceRead);
 int handleFX(struct PlaybackState* state, int trackIdx);
 
 #endif

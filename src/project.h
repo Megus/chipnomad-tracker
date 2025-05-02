@@ -101,7 +101,7 @@ enum FX {
   fxTHO,
   fxGRV,
   fxGGR,
-  fxSNG,
+  fxHOP,
   // AY-specific FX
   fxAYM,
   fxERT,
