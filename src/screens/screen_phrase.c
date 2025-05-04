@@ -221,8 +221,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     // FX value
     int fxIdx = (col - 4) / 2;
     if (project.phrases[phrase].fx[row][fxIdx][0] != EMPTY_VALUE_8) {
-      handled = edit8noLimit(action, &project.phrases[phrase].fx[row][fxIdx][1], &lastFX[1], 16);
-      screenMessage(helpFXHint(project.phrases[phrase].fx[row][fxIdx], 0));
+      handled = editFXValue(action, project.phrases[phrase].fx[row][fxIdx], lastFX, 0);
     }
   }
 

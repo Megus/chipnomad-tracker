@@ -55,6 +55,18 @@ int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastValue, int isTa
   return result;
 }
 
+int editFXValue(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable) {
+  uint8_t bigStep = 16;
+  if (fx[0] == fxENT) {
+    // AY Envelope note
+    bigStep = project.pitchTable.octaveSize;
+  }
+
+  int handled = edit8noLimit(action, &fx[1], &lastFX[1], bigStep);
+  screenMessage(helpFXHint(fx, 0));
+  return handled;
+}
+
 // Uses the ordered FX list
 struct FXName* getGroup(int group) {
   return group == 0 ? fxNamesCommon : fxNamesAY;

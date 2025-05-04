@@ -40,6 +40,33 @@ static void handleFX_EAU(struct PlaybackState* state, struct PlaybackTrackState*
   track->note.chip.ay.envAutoD = d;
 }
 
+// ENT - Envelope not
+static void handleFX_ENT(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  struct Project *p = state->p;
+  fx->fx = EMPTY_VALUE_8;
+  int note = fx->value + p->pitchTable.octaveSize * 4;
+  if (note >= p->pitchTable.length) note = p->pitchTable.length - 1;
+  track->note.chip.ay.envBase = p->pitchTable.values[note];
+}
+
+// EPT - Envelope period offset
+static void handleFX_EPT(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  fx->fx = EMPTY_VALUE_8;
+  track->note.chip.ay.envOffsetAcc += (int8_t)fx->value;
+}
+
+// EPL - Envelope period Low
+static void handleFX_EPL(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  fx->fx = EMPTY_VALUE_8;
+  track->note.chip.ay.envBase = (track->note.chip.ay.envBase & 0xff00) + fx->value;
+}
+
+// EPH - Envelope period High
+static void handleFX_EPH(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  fx->fx = EMPTY_VALUE_8;
+  track->note.chip.ay.envBase = (track->note.chip.ay.envBase & 0x00ff) + (fx->value << 8);
+}
+
 
 int handleFX_AY(struct PlaybackState* state, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
   struct PlaybackTrackState* track = &state->tracks[trackIdx];
@@ -49,6 +76,10 @@ int handleFX_AY(struct PlaybackState* state, int trackIdx, struct PlaybackFXStat
   else if (fx->fx == fxNOI) handleFX_NOI(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxERT) handleFX_ERT(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxEAU) handleFX_EAU(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxENT) handleFX_ENT(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxEPT) handleFX_EPT(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxEPL) handleFX_EPL(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxEPH) handleFX_EPH(state, track, trackIdx, fx, tableState);
 
   return 0;
 }
