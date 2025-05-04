@@ -12,8 +12,24 @@ static int handleAllTableFX(struct PlaybackState* state, int trackIdx);
 
 // PBN - pitch bend
 static void handleFX_PBN(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
-  // TODO: the value is not per tick, but per row
-  track->note.pitchOffsetAcc += (int8_t)fx->value;
+  if (fx->data.pbn.value == 0) {
+    // Calculate per-frame change
+    int speed = 1;
+    if (tableState != NULL) {
+      speed = tableState->speed[fx - tableState->fx];
+    } else {
+      speed = state->p->grooves[track->grooveIdx].speed[track->grooveRow];
+    }
+    if (speed == 0) speed = 1;
+    int value = (int8_t)(fx->value) << 8; // Use 24.8 fixed point math
+    fx->data.pbn.value = value / speed;
+    fx->data.pbn.lowByte = 0;
+  }
+  int value = (track->note.pitchOffsetAcc << 8) + fx->data.pbn.lowByte;
+  value += fx->data.pbn.value;
+  track->note.pitchOffsetAcc = value >> 8;
+  fx->data.pbn.lowByte = value & 0xff;
+  printf("pitch offset: %d\n", track->note.pitchOffsetAcc);
 }
 
 // PIT - Pitch offset

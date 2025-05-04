@@ -67,6 +67,26 @@ static void handleFX_EPH(struct PlaybackState* state, struct PlaybackTrackState*
   track->note.chip.ay.envBase = (track->note.chip.ay.envBase & 0x00ff) + (fx->value << 8);
 }
 
+// EBN - Envelope pitch bend
+static void handleFX_EBN(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  if (fx->data.pbn.value == 0) {
+    // Calculate per-frame change
+    int speed = 1;
+    if (tableState != NULL) {
+      speed = tableState->speed[fx - tableState->fx];
+    } else {
+      speed = state->p->grooves[track->grooveIdx].speed[track->grooveRow];
+    }
+    if (speed == 0) speed = 1;
+    int value = (int8_t)(fx->value) << 8; // Use 24.8 fixed point math
+    fx->data.pbn.value = value / speed;
+    fx->data.pbn.lowByte = 0;
+  }
+  int value = (track->note.chip.ay.envOffsetAcc << 8) + fx->data.pbn.lowByte;
+  value += fx->data.pbn.value;
+  track->note.chip.ay.envOffsetAcc = value >> 8;
+  fx->data.pbn.lowByte = value & 0xff;
+}
 
 int handleFX_AY(struct PlaybackState* state, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
   struct PlaybackTrackState* track = &state->tracks[trackIdx];
@@ -80,6 +100,7 @@ int handleFX_AY(struct PlaybackState* state, int trackIdx, struct PlaybackFXStat
   else if (fx->fx == fxEPT) handleFX_EPT(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxEPL) handleFX_EPL(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxEPH) handleFX_EPH(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxEBN) handleFX_EBN(state, track, trackIdx, fx, tableState);
 
   return 0;
 }
