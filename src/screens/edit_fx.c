@@ -1,5 +1,6 @@
 #include <screens.h>
 #include <corelib_gfx.h>
+#include <help.h>
 
 #define FX_COLS 8
 
@@ -14,7 +15,9 @@ static const char* fxHeaders[] = {
 
 void fxEditFullDraw(uint8_t currentFX);
 
-int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastValue) {
+int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastValue, int isTable) {
+  int result = 0;
+
   if (action == editClear) {
     // Clear FX
     if (fx[0] != EMPTY_VALUE_8) {
@@ -23,32 +26,33 @@ int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastValue) {
     }
     fx[0] = EMPTY_VALUE_8;
     fx[1] = 0;
-    return 2;
+    result = 2;
   } else if (action == editTap) {
     // Insert last FX
     if (fx[0] == EMPTY_VALUE_8) {
       fx[0] = lastValue[0];
       fx[1] = lastValue[1];
-      lastValue[0] = fx[0];
-      lastValue[1] = fx[1];
     }
-    return 2;
+    lastValue[0] = fx[0];
+    lastValue[1] = fx[1];
+    result = 2;
   } else if (action == editIncrease) {
     // Next FX
     if (fx[0] < fxTotalCount - 1) fx[0]++;
     lastValue[0] = fx[0];
-    return 2;
+    result = 2;
   } else if (action == editDecrease) {
     // Previous FX
     if (fx[0] > 0) fx[0]--;
     lastValue[0] = fx[0];
-    return 2;
+    result = 2;
   } else if (action == editIncreaseBig || action == editDecreaseBig) {
     // Show FX select screen
     fxEditFullDraw(fx[0]);
-    return 1;
+    result = 1;
   }
-  return 0;
+  if (result != 1) screenMessage("%s", helpFXHint(fx, isTable));
+  return result;
 }
 
 // Uses the ordered FX list

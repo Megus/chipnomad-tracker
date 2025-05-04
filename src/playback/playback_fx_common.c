@@ -16,6 +16,12 @@ static void handleFX_PBN(struct PlaybackState* state, struct PlaybackTrackState*
   track->note.pitchOffsetAcc += (int8_t)fx->value;
 }
 
+// PIT - Pitch offset
+static void handleFX_PIT(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  track->note.pitchOffsetAcc += (int8_t)fx->value;
+  fx->fx = EMPTY_VALUE_8;
+}
+
 // TBX - aux table
 static void handleFX_TBX(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
   tableInit(state, &track->note.auxTable, fx->value, 1);
@@ -71,6 +77,14 @@ static void handleFX_TIC(struct PlaybackState* state, struct PlaybackTrackState*
   }
 }
 
+// VOL - Volume offset
+static void handleFX_VOL(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  fx->fx = EMPTY_VALUE_8;
+  int volumeOffset = track->note.volumeOffsetAcc + (int8_t)fx->value;
+  if (volumeOffset < -128) volumeOffset = -128;
+  if (volumeOffset > 127) volumeOffset = 127;
+  track->note.volumeOffsetAcc = volumeOffset;
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -104,9 +118,11 @@ static int handleFXInternal(struct PlaybackState* state, int trackIdx, struct Pl
   // Common FX
   if (fx->fx == EMPTY_VALUE_8) return 0;
   else if (fx->fx == fxPBN) handleFX_PBN(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxPIT) handleFX_PIT(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxTBX) handleFX_TBX(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxTHO) handleFX_THO(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxTIC) handleFX_TIC(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxVOL) handleFX_VOL(state, track, trackIdx, fx, tableState);
   // Chip specific FX
   else {
     handleFX_AY(state, trackIdx, fx, tableState);

@@ -130,13 +130,12 @@ For future: Generative elements: randomization, scale following (like on M8).
 - ERT - Env retrig
 - NOI - Noise offset
 - NOA - Noise absolute value
-- EAU - Env auto-pitch, offset in semitones (80 - off)
+- EAU - Env auto-pitch
 - EVB - Env Vibrato
 - EBN - Env pitch bend
 - ESL - Env pitch slide (portamento)
-- ENA - Env pitch as a note, absolute
-- ENR - Env pitch as a note, relative (for arpeggios in tables, for example)
-- EPR - Env pitch value relative
+- ENA - Env note (absolute)
+- EPT - Env pitch (relative)
 - EPL, EPH - Env period as a value, Low and High regs
 
 ## Instruments

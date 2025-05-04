@@ -97,12 +97,11 @@ static void tableProgress(struct PlaybackState* state, int trackIdx, struct Play
           for (int c = 0; c < 4; c++) {
             table->counters[c] = 0;
             table->rows[c] = fxValue & 0xf;
-            tableReadFX(state, table, i, 0);
+            tableReadFX(state, table, c, 0);
           }
           break;
         } else if (fxType == fxHOP) {
           // Hop only on the current lane
-          table->counters[i] = 0;
           table->rows[i] = fxValue & 0xf;
         }
       }
@@ -325,6 +324,11 @@ void playbackInit(struct PlaybackState* state, struct Project* project) {
     resetTrack(state, c);
     state->tracks[c].queue.mode = playbackModeNone;
   }
+
+  // TODO: Properly initialize other global chip states, but for now it's AY only
+  for (int c = 0; c < PROJECT_MAX_CHIPS; c++) {
+    state->chips[c].ay.envShape = 0;
+  }
 }
 
 int playbackIsPlaying(struct PlaybackState* state) {
@@ -470,7 +474,7 @@ int playbackNextFrame(struct PlaybackState* state, struct SoundChip* chips) {
   }
 
   // TODO: Multichip setup
-  outputRegistersAY(state, 0, chips);
+  outputRegistersAY(state, 0, 0, chips);
 
   return !hasActiveTracks;
 }

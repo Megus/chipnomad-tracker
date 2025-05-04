@@ -12,16 +12,18 @@ void resetTrackAY(struct PlaybackState* state, int trackIdx) {
   track->note.chip.ay.mixer = 0; // All disabled
   track->note.chip.ay.noiseBase = EMPTY_VALUE_8;
   track->note.chip.ay.noiseOffsetAcc = 0;
-  track->note.chip.ay.envShape = EMPTY_VALUE_8;
+  track->note.chip.ay.envShape = 0;
   track->note.chip.ay.envBase = EMPTY_VALUE_16;
   track->note.chip.ay.envOffsetAcc = 0;
 }
 
 void setupInstrumentAY(struct PlaybackState* state, int trackIdx) {
   struct PlaybackTrackState* track = &state->tracks[trackIdx];
-  //struct Project* p = state->p;
+  struct Project* p = state->p;
 
   track->note.chip.ay.adsrCounter = 0;
+  track->note.chip.ay.envAutoN = p->instruments[track->note.instrument].chip.ay.autoEnvN;
+  track->note.chip.ay.envAutoD = p->instruments[track->note.instrument].chip.ay.autoEnvD;
   track->note.chip.ay.envBase = 0;
   track->note.chip.ay.envOffsetAcc = 0;
   track->note.chip.ay.noiseBase = EMPTY_VALUE_8;
@@ -101,12 +103,14 @@ void handleInstrumentAY(struct PlaybackState* state, int trackIdx) {
   track->note.chip.ay.adsrVolume = adsrVolume;
 }
 
-void outputRegistersAY(struct PlaybackState* state, int trackIdx, struct SoundChip* chip) {
+void outputRegistersAY(struct PlaybackState* state, int trackIdx, int chipIdx, struct SoundChip* chip) {
   struct Project* p = state->p;
   int ayChannel = 0;
 
   uint8_t mixer = 0;
   uint8_t noise = 0;
+  uint8_t envShape = 0;
+  uint16_t envPeriod = 0;
 
   for (int t = trackIdx; t < trackIdx + 3; t++) {
     struct PlaybackTrackState* track = &state->tracks[t];
@@ -122,33 +126,57 @@ void outputRegistersAY(struct PlaybackState* state, int trackIdx, struct SoundCh
       chip->setRegister(chip, ayChannel * 2, period & 0xff);
       chip->setRegister(chip, ayChannel * 2 + 1, (period & 0xf00) >> 8);
 
-      // Volume
-      int volume = track->note.volume + track->note.volumeOffsetAcc;
-      if (volume < 0) volume = 0;
-      if (volume > 15) volume = 15;
-      volume *= track->note.chip.ay.adsrVolume;
+      // Volume register
+      int volume = 0;
+      if (track->note.chip.ay.envShape != 0) {
+        // Envelope on
+        envShape = track->note.chip.ay.envShape;
 
-      // Instrument table volume
-      int tableIdx = track->note.instrumentTable.tableIdx;
-      if (tableIdx != EMPTY_VALUE_8 && p->tables[tableIdx].volumes[track->note.instrumentTable.rows[0]] != EMPTY_VALUE_8) {
-        volume *= p->tables[tableIdx].volumes[track->note.instrumentTable.rows[0]];
+        // Env period:
+        if (track->note.chip.ay.envAutoN != 0) {
+          // 1. Auto envelope
+          int n = track->note.chip.ay.envAutoN;
+          int d = track->note.chip.ay.envAutoD;
+          int tempPeriod = period * n / d;
+          envPeriod = ((tempPeriod & 0xf) >= 8) ? (tempPeriod >> 4) + 1 : (tempPeriod >> 4);
+        } else {
+          // 2. Manual envelope
+          envPeriod = track->note.chip.ay.envBase;
+        }
+
+        // Envelope period modification
+        envPeriod += track->note.chip.ay.envOffsetAcc;
+
+        volume = 16;
       } else {
-        volume *= 15;
+        // Envelope off
+        volume = track->note.volume + track->note.volumeOffsetAcc;
+        if (volume < 0) volume = 0;
+        if (volume > 15) volume = 15;
+        volume *= track->note.chip.ay.adsrVolume;
+
+        // Instrument table volume
+        int tableIdx = track->note.instrumentTable.tableIdx;
+        if (tableIdx != EMPTY_VALUE_8 && p->tables[tableIdx].volumes[track->note.instrumentTable.rows[0]] != EMPTY_VALUE_8) {
+          volume *= p->tables[tableIdx].volumes[track->note.instrumentTable.rows[0]];
+        } else {
+          volume *= 15;
+        }
+
+        // Aux table volume
+        tableIdx = track->note.auxTable.tableIdx;
+        if (tableIdx != EMPTY_VALUE_8 && p->tables[tableIdx].volumes[track->note.auxTable.rows[0]] != EMPTY_VALUE_8) {
+        } else {
+          volume *= 15;
+        }
+
+        // Normalize volume
+        volume = volume / (15 * 15 * 15);
+
+        // Sanity limits (even though it should never happen)
+        if (volume < 0) volume = 0;
+        if (volume > 15) volume = 15;
       }
-
-      // Aux table volume
-      tableIdx = track->note.auxTable.tableIdx;
-      if (tableIdx != EMPTY_VALUE_8 && p->tables[tableIdx].volumes[track->note.auxTable.rows[0]] != EMPTY_VALUE_8) {
-      } else {
-        volume *= 15;
-      }
-
-      // Normalize volume
-      volume = volume / (15 * 15 * 15);
-
-      // Sanity limits (even though it should never happen)
-      if (volume < 0) volume = 0;
-      if (volume > 15) volume = 15;
 
       chip->setRegister(chip, 8 + ayChannel, volume);
 
@@ -163,6 +191,15 @@ void outputRegistersAY(struct PlaybackState* state, int trackIdx, struct SoundCh
     }
 
     ayChannel++;
+  }
+
+  if (envShape != 0) {
+    if (envShape != state->chips[chipIdx].ay.envShape) {
+      chip->setRegister(chip, 13, envShape);
+      state->chips[chipIdx].ay.envShape = envShape;
+    }
+    chip->setRegister(chip, 11, envPeriod & 0xff);
+    chip->setRegister(chip, 12, (envPeriod & 0xff00) >> 8);
   }
 
   chip->setRegister(chip, 6, noise);

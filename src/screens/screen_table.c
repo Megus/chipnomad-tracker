@@ -3,6 +3,7 @@
 #include <corelib_gfx.h>
 #include <utils.h>
 #include <project.h>
+#include <help.h>
 
 static int table = 0;
 static uint8_t lastPitchValue = 0;
@@ -156,7 +157,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   } else if (col % 2 == 1 && col >= 3) {
     // FX (columns 3,5,7,9)
     int fxIdx = (col - 3) / 2;
-    int result = editFX(action, project.tables[table].fx[row][fxIdx], lastFX);
+    int result = editFX(action, project.tables[table].fx[row][fxIdx], lastFX, 1);
     if (result == 2) {
       drawField(col + 1, row, 0);
       handled = 1;
@@ -169,6 +170,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     int fxIdx = (col - 4) / 2;
     if (project.tables[table].fx[row][fxIdx][0] != EMPTY_VALUE_8) {
       handled = edit8noLimit(action, &project.tables[table].fx[row][fxIdx][1], &lastFX[1], 16);
+      screenMessage(helpFXHint(project.tables[table].fx[row][fxIdx], 0));
     }
   }
 

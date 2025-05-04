@@ -21,7 +21,7 @@ int fxCommonCount = sizeof(fxNamesCommon) / sizeof(struct FXName);
 struct FXName fxNamesAY[] = {
   {fxAYM, "AYM"}, {fxERT, "ERT"}, {fxNOI, "NOI"}, {fxNOA, "NOA"},
   {fxEAU, "EAU"}, {fxEVB, "EVB"}, {fxEBN, "EBN"}, {fxESL, "ESL"},
-  {fxENA, "ENA"}, {fxENR, "ENR"}, {fxEPR, "EPR"}, {fxEPL, "EPL"}, {fxEPH, "EPH"},
+  {fxENT, "ENT"}, {fxEPT, "EPT"}, {fxEPL, "EPL"}, {fxEPH, "EPH"},
 };
 int fxAYCount = sizeof(fxNamesAY) / sizeof(struct FXName);
 

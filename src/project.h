@@ -84,38 +84,37 @@ struct Groove {
 
 // Phrases
 enum FX {
-  fxARP,
-  fxARC,
-  fxPVB,
-  fxPBN,
-  fxPSL,
-  fxPIT,
-  fxVOL,
-  fxRET,
-  fxDEL,
-  fxOFF,
-  fxKIL,
-  fxTIC,
-  fxTBL,
-  fxTBX,
-  fxTHO,
-  fxGRV,
-  fxGGR,
-  fxHOP,
+  fxARP, // Arpeggio
+  fxARC, // Arpeggio config
+  fxPVB, // Pitch vibrato
+  fxPBN, // Pitch bend
+  fxPSL, // Pitch slide (portamento)
+  fxPIT, // Pitch offset
+  fxVOL, // Volume (relative)
+  fxRET, // Retrigger
+  fxDEL, // Delay
+  fxOFF, // Off
+  fxKIL, // Kill note
+  fxTIC, // Table speed
+  fxTBL, // Set instrument table
+  fxTBX, // Set aux table
+  fxTHO, // Table hop
+  fxGRV, // Track groove
+  fxGGR, // Global groove
+  fxHOP, // Hop
   // AY-specific FX
-  fxAYM,
-  fxERT,
-  fxNOI,
-  fxNOA,
-  fxEAU,
-  fxEVB,
-  fxEBN,
-  fxESL,
-  fxENA,
-  fxENR,
-  fxEPR,
-  fxEPL,
-  fxEPH,
+  fxAYM, // AY Mixer settting
+  fxERT, // Envelope retrigger
+  fxNOI, // Noise (relative)
+  fxNOA, // Noise (absolute)
+  fxEAU, // Auto-env setting
+  fxEVB, // Envelope vibrato
+  fxEBN, // Envelope bend
+  fxESL, // Envelope slide (portamento)
+  fxENT, // Envelope note
+  fxEPT, // Envelope pitch offset
+  fxEPL, // Envelope period L
+  fxEPH, // Envelope period H
   // Terminate
   fxTotalCount
 };

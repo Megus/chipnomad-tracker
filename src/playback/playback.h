@@ -30,6 +30,8 @@ struct PlaybackAYNoteState {
   uint8_t adsrFrom;
   uint8_t adsrTo;
   uint8_t adsrVolume;
+  uint8_t envAutoN;
+  uint8_t envAutoD;
   uint8_t envShape;
   uint16_t envBase;
   int16_t envOffsetAcc;
@@ -59,6 +61,7 @@ struct PlaybackNoteState {
   struct PlaybackTableState instrumentTable;
   struct PlaybackTableState auxTable;
   struct PlaybackFXState fx[3];
+
   union PlaybackChipNoteState chip;
 };
 
@@ -88,9 +91,18 @@ struct PlaybackTrackState {
   struct PlaybackNoteState note;
 };
 
+struct PlaybackAYChipState {
+  uint8_t envShape;
+};
+
+union PlaybackChipState {
+  struct PlaybackAYChipState ay;
+};
+
 struct PlaybackState {
   struct Project* p;
   struct PlaybackTrackState tracks[PROJECT_MAX_TRACKS];
+  union PlaybackChipState chips[PROJECT_MAX_CHIPS];
 };
 
 

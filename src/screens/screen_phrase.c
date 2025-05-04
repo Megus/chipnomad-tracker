@@ -3,6 +3,7 @@
 #include <corelib_gfx.h>
 #include <utils.h>
 #include <project.h>
+#include <help.h>
 
 static int phrase = 0;
 static int isFxEdit = 0;
@@ -206,7 +207,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   } else if (col == 3 || col == 5 || col == 7) {
     // FX
     int fxIdx = (col - 3) / 2;
-    int result = editFX(action, project.phrases[phrase].fx[row][fxIdx], lastFX);
+    int result = editFX(action, project.phrases[phrase].fx[row][fxIdx], lastFX, 0);
     if (result == 2) {
       // Edited FX without showing FX select screen
       drawField(col + 1, row, 0);
@@ -221,6 +222,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     int fxIdx = (col - 4) / 2;
     if (project.phrases[phrase].fx[row][fxIdx][0] != EMPTY_VALUE_8) {
       handled = edit8noLimit(action, &project.phrases[phrase].fx[row][fxIdx][1], &lastFX[1], 16);
+      screenMessage(helpFXHint(project.phrases[phrase].fx[row][fxIdx], 0));
     }
   }
 

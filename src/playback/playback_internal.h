@@ -9,7 +9,7 @@
 void setupInstrumentAY(struct PlaybackState* state, int trackIdx);
 void noteOffInstrumentAY(struct PlaybackState* state, int trackIdx);
 void handleInstrumentAY(struct PlaybackState* state, int trackIdx);
-void outputRegistersAY(struct PlaybackState* state, int trackIdx, struct SoundChip* chip);
+void outputRegistersAY(struct PlaybackState* state, int trackIdx, int chipIdx, struct SoundChip* chip);
 void resetTrackAY(struct PlaybackState* state, int trackIdx);
 
 void tableInit(struct PlaybackState* state, struct PlaybackTableState* table, int tableIdx, int speed);
