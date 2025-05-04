@@ -181,6 +181,11 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       handled = 1;
     } else if (project.phrases[phrase].notes[row] != NOTE_OFF) {
       handled = edit8withLimit(action, &project.phrases[phrase].notes[row], &lastNote, project.pitchTable.octaveSize, project.pitchTable.length - 1);
+      // When editing note also copy instrument and volume
+      if (handled) {
+        lastInstrument = project.phrases[phrase].instruments[row];
+        lastVolume = project.phrases[phrase].volumes[row] ;
+      }
     }
 
     if (handled) {

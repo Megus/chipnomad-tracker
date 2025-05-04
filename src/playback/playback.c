@@ -110,7 +110,11 @@ static void tableProgress(struct PlaybackState* state, int trackIdx, struct Play
   }
 }
 
-static void processPhraseRow(struct PlaybackState* state, int trackIdx) {
+void handleNoteOff(struct PlaybackState* state, int trackIdx) {
+  noteOffInstrumentAY(state, trackIdx);
+}
+
+void readPhraseRow(struct PlaybackState* state, int trackIdx, int skipDelCheck) {
   struct PlaybackTrackState* track = &state->tracks[trackIdx];
   struct Project* p = state->p;
 
@@ -124,11 +128,25 @@ static void processPhraseRow(struct PlaybackState* state, int trackIdx) {
       int phraseRow = track->phraseRow;
       struct Phrase* phrase = &p->phrases[phraseIdx];
       uint8_t note = phrase->notes[phraseRow];
+
+      // Pre-scan FX if there's a DEL FX
+      if (!skipDelCheck) {
+        for (int i = 0; i < 3; i++) {
+          if (phrase->fx[phraseRow][i][0] == fxDEL && phrase->fx[phraseRow][i][1] != 0) {
+            track->note.fx[i].fx = fxDEL;
+            track->note.fx[i].value = phrase->fx[phraseRow][i][1];
+            return;
+          }
+        }
+      }
+
       // FX
       for (int i = 0; i < 3; i++) {
         if (phrase->fx[phraseRow][i][0] != EMPTY_VALUE_8 || note != EMPTY_VALUE_8) {
+          uint8_t fx = phrase->fx[phraseRow][i][0];
+          if (fx == fxDEL) fx = EMPTY_VALUE_8;
           memset(&track->note.fx[i], 0, sizeof(struct PlaybackFXState));
-          track->note.fx[i].fx = phrase->fx[phraseRow][i][0];
+          track->note.fx[i].fx = fx;
           track->note.fx[i].value = phrase->fx[phraseRow][i][1];
         }
       }
@@ -136,7 +154,7 @@ static void processPhraseRow(struct PlaybackState* state, int trackIdx) {
       // Note
       if (note != EMPTY_VALUE_8) {
         if (note == NOTE_OFF) {
-          noteOffInstrumentAY(state, trackIdx);
+          handleNoteOff(state, trackIdx);
         } else {
           track->note.noteBase = note;
           track->note.pitchOffsetAcc = 0;
@@ -159,7 +177,6 @@ static void processPhraseRow(struct PlaybackState* state, int trackIdx) {
       if (phrase->volumes[phraseRow] != EMPTY_VALUE_8) {
         track->note.volume = volume;
       }
-
     }
   }
 }
@@ -178,11 +195,11 @@ static void nextFrame(struct PlaybackState* state, int trackIdx) {
   track->note.noteOffset = 0;
   track->note.pitchOffset = 0;
 
-  // Instrument
-  handleInstrumentAY(state, trackIdx);
-
   // FX
   handleFX(state, trackIdx);
+
+  // Instrument
+  handleInstrumentAY(state, trackIdx);
 
   // Final note calculation
   if (track->note.noteBase == EMPTY_VALUE_8) {
@@ -232,6 +249,14 @@ static int moveToNextPhraseRow(struct PlaybackState* state, int trackIdx) {
   struct PlaybackTrackState* track = &state->tracks[trackIdx];
 
   track->phraseRow++;
+
+  // Reset OFF/KIL/DEL FX
+  for (int c = 0; c < 3; c++) {
+    if (track->note.fx[c].fx == fxOFF || track->note.fx[c].fx == fxKIL || track->note.fx[c].fx == fxDEL) {
+      track->note.fx[c].fx = EMPTY_VALUE_8;
+    }
+  }
+
   if (track->phraseRow >= 16) {
     track->phraseRow = 0;
     // Play mode logic:
@@ -428,7 +453,7 @@ int playbackNextFrame(struct PlaybackState* state, struct SoundChip* chips) {
       track->queue.mode = playbackModeNone;
 
       skipZeroGrooveRows(state, trackIdx);
-      processPhraseRow(state, trackIdx);
+      readPhraseRow(state, trackIdx, 0);
     }
     // Advance further in the track
     else {
@@ -456,7 +481,7 @@ int playbackNextFrame(struct PlaybackState* state, struct SoundChip* chips) {
             track->frameCounter = 0;
             moveToNextPhraseRow(state, trackIdx);
             skipZeroGrooveRows(state, trackIdx);
-            processPhraseRow(state, trackIdx);
+            readPhraseRow(state, trackIdx, 0);
           }
         }
       }

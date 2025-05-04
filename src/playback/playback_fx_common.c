@@ -43,6 +43,12 @@ static void handleFX_TBX(struct PlaybackState* state, struct PlaybackTrackState*
   fx->fx = EMPTY_VALUE_8;
 }
 
+// TBL - instrument table
+static void handleFX_TBL(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  tableInit(state, &track->note.instrumentTable, fx->value, 1);
+  fx->fx = EMPTY_VALUE_8;
+}
+
 // THO - Table hop
 static void handleFX_THO(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
   fx->fx = EMPTY_VALUE_8;
@@ -105,7 +111,7 @@ static void handleFX_VOL(struct PlaybackState* state, struct PlaybackTrackState*
 static void handleFX_GRV(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
   fx->fx = EMPTY_VALUE_8;
   track->grooveIdx = fx->value & (PROJECT_MAX_GROOVES - 1);
-  track->grooveRow = 0;
+  //track->grooveRow = 0;
 }
 
 // GGR - Global groove
@@ -114,10 +120,70 @@ static void handleFX_GGR(struct PlaybackState* state, struct PlaybackTrackState*
   uint8_t grooveIdx = fx->value & (PROJECT_MAX_GROOVES - 1);
   for (int c = 0; c < state->p->tracksCount; c++) {
     state->tracks[c].grooveIdx = grooveIdx;
-    state->tracks[c].grooveRow = 0;
+    //state->tracks[c].grooveRow = 0;
   }
 }
 
+// OFF - Note off
+static void handleFX_OFF(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  if (tableState != NULL || fx->data.count_fx.counter >= fx->value) {
+    fx->fx = EMPTY_VALUE_8;
+    handleNoteOff(state, trackIdx);
+  } else {
+    fx->data.count_fx.counter++;
+  }
+}
+
+// KIL - Kill note
+static void handleFX_KIL(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  if (tableState != NULL || fx->data.count_fx.counter >= fx->value) {
+    fx->fx = EMPTY_VALUE_8;
+    track->note.noteBase = EMPTY_VALUE_8;
+  } else {
+    fx->data.count_fx.counter++;
+  }
+}
+
+// DEL - Delay note
+static void handleFX_DEL(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  if (tableState != NULL) {
+    fx->fx = EMPTY_VALUE_8;
+  } else if (fx->data.count_fx.counter >= fx->value) {
+    fx->fx = EMPTY_VALUE_8;
+    readPhraseRow(state, trackIdx, 1);
+    handleAllTableFX(state, trackIdx);
+  } else {
+    fx->data.count_fx.counter++;
+  }
+}
+
+// RET - Note retrigger
+static void handleFX_RET(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  uint8_t delay = fx->value & 0xf;
+  int8_t volumeOffset = (fx->value & 0xf0) >> 4;
+
+  if (volumeOffset == 0 || volumeOffset == 8) {
+    // Zero offset
+    volumeOffset = 0;
+  } else if (volumeOffset < 8) {
+    // Negative volume offset
+    volumeOffset = -8 + volumeOffset;
+  } else {
+    // Positive volume offset
+    volumeOffset = volumeOffset - 8;
+  }
+
+  if (tableState != NULL) {
+    fx->fx = EMPTY_VALUE_8;
+    return;
+  } else if (fx->data.count_fx.counter >= delay) {
+    readPhraseRow(state, trackIdx, 1);
+    handleAllTableFX(state, trackIdx);
+    // TODO: Accumulate volume offset separately just for this FX because readPhraseRow resets it
+    track->note.volumeOffsetAcc += volumeOffset;
+  }
+  fx->data.count_fx.counter++;
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -153,11 +219,16 @@ static int handleFXInternal(struct PlaybackState* state, int trackIdx, struct Pl
   else if (fx->fx == fxPBN) handleFX_PBN(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxPIT) handleFX_PIT(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxTBX) handleFX_TBX(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxTBL) handleFX_TBL(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxTHO) handleFX_THO(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxTIC) handleFX_TIC(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxVOL) handleFX_VOL(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxGRV) handleFX_GRV(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxGGR) handleFX_GGR(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxOFF) handleFX_OFF(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxKIL) handleFX_KIL(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxDEL) handleFX_DEL(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxRET) handleFX_RET(state, track, trackIdx, fx, tableState);
   // Chip specific FX
   else {
     handleFX_AY(state, trackIdx, fx, tableState);
