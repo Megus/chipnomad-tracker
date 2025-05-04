@@ -29,7 +29,6 @@ static void handleFX_PBN(struct PlaybackState* state, struct PlaybackTrackState*
   value += fx->data.pbn.value;
   track->note.pitchOffsetAcc = value >> 8;
   fx->data.pbn.lowByte = value & 0xff;
-  printf("pitch offset: %d\n", track->note.pitchOffsetAcc);
 }
 
 // PIT - Pitch offset
@@ -102,6 +101,24 @@ static void handleFX_VOL(struct PlaybackState* state, struct PlaybackTrackState*
   track->note.volumeOffsetAcc = volumeOffset;
 }
 
+// GRV - Track groove
+static void handleFX_GRV(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  fx->fx = EMPTY_VALUE_8;
+  track->grooveIdx = fx->value & (PROJECT_MAX_GROOVES - 1);
+  track->grooveRow = 0;
+}
+
+// GGR - Global groove
+static void handleFX_GGR(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  fx->fx = EMPTY_VALUE_8;
+  uint8_t grooveIdx = fx->value & (PROJECT_MAX_GROOVES - 1);
+  for (int c = 0; c < state->p->tracksCount; c++) {
+    state->tracks[c].grooveIdx = grooveIdx;
+    state->tracks[c].grooveRow = 0;
+  }
+}
+
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -139,6 +156,8 @@ static int handleFXInternal(struct PlaybackState* state, int trackIdx, struct Pl
   else if (fx->fx == fxTHO) handleFX_THO(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxTIC) handleFX_TIC(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxVOL) handleFX_VOL(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxGRV) handleFX_GRV(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxGGR) handleFX_GGR(state, track, trackIdx, fx, tableState);
   // Chip specific FX
   else {
     handleFX_AY(state, trackIdx, fx, tableState);

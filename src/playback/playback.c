@@ -419,7 +419,6 @@ int playbackNextFrame(struct PlaybackState* state, struct SoundChip* chips) {
     // Check queued play event for stopped track or when a track is in phrase row playback mode
     if ((track->mode == playbackModeStopped && track->queue.mode != playbackModeNone) ||
       (track->mode == playbackModePhraseRow && track->queue.mode == playbackModePhraseRow)) {
-      resetTrack(state, trackIdx);
       track->mode = track->queue.mode;
       track->songRow = track->queue.songRow;
       track->chainRow = track->queue.chainRow;

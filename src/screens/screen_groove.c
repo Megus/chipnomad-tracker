@@ -87,12 +87,44 @@ static void draw(void) {
   }
 }
 
-static void onInput(int keys, int isDoubleTap) {
+static int inputScreenNavigation(int keys, int isDoubleTap) {
   if (keys == (keyDown | keyShift)) {
+    // To Phrase scrren
     screenSetup(&screenPhrase, 0);
-    return;
+    return 1;
+  } else if (keys == (keyLeft | keyOpt)) {
+    // To previous groove
+    if (groove > 0) {
+      groove--;
+      fullRedraw();
+      return 1;
+    }
+  } else if (keys == (keyRight | keyOpt)) {
+    // To next groove
+    if (groove < PROJECT_MAX_GROOVES) {
+      groove++;
+      fullRedraw();
+      return 1;
+    }
+  } else if (keys == (keyUp | keyOpt)) {
+    // +16 grooves
+    groove += 16;
+    if (groove >= PROJECT_MAX_GROOVES) groove = PROJECT_MAX_GROOVES - 1;
+    fullRedraw();
+    return 1;
+  } else if (keys == (keyDown | keyOpt)) {
+    // -16 grooves
+    groove -= 16;
+    if (groove < 0) groove = 0;
+    fullRedraw();
+    return 1;
   }
+  return 0;
+}
 
+static void onInput(int keys, int isDoubleTap) {
+
+  if (inputScreenNavigation(keys, isDoubleTap)) return;
   screenInput(&screen, keys, isDoubleTap);
 }
 
