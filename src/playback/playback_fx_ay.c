@@ -88,6 +88,11 @@ static void handleFX_EBN(struct PlaybackState* state, struct PlaybackTrackState*
   fx->data.pbn.lowByte = value & 0xff;
 }
 
+// EVB - Envelope vibrato
+static void handleFX_EVB(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  track->note.chip.ay.envOffset = vibratoCommonLogic(fx);
+}
+
 int handleFX_AY(struct PlaybackState* state, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
   struct PlaybackTrackState* track = &state->tracks[trackIdx];
 
@@ -101,6 +106,7 @@ int handleFX_AY(struct PlaybackState* state, int trackIdx, struct PlaybackFXStat
   else if (fx->fx == fxEPL) handleFX_EPL(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxEPH) handleFX_EPH(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxEBN) handleFX_EBN(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxEVB) handleFX_EVB(state, track, trackIdx, fx, tableState);
 
   return 0;
 }

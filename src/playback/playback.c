@@ -56,9 +56,7 @@ void tableReadFX(struct PlaybackState* state, struct PlaybackTableState* table, 
 
   int tableRow = table->rows[fxIdx];
   if (forceRead || p->tables[tableIdx].fx[tableRow][fxIdx][0] != EMPTY_VALUE_8) {
-    memset(&table->fx[fxIdx], 0, sizeof(struct PlaybackFXState));
-    table->fx[fxIdx].fx = p->tables[tableIdx].fx[tableRow][fxIdx][0];
-    table->fx[fxIdx].value = p->tables[tableIdx].fx[tableRow][fxIdx][1];
+    initFX(state, p->tables[tableIdx].fx[tableRow][fxIdx], &table->fx[fxIdx], 0);
   }
 }
 
@@ -143,11 +141,7 @@ void readPhraseRow(struct PlaybackState* state, int trackIdx, int skipDelCheck) 
       // FX
       for (int i = 0; i < 3; i++) {
         if (phrase->fx[phraseRow][i][0] != EMPTY_VALUE_8 || note != EMPTY_VALUE_8) {
-          uint8_t fx = phrase->fx[phraseRow][i][0];
-          if (fx == fxDEL) fx = EMPTY_VALUE_8;
-          memset(&track->note.fx[i], 0, sizeof(struct PlaybackFXState));
-          track->note.fx[i].fx = fx;
-          track->note.fx[i].value = phrase->fx[phraseRow][i][1];
+          initFX(state, phrase->fx[phraseRow][i], &track->note.fx[i], (note != EMPTY_VALUE_8 && note != NOTE_OFF));
         }
       }
 
@@ -161,7 +155,7 @@ void readPhraseRow(struct PlaybackState* state, int trackIdx, int skipDelCheck) 
           track->note.noteOffsetAcc = 0;
           track->note.volumeOffsetAcc = 0;
           tableInit(state, &track->note.auxTable, EMPTY_VALUE_8, 1);
-       }
+        }
       }
 
       // Instrument
@@ -194,6 +188,7 @@ static void nextFrame(struct PlaybackState* state, int trackIdx) {
   // Clear re-calculated fields
   track->note.noteOffset = 0;
   track->note.pitchOffset = 0;
+  track->note.chip.ay.envOffset = 0;
 
   // FX
   handleFX(state, trackIdx);

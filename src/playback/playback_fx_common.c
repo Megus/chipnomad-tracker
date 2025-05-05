@@ -1,9 +1,27 @@
 #include <playback.h>
 #include <playback_internal.h>
 #include <stdio.h>
+#include <string.h>
 
 static int handleFXInternal(struct PlaybackState* state, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState);
 static int handleAllTableFX(struct PlaybackState* state, int trackIdx);
+
+static int iabs(int v) {
+  return (v < 0) ? -v : v;
+}
+
+int vibratoCommonLogic(struct PlaybackFXState *fx) {
+  int period = 32 - ((fx->value & 0xf0) >> 3);
+  int depth = (fx->value & 0xf) * 2;
+  int depth8 = depth << 8; // For 24.8 fixed point math
+  int x = fx->data.count_fx.counter % period;
+  int value = depth8 - (2 * depth8 / period) * iabs(x - period / 2);
+  value = ((value & 0xff) >= 0x80) ? (value >> 8) + 1 : (value >> 8);
+  value -= (fx->value & 0xf);
+  fx->data.count_fx.counter++;
+  return value;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -185,6 +203,11 @@ static void handleFX_RET(struct PlaybackState* state, struct PlaybackTrackState*
   fx->data.count_fx.counter++;
 }
 
+// PVB - Pitch vibrato
+static void handleFX_PVB(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  track->note.pitchOffsetAcc = vibratoCommonLogic(fx);
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -229,12 +252,23 @@ static int handleFXInternal(struct PlaybackState* state, int trackIdx, struct Pl
   else if (fx->fx == fxKIL) handleFX_KIL(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxDEL) handleFX_DEL(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxRET) handleFX_RET(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxPVB) handleFX_PVB(state, track, trackIdx, fx, tableState);
   // Chip specific FX
   else {
     handleFX_AY(state, trackIdx, fx, tableState);
   }
 
   return 0;
+}
+
+void initFX(struct PlaybackState* state, uint8_t* fx, struct PlaybackFXState *fxState, int forceCleanState) {
+  uint8_t fxIdx = fx[0];
+  if (fxIdx == fxDEL) fxIdx = EMPTY_VALUE_8;
+  if (forceCleanState || !((fxState->fx == fxPVB || fxState->fx == fxEVB) && fxState->fx == fxIdx)) {
+    memset(fxState, 0, sizeof(struct PlaybackFXState));
+  }
+  fxState->fx = fxIdx;
+  fxState->value = fx[1];
 }
 
 int handleFX(struct PlaybackState* state, int trackIdx) {

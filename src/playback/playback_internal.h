@@ -7,7 +7,9 @@ void handleNoteOff(struct PlaybackState* state, int trackIdx);
 void readPhraseRow(struct PlaybackState* state, int trackIdx, int skilDelCheck);
 void tableInit(struct PlaybackState* state, struct PlaybackTableState* table, int tableIdx, int speed);
 void tableReadFX(struct PlaybackState* state, struct PlaybackTableState* table, int fxIdx, int forceRead);
+void initFX(struct PlaybackState* state, uint8_t* fx, struct PlaybackFXState *fxState, int forceCleanState);
 int handleFX(struct PlaybackState* state, int trackIdx);
+int vibratoCommonLogic(struct PlaybackFXState *fxState);
 
 // Chip-specific functions
 

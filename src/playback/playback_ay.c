@@ -145,7 +145,7 @@ void outputRegistersAY(struct PlaybackState* state, int trackIdx, int chipIdx, s
         }
 
         // Envelope period modification
-        envPeriod -= track->note.chip.ay.envOffsetAcc;
+        envPeriod -= track->note.chip.ay.envOffsetAcc + track->note.chip.ay.envOffset;
 
         volume = 16;
       } else {

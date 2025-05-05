@@ -34,6 +34,7 @@ struct PlaybackAYNoteState {
   uint8_t envAutoD;
   uint8_t envShape;
   uint16_t envBase;
+  int16_t envOffset;
   int16_t envOffsetAcc;
   uint8_t noiseBase;
   int8_t noiseOffsetAcc;
