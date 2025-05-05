@@ -36,7 +36,7 @@ static void resetTrack(struct PlaybackState* state, int trackIdx) {
   resetTrackAY(state, trackIdx);
 }
 
-void tableInit(struct PlaybackState* state, struct PlaybackTableState* table, int tableIdx, int speed) {
+void tableInit(struct PlaybackState* state, int trackIdx, struct PlaybackTableState* table, int tableIdx, int speed) {
   table->tableIdx = tableIdx;
   if (tableIdx == EMPTY_VALUE_8) return;
 
@@ -45,18 +45,18 @@ void tableInit(struct PlaybackState* state, struct PlaybackTableState* table, in
     table->rows[i] = 0;
     table->speed[i] = speed;
 
-    tableReadFX(state, table, i, 1);
+    tableReadFX(state, trackIdx, table, i, 1);
   }
 }
 
-void tableReadFX(struct PlaybackState* state, struct PlaybackTableState* table, int fxIdx, int forceRead) {
+void tableReadFX(struct PlaybackState* state, int trackIdx, struct PlaybackTableState* table, int fxIdx, int forceRead) {
   uint8_t tableIdx = table->tableIdx;
   if (tableIdx == EMPTY_VALUE_8) return;
   struct Project* p = state->p;
 
   int tableRow = table->rows[fxIdx];
   if (forceRead || p->tables[tableIdx].fx[tableRow][fxIdx][0] != EMPTY_VALUE_8) {
-    initFX(state, p->tables[tableIdx].fx[tableRow][fxIdx], &table->fx[fxIdx], 0);
+    initFX(state, trackIdx, p->tables[tableIdx].fx[tableRow][fxIdx], &table->fx[fxIdx], 0);
   }
 }
 
@@ -78,7 +78,7 @@ static void tableProgress(struct PlaybackState* state, int trackIdx, struct Play
         for (int c = 0; c < 4; c++) {
           table->counters[c] = 0;
           table->rows[c] = fxValue & 0xf;
-          tableReadFX(state, table, c, 0);
+          tableReadFX(state, trackIdx, table, c, 0);
         }
         break;
       } else if (fxType == fxHOP && (fxValue & 0xf) == table->rows[i]) {
@@ -95,7 +95,7 @@ static void tableProgress(struct PlaybackState* state, int trackIdx, struct Play
           for (int c = 0; c < 4; c++) {
             table->counters[c] = 0;
             table->rows[c] = fxValue & 0xf;
-            tableReadFX(state, table, c, 0);
+            tableReadFX(state, trackIdx, table, c, 0);
           }
           break;
         } else if (fxType == fxHOP) {
@@ -103,7 +103,7 @@ static void tableProgress(struct PlaybackState* state, int trackIdx, struct Play
           table->rows[i] = fxValue & 0xf;
         }
       }
-      tableReadFX(state, table, i, 0);
+      tableReadFX(state, trackIdx, table, i, 0);
     }
   }
 }
@@ -141,7 +141,7 @@ void readPhraseRow(struct PlaybackState* state, int trackIdx, int skipDelCheck) 
       // FX
       for (int i = 0; i < 3; i++) {
         if (phrase->fx[phraseRow][i][0] != EMPTY_VALUE_8 || note != EMPTY_VALUE_8) {
-          initFX(state, phrase->fx[phraseRow][i], &track->note.fx[i], (note != EMPTY_VALUE_8 && note != NOTE_OFF));
+          initFX(state, trackIdx, phrase->fx[phraseRow][i], &track->note.fx[i], (note != EMPTY_VALUE_8 && note != NOTE_OFF));
         }
       }
 
@@ -154,7 +154,7 @@ void readPhraseRow(struct PlaybackState* state, int trackIdx, int skipDelCheck) 
           track->note.pitchOffsetAcc = 0;
           track->note.noteOffsetAcc = 0;
           track->note.volumeOffsetAcc = 0;
-          tableInit(state, &track->note.auxTable, EMPTY_VALUE_8, 1);
+          tableInit(state, trackIdx, &track->note.auxTable, EMPTY_VALUE_8, 1);
         }
       }
 
@@ -163,7 +163,7 @@ void readPhraseRow(struct PlaybackState* state, int trackIdx, int skipDelCheck) 
       if (instrument != EMPTY_VALUE_8) {
         track->note.instrument = instrument;
         setupInstrumentAY(state, trackIdx);
-        tableInit(state, &track->note.instrumentTable, instrument, p->instruments[instrument].tableSpeed);
+        tableInit(state, trackIdx, &track->note.instrumentTable, instrument, p->instruments[instrument].tableSpeed);
       }
 
       // Volume

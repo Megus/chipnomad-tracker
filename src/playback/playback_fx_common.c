@@ -57,13 +57,13 @@ static void handleFX_PIT(struct PlaybackState* state, struct PlaybackTrackState*
 
 // TBX - aux table
 static void handleFX_TBX(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
-  tableInit(state, &track->note.auxTable, fx->value, 1);
+  tableInit(state, trackIdx, &track->note.auxTable, fx->value, 1);
   fx->fx = EMPTY_VALUE_8;
 }
 
 // TBL - instrument table
 static void handleFX_TBL(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
-  tableInit(state, &track->note.instrumentTable, fx->value, 1);
+  tableInit(state, trackIdx, &track->note.instrumentTable, fx->value, 1);
   fx->fx = EMPTY_VALUE_8;
 }
 
@@ -76,14 +76,14 @@ static void handleFX_THO(struct PlaybackState* state, struct PlaybackTrackState*
       for (int i = 0; i < 4; i++) {
         track->note.instrumentTable.counters[i] = 0;
         track->note.instrumentTable.rows[i] = fx->value & 0xf;
-        tableReadFX(state, &track->note.instrumentTable, i, 0);
+        tableReadFX(state, trackIdx, &track->note.instrumentTable, i, 0);
       }
     }
     if (track->note.auxTable.tableIdx != EMPTY_VALUE_8) {
       for (int i = 0; i < 4; i++) {
         track->note.auxTable.counters[i] = 0;
         track->note.auxTable.rows[i] = fx->value & 0xf;
-        tableReadFX(state, &track->note.auxTable, i, 0);
+        tableReadFX(state, trackIdx, &track->note.auxTable, i, 0);
       }
     }
     handleAllTableFX(state, trackIdx);
@@ -205,8 +205,26 @@ static void handleFX_RET(struct PlaybackState* state, struct PlaybackTrackState*
 
 // PVB - Pitch vibrato
 static void handleFX_PVB(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
-  track->note.pitchOffsetAcc = vibratoCommonLogic(fx);
+  track->note.pitchOffset += vibratoCommonLogic(fx);
 }
+
+// PSL - Pitch slide (portamento
+static void handleFX_PSL(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  if (fx->data.psl.startPeriod == 0 ||
+    (fx->data.psl.counter == 0 && (track->note.noteBase == EMPTY_VALUE_8 || track->note.noteBase == NOTE_OFF)) ||
+    fx->data.psl.counter >= fx->value) {
+    fx->fx = EMPTY_VALUE_8;
+    return;
+  } else if (fx->data.psl.counter == 0) {
+    fx->data.psl.endPeriod = state->p->pitchTable.values[track->note.noteBase];
+  }
+  int distance = fx->data.psl.endPeriod - fx->data.psl.startPeriod;
+  int offset = (distance * fx->data.psl.counter) / fx->value;
+  track->note.pitchOffset += distance - offset;
+
+  fx->data.psl.counter++;
+}
+
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -253,6 +271,7 @@ static int handleFXInternal(struct PlaybackState* state, int trackIdx, struct Pl
   else if (fx->fx == fxDEL) handleFX_DEL(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxRET) handleFX_RET(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxPVB) handleFX_PVB(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxPSL) handleFX_PSL(state, track, trackIdx, fx, tableState);
   // Chip specific FX
   else {
     handleFX_AY(state, trackIdx, fx, tableState);
@@ -261,12 +280,32 @@ static int handleFXInternal(struct PlaybackState* state, int trackIdx, struct Pl
   return 0;
 }
 
-void initFX(struct PlaybackState* state, uint8_t* fx, struct PlaybackFXState *fxState, int forceCleanState) {
+void initFX(struct PlaybackState* state, int trackIdx, uint8_t* fx, struct PlaybackFXState *fxState, int forceCleanState) {
+  struct PlaybackTrackState* track = &state->tracks[trackIdx];
+
   uint8_t fxIdx = fx[0];
   if (fxIdx == fxDEL) fxIdx = EMPTY_VALUE_8;
+
+  // Generic clean state
   if (forceCleanState || !((fxState->fx == fxPVB || fxState->fx == fxEVB) && fxState->fx == fxIdx)) {
     memset(fxState, 0, sizeof(struct PlaybackFXState));
   }
+
+  // Special handling for some FX
+  if (fxIdx == fxPSL) {
+    // PSL - Pitch slide (portamento)
+    fxState->data.psl.counter = 0;
+    if (track->note.noteBase != EMPTY_VALUE_8) {
+      fxState->data.psl.startPeriod = state->p->pitchTable.values[track->note.noteBase];
+    } else {
+      fxState->data.psl.startPeriod = 0;
+    }
+  } else if (fxIdx == fxESL) {
+    // ESL - AY Envelope slide (portamento)
+    fxState->data.psl.counter = 0;
+    fxState->data.psl.startPeriod = track->note.chip.ay.envBase;
+  }
+
   fxState->fx = fxIdx;
   fxState->value = fx[1];
 }

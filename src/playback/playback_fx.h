@@ -10,9 +10,16 @@ struct PlaybackFXData_CountFX {
   uint8_t counter;
 };
 
+struct PlaybackFXData_PSL {
+  int16_t startPeriod;
+  int16_t endPeriod;
+  uint8_t counter;
+};
+
 union PlaybackFXData {
   struct PlaybackFXData_PBN pbn;
   struct PlaybackFXData_CountFX count_fx;
+  struct PlaybackFXData_PSL psl;
 };
 
 struct PlaybackFXState {

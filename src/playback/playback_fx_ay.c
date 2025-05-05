@@ -90,8 +90,26 @@ static void handleFX_EBN(struct PlaybackState* state, struct PlaybackTrackState*
 
 // EVB - Envelope vibrato
 static void handleFX_EVB(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
-  track->note.chip.ay.envOffset = vibratoCommonLogic(fx);
+  track->note.chip.ay.envOffset += vibratoCommonLogic(fx);
 }
+
+// ESL - Pitch slide (portamento
+static void handleFX_ESL(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  if (fx->data.psl.startPeriod == 0 ||
+    (fx->data.psl.counter == 0 && track->note.chip.ay.envBase == 0) ||
+    fx->data.psl.counter >= fx->value) {
+    fx->fx = EMPTY_VALUE_8;
+    return;
+  } else if (fx->data.psl.counter == 0) {
+    fx->data.psl.endPeriod = track->note.chip.ay.envBase;
+  }
+  int distance = fx->data.psl.endPeriod - fx->data.psl.startPeriod;
+  int offset = (distance * fx->data.psl.counter) / fx->value;
+  track->note.chip.ay.envOffset += distance - offset;
+
+  fx->data.psl.counter++;
+}
+
 
 int handleFX_AY(struct PlaybackState* state, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
   struct PlaybackTrackState* track = &state->tracks[trackIdx];
@@ -107,6 +125,7 @@ int handleFX_AY(struct PlaybackState* state, int trackIdx, struct PlaybackFXStat
   else if (fx->fx == fxEPH) handleFX_EPH(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxEBN) handleFX_EBN(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxEVB) handleFX_EVB(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxESL) handleFX_ESL(state, track, trackIdx, fx, tableState);
 
   return 0;
 }
