@@ -16,10 +16,17 @@ struct PlaybackFXData_PSL {
   uint8_t counter;
 };
 
+struct PlaybackFXData_ARP {
+  uint8_t counter;
+  uint8_t speed;
+  uint8_t type;
+};
+
 union PlaybackFXData {
   struct PlaybackFXData_PBN pbn;
   struct PlaybackFXData_CountFX count_fx;
   struct PlaybackFXData_PSL psl;
+  struct PlaybackFXData_ARP arp;
 };
 
 struct PlaybackFXState {
