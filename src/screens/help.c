@@ -24,7 +24,7 @@ char* helpFXHint(uint8_t* fx, int isTable) {
       sprintf(buffer, "Pitch bend %hhd per step", fx[1]);
       break;
     case fxPSL: // Pitch slide (portamento)
-      sprintf(buffer, "Pitch slide in %hhd tics", fx[1]);
+      sprintf(buffer, "Pitch slide for %hhd tics", fx[1]);
       break;
     case fxPIT: // Pitch offset
       sprintf(buffer, "Pitch offset by %hhd", fx[1]);
@@ -33,7 +33,7 @@ char* helpFXHint(uint8_t* fx, int isTable) {
       sprintf(buffer, "Volume offset by %hhd", fx[1]);
       break;
     case fxRET: // Retrigger
-      sprintf(buffer, "Retrigger note every %hhd tics", fx[1]);
+      sprintf(buffer, "Retrigger note every %hhd tics", fx[1] & 0xf);
       break;
     case fxDEL: // Delay
       sprintf(buffer, "Delay note by %hhd tics", fx[1]);

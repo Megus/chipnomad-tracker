@@ -61,6 +61,9 @@ int edit8withLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValu
 
 int edit8noLast(enum CellEditAction action, uint8_t* value, uint8_t bigStep, uint8_t min, uint8_t max) {
   switch (action) {
+    case editTap:
+      return 1;
+      break;
     case editClear:
       *value = 0;
       return 1;

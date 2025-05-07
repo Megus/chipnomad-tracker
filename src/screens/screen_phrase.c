@@ -242,15 +242,29 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {
   if (keys == (keyRight | keyShift)) {
-    // To Instrument screen
-    int instrument = 0;
-    for (int row = screen.cursorRow; row >= 0; row--) {
-      if (project.phrases[phrase].instruments[row] != EMPTY_VALUE_8) {
-        instrument = project.phrases[phrase].instruments[row];
-        break;
+    // To Instrument/Phrase screen
+    int table = -1;
+    if (screen.cursorCol > 2) {
+      // If we currently on the table command, go to this table
+      int fxIdx = (screen.cursorCol - 3) / 2;
+      uint8_t fxType = project.phrases[phrase].fx[screen.cursorRow][fxIdx][0];
+      if (fxType == fxTBL || fxType == fxTBX) {
+        table = project.phrases[phrase].fx[screen.cursorRow][fxIdx][1];
       }
     }
-    screenSetup(&screenInstrument, instrument);
+
+    if (table >= 0) {
+      screenSetup(&screenTable, table | 0x1000);
+    } else {
+      int instrument = 0;
+      for (int row = screen.cursorRow; row >= 0; row--) {
+        if (project.phrases[phrase].instruments[row] != EMPTY_VALUE_8) {
+          instrument = project.phrases[phrase].instruments[row];
+          break;
+        }
+      }
+      screenSetup(&screenInstrument, instrument);
+    }
     return 1;
   } else if (keys == (keyLeft | keyShift)) {
     // To Chain screen
@@ -258,10 +272,18 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
     return 1;
   } else if (keys == (keyUp | keyShift)) {
     // To Groove screen
-    // TODO: If we currently on the groove command, go to this groove
-    screenSetup(&screenGroove, 0);
+    int groove = 0;
+    if (screen.cursorCol > 2) {
+      // If we currently on the groove command, go to this groove
+      int fxIdx = (screen.cursorCol - 3) / 2;
+      uint8_t fxType = project.phrases[phrase].fx[screen.cursorRow][fxIdx][0];
+      if (fxType == fxGRV || fxType == fxGGR) {
+        groove = project.phrases[phrase].fx[screen.cursorRow][fxIdx][1] & (PROJECT_MAX_GROOVES - 1);
+      }
+    }
+    screenSetup(&screenGroove, groove);
     return 1;
-  } else if (keys == (keyLeft | keyOpt)) {
+} else if (keys == (keyLeft | keyOpt)) {
     // Previous track
     if (*pSongTrack == 0) return 1;
     uint16_t chain = project.song[*pSongRow][*pSongTrack - 1];

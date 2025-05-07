@@ -6,6 +6,7 @@
 #include <help.h>
 
 static int table = 0;
+static int backToPhrase = 0;
 static uint8_t lastPitchValue = 0;
 static uint8_t lastVolume = 15;
 static uint8_t lastFX[2] = {0, 0};
@@ -35,7 +36,8 @@ static struct ScreenData screen = {
 
 static void setup(int input) {
   isFxEdit = 0;
-  table = input;
+  table = input & 0xff;
+  backToPhrase = (input & 0x1000) != 0;
 }
 
 static int getColumnCount(int row) {
@@ -148,9 +150,21 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   if (col == 0) {
     // Pitch flag (toggle between 0 and 1)
     handled = edit8noLast(action, &project.tables[table].pitchFlags[row], 1, 0, 1);
+    if (handled) {
+      screenMessage(project.tables[table].pitchFlags[row] ? "Absolute pitch" : "Pitch offset", 0);
+    }
   } else if (col == 1) {
     // Pitch offset
     handled = edit8noLimit(action, &project.tables[table].pitchOffsets[row], &lastPitchValue, project.pitchTable.octaveSize);
+    if (handled) {
+      if (project.tables[table].pitchFlags[row] == 1) {
+        // If pitch flag is 1, pitch is absolute
+        screenMessage("Note %s", noteName(project.tables[table].pitchOffsets[row]));
+      } else {
+        // If pitch flag is 0, pitch is offset
+        screenMessage("Pitch offset %hhd", project.tables[table].pitchOffsets[row]);
+      }
+    }
   } else if (col == 2) {
     // Volume
     handled = edit8withLimit(action, &project.tables[table].volumes[row], &lastVolume, 16, maxVolume);
@@ -218,8 +232,12 @@ static void draw(void) {
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {
   if (keys == (keyLeft | keyShift)) {
-    // Back to the instrument screen
-    screenSetup(&screenInstrument, -1);
+    // Back to the instrument or phrase screen
+    if (backToPhrase) {
+      screenSetup(&screenPhrase, -1);
+    } else {
+      screenSetup(&screenInstrument, -1);
+    }
     return 1;
   } if (keys == (keyLeft | keyOpt)) {
     // Previous table

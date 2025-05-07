@@ -46,6 +46,13 @@ don't have any scrolling content, so the length of chains, phrases, and tables i
 
 ### Common controls
 
+Control mapping on desktop (you will be able to redefine controls in the future):
+- D-Pad - Cursor keys
+- Select - left Shift
+- Start - Space
+- A - X
+- B - Z
+
 Navigation:
 - Move cursor: LEFT, RIGHT, UP, DOWN
 - Screen navigation: Hold SELECT + \[LEFT, RIGHT, UP, DOWN\]
@@ -130,35 +137,35 @@ Controls:
 ## Effects (FX)
 
 ### General Effects
-- `ARP`: Arpeggio
-- `ARC`: Arpeggio configuration
-- `PVB`: Vibrato
-- `PBN`: Pitch bend
-- `PSL`: Pitch slide (portamento)
-- `PIT`: Set pitch (relative)
-- `VOL`: Set volume (relative)
-- `RET`: Retrigger
-- `DEL`: Delay note
-- `OFF`: Note off
-- `KIL`: Kill note
-- `TIC`: Set table speed
-- `TBL`: Set instrument table
-- `TBX`: Set aux table
-- `THO`: Hop to table row (in tables: all table columns)
-- `HOP`: In Tables: hop to a row in the current column
-- `GRV`: Set track groove
-- `GGR`: Global groove
+- `ARP XY` – Arpeggio: 0, +x, +y semitones
+- `ARC XY` – Arpeggio configuration
+- `PVB XY` – Vibrato with X speed Y depth
+- `PBN XX` – Pitch bend by XX per phrase/table step
+- `PSL XX` – Pitch slide (portamento) for XX tics
+- `PIT XX` – Pitch offset by XX (FF – -1, etc)
+- `VOL XX` – Volume offset by XX
+- `RET XY` – Retrigger note every Y tics. X controls volume change
+- `DEL XX` – Delay note by XX tics
+- `OFF XX` – Note off after XX tics
+- `KIL XX` – Kill note after XX tics
+- `TIC XX` – Set table speed to XX tics per step
+- `TBL XX` – Set instrument table
+- `TBX XX` – Set aux table
+- `THO XX` – Hop all table columns to row XX
+- `HOP XX` – In Tables: hop to a row in the current column
+- `GRV XX` – Set track groove
+- `GGR XX` – Global groove
 
 ### AY-Specific Effects
-- `AYM`: AY mixer (tone on/off, noise on/off, envelope shape)
-- `ERT`: Retrig envelope
-- `NOI`: Noise period (relative)
-- `NOA`: Noise period (absolute)
-- `EAU`: Auto-envelope settings
-- `EVB`: Envelope vibrato
-- `EBN`: Envelope pitch bend
-- `ESL`: Envelope pitch slide
-- `ENT`: Envelope pitch as a note
-- `EPT`: Envelope pitch (relative)
-- `EPH`: Envelope period high
-- `EPL`: Envelope period low
+- `AYM XY` – AY mixer: X – envelope shape, Y - tone/noise control (0 - off, 1 - tone, 2 - noise, 3 - tone+noise)
+- `ERT --` – Retrig envelope
+- `NOI XX` – Noise period (relative)
+- `NOA XX` – Noise period (absolute)
+- `EAU XY` – Auto-envelope settings X:Y. X = 0 - auto-envelope off
+- `EVB XY` – Envelope vibrato with X speed Y depth
+- `EBN XX` – Envelope pitch bend by XX per phrase/table step
+- `ESL XX` – Envelope pitch slide (portamento) for XX tics
+- `ENT XX` – Envelope pitch as a note (see bottom line for the note name)
+- `EPT XX` – Envelope pitch offset
+- `EPH XX`: Envelope period high
+- `EPL XX`: Envelope period low

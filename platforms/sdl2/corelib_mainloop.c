@@ -88,11 +88,11 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(enum MainLoopEvent event, i
           menu = event.type == SDL_KEYDOWN;
         } else {
           // Debug output for key codes
-          if (event.type == SDL_KEYDOWN) {
+          /*if (event.type == SDL_KEYDOWN) {
             gfxPrintf(30, 0, "%d", event.key.keysym.sym);
           } else {
             gfxPrint(30, 0, "          ");
-          }
+          }*/
           enum Key key = decodeKey(event.key.keysym.sym);
           if (key != -1) onEvent(event.type == SDL_KEYDOWN ? eventKeyDown : eventKeyUp, key, NULL);
         }
