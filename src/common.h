@@ -27,6 +27,7 @@ struct AppSettings {
   int doubleTapFrames;
   int keyRepeatDelay;
   int keyRepeatSpeed;
+  float volume;
   struct ColorScheme colorScheme;
 };
 

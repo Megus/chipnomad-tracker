@@ -24,7 +24,7 @@ static void audioCallback(int16_t* buffer, int stereoSamples) {
 
     int samplesToRender = ((int)frameSampleCounter < samplesLeft) ? (int)frameSampleCounter : samplesLeft;
 
-    audioManager.chips[0].render(&audioManager.chips[0], buffer, samplesToRender);
+    audioManager.chips[0].render(&audioManager.chips[0], buffer, samplesToRender, appSettings.volume);
 
     buffer += samplesToRender * 2;
     samplesLeft -= samplesToRender;

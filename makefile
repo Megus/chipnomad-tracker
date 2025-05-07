@@ -8,14 +8,14 @@ ifeq ($(OS),Windows_NT)
 # Windows-specific settings
 # Use SDL_PATH environment variable if defined, otherwise use default C:/SDL
 SDL_PATH ?= C:/SDL
-XTRA_CFLAGS = -I"$(SDL_PATH)/include" -L"$(SDL_PATH)/lib"
+XTRA_CFLAGS = -I"$(SDL_PATH)/include" -L"$(SDL_PATH)/lib" -DDESKTOP_BUILD
 XTRA_LIBS = -lmingw32 -lSDLmain -lSDL
 OUTPUT_EXT = .exe
 else
 ifeq ($(shell uname),Darwin)
-XTRA_CFLAGS = -I/opt/homebrew/include -L/opt/homebrew/lib
+XTRA_CFLAGS = -I/opt/homebrew/include -L/opt/homebrew/lib -DDESKTOP_BUILD
 else
-XTRA_CFLAGS = -I/usr/include -L/usr/lib
+XTRA_CFLAGS = -I/usr/include -L/usr/lib -DDESKTOP_BUILD
 endif
 XTRA_LIBS = -lSDL
 OUTPUT_EXT =

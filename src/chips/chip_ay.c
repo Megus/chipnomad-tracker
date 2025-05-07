@@ -1,19 +1,22 @@
 #include <stdlib.h>
 #include <ayumi.h>
 #include <chips.h>
-
+#include <stdio.h>
 
 static int init(struct SoundChip* self) {
   return 0;
 }
 
-static void render(struct SoundChip* self, int16_t* buffer, int samples) {
+static void render(struct SoundChip* self, int16_t* buffer, int samples, float volume) {
   struct ayumi* ay = self->userdata;
 
   for (int c = 0; c < samples; c++) {
     ayumi_process(ay);
-    *buffer++ = ay->left * 10000;
-    *buffer++ = ay->right * 10000;
+    int l = ay->left * volume * 15000;
+    int r = ay->right * volume * 15000;
+
+    *buffer++ = l;
+    *buffer++ = r;
   }
 }
 

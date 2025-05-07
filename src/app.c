@@ -73,10 +73,26 @@ static int inputPlayback(int keys, int isDoubleTap) {
  * @param isDoubleTap is it a double tap?
  */
 static void appInput(int keys, int isDoubleTap) {
+  int volumeChanged = 0;
+
   if (keys == 0) {
     // Clean screen message when nothing is pressed
     screenMessage("");
   }
+
+  // Volume control
+  if (keys == keyVolumeUp) {
+    if (appSettings.volume < 1.0) appSettings.volume += 0.1;
+    volumeChanged = 1;
+  } else if (keys == keyVolumeDown) {
+    if (appSettings.volume > 0.0) appSettings.volume -= 0.1;
+    volumeChanged = 1;
+  }
+  if (volumeChanged) {
+    if (appSettings.volume < 0.0) appSettings.volume = 0;
+    if (appSettings.volume > 1.0) appSettings.volume = 1.0;
+  }
+
   if (inputPlayback(keys, isDoubleTap)) return;
   currentScreen->onInput(keys, isDoubleTap);
 }
