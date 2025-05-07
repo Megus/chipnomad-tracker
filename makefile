@@ -1,26 +1,32 @@
 DOCKER = docker run --platform linux/amd64 --rm -it --user $$(id -u):$$(id -g) -v`pwd`:/src -w/src
 
-LIBS = external/ayumi src/chips src/corelib src/screens src/playback src platforms/sdl12
+LIBS = external/ayumi src/chips src/corelib src/screens src/playback src
 BUILD = build
 
 ifeq ($(CROSS_COMPILE),)
 ifeq ($(OS),Windows_NT)
 # Windows-specific settings
 # Use SDL_PATH environment variable if defined, otherwise use default C:/SDL
+LIBS += platforms/sdl2
 SDL_PATH ?= C:/SDL
 XTRA_CFLAGS = -I"$(SDL_PATH)/include" -L"$(SDL_PATH)/lib" -DDESKTOP_BUILD
-XTRA_LIBS = -lmingw32 -lSDLmain -lSDL
+XTRA_LIBS = -lmingw32 -lSDLmain -lSDL2
 OUTPUT_EXT = .exe
 else
+LIBS += platforms/sdl2
+# macOS
 ifeq ($(shell uname),Darwin)
 XTRA_CFLAGS = -I/opt/homebrew/include -L/opt/homebrew/lib -DDESKTOP_BUILD
 else
+# Linux
 XTRA_CFLAGS = -I/usr/include -L/usr/lib -DDESKTOP_BUILD
 endif
-XTRA_LIBS = -lSDL
+XTRA_LIBS = -lSDL2
 OUTPUT_EXT =
 endif
 else
+# RG35xx
+LIBS += platforms/sdl12
 XTRA_CFLAGS = -I${SYSROOT}/usr/include -L${SYSROOT}/usr/lib
 XTRA_LIBS = -lSDL
 OUTPUT_EXT =
@@ -46,7 +52,7 @@ windows:
 .PHONY: .RG35xx
 .RG35xx:
 	mkdir -p ${BUILD}
-	${CROSS_COMPILE}${CC} ${CFLAGS} -lSDL -o ${BUILD}/chipnomad.rg35xx
+	${CROSS_COMPILE}${CC} ${CFLAGS} ${XTRA_LIBS} -o ${BUILD}/chipnomad.rg35xx
 	chmod +x ${BUILD}/chipnomad.rg35xx
 
 .PHONY: RG35xx
