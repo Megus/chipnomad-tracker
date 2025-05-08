@@ -1,5 +1,6 @@
 #include <corelib_audio.h>
 #include <SDL2/SDL.h>
+#include <stdio.h>
 
 static void sdlAudioCallback(void* userdata, uint8_t* buffer, int bufferBytes) {
   AudioCallback* callback = userdata;

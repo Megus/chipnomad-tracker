@@ -8,9 +8,9 @@ ifeq ($(OS),Windows_NT)
 # Windows-specific settings
 # Use SDL_PATH environment variable if defined, otherwise use default C:/SDL
 LIBS += platforms/sdl2
-SDL_PATH ?= C:/SDL
-XTRA_CFLAGS = -I"$(SDL_PATH)/include" -L"$(SDL_PATH)/lib" -DDESKTOP_BUILD
-XTRA_LIBS = -lmingw32 -lSDLmain -lSDL2
+SDL_PATH = C:\SDL\x86_64-w64-mingw32
+XTRA_CFLAGS = -I"$(SDL_PATH)\include" -L"$(SDL_PATH)\lib" -DDESKTOP_BUILD -D__USE_MINGW_ANSI_STDIO=1
+XTRA_LIBS = -lmingw32 -lSDL2main -lSDL2
 OUTPUT_EXT = .exe
 else
 LIBS += platforms/sdl2
@@ -46,8 +46,8 @@ desktop:
 
 .PHONY: windows
 windows:
-	mkdir -p ${BUILD}
-	${CC} ${CFLAGS} ${XTRA_LIBS} ${OUTPUT}
+#	mkdir ${BUILD}
+	gcc ${CFLAGS} ${XTRA_LIBS} ${OUTPUT}
 
 .PHONY: .RG35xx
 .RG35xx:

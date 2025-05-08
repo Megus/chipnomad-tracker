@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include <version.h>
 #include "corelib_gfx.h"
+#include <stdio.h>
+#include <string.h>
 
 #define WINDOW_WIDTH (640)
 #define WINDOW_HEIGHT (480)
