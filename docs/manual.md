@@ -76,6 +76,7 @@ Controls:
 - Insert chain: A
 - Create new chain: Double-tap A
 - Jump 16 Rows: Hold B + \[UP or DOWN\]
+- Clone chain: Select + B then A
 
 ### Chain Screen
 Create sequences of phrases:
@@ -89,6 +90,7 @@ Controls:
 - Create new phrase: Double-tap A
 - Jump to Track: Hold B + \[LEFT or RIGHT\]
 - Jump to Chain: Hold B + \[UP or DOWN\]
+- Clone phrase: Select + B then A
 
 ### Phrase Screen
 Create note patterns:

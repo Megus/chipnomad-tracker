@@ -3,6 +3,7 @@
 #include <corelib_gfx.h>
 #include <utils.h>
 #include <project.h>
+#include <string.h>
 
 static int chain = 0;
 static uint16_t lastPhraseValue = 0;
@@ -14,6 +15,7 @@ static void drawField(int col, int row, int state);
 static void drawRowHeader(int row, int state);
 static void drawColHeader(int col, int state);
 static void drawCursor(int col, int row);
+static void drawSelection(int col1, int row1, int col2, int row2);
 static int onEdit(int col, int row, enum CellEditAction action);
 
 static struct ScreenData screen = {
@@ -21,9 +23,13 @@ static struct ScreenData screen = {
   .cursorRow = 0,
   .cursorCol = 0,
   .topRow = 0,
+  .isSelectMode = 0,
+  .selectStartRow = 0,
+  .selectStartCol = 0,
   .getColumnCount = getColumnCount,
   .drawStatic = drawStatic,
   .drawCursor = drawCursor,
+  .drawSelection = drawSelection,
   .drawRowHeader = drawRowHeader,
   .drawColHeader = drawColHeader,
   .drawField = drawField,
@@ -96,6 +102,17 @@ static void drawCursor(int col, int row) {
   }
 }
 
+static void drawSelection(int col1, int row1, int col2, int row2) {
+  // TODO: Proper width and height for actual selection
+  if (col1 == 0) {
+    // Phrase
+    gfxSelection(3, 3 + row1, 3, 1);
+  } else {
+    // Transpose
+    gfxSelection(7, 3 + row1, 2, 1);
+  }
+}
+
 static void fullRedraw(void) {
   screenFullRedraw(&screen);
 }
@@ -116,6 +133,15 @@ static void draw(void) {
 // Input handling
 //
 
+int findEmptyPhrase(int start) {
+  for (int i = start; i < PROJECT_MAX_PHRASES; i++) {
+    if (phraseIsEmpty(i)) {
+      return i;
+    }
+  }
+  return EMPTY_VALUE_16;
+}
+
 static int onEdit(int col, int row, enum CellEditAction action) {
   int handled = 0;
 
@@ -124,16 +150,31 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       uint16_t current = project.chains[chain].phrases[row];
 
       if (current != EMPTY_VALUE_16) {
-        // Find first fully empty phrase
-        for (int c = current + 1; c < PROJECT_MAX_PHRASES; c++) {
-          if (phraseIsEmpty(c)) {
-            project.chains[chain].phrases[row] = c;
-            lastPhraseValue = c;
-            handled = 1;
-            break;
-          }
+        int nextEmpty = findEmptyPhrase(current + 1);
+        if (nextEmpty != EMPTY_VALUE_16) {
+          project.chains[chain].phrases[row] = nextEmpty;
+          lastPhraseValue = nextEmpty;
+          handled = 1;
+        } else {
+          screenMessage("No empty phrases");
         }
       }
+    } else if (action == editShallowClone || action == editDeepClone) {
+      // Phrase clone
+      uint16_t current = project.chains[chain].phrases[row];
+
+      if (current != EMPTY_VALUE_16) {
+        int nextEmpty = findEmptyPhrase(0);
+        if (nextEmpty != EMPTY_VALUE_16) {
+          project.chains[chain].phrases[row] = nextEmpty;
+          lastPhraseValue = nextEmpty;
+          memcpy(&project.phrases[nextEmpty], &project.phrases[current], sizeof(struct Phrase));
+          handled = 1;
+        } else {
+          screenMessage("No empty phrases");
+        }
+      }
+
     } else {
       handled = edit16withLimit(action, &project.chains[chain].phrases[row], &lastPhraseValue, 16, PROJECT_MAX_PHRASES - 1);
     }

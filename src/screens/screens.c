@@ -2,6 +2,7 @@
 #include <screens.h>
 #include <project.h>
 #include <corelib_gfx.h>
+#include <utils.h>
 
 const struct AppScreen* currentScreen = NULL;
 
@@ -100,7 +101,7 @@ void screenFullRedraw(struct ScreenData* screen) {
   }
 
   // Cursor
-  screen->drawCursor(screen->cursorCol, screen->cursorRow);
+  if (screen->isSelectMode != 1) screen->drawCursor(screen->cursorCol, screen->cursorRow);
 }
 
 static int spreadsheetInputCursor(struct ScreenData* screen, int keys, int isDoubleTap) {
@@ -109,57 +110,80 @@ static int spreadsheetInputCursor(struct ScreenData* screen, int keys, int isDou
   int handled = 0;
   int redrawn = 0;
 
-  if (keys == keyLeft) {
-    if (screen->cursorCol > 0) screen->cursorCol--;
-    handled = 1;
-  } else if (keys == keyRight) {
-    if (screen->cursorCol < screen->getColumnCount(screen->cursorRow) - 1) screen->cursorCol++;
-    handled = 1;
-  } else if (keys == keyUp) {
-    if (screen->cursorRow > 0) screen->cursorRow--;
-    if (screen->cursorRow < screen->topRow) {
-      screen->topRow--;
+  if (screen->isSelectMode == 1) {
+    // Selection mode
+    if (keys == keyOpt) {
+      screen->isSelectMode = 0;
       screenFullRedraw(screen);
-      redrawn = 1;
-    }
-    int columns = screen->getColumnCount(screen->cursorRow);
-    if (screen->cursorCol >= columns) screen->cursorCol = columns - 1;
-    handled = 1;
-  } else if (keys == keyDown) {
-    if (screen->cursorRow < screen->rows - 1) screen->cursorRow++;
-    if (screen->cursorRow >= screen->topRow + 16) {
-      screen->topRow++;
-      screenFullRedraw(screen);
-      redrawn = 1;
-    }
-    int columns = screen->getColumnCount(screen->cursorRow);
-    if (screen->cursorCol >= columns) screen->cursorCol = columns - 1;
-    handled = 1;
-  } else if (keys == (keyDown | keyOpt)) {
-    if (screen->cursorRow + 16 < screen->rows) {
-      screen->cursorRow += 16;
-      screen->topRow += 16;
-      if (screen->topRow + 16 >= screen->rows) screen->topRow = screen->rows - 16;
-      screenFullRedraw(screen);
-      int columns = screen->getColumnCount(screen->cursorRow);
-      if (screen->cursorCol >= columns) screen->cursorCol = columns - 1;
       redrawn = 1;
       handled = 1;
     }
-  } else if (keys == (keyUp | keyOpt)) {
-    if (screen->cursorRow - 16 >= 0) {
-      screen->cursorRow -= 16;
-      screen->topRow -= 16;
-      if (screen->topRow < 0) screen->topRow = 0;
-      screenFullRedraw(screen);
+  } else {
+    // Normal mode
+    if (keys == (keyShift | keyOpt) && screen->isSelectMode == 0) {
+      screen->isSelectMode = 1;
+      screen->selectStartRow = screen->cursorRow;
+      screen->selectStartCol = screen->cursorCol;
+      handled = 1;
+    } else if (keys == keyLeft) {
+      if (screen->cursorCol > 0) screen->cursorCol--;
+      handled = 1;
+    } else if (keys == keyRight) {
+      if (screen->cursorCol < screen->getColumnCount(screen->cursorRow) - 1) screen->cursorCol++;
+      handled = 1;
+    } else if (keys == keyUp) {
+      if (screen->cursorRow > 0) screen->cursorRow--;
+      if (screen->cursorRow < screen->topRow) {
+        screen->topRow--;
+        screenFullRedraw(screen);
+        redrawn = 1;
+      }
       int columns = screen->getColumnCount(screen->cursorRow);
       if (screen->cursorCol >= columns) screen->cursorCol = columns - 1;
-      redrawn = 1;
       handled = 1;
+    } else if (keys == keyDown) {
+      if (screen->cursorRow < screen->rows - 1) screen->cursorRow++;
+      if (screen->cursorRow >= screen->topRow + 16) {
+        screen->topRow++;
+        screenFullRedraw(screen);
+        redrawn = 1;
+      }
+      int columns = screen->getColumnCount(screen->cursorRow);
+      if (screen->cursorCol >= columns) screen->cursorCol = columns - 1;
+      handled = 1;
+    } else if (keys == (keyDown | keyOpt)) {
+      if (screen->cursorRow + 16 < screen->rows) {
+        screen->cursorRow += 16;
+        screen->topRow += 16;
+        if (screen->topRow + 16 >= screen->rows) screen->topRow = screen->rows - 16;
+        screenFullRedraw(screen);
+        int columns = screen->getColumnCount(screen->cursorRow);
+        if (screen->cursorCol >= columns) screen->cursorCol = columns - 1;
+        redrawn = 1;
+        handled = 1;
+      }
+    } else if (keys == (keyUp | keyOpt)) {
+      if (screen->cursorRow - 16 >= 0) {
+        screen->cursorRow -= 16;
+        screen->topRow -= 16;
+        if (screen->topRow < 0) screen->topRow = 0;
+        screenFullRedraw(screen);
+        int columns = screen->getColumnCount(screen->cursorRow);
+        if (screen->cursorCol >= columns) screen->cursorCol = columns - 1;
+        redrawn = 1;
+        handled = 1;
+      }
     }
   }
 
-  if (handled && !redrawn) {
+  if (screen->isSelectMode == 1 && handled) {
+    // TODO: Make optimal selection redraw
+    screenFullRedraw(screen);
+    screen->drawSelection(
+      min(screen->selectStartCol, screen->cursorCol), min(screen->selectStartRow, screen->cursorRow),
+      max(screen->selectStartCol, screen->cursorCol), max(screen->selectStartRow, screen->cursorRow)
+    );
+  } else if (screen->isSelectMode != 1 && handled && !redrawn) {
     // Erase old cursor
     screen->drawField(oldCursorCol, oldCursorRow, 0);
     screen->drawRowHeader(oldCursorRow, 0);
@@ -170,32 +194,51 @@ static int spreadsheetInputCursor(struct ScreenData* screen, int keys, int isDou
     screen->drawColHeader(screen->cursorCol, stateFocus);
     screen->drawCursor(screen->cursorCol, screen->cursorRow);
   }
+
   return handled;
 }
 
 static int spreadsheetInputEdit(struct ScreenData* screen, int keys, int isDoubleTap) {
   int handled = 0;
 
-  if (keys == keyEdit && isDoubleTap == 0) {
-    handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editTap);
-  } else if (keys == keyEdit && isDoubleTap == 1) {
-    handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editDoubleTap);
-  } else if (keys == (keyRight | keyEdit)) {
-    handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editIncrease);
-  } else if (keys == (keyLeft | keyEdit)) {
-    handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editDecrease);
-  } else if (keys == (keyUp | keyEdit)) {
-    handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editIncreaseBig);
-  } else if (keys == (keyDown | keyEdit)) {
-    handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editDecreaseBig);
-  } else if (keys == (keyEdit | keyOpt)) {
-    handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editClear);
+  if (screen->isSelectMode == 1) {
+    // Selection mode
+    if (keys == (keyShift | keyEdit)) {
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editShallowClone);
+    }
+  } else {
+    // Normal mode
+    if (keys == keyEdit && isDoubleTap == 0) {
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editTap);
+    } else if (keys == keyEdit && isDoubleTap == 1) {
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editDoubleTap);
+    } else if (keys == (keyRight | keyEdit)) {
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editIncrease);
+    } else if (keys == (keyLeft | keyEdit)) {
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editDecrease);
+    } else if (keys == (keyUp | keyEdit)) {
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editIncreaseBig);
+    } else if (keys == (keyDown | keyEdit)) {
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editDecreaseBig);
+    } else if (keys == (keyEdit | keyOpt)) {
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editClear);
+    }
   }
 
-  if (handled) {
-    screen->drawField(screen->cursorCol, screen->cursorRow, stateFocus);
-    screen->drawCursor(screen->cursorCol, screen->cursorRow);
+  if (screen->isSelectMode == 1) {
+    // TODO: Make optimal selection redraw
+    screenFullRedraw(screen);
+    screen->drawSelection(
+      min(screen->selectStartCol, screen->cursorCol), min(screen->selectStartRow, screen->cursorRow),
+      max(screen->selectStartCol, screen->cursorCol), max(screen->selectStartRow, screen->cursorRow)
+    );
+  } else {
+    if (handled) {
+      screen->drawField(screen->cursorCol, screen->cursorRow, stateFocus);
+      screen->drawCursor(screen->cursorCol, screen->cursorRow);
+    }
   }
+
   return handled;
 }
 

@@ -23,6 +23,8 @@ enum CellEditAction {
   editDecrease,
   editIncreaseBig,
   editDecreaseBig,
+  editShallowClone,
+  editDeepClone
 };
 
 struct ScreenData {
@@ -31,9 +33,13 @@ struct ScreenData {
   int cursorRow;
   int cursorCol;
   int topRow; // For scrollable screens
+  int isSelectMode; // 0 - edit, 1 - select, -1 - select is disabled for this screen (e.g. Instrument screen)
+  int selectStartRow;
+  int selectStartCol;
   int (*getColumnCount)(int row);
   void (*drawStatic)(void);
   void (*drawCursor)(int col, int row);
+  void (*drawSelection)(int col1, int row1, int col2, int row2);
   void (*drawRowHeader)(int row, int state);
   void (*drawColHeader)(int col, int state);
   void (*drawField)(int col, int row, int state);

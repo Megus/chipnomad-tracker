@@ -4,6 +4,7 @@
 #include <utils.h>
 #include <project.h>
 #include <playback.h>
+#include <string.h>
 
 // Screen state variables
 static uint16_t lastChainValue = 0;
@@ -14,6 +15,7 @@ static void drawField(int col, int row, int state);
 static void drawRowHeader(int row, int state);
 static void drawColHeader(int col, int state);
 static void drawCursor(int col, int row);
+static void drawSelection(int col1, int row1, int col2, int row2);
 static int onEdit(int col, int row, enum CellEditAction action);
 
 static struct ScreenData screen = {
@@ -21,9 +23,13 @@ static struct ScreenData screen = {
   .cursorRow = 0,
   .cursorCol = 0,
   .topRow = 0,
+  .isSelectMode = 0,
+  .selectStartRow = 0,
+  .selectStartCol = 0,
   .getColumnCount = getColumnCount,
   .drawStatic = drawStatic,
   .drawCursor = drawCursor,
+  .drawSelection = drawSelection,
   .drawRowHeader = drawRowHeader,
   .drawColHeader = drawColHeader,
   .drawField = drawField,
@@ -85,6 +91,11 @@ static void drawCursor(int col, int row) {
   gfxCursor(3 + col * 3, 3 + row - screen.topRow, 2);
 }
 
+static void drawSelection(int col1, int row1, int col2, int row2) {
+  // TODO: Proper width and height for actual selection
+  gfxSelection(3 + col1 * 3, 3 + row1 - screen.topRow, 2, 1);
+}
+
 static void fullRedraw(void) {
   screenFullRedraw(&screen);
 }
@@ -129,18 +140,39 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
   return 0;
 }
 
+static int findEmptyChain(int startChain) {
+  for (int c = startChain; c < PROJECT_MAX_CHAINS; c++) {
+    if (chainIsEmpty(c)) {
+      return c;
+    }
+  }
+  return EMPTY_VALUE_16;
+}
+
 static int onEdit(int col, int row, enum CellEditAction action) {
   if (action == editDoubleTap) {
     // Find the first chain with no phrases
     int current = project.song[row][col];
 
     if (current != EMPTY_VALUE_16) {
-      for (int c = current + 1; c < PROJECT_MAX_CHAINS; c++) {
-        if (chainIsEmpty(c)) {
-          project.song[row][col] = c;
-          lastChainValue = c;
-          break;
-        }
+      int nextEmpty = findEmptyChain(current + 1);
+      if (nextEmpty != EMPTY_VALUE_16) {
+        project.song[row][col] = nextEmpty;
+        lastChainValue = nextEmpty;
+      }
+    }
+    return 1;
+  } else if (action == editShallowClone) {
+    // Shallow chain clone
+    int current = project.song[row][col];
+
+    if (current != EMPTY_VALUE_16) {
+      int nextEmpty = findEmptyChain(current + 1);
+      if (nextEmpty != EMPTY_VALUE_16) {
+        project.song[row][col] = nextEmpty;
+        lastChainValue = nextEmpty;
+
+        memcpy(&project.chains[nextEmpty], &project.chains[current], sizeof(struct Chain));
       }
     }
     return 1;

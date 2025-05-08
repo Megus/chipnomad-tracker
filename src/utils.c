@@ -43,3 +43,12 @@ uint8_t hash(uint8_t* str) {
 
   return (uint8_t)(hash & 0xff);
 }
+
+
+int min(int a, int b) {
+  return a < b ? a : b;
+}
+
+int max(int a, int b) {
+  return a > b ? a : b;
+}

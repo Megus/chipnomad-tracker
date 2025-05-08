@@ -20,6 +20,7 @@ static struct ScreenData screen = {
   .cursorRow = 0,
   .cursorCol = 0,
   .topRow = 0,
+  .isSelectMode = -1,
   .getColumnCount = getColumnCount,
   .drawStatic = drawStatic,
   .drawCursor = drawCursor,

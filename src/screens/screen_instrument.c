@@ -21,6 +21,7 @@ static struct ScreenData screenInstrumentNone = {
   .rows = 1,
   .cursorRow = 0,
   .cursorCol = 0,
+  .isSelectMode = -1,
   .getColumnCount = instrumentCommonColumnCount,
   .drawStatic = instrumentCommonDrawStatic,
   .drawCursor = instrumentCommonDrawCursor,
