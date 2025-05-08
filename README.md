@@ -47,7 +47,6 @@ To build ChipNomad on Windows:
    - Make sure MinGW's bin directory is in your PATH environment variable
 
 2. Download SDL development libraries for MinGW from [GitHub](https://github.com/libsdl-org/SDL/releases/tag/release-2.32.6)
-   - Download both the development libraries (SDL-devel-1.2.15-mingw32.tar.gz) and the runtime libraries (SDL-1.2.15-win32.zip)
    - Extract the SDL files to a directory of your choice (e.g., `C:\SDL`)
 
 3. Set the SDL_PATH environment variable to your SDL installation directory (optional)
