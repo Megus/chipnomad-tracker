@@ -21,7 +21,7 @@ else
 # Linux
 XTRA_CFLAGS = -I/usr/include -L/usr/lib -DDESKTOP_BUILD
 endif
-XTRA_LIBS = -lSDL2
+XTRA_LIBS = -lSDL2 -lm
 OUTPUT_EXT =
 endif
 else
