@@ -22,6 +22,92 @@ int vibratoCommonLogic(struct PlaybackFXState *fx) {
   return value;
 }
 
+static uint8_t calculateArpUpDownOffset(const uint8_t *arp, const uint8_t period, const int cycleCounter, const int stepsTotal) {
+  const int currentStep = (period + cycleCounter * 3) % stepsTotal;
+  int octave, idx;
+
+  switch (stepsTotal) {
+    case 4:
+      return currentStep < 3 ? arp[currentStep] : arp[1];
+    case 10:
+      if (currentStep < 3) return arp[currentStep];
+      if (currentStep < 8) {
+        idx = (currentStep <= 5) ? (currentStep - 3) : (7 - currentStep);
+        return arp[idx] + 0x0C;
+      }
+      return arp[10 - currentStep];
+    default:
+      if (currentStep < stepsTotal / 2) {
+        idx = currentStep % 3;
+        octave = currentStep / 3;
+        return arp[idx] + (octave * 0x0C);
+      }
+      int s = currentStep - stepsTotal / 2;
+      idx = 2 - (s % 3);
+      octave = 2 - (s / 3);
+      return arp[idx] + (octave * 0x0C);
+  }
+}
+
+static int8_t calculateArpModeOffset(uint8_t arp[3], const uint8_t period, const int cycleCounter, const enum PlaybackArpType arpType) {
+  uint8_t noteOffset = 0;
+
+  switch (arpType) {
+    case arpTypeUpDown4Oct:
+      noteOffset = calculateArpUpDownOffset(arp, period, cycleCounter, 28);
+      break;
+    case arpTypeUpDown3Oct:
+      noteOffset = calculateArpUpDownOffset(arp, period, cycleCounter, 22);
+      break;
+    case arpTypeUpDown2Oct:
+      noteOffset = calculateArpUpDownOffset(arp, period, cycleCounter, 16);
+      break;
+    case arpTypeUpDown1Oct:
+      noteOffset = calculateArpUpDownOffset(arp, period, cycleCounter, 10);
+      break;
+    case arpTypeUpDown: {
+      noteOffset = calculateArpUpDownOffset(arp, period, cycleCounter, 4);
+      break;
+    }
+    case arpTypeDown4Oct:
+      noteOffset = (cycleCounter % 5) * -0x0c + arp[2-period];
+      break;
+    case arpTypeDown3Oct:
+      noteOffset = (cycleCounter % 4) * -0x0c + arp[2-period];
+      break;
+    case arpTypeDown2Oct:
+      noteOffset = (cycleCounter % 3) * -0x0c + arp[2-period];
+      break;
+    case arpTypeDown1Oct:
+      if (cycleCounter % 2 == 1) {
+        noteOffset = -0x0c;
+      }
+    case arpTypeDown:
+      noteOffset += arp[2-period];
+      break;
+    case arpTypeUp5Oct:
+      noteOffset = (cycleCounter % 6) * 0x0c + arp[period];
+      break;
+    case arpTypeUp4Oct:
+      noteOffset = (cycleCounter % 5) * 0x0c + arp[period];
+      break;
+    case arpTypeUp3Oct:
+      noteOffset = (cycleCounter % 4) * 0x0c + arp[period];
+      break;
+    case arpTypeUp2Oct:
+      noteOffset = (cycleCounter % 3) * 0x0c + arp[period];
+      break;
+    case arpTypeUp1Oct:
+      if (cycleCounter % 2 == 1) {
+        noteOffset = 0x0c;
+      }
+    case arpTypeUp:
+    default:
+      noteOffset += arp[period];
+      break;
+  }
+  return noteOffset;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -47,6 +133,23 @@ static void handleFX_PBN(struct PlaybackState* state, struct PlaybackTrackState*
   value += fx->data.pbn.value;
   track->note.pitchOffsetAcc = value >> 8;
   fx->data.pbn.lowByte = value & 0xff;
+}
+
+// ARP - arpeggio
+static void handleFX_ARP(struct PlaybackState *state, struct PlaybackTrackState *track, int trackIdx,
+                         struct PlaybackFXState *fx, struct PlaybackTableState *tableState) {
+  uint8_t arp[3] = {0, (fx->value & 0xF0) >> 4, fx->value & 0x0F};
+  const uint8_t period = fx->data.count_fx.counter / track->arpSpeed % 3;
+  const uint8_t cycles = fx->data.count_fx.counter / track->arpSpeed / 3;
+  track->note.noteOffset += calculateArpModeOffset(arp, period, cycles, track->arpType);
+  fx->data.count_fx.counter++;
+}
+
+// ARC - Arp settings
+static void handleFX_ARC(struct PlaybackState *state, struct PlaybackTrackState *track, int trackIdx,
+                         struct PlaybackFXState *fx, struct PlaybackTableState *tableState) {
+  track->arpSpeed = fx->value & 0x0F;
+  track->arpType = (fx->value & 0xF0) >> 4;
 }
 
 // PIT - Pitch offset
@@ -257,6 +360,8 @@ static int handleFXInternal(struct PlaybackState* state, int trackIdx, struct Pl
 
   // Common FX
   if (fx->fx == EMPTY_VALUE_8) return 0;
+  else if (fx->fx == fxARP) handleFX_ARP(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxARC) handleFX_ARC(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxPBN) handleFX_PBN(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxPIT) handleFX_PIT(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxTBX) handleFX_TBX(state, track, trackIdx, fx, tableState);
@@ -304,6 +409,10 @@ void initFX(struct PlaybackState* state, int trackIdx, uint8_t* fx, struct Playb
     // ESL - AY Envelope slide (portamento)
     fxState->data.psl.counter = 0;
     fxState->data.psl.startPeriod = track->note.chip.ay.envBase;
+  }
+
+  if (fxIdx == fxARP) {
+    if (track->arpSpeed == 0) track->arpSpeed = 1;
   }
 
   fxState->fx = fxIdx;
