@@ -73,6 +73,26 @@ struct PlaybackTrackQueue {
   int phraseRow;
 };
 
+enum PlaybackArpType {
+  arpTypeUp,
+  arpTypeDown,
+  arpTypeUpDown,
+  arpTypeUp1Oct,
+  arpTypeDown1Oct,
+  arpTypeUpDown1Oct,
+  arpTypeUp2Oct,
+  arpTypeDown2Oct,
+  arpTypeUpDown2Oct,
+  arpTypeUp3Oct,
+  arpTypeDown3Oct,
+  arpTypeUpDown3Oct,
+  arpTypeUp4Oct,
+  arpTypeDown4Oct,
+  arpTypeUpDown4Oct,
+  arpTypeUp5Oct,
+  arpTypeMax,
+};
+
 struct PlaybackTrackState {
   struct PlaybackTrackQueue queue;
 
@@ -87,6 +107,9 @@ struct PlaybackTrackState {
   int grooveRow;
 
   int frameCounter;
+
+  int arpSpeed;
+  enum PlaybackArpType arpType;
 
   // Currently playing note
   struct PlaybackNoteState note;
