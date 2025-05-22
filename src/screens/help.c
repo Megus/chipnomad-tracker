@@ -10,13 +10,22 @@ char* helpFXHint(uint8_t* fx, int isTable) {
   buffer[0] = 0; // Terminate string for unsupported FX
   int note;
 
+  const char* arpModeHelp[16]={
+    "Up (+0 oct)", "Down (+0 oct)", "Up/Down (+0 oct)",
+    "Up (+1 oct)", "Down (+1 oct)", "Up/Down (+1 oct)",
+    "Up (+2 oct)", "Down (+2 oct)", "Up/Down (+2 oct)",
+    "Up (+3 oct)", "Down (+3 oct)", "Up/Down (+3 oct)",
+    "Up (+4 oct)", "Down (+4 oct)", "Up/Down (+4 oct)",
+    "Up (+5 oct)"
+  };
+
   switch ((enum FX)fx[0]) {
     case fxARP: // Arpeggio
       sprintf(buffer, "Arpeggio 0, %hhu, %hhu semitones", (fx[1] & 0xf0) >> 4, (fx[1] & 0xf));
       break;
     case fxARC: // Arpeggio config
-    sprintf(buffer, "Arpeggio config");
-    break;
+      sprintf(buffer, "ARP config: %s, %d tics",arpModeHelp[(fx[1] & 0xf0) >> 4],(fx[1] & 0xf));
+      break;
     case fxPVB: // Pitch vibrato
       sprintf(buffer, "Pitch vibrato, speed %hhu, depth %hhu", (fx[1] & 0xf0) >> 4, (fx[1] & 0xf));
       break;
