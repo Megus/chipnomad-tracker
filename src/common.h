@@ -8,6 +8,8 @@
 #include <playback.h>
 
 #define AUTOSAVE_FILENAME "autosave.cnm"
+#define FILENAME_LENGTH (24)
+#define PATH_LENGTH (4096)
 
 struct ColorScheme {
   int background;
@@ -37,5 +39,8 @@ extern int* pSongTrack;
 extern int* pChainRow;
 
 extern struct PlaybackState playback;
+
+extern char projectFilename[FILENAME_LENGTH + 1];
+extern char projectPath[PATH_LENGTH + 1];
 
 #endif

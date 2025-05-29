@@ -7,7 +7,7 @@
 #include <string.h>
 
 int cInstrument = 0;
-int isCharEdit = 0;
+static int isCharEdit = 0;
 
 static void drawRowHeader(int row, int state);
 static void drawColHeader(int col, int state);

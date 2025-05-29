@@ -1,16 +1,24 @@
 # ChipNomad Tracker
 
-ChipNomad will be a multi-chip tracker with LSDJ-like interface for handheld game consoles like Anbernic RG35xx.
-As it's a pure C application built with SDL1.2, it can also be built for any other supported platform. Even SDL1.2
-is not a strict requirement and it is possible to replace the small core library and build it for virtually anything.
-
-Hardware requirements:
-
-- 8 buttons: D-pad, A, B, Start, Select
-- Can display 40x20 characters on the screen
-- Can play stereo 16-bit audio
+ChipNomad is a multi-platform tracker with LSDJ-like interface designed for creating chiptune music. Primary target platforms are handheld game consoles like Anbernic RG35xx.
 
 [ChipNomad manual](docs/manual.md)
+
+## Currently supported platforms
+
+- Anbernic RG35xx with GarlicOS 1.4
+- Miyoo Mini with MiyooCFW (not tested but should work)
+- macOS (Apple Silicon)
+- Windows
+
+## Hardware Requirements
+
+ChipNomad is written in pure C99 and can be ported to any platform that satisfies these requirements:
+
+- Display capable of 40x20 characters
+- 8 buttons: LEFT, RIGHT, UP, DOWN, A, B, START, SELECT
+- Stereo 16-bit audio output
+- CPU capable of running chip emulation or a platform with real chips
 
 ## Background
 

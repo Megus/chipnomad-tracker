@@ -1,3 +1,4 @@
+#include <string.h>
 #include <corelib_gfx.h>
 #include <common.h>
 #include <audio_manager.h>
@@ -119,6 +120,8 @@ void appSetup(void) {
   fillFXNames();
 
   // Try to load an auto-saved project
+  memset(projectFilename, 0, FILENAME_LENGTH);
+  memset(projectPath, 0, PATH_LENGTH);
   if (projectLoad(AUTOSAVE_FILENAME)) {
     projectInit(&project);
   }

@@ -30,3 +30,6 @@ int* pSongRow;
 int* pSongTrack;
 int* pChainRow;
 struct PlaybackState playback;
+
+char projectFilename[FILENAME_LENGTH + 1];
+char projectPath[PATH_LENGTH + 1];

@@ -13,6 +13,7 @@
 #define PROJECT_MAX_CHIPS (3)
 #define PROJECT_MAX_PITCHES (254)
 #define PROJECT_INSTRUMENT_NAME_LENGTH (15)
+#define PROJECT_TITLE_LENGTH (24)
 
 #define NOTE_OFF (254)
 #define EMPTY_VALUE_8 (255)
@@ -150,7 +151,7 @@ struct Chain {
 // Project
 
 struct PitchTable {
-  char name[32];
+  char name[PROJECT_TITLE_LENGTH + 1];
   uint16_t octaveSize;
   uint16_t length;
   uint16_t values[PROJECT_MAX_PITCHES];
@@ -158,8 +159,8 @@ struct PitchTable {
 };
 
 struct Project {
-  char title[32];
-  char author[32];
+  char title[PROJECT_TITLE_LENGTH + 1];
+  char author[PROJECT_TITLE_LENGTH + 1];
 
   float frameRate;
   enum ChipType chipType;

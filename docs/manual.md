@@ -2,26 +2,19 @@
 
 ## Introduction
 
-ChipNomad is a multi-chip tracker designed for creating chiptune music. It features a compact 40x20 character interface inspired by LSDJ and M8 Tracker, making it perfect for portable devices with physical controls. ChipNomad will support multiple chips, but currently it supports only AY-3-8910/YM2149F chips.
-
-### Hardware Requirements
-
-- Display capable of 40x20 characters
-- 8 buttons: LEFT, RIGHT, UP, DOWN, A, B, START, SELECT
-- Stereo 16-bit audio output
+ChipNomad is a multi-platform tracker designed for creating chiptune music. It features a compact 40x20 character interface inspired by LSDJ and M8 Tracker, making it perfect for portable devices with physical controls. ChipNomad will support multiple chips, but currently it supports only AY-3-8910/YM2149F chips.
 
 ## Project Structure
 
-A ChipNomad song is organized in a hierarchical structure:
+A ChipNomad song is organized in a hierarchical structure. The lowest level of the hierarchy is a **Phrase**. Phrase is a sequence of 16 tracker rows for one track. Phrases are grouped into **Chains**. A chain can have up to 16 phrases. You can re-use phrases across multiple chains. Chains are sequenced in a **Song**.
+
 - Song (up to 256 positions)
 - Chains (up to 255)
 - Phrases (up to 1024)
 - Up to 10 tracks for multi-chip setups
 - 128 instruments (00-7F)
-- 255 tables (128 instrument tables + 127 additional)
+- 255 tables (128 instrument tables + 127 additional tables)
 - 31 grooves (00-1F)
-
-Song is built as a sequence of chains on each track. A chain is a sequence of phrases. A phrase is a 16-note long pattern.
 
 ## Screens
 

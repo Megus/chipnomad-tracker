@@ -658,6 +658,7 @@ static int projectLoadInternal(int fileId) {
       READ_STRING; if (sscanf(lpstr, "- *AY8910* PanA: %hhu", &p.chipSetup.ay.panA) != 1) return 1;
       READ_STRING; if (sscanf(lpstr, "- *AY8910* PanB: %hhu", &p.chipSetup.ay.panB) != 1) return 1;
       READ_STRING; if (sscanf(lpstr, "- *AY8910* PanC: %hhu", &p.chipSetup.ay.panC) != 1) return 1;
+      // TODO: Sanitize panning values to limit it to ABC, ACB, BAC, Mono
       break;
     default:
       break;

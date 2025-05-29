@@ -90,7 +90,7 @@ RG35xx-adb-install: .check-adb RG35xx .RG35xx-sh
 	${ADB} shell mkdir -p ${APPS}/${APP}
 	${ADB} push ${BUILD}/chipnomad.rg35xx ${APPS}/${APP}
 	${ADB} push ${BUILD}/launcher.sh ${APPS}/${APP}.sh
-	${ADB} push autosave.cnm ${APPS}/${APP}
+#	${ADB} push autosave.cnm ${APPS}/${APP}
 	${ADB} push j2k.so ${APPS}/${APP}
 	${ADB} shell chmod 755 ${APPS}/${APP}/chipnomad.rg35xx
 	${ADB} shell chmod 755 ${APPS}/${APP}.sh
