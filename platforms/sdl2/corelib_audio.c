@@ -23,8 +23,6 @@ int audioSetup(AudioCallback* audioCallback, int sampleRate, int bufferSize) {
     return 1;
   }
 
-  SDL_PauseAudio(0);
-
   return 0;
 }
 
