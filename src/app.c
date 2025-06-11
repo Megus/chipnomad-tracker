@@ -128,6 +128,8 @@ void appSetup(void) {
   audioManager.start(appSettings.audioSampleRate, appSettings.audioBufferSize, project.frameRate);
   audioManager.initChips();
   audioManager.setFrameCallback(frameCallback, NULL);
+  audioManager.resume();
+
   screenSetup(&screenSong, 0);
 }
 
