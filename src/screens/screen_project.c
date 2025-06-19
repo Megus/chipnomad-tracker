@@ -45,7 +45,6 @@ static void fullRedraw(void) {
 }
 
 static void draw(void) {
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -88,6 +87,19 @@ void projectCommonDrawStatic(void) {
 }
 
 void projectCommonDrawCursor(int col, int row) {
+  if (row == 0) {
+    if (col == 0) {
+      gfxCursor(7, 2, 4); // Load
+    } else if (col == 1) {
+      gfxCursor(12, 2, 4); // Save
+    } else if (col == 2) {
+      gfxCursor(17, 2, 3); // New
+    } else if (col == 3) {
+      gfxCursor(21, 2, 6); // Export
+    }
+  } else if (row >= 1 && row <= 3) {
+    gfxCursor(7 + col, 2 + row, 1);
+  }
 }
 
 void projectCommonDrawField(int col, int row, int state) {
@@ -105,14 +117,14 @@ void projectCommonDrawField(int col, int row, int state) {
     }
   } else if (row == 1) {
     // File name
-    gfxClearRect(7, 3, PROJECT_INSTRUMENT_NAME_LENGTH, 1);
+    gfxClearRect(7, 3, FILENAME_LENGTH, 1);
   } else if (row == 2) {
     // Title
-    gfxClearRect(7, 4, PROJECT_INSTRUMENT_NAME_LENGTH, 1);
+    gfxClearRect(7, 4, PROJECT_TITLE_LENGTH, 1);
     gfxPrintf(7, 4, "%s", project.title);
   } else if (row == 3) {
     // Author
-    gfxClearRect(7, 5, PROJECT_INSTRUMENT_NAME_LENGTH, 1);
+    gfxClearRect(7, 5, PROJECT_TITLE_LENGTH, 1);
     gfxPrintf(7, 5, "%s", project.author);
   } else if (row == 4) {
     //gfxPrintf(7, 7, "%d", project.frameRate);

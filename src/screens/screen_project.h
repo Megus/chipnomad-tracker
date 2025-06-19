@@ -3,6 +3,9 @@
 
 #include <screens.h>
 
+// Common rows on the project screen
+#define SCR_PROJECT_ROWS (7)
+
 int projectCommonColumnCount(int row);
 void projectCommonDrawStatic(void);
 void projectCommonDrawCursor(int col, int row);

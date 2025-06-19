@@ -29,20 +29,29 @@ static int isDirty;
 
 static char charBuffer[80];
 
+// FIXME: On RG35XX+, the SDL2 seems to be built without haptic
+// support enabled, so SDL_INIT_EVERYTHING will fail.
+#ifdef RG35XX_PLUS_BUILD
+#define SDL_INIT_FLAGS (SDL_INIT_EVERYTHING & ~SDL_INIT_HAPTIC)
+#else
+#define SDL_INIT_FLAGS (SDL_INIT_EVERYTHING)
+#endif
+
 int gfxSetup(void) {
-  if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
-    printf("SDL2 Initialization Error: %s\n", SDL_GetError());
+  if (SDL_Init(SDL_INIT_FLAGS) != 0) {
+    fprintf(stderr, "SDL2 Initialization Error: %s\n", SDL_GetError());
     return 1;
   }
 
   sprintf(charBuffer, "%s v%s (%s)", appTitle, appVersion, appBuild);
+
   window = SDL_CreateWindow(charBuffer,
     SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
     WINDOW_WIDTH, WINDOW_HEIGHT,
     SDL_WINDOW_SHOWN);
 
   if (!window) {
-    printf("SDL2 Create Window Error: %s\n", SDL_GetError());
+    fprintf(stderr, "SDL2 Create Window Error: %s\n", SDL_GetError());
     SDL_Quit();
     return 1;
   }

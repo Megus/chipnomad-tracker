@@ -1,5 +1,8 @@
 #include <screen_project.h>
 #include <corelib_gfx.h>
+#include <string.h>
+
+int chipClockLength = 0;
 
 static char stereoModes[4][5] = {
   "ABC",
@@ -10,7 +13,7 @@ static char stereoModes[4][5] = {
 
 static int getColumnCount(int row) {
   // The first 7 rows come from the common project screen fields
-  if (row < 7) return projectCommonColumnCount(row);
+  if (row < SCR_PROJECT_ROWS) return projectCommonColumnCount(row);
 
   return 1; // Default
 }
@@ -25,18 +28,29 @@ static void drawStatic(void) {
 }
 
 static void drawCursor(int col, int row) {
-  if (row < 7) return projectCommonDrawCursor(col, row);
-
+  if (row < SCR_PROJECT_ROWS) return projectCommonDrawCursor(col, row);
+  if (row == SCR_PROJECT_ROWS) {
+    // Chip type
+    gfxCursor(13, 10, project.chipSetup.ay.isYM ? 7 : 9);
+  } else if (row == SCR_PROJECT_ROWS + 1) {
+    // Panning scheme
+    gfxCursor(13, 11, 3);
+  } else if (row == SCR_PROJECT_ROWS + 2) {
+    gfxCursor(13, 12, chipClockLength);
+  } else if (row == SCR_PROJECT_ROWS + 3) {
+    gfxCursor(13, 13, strlen(project.pitchTable.name));
+  }
 }
 
 static void drawField(int col, int row, int state) {
-  if (row < 7) return projectCommonDrawField(col, row, state);
+  if (row < SCR_PROJECT_ROWS) return projectCommonDrawField(col, row, state);
 
   gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
 
-  if (row == 7) {
+  if (row == SCR_PROJECT_ROWS) {
+    gfxClearRect(13, 10, 9, 1);
     gfxPrint(13, 10, project.chipSetup.ay.isYM ? "YM2149F" : "AY-3-8910");
-  } else if (row == 8) {
+  } else if (row == SCR_PROJECT_ROWS + 1) {
     // Panning scheme
     int stereo = 0;
     struct ChipSetupAY* ay = &project.chipSetup.ay;
@@ -49,17 +63,20 @@ static void drawField(int col, int row, int state) {
     } else if (ay->panC == 128) {
       stereo = 1; // ACB
     }
-
     gfxPrint(13, 11, stereoModes[stereo]);
-  } else if (row == 9) {
-    gfxPrintf(13, 12, "%d Hz", project.chipSetup.ay.clock);
-  } else if (row == 10) {
+  } else if (row == SCR_PROJECT_ROWS + 2) {
+    char buf[18];
+    sprintf(buf, "%d Hz", project.chipSetup.ay.clock);
+    chipClockLength = strlen(buf);
+    gfxPrintf(13, 12, buf);
+  } else if (row == SCR_PROJECT_ROWS + 3) {
+    gfxClearRect(13, 13, PROJECT_PITCH_TABLE_TITLE_LENGTH, 1);
     gfxPrint(13, 13, project.pitchTable.name);
   }
 }
 
 static int onEdit(int col, int row, enum CellEditAction action) {
-  if (row < 7) return projectCommonOnEdit(col, row, action);
+  if (row < SCR_PROJECT_ROWS) return projectCommonOnEdit(col, row, action);
 
   int handled = 0;
 

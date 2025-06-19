@@ -14,6 +14,7 @@
 #define PROJECT_MAX_PITCHES (254)
 #define PROJECT_INSTRUMENT_NAME_LENGTH (15)
 #define PROJECT_TITLE_LENGTH (24)
+#define PROJECT_PITCH_TABLE_TITLE_LENGTH (18)
 
 #define NOTE_OFF (254)
 #define EMPTY_VALUE_8 (255)
@@ -151,7 +152,7 @@ struct Chain {
 // Project
 
 struct PitchTable {
-  char name[PROJECT_TITLE_LENGTH + 1];
+  char name[PROJECT_PITCH_TABLE_TITLE_LENGTH + 1];
   uint16_t octaveSize;
   uint16_t length;
   uint16_t values[PROJECT_MAX_PITCHES];
