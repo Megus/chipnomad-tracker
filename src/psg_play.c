@@ -22,7 +22,7 @@ int psgReadFile(char* path) {
   fseek(psgFile, 0, SEEK_SET);
 
   psgData = malloc(psgSize);
-  fread(psgData, psgSize, 1, psgFile);
+  (void)!fread(psgData, psgSize, 1, psgFile);
   fclose(psgFile);
 
   psgOffset = 16;
