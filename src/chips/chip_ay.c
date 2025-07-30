@@ -55,9 +55,38 @@ static int cleanup(struct SoundChip* self) {
 struct SoundChip createChipAY(int sampleRate, union ChipSetup setup) {
   struct ayumi* ay = malloc(sizeof(struct ayumi));
   ayumi_configure(ay, setup.ay.isYM, setup.ay.clock, sampleRate);
-  ayumi_set_pan(ay, 0, (float)setup.ay.panA / 255., 1);
-  ayumi_set_pan(ay, 1, (float)setup.ay.panB / 255., 1);
-  ayumi_set_pan(ay, 2, (float)setup.ay.panC / 255., 1);
+
+  float separation = (float)setup.ay.stereoSeparation / 200.0;
+  float panA = 0.5;
+  float panB = 0.5;
+  float panC = 0.5;
+
+  switch (setup.ay.stereoMode) {
+    case ayStereoABC:
+      panA = 0.5 - separation;
+      panB = 0.5;
+      panC = 0.5 + separation;
+      break;
+    case ayStereoACB:
+      panA = 0.5 - separation;
+      panB = 0.5 + separation;
+      panC = 0.5;
+      break;
+    case ayStereoBAC:
+      panA = 0.5;
+      panB = 0.5 - separation;
+      panC = 0.5 + separation;
+      break;
+    case ayMono:
+      panA = 0.5;
+      panB = 0.5;
+      panC = 0.5;
+      break;
+  }
+
+  ayumi_set_pan(ay, 0, panA, 1);
+  ayumi_set_pan(ay, 1, panB, 1);
+  ayumi_set_pan(ay, 2, panC, 1);
 
   struct SoundChip chip = {
     .userdata = ay,

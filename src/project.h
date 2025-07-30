@@ -30,12 +30,18 @@ enum ChipType {
   chipTotalCount,
 };
 
+enum StereoModeAY {
+  ayStereoABC,
+  ayStereoACB,
+  ayStereoBAC,
+  ayMono,
+};
+
 struct ChipSetupAY {
   int clock;
   int isYM;
-  uint8_t panA;
-  uint8_t panB;
-  uint8_t panC;
+  enum StereoModeAY stereoMode;
+  uint8_t stereoSeparation;
 };
 
 union ChipSetup {

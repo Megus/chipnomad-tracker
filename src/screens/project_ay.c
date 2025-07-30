@@ -52,18 +52,7 @@ static void drawField(int col, int row, int state) {
     gfxPrint(13, 10, project.chipSetup.ay.isYM ? "YM2149F" : "AY-3-8910");
   } else if (row == SCR_PROJECT_ROWS + 1) {
     // Panning scheme
-    int stereo = 0;
-    struct ChipSetupAY* ay = &project.chipSetup.ay;
-    if (ay->panA == 128 && ay->panB == 128 && ay->panC == 128) {
-      stereo = 3; // Mono
-    } else if (ay->panA == 128) {
-      stereo = 2; // BAC
-    } else if (ay->panB == 128) {
-      stereo = 0; // ABC
-    } else if (ay->panC == 128) {
-      stereo = 1; // ACB
-    }
-    gfxPrint(13, 11, stereoModes[stereo]);
+    gfxPrint(13, 11, stereoModes[project.chipSetup.ay.stereoMode]);
   } else if (row == SCR_PROJECT_ROWS + 2) {
     char buf[18];
     sprintf(buf, "%d Hz", project.chipSetup.ay.clock);

@@ -91,9 +91,8 @@ void projectInit(struct Project* p) {
   p->chipSetup.ay = (struct ChipSetupAY){
     .clock = 1750000,
     .isYM = 1,
-    .panA = 64,
-    .panB = 128,
-    .panC = 192,
+    .stereoMode = ayStereoABC,
+    .stereoSeparation = 50,
   };
 
   p->tracksCount = p->chipsCount * 3; // AY/YM has 3 channels
@@ -151,18 +150,6 @@ void projectInit(struct Project* p) {
     p->instruments[c].type = instNone;
     p->instruments[c].name[0] = 0;
   }
-
-  // Simple default instrument
-  p->instruments[0].type = instAY;
-  strcpy(p->instruments[0].name, "LEAD1");
-  p->instruments[0].tableSpeed = 1;
-  p->instruments[0].transposeEnabled = 1;
-  p->instruments[0].chip.ay.veA = 0;
-  p->instruments[0].chip.ay.veD = 12;
-  p->instruments[0].chip.ay.veS = 10;
-  p->instruments[0].chip.ay.veR = 12;
-  p->instruments[0].chip.ay.autoEnvN = 0;
-  p->instruments[0].chip.ay.autoEnvD = 0;
 
   // Clean tables
   for (int c = 0; c < PROJECT_MAX_TABLES; c++) {
@@ -655,10 +642,34 @@ static int projectLoadInternal(int fileId) {
     case chipAY:
       READ_STRING; if (sscanf(lpstr, "- *AY8910* Clock: %d", &p.chipSetup.ay.clock) != 1) return 1;
       READ_STRING; if (sscanf(lpstr, "- *AY8910* AY/YM: %d", &p.chipSetup.ay.isYM) != 1) return 1;
-      READ_STRING; if (sscanf(lpstr, "- *AY8910* PanA: %hhu", &p.chipSetup.ay.panA) != 1) return 1;
-      READ_STRING; if (sscanf(lpstr, "- *AY8910* PanB: %hhu", &p.chipSetup.ay.panB) != 1) return 1;
-      READ_STRING; if (sscanf(lpstr, "- *AY8910* PanC: %hhu", &p.chipSetup.ay.panC) != 1) return 1;
-      // TODO: Sanitize panning values to limit it to ABC, ACB, BAC, Mono
+      // TODO: Remove old pan logic for the first public release
+      READ_STRING;
+      if (strncmp(lpstr, "- *AY8910* PanA:", 15) == 0) {
+        // Old pan storage
+        READ_STRING; // Skip B
+        READ_STRING; // Skip C
+        // Default to ABC
+        p.chipSetup.ay.stereoMode = ayStereoABC;
+        p.chipSetup.ay.stereoSeparation = 50;
+      } else if (strncmp(lpstr, "- *AY8910* Stereo:", 18) == 0) {
+        // New pan storage
+        if (sscanf(lpstr, "- *AY8910* Stereo: %s", buf) != 1) return 1;
+        if (strcmp(buf, "ABC") == 0) {
+          p.chipSetup.ay.stereoMode = ayStereoABC;
+        } else if (strcmp(buf, "ACB") == 0) {
+          p.chipSetup.ay.stereoMode = ayStereoACB;
+        } else if (strcmp(buf, "BAC") == 0) {
+          p.chipSetup.ay.stereoMode = ayStereoBAC;
+        } else if (strcmp(buf, "Mono") == 0) {
+          p.chipSetup.ay.stereoMode = ayMono;
+        } else {
+          return 1;
+        }
+        READ_STRING; if (sscanf(lpstr, "- *AY8910* Stereo separation: %hhu", &p.chipSetup.ay.stereoSeparation) != 1) return 1;
+      } else {
+        // Error, pan information should be here
+        return 1;
+      }
       break;
     default:
       break;
@@ -887,9 +898,21 @@ static int projectSaveInternal(int fileId) {
     case chipAY:
       filePrintf(fileId, "- *AY8910* Clock: %d\n", project.chipSetup.ay.clock);
       filePrintf(fileId, "- *AY8910* AY/YM: %d\n", project.chipSetup.ay.isYM);
-      filePrintf(fileId, "- *AY8910* PanA: %d\n", project.chipSetup.ay.panA);
-      filePrintf(fileId, "- *AY8910* PanB: %d\n", project.chipSetup.ay.panB);
-      filePrintf(fileId, "- *AY8910* PanC: %d\n", project.chipSetup.ay.panC);
+      switch (project.chipSetup.ay.stereoMode) {
+        case ayStereoABC:
+          filePrintf(fileId, "- *AY8910* Stereo: ABC\n");
+          break;
+        case ayStereoACB:
+          filePrintf(fileId, "- *AY8910* Stereo: ACB\n");
+          break;
+        case ayStereoBAC:
+          filePrintf(fileId, "- *AY8910* Stereo: BAC\n");
+          break;
+        case ayMono:
+          filePrintf(fileId, "- *AY8910* Stereo: Mono\n");
+          break;
+      }
+      filePrintf(fileId, "- *AY8910* Stereo separation: %d\n", project.chipSetup.ay.stereoSeparation);
       break;
     default:
       break;
