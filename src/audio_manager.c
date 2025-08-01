@@ -16,7 +16,7 @@ static void audioCallback(int16_t* buffer, int stereoSamples) {
 
   while (samplesLeft != 0) {
     if ((int)frameSampleCounter == 0) {
-      frameSampleCounter += aSampleRate / audioManager.frameRate;
+      frameSampleCounter += aSampleRate / audioManager.tickRate;
       if (aFrameCallback != NULL) {
         aFrameCallback(aFrameCallbackUserdata);
       }
@@ -32,10 +32,10 @@ static void audioCallback(int16_t* buffer, int stereoSamples) {
   }
 }
 
-static int start(int sampleRate, int bufferSize, float frameRate) {
+static int start(int sampleRate, int bufferSize, float tickRate) {
   aSampleRate = sampleRate;
   aBufferSize = bufferSize;
-  audioManager.frameRate = frameRate;
+  audioManager.tickRate = tickRate;
   aFrameCallback = NULL;
   aFrameCallbackUserdata = NULL;
   frameSampleCounter = 0.0;

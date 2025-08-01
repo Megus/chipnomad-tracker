@@ -36,8 +36,10 @@ static void drawCursor(int col, int row) {
     // Panning scheme
     gfxCursor(13, 11, 3);
   } else if (row == SCR_PROJECT_ROWS + 2) {
+    // Chip clock
     gfxCursor(13, 12, chipClockLength);
   } else if (row == SCR_PROJECT_ROWS + 3) {
+    // Pitch table
     gfxCursor(13, 13, strlen(project.pitchTable.name));
   }
 }

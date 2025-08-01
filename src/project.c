@@ -85,7 +85,7 @@ void calculatePitchTableAY(struct Project* p) {
 // Initialize project
 void projectInit(struct Project* p) {
   // Init for AY
-  p->frameRate = 50;
+  p->tickRate = 50;
   p->chipType = chipAY;
   p->chipsCount = 1;
   p->chipSetup.ay = (struct ChipSetupAY){
@@ -624,7 +624,7 @@ static int projectLoadInternal(int fileId) {
     }
   }
 
-  READ_STRING; if (sscanf(lpstr, "- Frame rate: %f", &p.frameRate) != 1) return 1;
+  READ_STRING; if (sscanf(lpstr, "- Frame rate: %f", &p.tickRate) != 1) return 1;
   READ_STRING; if (sscanf(lpstr, "- Chips count: %d", &p.chipsCount) != 1) return 1;
   READ_STRING; if (sscanf(lpstr, "- Chip type: %s", buf) != 1) return 1;
 
@@ -890,7 +890,7 @@ static int projectSaveInternal(int fileId) {
   filePrintf(fileId, "- Title: %s\n", project.title);
   filePrintf(fileId, "- Author: %s\n", project.author);
 
-  filePrintf(fileId, "- Frame rate: %f\n", project.frameRate);
+  filePrintf(fileId, "- Frame rate: %f\n", project.tickRate);
   filePrintf(fileId, "- Chips count: %d\n", project.chipsCount);
   filePrintf(fileId, "- Chip type: %s\n", chipNames[project.chipType]);
 

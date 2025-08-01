@@ -169,7 +169,7 @@ struct Project {
   char title[PROJECT_TITLE_LENGTH + 1];
   char author[PROJECT_TITLE_LENGTH + 1];
 
-  float frameRate;
+  float tickRate;
   enum ChipType chipType;
   union ChipSetup chipSetup;
   int chipsCount;

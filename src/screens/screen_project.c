@@ -6,6 +6,8 @@
 #include <version.h>
 
 static int isCharEdit = 0;
+static int tickRateI = 0;
+static int tickRateF = 0;
 
 static void drawRowHeader(int row, int state);
 static void drawColHeader(int col, int state);
@@ -37,6 +39,8 @@ static struct ScreenData* projectScreen(void) {
 
 static void setup(int input) {
   isCharEdit = 0;
+  tickRateI = (int)project.tickRate;
+  tickRateF = (int)((project.tickRate - (float)tickRateI) * 1000.f);
 }
 
 static void fullRedraw(void) {
@@ -98,7 +102,22 @@ void projectCommonDrawCursor(int col, int row) {
       gfxCursor(21, 2, 6); // Export
     }
   } else if (row >= 1 && row <= 3) {
+    // Text fields: file name, title, author
     gfxCursor(7 + col, 2 + row, 1);
+  } else if (row == 4) {
+    // Tick rate
+    if (col == 0) {
+      gfxCursor(13, 7, 3);
+    } else {
+      gfxCursor(17, 7, 3);
+    }
+  } else if (row == 5) {
+    // Chip type
+    // TODO: When there will be other chips, change cursor length
+    gfxCursor(13, 8, 5);
+  } else if (row == 6) {
+    // Chips count
+    gfxCursor(13, 9, 1);
   }
 }
 
@@ -127,10 +146,13 @@ void projectCommonDrawField(int col, int row, int state) {
     gfxClearRect(7, 5, PROJECT_TITLE_LENGTH, 1);
     gfxPrintf(7, 5, "%s", project.author);
   } else if (row == 4) {
-    //gfxPrintf(7, 7, "%d", project.frameRate);
+    // Tick rate
+    gfxPrintf(13, 7, "%03d.%03d Hz", tickRateI, tickRateF);
   } else if (row == 5) {
+    // Chip type
     gfxPrint(13, 8, "AY/YM");
   } else if (row == 6) {
+    // Chips count
     gfxPrintf(13, 9, "%d", project.chipsCount);
   }
 }

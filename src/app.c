@@ -128,7 +128,7 @@ void appSetup(void) {
 
   // Initialize audio system
   playbackInit(&playback, &project);
-  audioManager.start(appSettings.audioSampleRate, appSettings.audioBufferSize, project.frameRate);
+  audioManager.start(appSettings.audioSampleRate, appSettings.audioBufferSize, project.tickRate);
   audioManager.initChips();
   audioManager.setFrameCallback(frameCallback, NULL);
   audioManager.resume();

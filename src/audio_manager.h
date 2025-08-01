@@ -9,10 +9,10 @@
 typedef void FrameCallback(void* userdata);
 
 struct AudioManager {
-  float frameRate;
+  float tickRate;
   struct SoundChip chips[AUDIO_MAX_CHIPS];
 
-  int (*start)(int sampleRate, int audioBufferSize, float frameRate);
+  int (*start)(int sampleRate, int audioBufferSize, float tickRate);
   void (*initChips)(void);
   void (*setFrameCallback)(FrameCallback *callback, void* userdata);
   void (*pause)(void);
