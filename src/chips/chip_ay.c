@@ -2,6 +2,7 @@
 #include <ayumi.h>
 #include <chips.h>
 #include <stdio.h>
+#include <project.h>
 
 static int init(struct SoundChip* self) {
   return 0;
@@ -47,6 +48,38 @@ static void setRegister(struct SoundChip* self, uint16_t reg, uint8_t value) {
   }
 }
 
+void updateChipAYType(struct SoundChip* self, uint8_t isYM) {
+  ayumi_set_chip_type((struct ayumi*)self->userdata, isYM);
+}
+
+static void setPanning(struct ayumi* ay, enum StereoModeAY stereoMode, uint8_t separation) {
+  float sep = (float)separation / 200.0;
+  float panA = 0.5, panB = 0.5, panC = 0.5;
+  
+  switch (stereoMode) {
+    case ayStereoABC:
+      panA = 0.5 - sep; panB = 0.5; panC = 0.5 + sep;
+      break;
+    case ayStereoACB:
+      panA = 0.5 - sep; panB = 0.5 + sep; panC = 0.5;
+      break;
+    case ayStereoBAC:
+      panA = 0.5; panB = 0.5 - sep; panC = 0.5 + sep;
+      break;
+    case ayMono:
+      panA = 0.5; panB = 0.5; panC = 0.5;
+      break;
+  }
+  
+  ayumi_set_pan(ay, 0, panA, 1);
+  ayumi_set_pan(ay, 1, panB, 1);
+  ayumi_set_pan(ay, 2, panC, 1);
+}
+
+void updateChipAYStereoMode(struct SoundChip* self, enum StereoModeAY stereoMode, uint8_t separation) {
+  setPanning((struct ayumi*)self->userdata, stereoMode, separation);
+}
+
 static int cleanup(struct SoundChip* self) {
   free(self->userdata);
   return 0;
@@ -56,37 +89,7 @@ struct SoundChip createChipAY(int sampleRate, union ChipSetup setup) {
   struct ayumi* ay = malloc(sizeof(struct ayumi));
   ayumi_configure(ay, setup.ay.isYM, setup.ay.clock, sampleRate);
 
-  float separation = (float)setup.ay.stereoSeparation / 200.0;
-  float panA = 0.5;
-  float panB = 0.5;
-  float panC = 0.5;
-
-  switch (setup.ay.stereoMode) {
-    case ayStereoABC:
-      panA = 0.5 - separation;
-      panB = 0.5;
-      panC = 0.5 + separation;
-      break;
-    case ayStereoACB:
-      panA = 0.5 - separation;
-      panB = 0.5 + separation;
-      panC = 0.5;
-      break;
-    case ayStereoBAC:
-      panA = 0.5;
-      panB = 0.5 - separation;
-      panC = 0.5 + separation;
-      break;
-    case ayMono:
-      panA = 0.5;
-      panB = 0.5;
-      panC = 0.5;
-      break;
-  }
-
-  ayumi_set_pan(ay, 0, panA, 1);
-  ayumi_set_pan(ay, 1, panB, 1);
-  ayumi_set_pan(ay, 2, panC, 1);
+  setPanning(ay, setup.ay.stereoMode, setup.ay.stereoSeparation);
 
   struct SoundChip chip = {
     .userdata = ay,

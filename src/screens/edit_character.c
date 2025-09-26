@@ -173,7 +173,7 @@ void updateCursorPosition() {
 
   // Draw current character with cursor
   char currCharStr[2] = {currRow_str[currentCol], 0};
-  gfxSetFgColor(appSettings.colorScheme.textDefault);
+  gfxSetFgColor(appSettings.colorScheme.textValue);
   gfxPrint(currXPos, 6 + currentRow, currCharStr);
   gfxCursor(currXPos, 6 + currentRow, 1);
 
@@ -226,11 +226,13 @@ void charEditFullDraw(char startChar) {
       char charStr[2] = {keyRow[col], 0};
       int charXPos = xPos + (col * 2); // Double the column position for spacing
 
-      gfxSetFgColor(appSettings.colorScheme.textDefault);
+      int isCurrent = (row == currentRow && col == currentCol);
+
+      gfxSetFgColor(isCurrent ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
       gfxPrint(charXPos, yPos, charStr);
 
       // Highlight the current selection with cursor
-      if (row == currentRow && col == currentCol) {
+      if (isCurrent) {
         gfxCursor(charXPos, yPos, 1);
       }
     }

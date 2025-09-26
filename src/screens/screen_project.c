@@ -4,10 +4,13 @@
 #include <utils.h>
 #include <project.h>
 #include <version.h>
+#include <audio_manager.h>
 
 static int isCharEdit = 0;
+static char* editingString = NULL;
+static int editingStringLength = 0;
 static int tickRateI = 0;
-static int tickRateF = 0;
+static uint16_t tickRateF = 0;
 
 static void drawRowHeader(int row, int state);
 static void drawColHeader(int col, int state);
@@ -39,8 +42,10 @@ static struct ScreenData* projectScreen(void) {
 
 static void setup(int input) {
   isCharEdit = 0;
+  editingString = NULL;
+  editingStringLength = 0;
   tickRateI = (int)project.tickRate;
-  tickRateF = (int)((project.tickRate - (float)tickRateI) * 1000.f);
+  tickRateF = (uint16_t)((project.tickRate - (float)tickRateI) * 1000.f);
 }
 
 static void fullRedraw(void) {
@@ -137,6 +142,7 @@ void projectCommonDrawField(int col, int row, int state) {
   } else if (row == 1) {
     // File name
     gfxClearRect(7, 3, FILENAME_LENGTH, 1);
+    gfxPrintf(7, 3, "%s", projectFilename);
   } else if (row == 2) {
     // Title
     gfxClearRect(7, 4, PROJECT_TITLE_LENGTH, 1);
@@ -160,6 +166,71 @@ void projectCommonDrawField(int col, int row, int state) {
 int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
   int handled = 0;
 
+  if (row == 0) {
+    // Load/Save/New/Export
+    if (col == 0) {
+      printf("Load\n");
+    } else if (col == 1) {
+      printf("Save\n");
+    } else if (col == 2) {
+      printf("New\n");
+    } else if (col == 3) {
+      printf("Export\n");
+    }
+  } else if (row == 1) {
+    // File name
+    int res = editCharacter(action, projectFilename, col, FILENAME_LENGTH);
+    if (res == 1) {
+      isCharEdit = 1;
+      editingString = projectFilename;
+      editingStringLength = FILENAME_LENGTH;
+    } else if (res > 1) {
+      handled = 1;
+    }
+  } else if (row == 2) {
+    // Title
+    int res = editCharacter(action, project.title, col, PROJECT_TITLE_LENGTH);
+    if (res == 1) {
+      isCharEdit = 1;
+      editingString = project.title;
+      editingStringLength = PROJECT_TITLE_LENGTH;
+    } else if (res > 1) {
+      handled = 1;
+    }
+  } else if (row == 3) {
+    // Author
+    int res = editCharacter(action, project.author, col, PROJECT_TITLE_LENGTH);
+    if (res == 1) {
+      isCharEdit = 1;
+      editingString = project.author;
+      editingStringLength = PROJECT_TITLE_LENGTH;
+    } else if (res > 1) {
+      handled = 1;
+    }
+  } else if (row == 4) {
+    // Tick rate
+    if (col == 0) {
+      // Integer part (1-200), clear sets to 50
+      if (action == editClear) {
+        tickRateI = 50;
+        handled = 1;
+      } else {
+        handled = edit8noLast(action, (uint8_t*)&tickRateI, 10, 1, 200);
+      }
+    } else {
+      // Fractional part (.000-.999) with overflow
+      handled = edit16withOverflow(action, &tickRateF, 100, 0, 999);
+    }
+
+    if (handled) {
+      // Update project tick rate from the two components
+      project.tickRate = (float)tickRateI + (float)tickRateF / 1000.0f;
+      // Update audio manager tick rate for immediate playback speed change
+      audioManager.tickRate = project.tickRate;
+    }
+  }
+
+
   return handled;
 }
 
@@ -179,13 +250,16 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
 
 static void onInput(int keys, int isDoubleTap) {
   if (isCharEdit) {
-    /*struct ScreenData* screen = instrumentScreen();
-    char result = charEditInput(keys, isDoubleTap, project.instruments[cInstrument].name, screen->cursorCol, PROJECT_INSTRUMENT_NAME_LENGTH);
+    struct ScreenData* screen = projectScreen();
+    char result = charEditInput(keys, isDoubleTap, editingString, screen->cursorCol, editingStringLength);
+
     if (result) {
       isCharEdit = 0;
-      if (screen->cursorCol < 15) screen->cursorCol++;
+      editingString = NULL;
+      editingStringLength = 0;
+      if (screen->cursorCol < editingStringLength - 1) screen->cursorCol++;
       fullRedraw();
-    }*/
+    }
   } else {
     if (inputScreenNavigation(keys, isDoubleTap)) return;
 

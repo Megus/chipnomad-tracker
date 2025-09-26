@@ -641,7 +641,9 @@ static int projectLoadInternal(int fileId) {
   switch (p.chipType) {
     case chipAY:
       READ_STRING; if (sscanf(lpstr, "- *AY8910* Clock: %d", &p.chipSetup.ay.clock) != 1) return 1;
-      READ_STRING; if (sscanf(lpstr, "- *AY8910* AY/YM: %d", &p.chipSetup.ay.isYM) != 1) return 1;
+      int tempIsYM;
+      READ_STRING; if (sscanf(lpstr, "- *AY8910* AY/YM: %d", &tempIsYM) != 1) return 1;
+      p.chipSetup.ay.isYM = (uint8_t)tempIsYM;
       // TODO: Remove old pan logic for the first public release
       READ_STRING;
       if (strncmp(lpstr, "- *AY8910* PanA:", 15) == 0) {

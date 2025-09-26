@@ -154,6 +154,10 @@ int ayumi_configure(struct ayumi* ay, int is_ym, float clock_rate, int sr) {
   return ay->step < 1;
 }
 
+void ayumi_set_chip_type(struct ayumi* ay, int is_ym) {
+  ay->dac_table = is_ym ? YM_dac_table : AY_dac_table;
+}
+
 void ayumi_set_pan(struct ayumi* ay, int index, float pan, int is_eqp) {
   if (is_eqp) {
     ay->channels[index].pan_left = sqrt(1 - pan);

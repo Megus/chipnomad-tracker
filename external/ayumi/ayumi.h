@@ -58,6 +58,7 @@ struct ayumi {
 };
 
 int ayumi_configure(struct ayumi* ay, int is_ym, float clock_rate, int sr);
+void ayumi_set_chip_type(struct ayumi* ay, int is_ym);
 void ayumi_set_pan(struct ayumi* ay, int index, float pan, int is_eqp);
 void ayumi_set_tone(struct ayumi* ay, int index, int period);
 void ayumi_set_noise(struct ayumi* ay, int period);

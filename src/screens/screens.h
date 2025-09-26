@@ -71,6 +71,7 @@ int edit16withLimit(enum CellEditAction action, uint16_t* value, uint16_t* lastV
 int edit8withLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep, uint8_t max);
 int edit8noLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep);
 int edit8noLast(enum CellEditAction action, uint8_t* value, uint8_t bigStep, uint8_t min, uint8_t max);
+int edit16withOverflow(enum CellEditAction action, uint16_t* value, uint16_t bigStep, uint16_t min, uint16_t max);
 
 // Character edit
 int editCharacter(enum CellEditAction action, char* str, int idx, int maxLen);

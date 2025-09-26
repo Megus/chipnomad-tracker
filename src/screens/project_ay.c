@@ -1,6 +1,8 @@
 #include <screen_project.h>
 #include <corelib_gfx.h>
 #include <string.h>
+#include <audio_manager.h>
+#include <chips.h>
 
 int chipClockLength = 0;
 
@@ -54,6 +56,7 @@ static void drawField(int col, int row, int state) {
     gfxPrint(13, 10, project.chipSetup.ay.isYM ? "YM2149F" : "AY-3-8910");
   } else if (row == SCR_PROJECT_ROWS + 1) {
     // Panning scheme
+    gfxClearRect(13, 11, 5, 1);
     gfxPrint(13, 11, stereoModes[project.chipSetup.ay.stereoMode]);
   } else if (row == SCR_PROJECT_ROWS + 2) {
     char buf[18];
@@ -71,6 +74,19 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 
   int handled = 0;
 
+  if (row == SCR_PROJECT_ROWS) {
+    // Chip subtype (AY-3-8910 / YM2149F)
+    handled = edit8noLast(action, &project.chipSetup.ay.isYM, 1, 0, 1);
+    if (handled) {
+      updateChipAYType(&audioManager.chips[0], project.chipSetup.ay.isYM);
+    }
+  } else if (row == SCR_PROJECT_ROWS + 1) {
+    // Stereo mode (ABC, ACB, BAC, Mono)
+    handled = edit8noLast(action, (uint8_t*)&project.chipSetup.ay.stereoMode, 1, 0, 3);
+    if (handled) {
+      updateChipAYStereoMode(&audioManager.chips[0], project.chipSetup.ay.stereoMode, project.chipSetup.ay.stereoSeparation);
+    }
+  }
 
   return handled;
 }

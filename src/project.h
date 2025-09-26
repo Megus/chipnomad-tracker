@@ -39,7 +39,7 @@ enum StereoModeAY {
 
 struct ChipSetupAY {
   int clock;
-  int isYM;
+  uint8_t isYM;
   enum StereoModeAY stereoMode;
   uint8_t stereoSeparation;
 };

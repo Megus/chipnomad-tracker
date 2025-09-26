@@ -132,3 +132,28 @@ int edit8noLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue,
 
   return handled;
 }
+
+int edit16withOverflow(enum CellEditAction action, uint16_t* value, uint16_t bigStep, uint16_t min, uint16_t max) {
+  switch (action) {
+    case editTap:
+      return 1;
+    case editClear:
+      *value = min;
+      return 1;
+    case editIncrease:
+      *value = (*value >= max) ? min : *value + 1;
+      return 1;
+    case editDecrease:
+      *value = (*value <= min) ? max : *value - 1;
+      return 1;
+    case editIncreaseBig:
+      *value = (*value > max - bigStep) ? min + (*value + bigStep - max - 1) : *value + bigStep;
+      return 1;
+    case editDecreaseBig:
+      *value = (*value < min + bigStep) ? max - (min + bigStep - *value - 1) : *value - bigStep;
+      return 1;
+    default:
+      break;
+  }
+  return 0;
+}
