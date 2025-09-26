@@ -178,7 +178,13 @@ void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
 
   switch (event) {
     case eventKeyDown:
-      pressedButtons |= value;
+      if (value == keyEdit || value == keyOpt || value == keyShift) {
+        // Edit/Opt/Shift "override" d-pad buttons
+        pressedButtons = (pressedButtons & (~dPadMask)) | value;
+      } else {
+        pressedButtons |= value;
+      }
+
       // Double tap is only applicable to Edit button
       int isDoubleTap = (value == keyEdit && editDoubleTapCount > 0) ? 1 : 0;
 
