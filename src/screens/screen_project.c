@@ -142,7 +142,7 @@ void projectCommonDrawField(int col, int row, int state) {
   } else if (row == 1) {
     // File name
     gfxClearRect(7, 3, FILENAME_LENGTH, 1);
-    gfxPrintf(7, 3, "%s", projectFilename);
+    gfxPrintf(7, 3, "%s", appSettings.projectFilename);
   } else if (row == 2) {
     // Title
     gfxClearRect(7, 4, PROJECT_TITLE_LENGTH, 1);
@@ -179,10 +179,10 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
     }
   } else if (row == 1) {
     // File name
-    int res = editCharacter(action, projectFilename, col, FILENAME_LENGTH);
+    int res = editCharacter(action, appSettings.projectFilename, col, FILENAME_LENGTH);
     if (res == 1) {
       isCharEdit = 1;
-      editingString = projectFilename;
+      editingString = appSettings.projectFilename;
       editingStringLength = FILENAME_LENGTH;
     } else if (res > 1) {
       handled = 1;
@@ -255,9 +255,9 @@ static void onInput(int keys, int isDoubleTap) {
 
     if (result) {
       isCharEdit = 0;
+      if (screen->cursorCol < editingStringLength - 1) screen->cursorCol++;
       editingString = NULL;
       editingStringLength = 0;
-      if (screen->cursorCol < editingStringLength - 1) screen->cursorCol++;
       fullRedraw();
     }
   } else {

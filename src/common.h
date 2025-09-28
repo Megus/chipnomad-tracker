@@ -31,6 +31,9 @@ struct AppSettings {
   int keyRepeatSpeed;
   float volume;
   struct ColorScheme colorScheme;
+  char projectFilename[FILENAME_LENGTH + 1];
+  char projectPath[PATH_LENGTH + 1];
+  char instrumentPath[PATH_LENGTH + 1];
 };
 
 extern struct AppSettings appSettings;
@@ -40,7 +43,8 @@ extern int* pChainRow;
 
 extern struct PlaybackState playback;
 
-extern char projectFilename[FILENAME_LENGTH + 1];
-extern char projectPath[PATH_LENGTH + 1];
+// Settings functions
+int settingsSave(void);
+int settingsLoad(void);
 
 #endif

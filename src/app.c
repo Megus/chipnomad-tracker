@@ -108,6 +108,9 @@ static void appInput(int keys, int isDoubleTap) {
  * @brief Initialize the application: setup audio system, load auto-saved project, show the first screen
  */
 void appSetup(void) {
+  // Load settings
+  settingsLoad();
+
   // Keyboard input reset
   pressedButtons = 0;
   editDoubleTapCount = 0;
@@ -120,8 +123,6 @@ void appSetup(void) {
   fillFXNames();
 
   // Try to load an auto-saved project
-  memset(projectFilename, 0, FILENAME_LENGTH);
-  memset(projectPath, 0, PATH_LENGTH);
   if (projectLoad(AUTOSAVE_FILENAME)) {
     projectInit(&project);
   }
@@ -225,6 +226,8 @@ void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
     case eventExit:
       // Auto-save the current project on exit
       projectSave(AUTOSAVE_FILENAME);
+      // Save settings on exit
+      settingsSave();
       break;
   }
 }
