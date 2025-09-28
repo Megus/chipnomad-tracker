@@ -17,4 +17,15 @@ int fileWrite(int fileId, void* data, int length);
 // Returns number of bytes written
 int filePrintf(int fileId, const char* format, ...);
 
+// File browser functions
+struct FileEntry {
+  char name[256];
+  int isDirectory;
+};
+
+// Returns allocated array of entries, NULL on error. Caller must free.
+struct FileEntry* fileListDirectory(const char* path, const char* extension, int* entryCount);
+// Get current working directory
+int fileGetCurrentDirectory(char* buffer, int bufferSize);
+
 #endif

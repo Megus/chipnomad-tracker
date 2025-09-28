@@ -66,9 +66,6 @@ static void setPanning(struct ayumi* ay, enum StereoModeAY stereoMode, uint8_t s
     case ayStereoBAC:
       panA = 0.5; panB = 0.5 - sep; panC = 0.5 + sep;
       break;
-    case ayMono:
-      panA = 0.5; panB = 0.5; panC = 0.5;
-      break;
   }
   
   ayumi_set_pan(ay, 0, panA, 1);

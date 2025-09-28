@@ -34,7 +34,6 @@ enum StereoModeAY {
   ayStereoABC,
   ayStereoACB,
   ayStereoBAC,
-  ayMono,
 };
 
 struct ChipSetupAY {

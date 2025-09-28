@@ -169,9 +169,9 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
   if (row == 0) {
     // Load/Save/New/Export
     if (col == 0) {
-      printf("Load\n");
+      screenSetup(&screenProjectLoad, 0);
     } else if (col == 1) {
-      printf("Save\n");
+      screenSetup(&screenProjectSave, 0);
     } else if (col == 2) {
       printf("New\n");
     } else if (col == 3) {

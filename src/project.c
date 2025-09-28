@@ -662,8 +662,6 @@ static int projectLoadInternal(int fileId) {
           p.chipSetup.ay.stereoMode = ayStereoACB;
         } else if (strcmp(buf, "BAC") == 0) {
           p.chipSetup.ay.stereoMode = ayStereoBAC;
-        } else if (strcmp(buf, "Mono") == 0) {
-          p.chipSetup.ay.stereoMode = ayMono;
         } else {
           return 1;
         }
@@ -909,9 +907,6 @@ static int projectSaveInternal(int fileId) {
           break;
         case ayStereoBAC:
           filePrintf(fileId, "- *AY8910* Stereo: BAC\n");
-          break;
-        case ayMono:
-          filePrintf(fileId, "- *AY8910* Stereo: Mono\n");
           break;
       }
       filePrintf(fileId, "- *AY8910* Stereo separation: %d\n", project.chipSetup.ay.stereoSeparation);
