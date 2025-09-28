@@ -77,6 +77,11 @@ void updateChipAYStereoMode(struct SoundChip* self, enum StereoModeAY stereoMode
   setPanning((struct ayumi*)self->userdata, stereoMode, separation);
 }
 
+void updateChipAYClock(struct SoundChip* self, int clockRate, int sampleRate) {
+  struct ayumi* ay = (struct ayumi*)self->userdata;
+  ay->step = (float)clockRate / (sampleRate * 8 * 8); // 8 * DECIMATE_FACTOR
+}
+
 static int cleanup(struct SoundChip* self) {
   free(self->userdata);
   return 0;

@@ -17,5 +17,6 @@ struct SoundChip {
 struct SoundChip createChipAY(int sampleRate, union ChipSetup setup);
 void updateChipAYType(struct SoundChip* chip, uint8_t isYM);
 void updateChipAYStereoMode(struct SoundChip* chip, enum StereoModeAY stereoMode, uint8_t separation);
+void updateChipAYClock(struct SoundChip* chip, int clockRate, int sampleRate);
 
 #endif

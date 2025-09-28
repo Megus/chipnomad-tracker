@@ -12,6 +12,27 @@ static char stereoModes[3][5] = {
   "BAC",
 };
 
+static int clockPresets[4] = {
+  1000000,   // 1 MHz
+  1750000,   // 1.75 MHz
+  1773400,   // 1.7734 MHz
+  2000000    // 2 MHz
+};
+
+static char clockNames[4][11] = {
+  "1 MHz",
+  "1.75 MHz",
+  "1.7734 MHz",
+  "2 MHz"
+};
+
+static int getClockPresetIndex(int clock) {
+  for (int i = 0; i < 4; i++) {
+    if (clockPresets[i] == clock) return i;
+  }
+  return 0; // Default to 1 MHz
+}
+
 static int getColumnCount(int row) {
   // The first 7 rows come from the common project screen fields
   if (row < SCR_PROJECT_ROWS) return projectCommonColumnCount(row);
@@ -65,10 +86,10 @@ static void drawField(int col, int row, int state) {
     // Stereo width
     gfxPrintf(13, 12, "%03d%%", project.chipSetup.ay.stereoSeparation);
   } else if (row == SCR_PROJECT_ROWS + 3) {
-    char buf[18];
-    sprintf(buf, "%d Hz", project.chipSetup.ay.clock);
-    chipClockLength = strlen(buf);
-    gfxPrintf(13, 13, buf);
+    int presetIndex = getClockPresetIndex(project.chipSetup.ay.clock);
+    chipClockLength = strlen(clockNames[presetIndex]);
+    gfxClearRect(13, 13, 20, 1);
+    gfxPrint(13, 13, clockNames[presetIndex]);
   } else if (row == SCR_PROJECT_ROWS + 4) {
     gfxClearRect(13, 14, PROJECT_PITCH_TABLE_TITLE_LENGTH, 1);
     gfxPrint(13, 14, project.pitchTable.name);
@@ -97,6 +118,15 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     handled = edit8noLast(action, &project.chipSetup.ay.stereoSeparation, 10, 0, 100);
     if (handled) {
       updateChipAYStereoMode(&audioManager.chips[0], project.chipSetup.ay.stereoMode, project.chipSetup.ay.stereoSeparation);
+    }
+  } else if (row == SCR_PROJECT_ROWS + 3) {
+    // Chip clock presets
+    int presetIndex = getClockPresetIndex(project.chipSetup.ay.clock);
+    uint8_t newIndex = presetIndex;
+    handled = edit8noLast(action, &newIndex, 1, 0, 3);
+    if (handled) {
+      project.chipSetup.ay.clock = clockPresets[newIndex];
+      updateChipAYClock(&audioManager.chips[0], project.chipSetup.ay.clock, appSettings.audioSampleRate);
     }
   }
 
