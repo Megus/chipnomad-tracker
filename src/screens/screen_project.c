@@ -173,9 +173,14 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
     } else if (col == 1) {
       screenSetup(&screenProjectSave, 0);
     } else if (col == 2) {
-      printf("New\n");
+      // New project
+      projectInit(&project);
+      appSettings.projectFilename[0] = 0; // Clear filename
+      fullRedraw();
+      handled = 1;
     } else if (col == 3) {
       printf("Export\n");
+      handled = 1;
     }
   } else if (row == 1) {
     // File name

@@ -49,6 +49,7 @@ struct ScreenData {
 extern const struct AppScreen screenProject;
 extern const struct AppScreen screenProjectLoad;
 extern const struct AppScreen screenProjectSave;
+extern const struct AppScreen screenConfirm;
 extern const struct AppScreen screenSong;
 extern const struct AppScreen screenChain;
 extern const struct AppScreen screenPhrase;
@@ -67,6 +68,9 @@ int screenInput(struct ScreenData* screen, int keys, int isDoubleTap);
 
 // Utility functions
 void setCellColor(int state, int isEmpty, int hasContent);
+
+// Confirmation dialog
+void confirmSetup(const char* message, void (*confirmCallback)(void), void (*cancelCallback)(void));
 
 // Common edit functions
 int edit16withLimit(enum CellEditAction action, uint16_t* value, uint16_t* lastValue, uint16_t bigStep, uint16_t max);

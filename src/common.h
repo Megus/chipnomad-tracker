@@ -47,4 +47,7 @@ extern struct PlaybackState playback;
 int settingsSave(void);
 int settingsLoad(void);
 
+// Utility functions
+void extractFilenameWithoutExtension(const char* path, char* output, int maxLength);
+
 #endif

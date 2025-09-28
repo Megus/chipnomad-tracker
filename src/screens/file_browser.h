@@ -3,6 +3,10 @@
 
 // Setup file browser with extension filter and callbacks
 void fileBrowserSetup(const char* title, const char* extension, void (*fileCallback)(const char*), void (*cancelCallback)(void));
+void fileBrowserSetupFolderMode(const char* title, void (*folderCallback)(const char*), void (*cancelCallback)(void));
+
+// Set starting path
+void fileBrowserSetPath(const char* path);
 
 // Refresh the current directory listing
 void fileBrowserRefresh(void);

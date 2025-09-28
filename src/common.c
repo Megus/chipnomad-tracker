@@ -117,4 +117,23 @@ int settingsLoad(void) {
   return 0;
 }
 
+void extractFilenameWithoutExtension(const char* path, char* output, int maxLength) {
+  // Extract filename from path
+  const char* filename = strrchr(path, '/');
+  if (filename) {
+    filename++; // Skip the '/'
+  } else {
+    filename = path; // No path separator found
+  }
+  
+  // Copy filename
+  strncpy(output, filename, maxLength - 1);
+  output[maxLength - 1] = 0;
+  
+  // Remove file extension
+  char* dot = strrchr(output, '.');
+  if (dot) {
+    *dot = 0;
+  }
+}
 

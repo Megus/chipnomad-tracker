@@ -90,7 +90,7 @@ void projectInit(struct Project* p) {
   p->chipsCount = 1;
   p->chipSetup.ay = (struct ChipSetupAY){
     .clock = 1750000,
-    .isYM = 1,
+    .isYM = 0,
     .stereoMode = ayStereoABC,
     .stereoSeparation = 50,
   };
