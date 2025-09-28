@@ -222,4 +222,10 @@ char* noteName(uint8_t note);
 // Fill FX names
 void fillFXNames();
 
+// AY-specific project functions
+
+// Calculate 12TET pitch table for AY chip
+void calculatePitchTableAY(struct Project* p);
+
+
 #endif

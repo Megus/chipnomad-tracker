@@ -5,12 +5,45 @@
 #include <project.h>
 #include <version.h>
 #include <audio_manager.h>
+#include <file_browser.h>
+#include <string.h>
 
 static int isCharEdit = 0;
 static char* editingString = NULL;
 static int editingStringLength = 0;
 static int tickRateI = 0;
 static uint16_t tickRateF = 0;
+
+static void onProjectLoaded(const char* path) {
+  if (projectLoad(path) == 0) {
+    extractFilenameWithoutExtension(path, appSettings.projectFilename, FILENAME_LENGTH + 1);
+
+    // Save the directory path
+    char* lastSlash = strrchr(path, '/');
+    if (lastSlash) {
+      int pathLen = lastSlash - path;
+      strncpy(appSettings.projectPath, path, pathLen);
+      appSettings.projectPath[pathLen] = 0;
+    }
+  }
+  screenSetup(&screenProject, 0);
+}
+
+static void onProjectSaved(const char* folderPath) {
+  char fullPath[2048];
+  snprintf(fullPath, sizeof(fullPath), "%s/%s.cnm", folderPath, appSettings.projectFilename);
+
+  if (projectSave(fullPath) == 0) {
+    // Save the directory path
+    strncpy(appSettings.projectPath, folderPath, PATH_LENGTH);
+    appSettings.projectPath[PATH_LENGTH] = 0;
+  }
+  screenSetup(&screenProject, 0);
+}
+
+static void onProjectCancelled(void) {
+  screenSetup(&screenProject, 0);
+}
 
 static void drawRowHeader(int row, int state);
 static void drawColHeader(int col, int state);
@@ -169,9 +202,13 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
   if (row == 0) {
     // Load/Save/New/Export
     if (col == 0) {
-      screenSetup(&screenProjectLoad, 0);
+      // Load project - go directly to file browser
+      fileBrowserSetup("LOAD PROJECT", ".cnm", appSettings.projectPath, onProjectLoaded, onProjectCancelled);
+      screenSetup(&screenFileBrowser, 0);
     } else if (col == 1) {
-      screenSetup(&screenProjectSave, 0);
+      // Save project - go directly to folder browser
+      fileBrowserSetupFolderMode("SAVE PROJECT", appSettings.projectPath, appSettings.projectFilename, ".cnm", onProjectSaved, onProjectCancelled);
+      screenSetup(&screenFileBrowser, 0);
     } else if (col == 2) {
       // New project
       projectInit(&project);

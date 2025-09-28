@@ -33,6 +33,7 @@ struct AppSettings {
   struct ColorScheme colorScheme;
   char projectFilename[FILENAME_LENGTH + 1];
   char projectPath[PATH_LENGTH + 1];
+  char pitchTablePath[PATH_LENGTH + 1];
   char instrumentPath[PATH_LENGTH + 1];
 };
 

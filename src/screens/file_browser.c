@@ -13,9 +13,22 @@ static int topIndex = 0;
 static char currentPath[2048];
 static char fileExtension[8];
 static char browserTitle[32];
+static char saveFilename[256];
+static char saveExtension[8];
 static int isFolderMode = 0;
 static void (*onFileSelected)(const char* path);
 static void (*onCancelled)(void);
+static char pendingSavePath[2048];
+
+static void doSave(void) {
+  if (onFileSelected) {
+    onFileSelected(pendingSavePath);
+  }
+}
+
+static void cancelSave(void) {
+  screenSetup(&screenFileBrowser, 0);
+}
 
 static int compareEntries(const void* a, const void* b) {
   const struct FileEntry* entryA = (const struct FileEntry*)a;
@@ -61,7 +74,7 @@ void fileBrowserRefresh(void) {
   fileBrowserRefreshWithSelection(NULL);
 }
 
-void fileBrowserSetup(const char* title, const char* extension, void (*fileCallback)(const char*), void (*cancelCallback)(void)) {
+void fileBrowserSetup(const char* title, const char* extension, const char* startPath, void (*fileCallback)(const char*), void (*cancelCallback)(void)) {
   strncpy(browserTitle, title, 31);
   browserTitle[31] = 0;
   strncpy(fileExtension, extension, 7);
@@ -70,19 +83,33 @@ void fileBrowserSetup(const char* title, const char* extension, void (*fileCallb
   onFileSelected = fileCallback;
   onCancelled = cancelCallback;
 
-  fileGetCurrentDirectory(currentPath, sizeof(currentPath));
+  if (startPath && strlen(startPath) > 0) {
+    strncpy(currentPath, startPath, sizeof(currentPath) - 1);
+    currentPath[sizeof(currentPath) - 1] = 0;
+  } else {
+    fileGetCurrentDirectory(currentPath, sizeof(currentPath));
+  }
   fileBrowserRefresh();
 }
 
-void fileBrowserSetupFolderMode(const char* title, void (*folderCallback)(const char*), void (*cancelCallback)(void)) {
+void fileBrowserSetupFolderMode(const char* title, const char* startPath, const char* filename, const char* extension, void (*folderCallback)(const char*), void (*cancelCallback)(void)) {
   strncpy(browserTitle, title, 31);
   browserTitle[31] = 0;
+  strncpy(saveFilename, filename ? filename : "", sizeof(saveFilename) - 1);
+  saveFilename[sizeof(saveFilename) - 1] = 0;
+  strncpy(saveExtension, extension ? extension : "", sizeof(saveExtension) - 1);
+  saveExtension[sizeof(saveExtension) - 1] = 0;
   fileExtension[0] = 0;
   isFolderMode = 1;
   onFileSelected = folderCallback;
   onCancelled = cancelCallback;
 
-  fileGetCurrentDirectory(currentPath, sizeof(currentPath));
+  if (startPath && strlen(startPath) > 0) {
+    strncpy(currentPath, startPath, sizeof(currentPath) - 1);
+    currentPath[sizeof(currentPath) - 1] = 0;
+  } else {
+    fileGetCurrentDirectory(currentPath, sizeof(currentPath));
+  }
   fileBrowserRefresh();
 }
 
@@ -213,7 +240,20 @@ int fileBrowserInput(int keys, int isDoubleTap) {
     // Handle "Save to" option in folder mode
     if (isFolderMode && selectedIndex == 0) {
       if (onFileSelected) {
-        onFileSelected(currentPath);
+        // Construct full path for overwrite check
+        snprintf(pendingSavePath, sizeof(pendingSavePath), "%s/%s%s", currentPath, saveFilename, saveExtension);
+        
+        // Check if file exists
+        int fileId = fileOpen(pendingSavePath, 0);
+        if (fileId != -1) {
+          // File exists, ask for confirmation
+          fileClose(fileId);
+          confirmSetup("Overwrite existing file?", doSave, cancelSave);
+          screenSetup(&screenConfirm, 0);
+        } else {
+          // File doesn't exist, save directly
+          onFileSelected(currentPath);
+        }
         return 0;
       }
     }

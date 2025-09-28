@@ -50,6 +50,8 @@ extern const struct AppScreen screenProject;
 extern const struct AppScreen screenProjectLoad;
 extern const struct AppScreen screenProjectSave;
 extern const struct AppScreen screenConfirm;
+extern const struct AppScreen screenPitchTable;
+extern const struct AppScreen screenFileBrowser;
 extern const struct AppScreen screenSong;
 extern const struct AppScreen screenChain;
 extern const struct AppScreen screenPhrase;

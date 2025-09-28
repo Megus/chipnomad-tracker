@@ -30,7 +30,7 @@ static int getClockPresetIndex(int clock) {
   for (int i = 0; i < 4; i++) {
     if (clockPresets[i] == clock) return i;
   }
-  return 0; // Default to 1 MHz
+  return -1; // Not found
 }
 
 static int getColumnCount(int row) {
@@ -87,9 +87,17 @@ static void drawField(int col, int row, int state) {
     gfxPrintf(13, 12, "%03d%%", project.chipSetup.ay.stereoSeparation);
   } else if (row == SCR_PROJECT_ROWS + 3) {
     int presetIndex = getClockPresetIndex(project.chipSetup.ay.clock);
-    chipClockLength = strlen(clockNames[presetIndex]);
+    char clockText[20];
+
+    if (presetIndex >= 0) {
+      strcpy(clockText, clockNames[presetIndex]);
+    } else {
+      snprintf(clockText, sizeof(clockText), "%d Hz", project.chipSetup.ay.clock);
+    }
+
+    chipClockLength = strlen(clockText);
     gfxClearRect(13, 13, 20, 1);
-    gfxPrint(13, 13, clockNames[presetIndex]);
+    gfxPrint(13, 13, clockText);
   } else if (row == SCR_PROJECT_ROWS + 4) {
     gfxClearRect(13, 14, PROJECT_PITCH_TABLE_TITLE_LENGTH, 1);
     gfxPrint(13, 14, project.pitchTable.name);
@@ -122,12 +130,17 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   } else if (row == SCR_PROJECT_ROWS + 3) {
     // Chip clock presets
     int presetIndex = getClockPresetIndex(project.chipSetup.ay.clock);
+    if (presetIndex < 0) presetIndex = 0; // Default to first preset if not found
     uint8_t newIndex = presetIndex;
     handled = edit8noLast(action, &newIndex, 1, 0, 3);
     if (handled) {
       project.chipSetup.ay.clock = clockPresets[newIndex];
       updateChipAYClock(&audioManager.chips[0], project.chipSetup.ay.clock, appSettings.audioSampleRate);
     }
+  } else if (row == SCR_PROJECT_ROWS + 4) {
+    // Pitch table - enter pitch table screen
+    screenSetup(&screenPitchTable, 0);
+    handled = 0;
   }
 
   return handled;

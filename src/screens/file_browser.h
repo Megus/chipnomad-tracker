@@ -2,11 +2,8 @@
 #define __FILE_BROWSER_H__
 
 // Setup file browser with extension filter and callbacks
-void fileBrowserSetup(const char* title, const char* extension, void (*fileCallback)(const char*), void (*cancelCallback)(void));
-void fileBrowserSetupFolderMode(const char* title, void (*folderCallback)(const char*), void (*cancelCallback)(void));
-
-// Set starting path
-void fileBrowserSetPath(const char* path);
+void fileBrowserSetup(const char* title, const char* extension, const char* startPath, void (*fileCallback)(const char*), void (*cancelCallback)(void));
+void fileBrowserSetupFolderMode(const char* title, const char* startPath, const char* filename, const char* extension, void (*folderCallback)(const char*), void (*cancelCallback)(void));
 
 // Refresh the current directory listing
 void fileBrowserRefresh(void);

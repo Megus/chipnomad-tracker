@@ -30,6 +30,7 @@ struct AppSettings appSettings = {
   },
   .projectFilename = "",
   .projectPath = "",
+  .pitchTablePath = "",
   .instrumentPath = ""
 };
 
@@ -59,6 +60,7 @@ int settingsSave(void) {
   filePrintf(fileId, "colorSelection: 0x%06x\n", appSettings.colorScheme.selection);
   filePrintf(fileId, "projectFilename: %s\n", appSettings.projectFilename);
   filePrintf(fileId, "projectPath: %s\n", appSettings.projectPath);
+  filePrintf(fileId, "pitchTablePath: %s\n", appSettings.pitchTablePath);
   filePrintf(fileId, "instrumentPath: %s\n", appSettings.instrumentPath);
 
   fileClose(fileId);
@@ -107,6 +109,9 @@ int settingsLoad(void) {
     } else if (strncmp(line, "projectPath: ", 13) == 0) {
       strncpy(appSettings.projectPath, line + 13, PATH_LENGTH);
       appSettings.projectPath[PATH_LENGTH] = 0;
+    } else if (strncmp(line, "pitchTablePath: ", 16) == 0) {
+      strncpy(appSettings.pitchTablePath, line + 16, PATH_LENGTH);
+      appSettings.pitchTablePath[PATH_LENGTH] = 0;
     } else if (strncmp(line, "instrumentPath: ", 16) == 0) {
       strncpy(appSettings.instrumentPath, line + 16, PATH_LENGTH);
       appSettings.instrumentPath[PATH_LENGTH] = 0;
