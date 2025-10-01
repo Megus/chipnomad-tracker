@@ -1,0 +1,16 @@
+start = space
+back = leftshift
+guide = leftctrl
+
+a = x
+b = z
+x = c
+y = a
+
+l1 = leftshift
+r1 = leftshift
+
+up = up
+down = down
+left = left
+right = right

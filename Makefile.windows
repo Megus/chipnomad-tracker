@@ -1,0 +1,25 @@
+# Windows makefile
+
+# Windows platform identifier
+PLATFORM = windows
+
+include Makefile.common
+
+# Windows-specific settings
+LIBS = $(COMMON_LIBS) platforms/sdl2
+OUTPUT_EXT = .exe
+
+# Use SDL_PATH environment variable if defined, otherwise use default
+ifndef SDL_PATH
+SDL_PATH = C:\SDL\x86_64-w64-mingw32
+endif
+
+XTRA_CFLAGS = -I"$(SDL_PATH)\include" -L"$(SDL_PATH)\lib" -DDESKTOP_BUILD -D__USE_MINGW_ANSI_STDIO=1
+XTRA_LIBS = -lmingw32 -lSDL2main -lSDL2
+CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(XTRA_CFLAGS)
+OUTPUT = -o $(BUILD)/chipnomad$(OUTPUT_EXT)
+
+.PHONY: windows
+windows:
+	mkdir -p $(BUILD)
+	gcc $(CFLAGS) $(XTRA_LIBS) $(OUTPUT)

@@ -1,2 +1,2 @@
 make desktop
-./build/chipnomad
+./build/desktop/chipnomad

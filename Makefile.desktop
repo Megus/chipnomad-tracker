@@ -1,0 +1,27 @@
+# Desktop makefile (Linux/macOS)
+
+# Desktop platform identifier
+PLATFORM = desktop
+
+include Makefile.common
+
+# Desktop-specific settings
+LIBS = $(COMMON_LIBS) platforms/sdl2
+OUTPUT_EXT =
+
+# Platform-specific flags
+ifeq ($(shell uname),Darwin)
+# macOS
+XTRA_CFLAGS = -I/opt/homebrew/include -L/opt/homebrew/lib -DDESKTOP_BUILD
+else
+# Linux
+XTRA_CFLAGS = -I/usr/include -L/usr/lib -DDESKTOP_BUILD
+endif
+
+XTRA_LIBS = -lSDL2 -lm
+CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(XTRA_CFLAGS)
+OUTPUT = -o $(BUILD)/chipnomad$(OUTPUT_EXT)
+
+.PHONY: desktop
+desktop:
+	$(call build_target)

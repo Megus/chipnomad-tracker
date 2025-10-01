@@ -2,7 +2,7 @@
 #include <corelib_file.h>
 #include <string.h>
 
-#ifdef DESKTOP_BUILD
+#if defined(DESKTOP_BUILD) || defined(PORTMASTER_BUILD)
 #define DEFAULT_VOLUME (1.0)
 #else
 #define DEFAULT_VOLUME (0.5)
@@ -130,11 +130,11 @@ void extractFilenameWithoutExtension(const char* path, char* output, int maxLeng
   } else {
     filename = path; // No path separator found
   }
-  
+
   // Copy filename
   strncpy(output, filename, maxLength - 1);
   output[maxLength - 1] = 0;
-  
+
   // Remove file extension
   char* dot = strrchr(output, '.');
   if (dot) {

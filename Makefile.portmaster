@@ -1,0 +1,33 @@
+# PortMaster makefile
+
+# PortMaster platform identifier
+PLATFORM = portmaster
+
+include Makefile.common
+
+# PortMaster-specific settings
+LIBS = $(COMMON_LIBS) platforms/sdl2
+OUTPUT_EXT =
+DOCKER64 = docker run --privileged --platform=linux/arm64 --rm -it --user $$(id -u):$$(id -g) -v`pwd`:/src -w/src
+DOCKER32 = docker run --privileged --platform=linux/armhf --rm -it --user $$(id -u):$$(id -g) -v`pwd`:/src -w/src
+
+# PortMaster build settings (placeholder - to be implemented)
+XTRA_CFLAGS = -DPORTMASTER_BUILD -I${SYSROOT}/usr/include -L${SYSROOT}/usr/lib
+XTRA_LIBS = -lSDL2 -lm
+CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(XTRA_CFLAGS)
+
+.PHONY: .PortMaster
+.PortMaster:
+	mkdir -p $(BUILD)
+	$(CROSS_COMPILE)$(CC) $(CFLAGS) $(XTRA_LIBS) -o $(BUILD)/chipnomad.$(CPU)
+	chmod +x $(BUILD)/chipnomad.$(CPU)
+
+.PHONY: PortMaster
+PortMaster:
+	$(DOCKER64) monkeyx/retro_builder:arm64 make -f Makefile.portmaster .PortMaster CC=gcc CPU=aarch64
+#	$(DOCKER32) monkeyx/retro_builder:arm32 make -f Makefile.portmaster .PortMaster CC=gcc CPU=armhf
+
+.PHONY: PortMaster-deploy
+PortMaster-deploy: PortMaster
+	@echo "PortMaster deploy target - implementation pending"
+	# TODO: Implement PortMaster deployment package creation
