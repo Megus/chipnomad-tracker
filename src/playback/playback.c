@@ -171,7 +171,13 @@ void readPhraseRow(struct PlaybackState* state, int trackIdx, int skipDelCheck) 
       if (phrase->volumes[phraseRow] != EMPTY_VALUE_8) {
         track->note.volume = volume;
       }
+    } else {
+      // Safeguard for phrase in chain
+      resetTrack(state, trackIdx);
     }
+  } else {
+    // Safeguard for chain in song
+    resetTrack(state, trackIdx);
   }
 }
 
@@ -194,7 +200,14 @@ static void nextFrame(struct PlaybackState* state, int trackIdx) {
   handleFX(state, trackIdx);
 
   // Instrument
-  handleInstrumentAY(state, trackIdx);
+  enum InstrumentType instType = p->instruments[track->note.instrument].type;
+  switch (instType) {
+    case instAY:
+      handleInstrumentAY(state, trackIdx);
+      break;
+    case instNone:
+      break;
+  }
 
   // Final note calculation
   if (track->note.noteBase == EMPTY_VALUE_8) {
@@ -259,31 +272,35 @@ static int moveToNextPhraseRow(struct PlaybackState* state, int trackIdx) {
     if (track->mode == playbackModeSong) {
       // Next chain row
       int chain = p->song[track->songRow][trackIdx];
-      int chainRow = track->chainRow;
-      chainRow++;
-      if (chainRow >= 16 || p->chains[chain].phrases[chainRow] == EMPTY_VALUE_16) {
-        // Next song row
-        int songRow = track->songRow;
-        songRow++;
-        track->chainRow = 0;
-        if (songRow >= PROJECT_MAX_LENGTH || p->song[songRow][trackIdx] == EMPTY_VALUE_16) {
-          while (songRow > 0) {
-            songRow--;
-            if (p->song[songRow][trackIdx] == EMPTY_VALUE_16) {
-              songRow++;
-              break;
+      if (chain != EMPTY_VALUE_16) {
+        int chainRow = track->chainRow;
+        chainRow++;
+        if (chainRow >= 16 || p->chains[chain].phrases[chainRow] == EMPTY_VALUE_16) {
+          // Next song row
+          int songRow = track->songRow;
+          songRow++;
+          track->chainRow = 0;
+          if (songRow >= PROJECT_MAX_LENGTH || p->song[songRow][trackIdx] == EMPTY_VALUE_16) {
+            while (songRow > 0) {
+              songRow--;
+              if (p->song[songRow][trackIdx] == EMPTY_VALUE_16) {
+                songRow++;
+                break;
+              }
             }
           }
-        }
-        if (p->song[songRow][trackIdx] == EMPTY_VALUE_16) {
-          // No chains, stop track playback
-          resetTrack(state, trackIdx);
-          stopped = 1;
+          if (p->song[songRow][trackIdx] == EMPTY_VALUE_16) {
+            // No chains, stop track playback
+            resetTrack(state, trackIdx);
+            stopped = 1;
+          } else {
+            track->songRow = songRow;
+          }
         } else {
-          track->songRow = songRow;
+          track->chainRow = chainRow;
         }
       } else {
-        track->chainRow = chainRow;
+        resetTrack(state, trackIdx);
       }
     }
     // Chain playback

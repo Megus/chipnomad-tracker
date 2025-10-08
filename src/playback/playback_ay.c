@@ -115,7 +115,7 @@ void outputRegistersAY(struct PlaybackState* state, int trackIdx, int chipIdx, s
   for (int t = trackIdx; t < trackIdx + 3; t++) {
     struct PlaybackTrackState* track = &state->tracks[t];
 
-    if (track->note.noteFinal == EMPTY_VALUE_8) {
+    if (track->note.noteFinal == EMPTY_VALUE_8 || p->instruments[track->note.instrument].type == instNone) {
       // Silence channel
       chip->setRegister(chip, 8 + ayChannel, 0);
     } else {
