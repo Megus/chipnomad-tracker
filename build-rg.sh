@@ -1,1 +1,0 @@
-make RG35xx-adb-install

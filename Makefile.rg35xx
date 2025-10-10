@@ -42,7 +42,7 @@ RG35xx-deploy: RG35xx .RG35xx-sh
 	mkdir -p $(BUILD)/deploy/$(APP)
 	cp $(BUILD)/chipnomad.rg35xx $(BUILD)/deploy/$(APP)
 	cp $(BUILD)/launcher.sh $(BUILD)/deploy/$(APP).sh
-	cp j2k.so $(BUILD)/deploy/$(APP)
+	cp packaging/rg35xx/j2k.so $(BUILD)/deploy/$(APP)
 	cd $(BUILD)/deploy && zip -r $(APP).zip $(APP) $(APP).sh
 	mv $(BUILD)/deploy/$(APP).zip $(BUILD)/$(APP).zip
 	rm -rf $(BUILD)/deploy
@@ -56,7 +56,7 @@ RG35xx-adb-install: .check-adb RG35xx .RG35xx-sh
 	$(ADB) shell mkdir -p $(APPS)/$(APP)
 	$(ADB) push $(BUILD)/chipnomad.rg35xx $(APPS)/$(APP)
 	$(ADB) push $(BUILD)/launcher.sh $(APPS)/$(APP).sh
-	$(ADB) push j2k.so $(APPS)/$(APP)
+	$(ADB) push packaging/rg35xx/j2k.so $(APPS)/$(APP)
 	$(ADB) shell chmod 755 $(APPS)/$(APP)/chipnomad.rg35xx
 	$(ADB) shell chmod 755 $(APPS)/$(APP).sh
 

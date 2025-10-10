@@ -1,0 +1,36 @@
+{
+  "version": 4,
+  "name": "chipnomad.zip",
+  "items": [
+    "ChipNomad.sh",
+    "chipnomad"
+  ],
+  "items_opt": [],
+  "attr": {
+    "title": "ChipNomad"  ,
+    "porter": [
+      "Megus"
+    ],
+    "desc": "ChipNomad is a chiptune tracker for handheld consoles. Currently supports AY-3-8910 and YM2149F chips.",
+    "desc_md": null,
+    "inst": "Ready to run",
+    "inst_md": null,
+    "genres": [
+      "other"
+    ],
+    "image": null,
+    "rtr": true,
+    "exp": false,
+    "runtime": [],
+    "store": [],
+    "availability": "full",
+    "reqs": [
+      "!lowres"
+    ],
+    "arch": [
+      "aarch64",
+      "armhf"
+    ],
+    "min_glibc": ""
+  }
+}
