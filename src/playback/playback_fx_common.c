@@ -12,12 +12,9 @@ static int iabs(int v) {
 
 int vibratoCommonLogic(struct PlaybackFXState *fx) {
   int period = 32 - ((fx->value & 0xf0) >> 3);
-  int depth = (fx->value & 0xf) * 2;
-  int depth8 = depth << 8; // For 24.8 fixed point math
-  int x = fx->data.count_fx.counter % period;
-  int value = depth8 - (2 * depth8 / period) * iabs(x - period / 2);
-  value = ((value & 0xff) >= 0x80) ? (value >> 8) + 1 : (value >> 8);
-  value -= (fx->value & 0xf);
+  int depth = fx->value & 0xf;
+  int x = (fx->data.count_fx.counter + period / 4) % period;
+  int value = depth - (4 * depth * iabs(x - period / 2)) / period;
   fx->data.count_fx.counter++;
   return value;
 }
