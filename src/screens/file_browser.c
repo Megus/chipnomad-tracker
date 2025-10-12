@@ -83,7 +83,7 @@ void fileBrowserSetup(const char* title, const char* extension, const char* star
   onFileSelected = fileCallback;
   onCancelled = cancelCallback;
 
-  if (startPath && strlen(startPath) > 0) {
+  if (startPath && strlen(startPath) > 0 && fileDirectoryExists(startPath)) {
     strncpy(currentPath, startPath, sizeof(currentPath) - 1);
     currentPath[sizeof(currentPath) - 1] = 0;
   } else {
@@ -104,7 +104,7 @@ void fileBrowserSetupFolderMode(const char* title, const char* startPath, const 
   onFileSelected = folderCallback;
   onCancelled = cancelCallback;
 
-  if (startPath && strlen(startPath) > 0) {
+  if (startPath && strlen(startPath) > 0 && fileDirectoryExists(startPath)) {
     strncpy(currentPath, startPath, sizeof(currentPath) - 1);
     currentPath[sizeof(currentPath) - 1] = 0;
   } else {

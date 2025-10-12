@@ -135,3 +135,8 @@ struct FileEntry* fileListDirectory(const char* path, const char* extension, int
 int fileGetCurrentDirectory(char* buffer, int bufferSize) {
   return getcwd(buffer, bufferSize) ? 0 : -1;
 }
+
+int fileDirectoryExists(const char* path) {
+  struct stat statBuf;
+  return (stat(path, &statBuf) == 0 && S_ISDIR(statBuf.st_mode)) ? 1 : 0;
+}

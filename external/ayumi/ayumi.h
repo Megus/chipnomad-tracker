@@ -1,4 +1,5 @@
 /* Author: Peter Sovietov */
+/* Modifications by Megus */
 
 #ifndef AYUMI_H
 #define AYUMI_H

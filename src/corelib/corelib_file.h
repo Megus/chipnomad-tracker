@@ -27,5 +27,7 @@ struct FileEntry {
 struct FileEntry* fileListDirectory(const char* path, const char* extension, int* entryCount);
 // Get current working directory
 int fileGetCurrentDirectory(char* buffer, int bufferSize);
+// Check if directory exists
+int fileDirectoryExists(const char* path);
 
 #endif
