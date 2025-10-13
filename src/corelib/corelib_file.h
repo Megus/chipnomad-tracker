@@ -3,6 +3,14 @@
 
 #define CORELIB_MAX_OPEN_FILES (16)
 
+#ifdef _WIN32
+#define PATH_SEPARATOR '\\'
+#define PATH_SEPARATOR_STR "\\"
+#else
+#define PATH_SEPARATOR '/'
+#define PATH_SEPARATOR_STR "/"
+#endif
+
 // Return a fileId
 int fileOpen(const char* path, int isWriting);
 int fileClose(int fileId);

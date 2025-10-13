@@ -95,7 +95,7 @@ struct FileEntry* fileListDirectory(const char* path, const char* extension, int
     }
     
     char fullPath[2048];
-    snprintf(fullPath, sizeof(fullPath), "%s/%s", path, entry->d_name);
+    snprintf(fullPath, sizeof(fullPath), "%s%s%s", path, PATH_SEPARATOR_STR, entry->d_name);
     
     struct stat statBuf;
     if (stat(fullPath, &statBuf) != 0) continue;

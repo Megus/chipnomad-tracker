@@ -147,10 +147,10 @@ void fileBrowserDraw(void) {
       }
       
       char saveText[35];
-      char* folderName = strrchr(currentPath, '/');
+      char* folderName = strrchr(currentPath, PATH_SEPARATOR);
       if (folderName) {
-        folderName++; // Skip the '/'
-        if (*folderName == 0) folderName = "/"; // Root directory case
+        folderName++; // Skip the separator
+        if (*folderName == 0) folderName = PATH_SEPARATOR_STR; // Root directory case
       } else {
         folderName = currentPath;
       }
@@ -241,7 +241,7 @@ int fileBrowserInput(int keys, int isDoubleTap) {
     if (isFolderMode && selectedIndex == 0) {
       if (onFileSelected) {
         // Construct full path for overwrite check
-        snprintf(pendingSavePath, sizeof(pendingSavePath), "%s/%s%s", currentPath, saveFilename, saveExtension);
+        snprintf(pendingSavePath, sizeof(pendingSavePath), "%s%s%s%s", currentPath, PATH_SEPARATOR_STR, saveFilename, saveExtension);
         
         // Check if file exists
         int fileId = fileOpen(pendingSavePath, 0);
@@ -263,25 +263,25 @@ int fileBrowserInput(int keys, int isDoubleTap) {
       // Enter directory
       if (strcmp(entries[entryIdx].name, "..") == 0) {
         // Go up one level - remember current folder name
-        char* lastSlash = strrchr(currentPath, '/');
-        if (lastSlash && lastSlash != currentPath) {
+        char* lastSeparator = strrchr(currentPath, PATH_SEPARATOR);
+        if (lastSeparator && lastSeparator != currentPath) {
           char folderName[256];
-          strncpy(folderName, lastSlash + 1, 255);
+          strncpy(folderName, lastSeparator + 1, 255);
           folderName[255] = 0;
-          *lastSlash = 0;
+          *lastSeparator = 0;
           fileBrowserRefreshWithSelection(folderName);
           return 1;
         } else if (strlen(currentPath) > 1) {
           // Go to root
-          strcpy(currentPath, "/");
+          strcpy(currentPath, PATH_SEPARATOR_STR);
           fileBrowserRefresh();
           return 1;
         }
       } else {
         // Enter subdirectory
         int len = strlen(currentPath);
-        if (len > 0 && currentPath[len-1] != '/') {
-          strcat(currentPath, "/");
+        if (len > 0 && currentPath[len-1] != PATH_SEPARATOR) {
+          strcat(currentPath, PATH_SEPARATOR_STR);
         }
         strcat(currentPath, entries[entryIdx].name);
       }
@@ -289,7 +289,7 @@ int fileBrowserInput(int keys, int isDoubleTap) {
     } else if (!isFolderMode && entryIdx >= 0) {
       // Select file (only in file mode)
       char fullPath[2048];
-      snprintf(fullPath, sizeof(fullPath), "%s/%s", currentPath, entries[entryIdx].name);
+      snprintf(fullPath, sizeof(fullPath), "%s%s%s", currentPath, PATH_SEPARATOR_STR, entries[entryIdx].name);
       if (onFileSelected) {
         onFileSelected(fullPath);
         return 0;
