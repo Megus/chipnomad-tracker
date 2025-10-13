@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<gameList>
+  <game>
+    <path>./ChipNomad.sh</path>
+    <name>ChipNomad</name>
+    <desc>ChipNomad is a chiptune tracker for handheld consoles.</desc>
+    <releasedate>20251012T000000</releasedate>
+    <developer>Megus</developer>
+    <publisher>Megus</publisher>
+    <genre>Music</genre>
+    <image>./cover.png</image>
+  </game>
+</gameList>
