@@ -1,4 +1,5 @@
 #include <screens.h>
+#include <corelib_file.h>
 #include <corelib_gfx.h>
 #include <file_browser.h>
 #include <project.h>
@@ -14,9 +15,9 @@ static void onLoadSelected(const char* path) {
     extractFilenameWithoutExtension(path, project.pitchTable.name, PROJECT_PITCH_TABLE_TITLE_LENGTH + 1);
     
     // Save the directory path
-    char* lastSlash = strrchr(path, '/');
-    if (lastSlash) {
-      int pathLen = lastSlash - path;
+    char* lastSeparator = strrchr(path, PATH_SEPARATOR);
+    if (lastSeparator) {
+      int pathLen = lastSeparator - path;
       strncpy(appSettings.pitchTablePath, path, pathLen);
       appSettings.pitchTablePath[pathLen] = 0;
     }

@@ -124,9 +124,9 @@ int settingsLoad(void) {
 
 void extractFilenameWithoutExtension(const char* path, char* output, int maxLength) {
   // Extract filename from path
-  const char* filename = strrchr(path, '/');
+  const char* filename = strrchr(path, PATH_SEPARATOR);
   if (filename) {
-    filename++; // Skip the '/'
+    filename++; // Skip the separator
   } else {
     filename = path; // No path separator found
   }

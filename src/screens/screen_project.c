@@ -1,5 +1,6 @@
 #include <screen_project.h>
 #include <common.h>
+#include <corelib_file.h>
 #include <corelib_gfx.h>
 #include <utils.h>
 #include <project.h>
@@ -19,9 +20,9 @@ static void onProjectLoaded(const char* path) {
     extractFilenameWithoutExtension(path, appSettings.projectFilename, FILENAME_LENGTH + 1);
 
     // Save the directory path
-    char* lastSlash = strrchr(path, '/');
-    if (lastSlash) {
-      int pathLen = lastSlash - path;
+    char* lastSeparator = strrchr(path, PATH_SEPARATOR);
+    if (lastSeparator) {
+      int pathLen = lastSeparator - path;
       strncpy(appSettings.projectPath, path, pathLen);
       appSettings.projectPath[pathLen] = 0;
     }
@@ -31,7 +32,7 @@ static void onProjectLoaded(const char* path) {
 
 static void onProjectSaved(const char* folderPath) {
   char fullPath[2048];
-  snprintf(fullPath, sizeof(fullPath), "%s/%s.cnm", folderPath, appSettings.projectFilename);
+  snprintf(fullPath, sizeof(fullPath), "%s%s%s.cnm", folderPath, PATH_SEPARATOR_STR, appSettings.projectFilename);
 
   if (projectSave(fullPath) == 0) {
     // Save the directory path
