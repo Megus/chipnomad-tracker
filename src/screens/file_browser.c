@@ -22,7 +22,7 @@ static char pendingSavePath[2048];
 
 static void doSave(void) {
   if (onFileSelected) {
-    onFileSelected(pendingSavePath);
+    onFileSelected(currentPath);
   }
 }
 
