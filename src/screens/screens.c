@@ -22,6 +22,8 @@ void drawScreenMap() {
     gfxPrint(35, smY, "P");
   } else if (currentScreen == &screenPhrase || currentScreen == &screenGroove) {
     gfxPrint(37, smY, "G");
+  } else if (currentScreen == &screenInstrument || currentScreen == &screenInstrumentPool) {
+    gfxPrint(38, smY + 2, "I");
   }
 
   // Highlight current screen
@@ -34,6 +36,8 @@ void drawScreenMap() {
     gfxPrint(37, smY + 1, "P");
   } else if (currentScreen == &screenInstrument) {
     gfxPrint(38, smY + 1, "I");
+  } else if (currentScreen == &screenInstrumentPool) {
+    gfxPrint(38, smY + 2, "I");
   } else if (currentScreen == &screenTable) {
     gfxPrint(39, smY + 1, "T");
   } else if (currentScreen == &screenProject) {

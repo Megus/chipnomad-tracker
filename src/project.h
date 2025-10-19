@@ -216,8 +216,12 @@ int8_t tableIsEmpty(int table);
 int8_t grooveIsEmpty(int groove);
 // Instrument name
 char* instrumentName(uint8_t instrument);
+// Instrument type names
+extern char instrumentTypeNames[][16];
 // Note name in phrase
 char* noteName(uint8_t note);
+// Instrument type name
+char* instrumentTypeName(uint8_t type);
 
 // Fill FX names
 void fillFXNames();

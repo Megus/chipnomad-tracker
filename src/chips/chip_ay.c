@@ -13,8 +13,9 @@ static void render(struct SoundChip* self, int16_t* buffer, int samples, float v
 
   for (int c = 0; c < samples; c++) {
     ayumi_process(ay);
-    int l = ay->left * volume * 15000;
-    int r = ay->right * volume * 15000;
+    ayumi_remove_dc(ay);
+    int l = ay->left * volume * 20000;
+    int r = ay->right * volume * 20000;
 
     *buffer++ = l;
     *buffer++ = r;
@@ -55,7 +56,7 @@ void updateChipAYType(struct SoundChip* self, uint8_t isYM) {
 static void setPanning(struct ayumi* ay, enum StereoModeAY stereoMode, uint8_t separation) {
   float sep = (float)separation / 200.0;
   float panA = 0.5, panB = 0.5, panC = 0.5;
-  
+
   switch (stereoMode) {
     case ayStereoABC:
       panA = 0.5 - sep; panB = 0.5; panC = 0.5 + sep;
@@ -67,7 +68,7 @@ static void setPanning(struct ayumi* ay, enum StereoModeAY stereoMode, uint8_t s
       panA = 0.5; panB = 0.5 - sep; panC = 0.5 + sep;
       break;
   }
-  
+
   ayumi_set_pan(ay, 0, panA, 1);
   ayumi_set_pan(ay, 1, panB, 1);
   ayumi_set_pan(ay, 2, panC, 1);

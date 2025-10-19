@@ -6,16 +6,15 @@
 #include <screen_instrument.h>
 #include <string.h>
 
+extern const struct AppScreen screenInstrumentPool;
+
 int cInstrument = 0;
 static int isCharEdit = 0;
 
 static void drawRowHeader(int row, int state);
 static void drawColHeader(int col, int state);
 
-static char instrumentTypeNames[][16] = {
-  "None",
-  "AY",
-};
+
 
 static struct ScreenData screenInstrumentNone = {
   .rows = 1,
@@ -96,7 +95,7 @@ void instrumentCommonDrawStatic(void) {
 void instrumentCommonDrawCursor(int col, int row) {
   if (row == 0 && col == 0) {
     // Type
-    gfxCursor(8, 2, strlen(instrumentTypeNames[project.instruments[cInstrument].type]));
+    gfxCursor(8, 2, strlen(instrumentTypeName(project.instruments[cInstrument].type)));
   } else if (row == 0 && col == 1) {
     // Load
     gfxCursor(17, 2, 4);
@@ -123,7 +122,7 @@ void instrumentCommonDrawField(int col, int row, int state) {
   if (row == 0 && col == 0) {
     // Instrument type
     gfxClearRect(8, 2, 8, 1);
-    gfxPrint(8, 2, instrumentTypeNames[project.instruments[cInstrument].type]);
+    gfxPrint(8, 2, instrumentTypeName(project.instruments[cInstrument].type));
   } else if (row == 0 && col == 1) {
     // Load
     gfxPrint(17, 2, "Load");
@@ -197,6 +196,10 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
   } else if (keys == (keyLeft | keyShift)) {
     // To Phrase screen
     screenSetup(&screenPhrase, -1);
+    return 1;
+  } else if (keys == (keyDown | keyShift)) {
+    // To Instrument Pool screen
+    screenSetup(&screenInstrumentPool, cInstrument);
     return 1;
   } else if (keys == (keyOpt | keyLeft)) {
     // To the previous instrument

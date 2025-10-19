@@ -57,6 +57,7 @@ extern const struct AppScreen screenChain;
 extern const struct AppScreen screenPhrase;
 extern const struct AppScreen screenGroove;
 extern const struct AppScreen screenInstrument;
+extern const struct AppScreen screenInstrumentPool;
 extern const struct AppScreen screenTable;
 
 extern const struct AppScreen* currentScreen;

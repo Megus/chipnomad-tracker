@@ -9,6 +9,12 @@ struct Project project;
 
 struct FXName fxNames[256];
 
+// Instrument type names
+char instrumentTypeNames[][16] = {
+  "None",
+  "AY",
+};
+
 // FX Names (in the order as they appear in FX select screen)
 struct FXName fxNamesCommon[] = {
   {fxARP, "ARP"}, {fxARC, "ARC"}, {fxPVB, "PVB"}, {fxPBN, "PBN"}, {fxPSL, "PSL"}, {fxPIT, "PIT"},
@@ -283,6 +289,14 @@ char* noteName(uint8_t note) {
   } else {
     return "---";
   }
+}
+
+// Instrument type name
+char* instrumentTypeName(uint8_t type) {
+  if (type < sizeof(instrumentTypeNames) / sizeof(instrumentTypeNames[0])) {
+    return instrumentTypeNames[type];
+  }
+  return "Unknown";
 }
 
 

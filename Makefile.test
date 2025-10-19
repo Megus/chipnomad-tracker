@@ -1,0 +1,41 @@
+# Test makefile
+CC = gcc
+CFLAGS = -std=c99 -Wall -g -I../src -I../external/ayumi -I../external/unity -I../src/corelib -I../src/screens -I../src/playback -I../platforms/shared
+TESTDIR = tests
+SRCDIR = ../src
+
+# Test sources
+TEST_SOURCES = $(wildcard $(TESTDIR)/test_*.c)
+TEST_OBJECTS = $(TEST_SOURCES:.c=.o)
+TEST_EXECUTABLES = $(TEST_SOURCES:.c=)
+
+# Project sources (excluding main.c)
+PROJECT_SOURCES = $(SRCDIR)/project.c $(SRCDIR)/utils.c $(SRCDIR)/common.c
+PROJECT_OBJECTS = $(PROJECT_SOURCES:.c=.o)
+
+# Mock sources
+MOCK_SOURCES = $(wildcard $(TESTDIR)/mocks/*.c)
+MOCK_OBJECTS = $(MOCK_SOURCES:.c=.o)
+
+# Unity framework
+UNITY_SOURCES = ../external/unity/unity.c
+UNITY_OBJECTS = $(UNITY_SOURCES:.c=.o)
+
+all: $(TEST_EXECUTABLES)
+
+$(TESTDIR)/test_%: $(TESTDIR)/test_%.o $(PROJECT_OBJECTS) $(MOCK_OBJECTS) $(UNITY_OBJECTS)
+	$(CC) $(CFLAGS) -o $@ $^
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+clean:
+	rm -f $(TEST_OBJECTS) $(PROJECT_OBJECTS) $(MOCK_OBJECTS) $(UNITY_OBJECTS) $(TEST_EXECUTABLES)
+
+run: all
+	@for test in $(TEST_EXECUTABLES); do \
+		echo "Running $$test..."; \
+		./$$test; \
+	done
+
+.PHONY: all clean run
