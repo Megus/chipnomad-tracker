@@ -4,6 +4,7 @@
 #include <utils.h>
 #include <project.h>
 #include <help.h>
+#include "screen_navigation.h"
 
 static int table = 0;
 static int backToPhrase = 0;
@@ -234,15 +235,17 @@ static void draw(void) {
 }
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {
+  // Special case: context-dependent back navigation
   if (keys == (keyLeft | keyShift)) {
-    // Back to the instrument or phrase screen
     if (backToPhrase) {
       screenSetup(&screenPhrase, -1);
     } else {
       screenSetup(&screenInstrument, -1);
     }
     return 1;
-  } if (keys == (keyLeft | keyOpt)) {
+  }
+  
+  if (keys == (keyLeft | keyOpt)) {
     // Previous table
     if (table > 0) {
       table--;

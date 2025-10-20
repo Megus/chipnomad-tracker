@@ -5,6 +5,7 @@
 #include <project.h>
 #include <playback.h>
 #include <string.h>
+#include "screen_navigation.h"
 
 // Screen state variables
 static uint16_t lastChainValue = 0;
@@ -119,25 +120,16 @@ static void draw(void) {
 //
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {
-  // Go to Chain screen
+  // Special case: Chain screen requires validation
   if (keys == (keyRight | keyShift)) {
     int chain = project.song[screen.cursorRow][screen.cursorCol];
-
     if (chain == EMPTY_VALUE_16) {
       screenMessage("Enter a chain");
-    } else {
-      screenSetup(&screenChain, -1);
+      return 1;
     }
-    return 1;
   }
-
-  // Go to Project screen
-  if (keys == (keyUp | keyShift)) {
-    screenSetup(&screenProject, 0);
-    return 1;
-  }
-
-  return 0;
+  
+  return handleScreenNavigation(&songNavigation, keys, isDoubleTap);
 }
 
 static int findEmptyChain(int startChain) {
