@@ -205,6 +205,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
     // To the previous instrument
     if (cInstrument != 0) {
       cInstrument--;
+      playbackStopPreview(&playback, *pSongTrack);
       fullRedraw();
     }
     return 1;
@@ -212,6 +213,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
     // To the next instrument
     if (cInstrument != PROJECT_MAX_INSTRUMENTS - 1) {
       cInstrument++;
+      playbackStopPreview(&playback, *pSongTrack);
       fullRedraw();
     }
     return 1;
@@ -219,19 +221,33 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
     // +16 instruments
     cInstrument += 16;
     if (cInstrument >= PROJECT_MAX_INSTRUMENTS) cInstrument = PROJECT_MAX_INSTRUMENTS - 1;
+    playbackStopPreview(&playback, *pSongTrack);
     fullRedraw();
     return 1;
   } else if (keys == (keyOpt | keyDown)) {
     // -16 instruments
     cInstrument -= 16;
     if (cInstrument < 0) cInstrument = 0;
+    playbackStopPreview(&playback, *pSongTrack);
     fullRedraw();
+    return 1;
+  } else if (keys == (keyEdit | keyPlay)) {
+    // Preview instrument
+    if (!instrumentIsEmpty(cInstrument) && !playbackIsPlaying(&playback)) {
+      uint8_t note = instrumentFirstNote(cInstrument);
+      playbackPreviewNote(&playback, *pSongTrack, note, cInstrument);
+    }
     return 1;
   }
   return 0;
 }
 
 static void onInput(int keys, int isDoubleTap) {
+  // Stop preview when keys are released
+  if (keys == 0) {
+    playbackStopPreview(&playback, *pSongTrack);
+  }
+  
   if (isCharEdit) {
     struct ScreenData* screen = instrumentScreen();
     char result = charEditInput(keys, isDoubleTap, project.instruments[cInstrument].name, screen->cursorCol, PROJECT_INSTRUMENT_NAME_LENGTH);

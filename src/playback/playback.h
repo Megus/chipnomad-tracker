@@ -205,6 +205,24 @@ void playbackQueuePhrase(struct PlaybackState* state, int trackIdx, int songRow,
 void playbackStop(struct PlaybackState* state);
 
 /**
+ * Plays a single note with an instrument for preview
+ *
+ * @param state Pointer to the playback state
+ * @param trackIdx Index of the track to use for preview
+ * @param note Note value to play
+ * @param instrument Instrument to use
+ */
+void playbackPreviewNote(struct PlaybackState* state, int trackIdx, uint8_t note, uint8_t instrument);
+
+/**
+ * Stops preview playback on a specific track
+ *
+ * @param state Pointer to the playback state
+ * @param trackIdx Index of the track to stop preview on
+ */
+void playbackStopPreview(struct PlaybackState* state, int trackIdx);
+
+/**
  * Advances playback by one frame
  *
  * @param state Pointer to the playback state

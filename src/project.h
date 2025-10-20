@@ -222,6 +222,8 @@ extern char instrumentTypeNames[][16];
 char* noteName(uint8_t note);
 // Instrument type name
 char* instrumentTypeName(uint8_t type);
+// Get first note used with an instrument
+uint8_t instrumentFirstNote(uint8_t instrument);
 
 // Fill FX names
 void fillFXNames();

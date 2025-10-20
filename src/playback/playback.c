@@ -29,9 +29,13 @@ static void resetTrack(struct PlaybackState* state, int trackIdx) {
   track->note.volume1 = 0;
   track->note.volume2 = 0;
   track->note.volume3 = 0;
+  track->note.instrumentTable.tableIdx = EMPTY_VALUE_8;
+  track->note.auxTable.tableIdx = EMPTY_VALUE_8;
+
   for (int i = 0; i < 3; i++) {
     track->note.fx[i].fx = EMPTY_VALUE_8;
   }
+
 
   resetTrackAY(state, trackIdx);
 }
@@ -513,4 +517,30 @@ int playbackNextFrame(struct PlaybackState* state, struct SoundChip* chips) {
   outputRegistersAY(state, 0, 0, chips);
 
   return !hasActiveTracks;
+}
+
+void playbackPreviewNote(struct PlaybackState* state, int trackIdx, uint8_t note, uint8_t instrument) {
+  resetTrack(state, trackIdx);
+
+  struct PlaybackTrackState* track = &state->tracks[trackIdx];
+
+  // Set up preview playback
+  track->mode = playbackModePhraseRow;
+  track->songRow = 0;
+  track->note.noteBase = note;
+  track->note.noteFinal = note;
+  track->note.instrument = instrument;
+  track->note.volume = 15;
+
+  // Initialize instrument
+  if (instrument != EMPTY_VALUE_8) {
+    setupInstrumentAY(state, trackIdx);
+    tableInit(state, trackIdx, &track->note.instrumentTable, instrument, state->p->instruments[instrument].tableSpeed);
+  }
+}
+
+void playbackStopPreview(struct PlaybackState* state, int trackIdx) {
+  if (state->tracks[trackIdx].mode == playbackModePhraseRow) {
+    resetTrack(state, trackIdx);
+  }
 }

@@ -35,12 +35,14 @@ static void frameCallback(void* userdata) {
 static int inputPlayback(int keys, int isDoubleTap) {
   int isPlaying = playbackIsPlaying(&playback);
 
-  // Stop phrase row
+  // Stop phrase row and preview
   if (playback.tracks[*pSongTrack].mode == playbackModePhraseRow && keys == 0) {
     playbackStop(&playback);
   }
   // Play song/chain/phrase depending on the current screen
   else if (!isPlaying && keys == keyPlay) {
+    // Stop any preview first
+    playbackStop(&playback);
     if (currentScreen == &screenSong || currentScreen == &screenProject) {
       playbackStartSong(&playback, *pSongRow, 0);
     } else if (currentScreen == &screenChain) {
@@ -52,6 +54,8 @@ static int inputPlayback(int keys, int isDoubleTap) {
   }
   // Play song from any screen
   else if (!isPlaying && keys == (keyPlay | keyShift)) {
+    // Stop any preview first
+    playbackStop(&playback);
     if (currentScreen == &screenSong || currentScreen == &screenProject) {
       playbackStartSong(&playback, *pSongRow, 0);
     } else {

@@ -299,6 +299,22 @@ char* instrumentTypeName(uint8_t type) {
   return "Unknown";
 }
 
+// Get first note used with an instrument in the project
+uint8_t instrumentFirstNote(uint8_t instrument) {
+  // Search through all phrases for first use of this instrument
+  for (int p = 0; p < PROJECT_MAX_PHRASES; p++) {
+    if (phraseIsEmpty(p)) continue;
+    for (int row = 0; row < 16; row++) {
+      if (project.phrases[p].instruments[row] == instrument && 
+          project.phrases[p].notes[row] < project.pitchTable.length) {
+        return project.phrases[p].notes[row];
+      }
+    }
+  }
+  // Default to C in 4th octave if not found
+  return project.pitchTable.octaveSize * 4;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //

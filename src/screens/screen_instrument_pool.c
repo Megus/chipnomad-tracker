@@ -88,9 +88,24 @@ static void draw(void) {
   }
 }
 
+static int editPressed = 0;
+
 static void onInput(int keys, int isDoubleTap) {
   int oldCursorRow = cursorRow;
   int oldTopRow = topRow;
+  
+  // Handle Edit button press/release for instrument selection
+  if (keys == keyEdit) {
+    editPressed = 1;
+    return;
+  } else if (keys == 0 && editPressed) {
+    editPressed = 0;
+    // Go to selected instrument when Edit is released
+    screenSetup(&screenInstrument, cursorRow);
+    return;
+  } else if (keys != 0) {
+    editPressed = 0;
+  }
   
   if (keys == keyUp) {
     if (cursorRow > 0) {
@@ -127,10 +142,6 @@ static void onInput(int keys, int isDoubleTap) {
     if (topRow < 0) topRow = 0;
     fullRedraw();
     return;
-  } else if (keys == keyEdit) {
-    // Go to selected instrument
-    screenSetup(&screenInstrument, cursorRow);
-    return;
   } else if (keys == (keyUp | keyShift)) {
     // To Instrument screen
     screenSetup(&screenInstrument, cursorRow);
@@ -144,6 +155,25 @@ static void onInput(int keys, int isDoubleTap) {
     // To Table screen
     screenSetup(&screenTable, cursorRow);
     return;
+  } else if (keys == (keyEdit | keyPlay)) {
+    // Preview instrument
+    if (!instrumentIsEmpty(cursorRow) && !playbackIsPlaying(&playback)) {
+      uint8_t note = instrumentFirstNote(cursorRow);
+      playbackPreviewNote(&playback, *pSongTrack, note, cursorRow);
+    }
+    return;
+  }
+  
+  // Stop preview when keys are released
+  if (keys == 0) {
+    playbackStopPreview(&playback, *pSongTrack);
+    editPressed = 0;
+  }
+  
+  // Stop preview when cursor moves
+  if (oldCursorRow != cursorRow) {
+    playbackStopPreview(&playback, *pSongTrack);
+    editPressed = 0;
   }
   
   // Redraw only cursor if position changed
