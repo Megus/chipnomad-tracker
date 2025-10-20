@@ -9,8 +9,9 @@ TEST_SOURCES = $(wildcard $(TESTDIR)/test_*.c)
 TEST_OBJECTS = $(TEST_SOURCES:.c=.o)
 TEST_EXECUTABLES = $(TEST_SOURCES:.c=)
 
-# Project sources (excluding main.c)
-PROJECT_SOURCES = $(SRCDIR)/project.c $(SRCDIR)/utils.c $(SRCDIR)/common.c
+# Project sources (excluding main.c and corelib)
+PROJECT_SOURCES = $(filter-out $(SRCDIR)/corelib/%, $(wildcard $(SRCDIR)/*.c $(SRCDIR)/*/*.c))
+PROJECT_SOURCES := $(filter-out %/main.c, $(PROJECT_SOURCES))
 PROJECT_OBJECTS = $(PROJECT_SOURCES:.c=.o)
 
 # Mock sources

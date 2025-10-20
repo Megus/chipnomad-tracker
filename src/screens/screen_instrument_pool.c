@@ -155,6 +155,30 @@ static void onInput(int keys, int isDoubleTap) {
     // To Table screen
     screenSetup(&screenTable, cursorRow);
     return;
+  } else if (keys == (keyEdit | keyUp)) {
+    // Move instrument up
+    if (cursorRow > 0) {
+      playbackStop(&playback);
+      instrumentSwap(cursorRow, cursorRow - 1);
+      cursorRow--;
+      if (cursorRow < topRow) {
+        topRow--;
+      }
+      fullRedraw();
+    }
+    return;
+  } else if (keys == (keyEdit | keyDown)) {
+    // Move instrument down
+    if (cursorRow < PROJECT_MAX_INSTRUMENTS - 1) {
+      playbackStop(&playback);
+      instrumentSwap(cursorRow, cursorRow + 1);
+      cursorRow++;
+      if (cursorRow >= topRow + 16) {
+        topRow++;
+      }
+      fullRedraw();
+    }
+    return;
   } else if (keys == (keyEdit | keyPlay)) {
     // Preview instrument
     if (!instrumentIsEmpty(cursorRow) && !playbackIsPlaying(&playback)) {

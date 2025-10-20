@@ -315,6 +315,40 @@ uint8_t instrumentFirstNote(uint8_t instrument) {
   return project.pitchTable.octaveSize * 4;
 }
 
+// Swap instrument references in all phrases
+static void instrumentSwapReferences(uint8_t inst1, uint8_t inst2) {
+  for (int p = 0; p < PROJECT_MAX_PHRASES; p++) {
+    for (int row = 0; row < 16; row++) {
+      uint8_t inst = project.phrases[p].instruments[row];
+      if (inst == inst1) {
+        project.phrases[p].instruments[row] = inst2;
+      } else if (inst == inst2) {
+        project.phrases[p].instruments[row] = inst1;
+      }
+    }
+  }
+}
+
+// Swap two instruments and their default tables
+void instrumentSwap(uint8_t inst1, uint8_t inst2) {
+  if (inst1 >= PROJECT_MAX_INSTRUMENTS || inst2 >= PROJECT_MAX_INSTRUMENTS || inst1 == inst2) {
+    return;
+  }
+  
+  // Swap instruments
+  struct Instrument temp = project.instruments[inst1];
+  project.instruments[inst1] = project.instruments[inst2];
+  project.instruments[inst2] = temp;
+  
+  // Swap default tables (table number matches instrument number)
+  struct Table tempTable = project.tables[inst1];
+  project.tables[inst1] = project.tables[inst2];
+  project.tables[inst2] = tempTable;
+  
+  // Swap instrument references in phrases
+  instrumentSwapReferences(inst1, inst2);
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //

@@ -224,6 +224,8 @@ char* noteName(uint8_t note);
 char* instrumentTypeName(uint8_t type);
 // Get first note used with an instrument
 uint8_t instrumentFirstNote(uint8_t instrument);
+// Swap two instruments and their default tables
+void instrumentSwap(uint8_t inst1, uint8_t inst2);
 
 // Fill FX names
 void fillFXNames();
