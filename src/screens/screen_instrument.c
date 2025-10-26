@@ -5,7 +5,6 @@
 #include <project.h>
 #include <screen_instrument.h>
 #include <string.h>
-#include "screen_navigation.h"
 
 extern const struct AppScreen screenInstrumentPool;
 
@@ -190,21 +189,19 @@ int instrumentCommonOnEdit(int col, int row, enum CellEditAction action) {
 //
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {
-  // Handle screen transitions with proper parameters
   if (keys == (keyRight | keyShift)) {
+    // To Table screen with the default instrument table
     screenSetup(&screenTable, cInstrument);
     return 1;
+  } else if (keys == (keyLeft | keyShift)) {
+    // To Phrase screen
+    screenSetup(&screenPhrase, -1);
+    return 1;
   } else if (keys == (keyDown | keyShift)) {
+    // To Instrument Pool screen
     screenSetup(&screenInstrumentPool, cInstrument);
     return 1;
-  }
-  
-  // Use common navigation for other transitions
-  if (handleScreenNavigation(&instrumentNavigation, keys, isDoubleTap)) {
-    return 1;
-  }
-  
-  if (keys == (keyOpt | keyLeft)) {
+  } else if (keys == (keyOpt | keyLeft)) {
     // To the previous instrument
     if (cInstrument != 0) {
       cInstrument--;

@@ -5,13 +5,11 @@
 #include <project.h>
 #include <screen_instrument.h>
 #include <string.h>
-#include "screen_navigation.h"
 
 static int cursorRow = 0;
 static int topRow = 0;
 
-static void onCursorChange(void);
-static void onPageChange(void);
+
 
 static void setup(int input) {
   if (input != -1) {
@@ -94,6 +92,7 @@ static int editPressed = 0;
 
 static void onInput(int keys, int isDoubleTap) {
   int oldCursorRow = cursorRow;
+  int oldTopRow = topRow;
   
   // Handle Edit button press/release for instrument selection
   if (keys == keyEdit) {
@@ -108,22 +107,53 @@ static void onInput(int keys, int isDoubleTap) {
     editPressed = 0;
   }
   
-  // Handle cursor navigation
-  struct CursorNavConfig cursorConfig = createCursorNavConfig(&cursorRow, &topRow, PROJECT_MAX_INSTRUMENTS, 16, onCursorChange, onPageChange);
-  if (handleCursorNavigation(&cursorConfig, keys)) {
+  if (keys == keyUp) {
+    if (cursorRow > 0) {
+      cursorRow--;
+      if (cursorRow < topRow) {
+        topRow--;
+        fullRedraw();
+        return;
+      }
+    }
+  } else if (keys == keyDown) {
+    if (cursorRow < PROJECT_MAX_INSTRUMENTS - 1) {
+      cursorRow++;
+      if (cursorRow >= topRow + 16) {
+        topRow++;
+        fullRedraw();
+        return;
+      }
+    }
+  } else if (keys == keyLeft) {
+    // Page up (16 lines)
+    cursorRow -= 16;
+    if (cursorRow < 0) cursorRow = 0;
+    topRow -= 16;
+    if (topRow < 0) topRow = 0;
+    fullRedraw();
+    return;
+  } else if (keys == keyRight) {
+    // Page down (16 lines)
+    cursorRow += 16;
+    if (cursorRow >= PROJECT_MAX_INSTRUMENTS) cursorRow = PROJECT_MAX_INSTRUMENTS - 1;
+    topRow += 16;
+    if (topRow + 16 >= PROJECT_MAX_INSTRUMENTS) topRow = PROJECT_MAX_INSTRUMENTS - 16;
+    if (topRow < 0) topRow = 0;
+    fullRedraw();
     return;
   } else if (keys == (keyUp | keyShift)) {
     // To Instrument screen
     screenSetup(&screenInstrument, cursorRow);
     return;
+
+  } else if (keys == (keyLeft | keyShift)) {
+    // To Phrase screen
+    screenSetup(&screenPhrase, -1);
+    return;
   } else if (keys == (keyRight | keyShift)) {
     // To Table screen
     screenSetup(&screenTable, cursorRow);
-    return;
-  }
-  
-  // Use common navigation for other transitions
-  if (handleScreenNavigation(&instrumentPoolNavigation, keys, isDoubleTap)) {
     return;
   } else if (keys == (keyEdit | keyUp)) {
     // Move instrument up
@@ -170,15 +200,40 @@ static void onInput(int keys, int isDoubleTap) {
     editPressed = 0;
   }
   
-}
-
-static void onCursorChange(void) {
-  // Redraw only the affected cursor lines
-  fullRedraw(); // For now, just do full redraw - can optimize later
-}
-
-static void onPageChange(void) {
-  fullRedraw();
+  // Redraw only cursor if position changed
+  if (oldCursorRow != cursorRow) {
+    // Clear old cursor line
+    int oldY = 3 + (oldCursorRow - oldTopRow);
+    if (oldCursorRow >= oldTopRow && oldCursorRow < oldTopRow + 16) {
+      if (instrumentIsEmpty(oldCursorRow)) {
+        gfxSetFgColor(appSettings.colorScheme.textEmpty);
+      } else {
+        gfxSetFgColor(appSettings.colorScheme.textDefault);
+      }
+      gfxPrint(0, oldY, " ");
+      gfxPrintf(1, oldY, "%02X", oldCursorRow);
+      if (!instrumentIsEmpty(oldCursorRow)) {
+        gfxPrintf(4, oldY, "%-15s", project.instruments[oldCursorRow].name);
+      } else {
+        gfxPrint(4, oldY, "               ");
+      }
+      gfxClearRect(20, oldY, 14, 1);
+      gfxPrint(20, oldY, instrumentTypeName(project.instruments[oldCursorRow].type));
+    }
+    
+    // Draw new cursor line
+    int newY = 3 + (cursorRow - topRow);
+    gfxSetFgColor(appSettings.colorScheme.textValue);
+    gfxPrint(0, newY, ">");
+    gfxPrintf(1, newY, "%02X", cursorRow);
+    if (!instrumentIsEmpty(cursorRow)) {
+      gfxPrintf(4, newY, "%-15s", project.instruments[cursorRow].name);
+    } else {
+      gfxPrint(4, newY, "               ");
+    }
+    gfxClearRect(20, newY, 14, 1);
+    gfxPrint(20, newY, instrumentTypeName(project.instruments[cursorRow].type));
+  }
 }
 
 const struct AppScreen screenInstrumentPool = {

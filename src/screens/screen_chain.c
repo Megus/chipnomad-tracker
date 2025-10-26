@@ -4,7 +4,6 @@
 #include <utils.h>
 #include <project.h>
 #include <string.h>
-#include "screen_navigation.h"
 
 static int chain = 0;
 static uint16_t lastPhraseValue = 0;
@@ -192,21 +191,20 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 }
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {
-  // Special case: Phrase screen requires validation
   if (keys == (keyRight | keyShift)) {
+    // To Phrase screen
     int phrase = project.chains[chain].phrases[screen.cursorRow];
     if (phrase == EMPTY_VALUE_16) {
       screenMessage("Enter a phrase");
-      return 1;
+    } else {
+      screenSetup(&screenPhrase, -1);
     }
-  }
-  
-  // Use common navigation for other transitions
-  if (handleScreenNavigation(&chainNavigation, keys, isDoubleTap)) {
     return 1;
-  }
-  
-  if (keys == (keyLeft | keyOpt)) {
+  } else if (keys == (keyLeft | keyShift)) {
+    // To Song screen
+    screenSetup(&screenSong, 0);
+    return 1;
+  } else if (keys == (keyLeft | keyOpt)) {
     // Previous track
     if (*pSongTrack == 0) return 1;
     if (project.song[*pSongRow][*pSongTrack - 1] != EMPTY_VALUE_16) {

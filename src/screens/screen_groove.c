@@ -3,7 +3,6 @@
 #include <corelib_gfx.h>
 #include <utils.h>
 #include <project.h>
-#include "screen_navigation.h"
 
 static int groove = 0;
 static uint8_t lastValue = 0;
@@ -90,12 +89,11 @@ static void draw(void) {
 }
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {
-  // Use common navigation for screen transitions
-  if (handleScreenNavigation(&grooveNavigation, keys, isDoubleTap)) {
+  if (keys == (keyDown | keyShift)) {
+    // To Phrase scrren
+    screenSetup(&screenPhrase, 0);
     return 1;
-  }
-  
-  if (keys == (keyLeft | keyOpt)) {
+  } else if (keys == (keyLeft | keyOpt)) {
     // To previous groove
     if (groove > 0) {
       groove--;

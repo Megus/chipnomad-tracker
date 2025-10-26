@@ -4,7 +4,6 @@
 #include <utils.h>
 #include <project.h>
 #include <help.h>
-#include "screen_navigation.h"
 
 static int phrase = 0;
 static int isFxEdit = 0;

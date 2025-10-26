@@ -8,7 +8,6 @@
 #include <audio_manager.h>
 #include <file_browser.h>
 #include <string.h>
-#include "screen_navigation.h"
 
 static int isCharEdit = 0;
 static char* editingString = NULL;
@@ -285,7 +284,11 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
 //
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {
-  return handleScreenNavigation(&projectNavigation, keys, isDoubleTap);
+  if (keys == (keyDown | keyShift)) {
+    screenSetup(&screenSong, 0);
+    return 1;
+  }
+  return 0;
 }
 
 static void onInput(int keys, int isDoubleTap) {
