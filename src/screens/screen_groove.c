@@ -13,6 +13,7 @@ static void drawField(int col, int row, int state);
 static void drawRowHeader(int row, int state);
 static void drawColHeader(int col, int state);
 static void drawCursor(int col, int row);
+static void drawSelection(int col1, int row1, int col2, int row2);
 static int onEdit(int col, int row, enum CellEditAction action);
 
 static struct ScreenData screen = {
@@ -20,10 +21,11 @@ static struct ScreenData screen = {
   .cursorRow = 0,
   .cursorCol = 0,
   .topRow = 0,
-  .isSelectMode = -1,
+  .selectMode = 0,
   .getColumnCount = getColumnCount,
   .drawStatic = drawStatic,
   .drawCursor = drawCursor,
+  .drawSelection = drawSelection,
   .drawRowHeader = drawRowHeader,
   .drawColHeader = drawColHeader,
   .drawField = drawField,
@@ -32,6 +34,7 @@ static struct ScreenData screen = {
 
 static void setup(int input) {
   groove = input;
+  screen.selectMode = 0;
 }
 
 static int getColumnCount(int row) {
@@ -64,6 +67,10 @@ static void drawColHeader(int col, int state) {
 
 static void drawCursor(int col, int row) {
   gfxCursor(3, 3 + row, 2);
+}
+
+static void drawSelection(int col1, int row1, int col2, int row2) {
+  gfxRect(3, 3 + row1, 2, row2 - row1 + 1);
 }
 
 static int onEdit(int col, int row, enum CellEditAction action) {
@@ -124,8 +131,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
 }
 
 static void onInput(int keys, int isDoubleTap) {
-
-  if (inputScreenNavigation(keys, isDoubleTap)) return;
+  if (screen.selectMode == 0 && inputScreenNavigation(keys, isDoubleTap)) return;
   screenInput(&screen, keys, isDoubleTap);
 }
 

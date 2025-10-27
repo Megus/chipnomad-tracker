@@ -26,8 +26,8 @@ desktop:
 windows:
 	$(MAKE) -f Makefile.windows windows
 
-.PHONY: RG35xx RG35xx-deploy RG35xx-adb-install RG35xx-adb-uninstall RG35xx-adb-kill RG35xx-adb-logcat
-RG35xx RG35xx-deploy RG35xx-adb-install RG35xx-adb-uninstall RG35xx-adb-kill RG35xx-adb-logcat:
+.PHONY: RG35xx RG35xx-deploy
+RG35xx RG35xx-deploy:
 	$(MAKE) -f Makefile.rg35xx $@
 
 .PHONY: PortMaster PortMaster-deploy

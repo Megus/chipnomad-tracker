@@ -13,7 +13,7 @@ static int editingStringLength = 0;
 static void onLoadSelected(const char* path) {
   if (pitchTableLoadCSV(path) == 0) {
     extractFilenameWithoutExtension(path, project.pitchTable.name, PROJECT_PITCH_TABLE_TITLE_LENGTH + 1);
-    
+
     // Save the directory path
     char* lastSeparator = strrchr(path, PATH_SEPARATOR);
     if (lastSeparator) {
@@ -27,11 +27,11 @@ static void onLoadSelected(const char* path) {
 
 static void onSaveSelected(const char* folderPath) {
   pitchTableSaveCSV(folderPath, project.pitchTable.name);
-  
+
   // Save the directory path
   strncpy(appSettings.pitchTablePath, folderPath, PATH_LENGTH);
   appSettings.pitchTablePath[PATH_LENGTH] = 0;
-  
+
   screenSetup(&screenPitchTable, 0);
 }
 
@@ -118,7 +118,7 @@ static struct ScreenData screenPitchTableData = {
   .rows = 4,
   .cursorRow = 0,
   .cursorCol = 0,
-  .isSelectMode = -1,
+  .selectMode = -1,
   .getColumnCount = getColumnCount,
   .drawStatic = drawStatic,
   .drawCursor = drawCursor,

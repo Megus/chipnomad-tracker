@@ -23,7 +23,7 @@ static struct ScreenData screen = {
   .cursorRow = 0,
   .cursorCol = 0,
   .topRow = 0,
-  .isSelectMode = 0,
+  .selectMode = 0,
   .selectStartRow = 0,
   .selectStartCol = 0,
   .getColumnCount = getColumnCount,
@@ -39,7 +39,7 @@ static struct ScreenData screen = {
 void setup(int input) {
   pSongRow = &screen.cursorRow;
   pSongTrack = &screen.cursorCol;
-
+  screen.selectMode = 0;
 
   if (input == 0x1234) { // Just a random value for now
     screen.cursorRow = 0;
@@ -92,8 +92,17 @@ static void drawCursor(int col, int row) {
 }
 
 static void drawSelection(int col1, int row1, int col2, int row2) {
-  // TODO: Proper width and height for actual selection
-  gfxSelection(3 + col1 * 3, 3 + row1 - screen.topRow, 2, 1);
+  int x = 3 + col1 * 3;
+  int y = 3 + row1 - screen.topRow;
+  int w = 3 * (col2 - col1 + 1) - 1;
+  int y2 = y + (row2 - row1);
+
+  if (y < 3) y = 3; // Top row of selection is above the screen
+  if (y > (3 + 15)) return; // Top row of selection is below the screen
+  if (y2 < 3) return;
+  if (y2 > (3 + 15)) y2 = (3 + 15);
+
+  gfxRect(x, y, w, (y2 - y) + 1);
 }
 
 static void fullRedraw(void) {
@@ -111,6 +120,8 @@ static void draw(void) {
       }
     }
   }
+
+  screenDrawOverlays(&screen);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -183,8 +194,8 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 }
 
 static void onInput(int keys, int isDoubleTap) {
-  if (inputScreenNavigation(keys, isDoubleTap)) return;
-  if (screenInput(&screen, keys, isDoubleTap)) return;
+  if (screen.selectMode == 0 && inputScreenNavigation(keys, isDoubleTap)) return;
+  screenInput(&screen, keys, isDoubleTap);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

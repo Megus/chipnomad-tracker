@@ -23,7 +23,7 @@ static struct ScreenData screen = {
   .cursorRow = 0,
   .cursorCol = 0,
   .topRow = 0,
-  .isSelectMode = 0,
+  .selectMode = 0,
   .selectStartRow = 0,
   .selectStartCol = 0,
   .getColumnCount = getColumnCount,
@@ -39,6 +39,7 @@ static struct ScreenData screen = {
 static void setup(int input) {
   pChainRow = &screen.cursorRow;
   chain = project.song[*pSongRow][*pSongTrack];
+  screen.selectMode = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -103,14 +104,11 @@ static void drawCursor(int col, int row) {
 }
 
 static void drawSelection(int col1, int row1, int col2, int row2) {
-  // TODO: Proper width and height for actual selection
-  if (col1 == 0) {
-    // Phrase
-    gfxSelection(3, 3 + row1, 3, 1);
-  } else {
-    // Transpose
-    gfxSelection(7, 3 + row1, 2, 1);
-  }
+  int x = (col1 == 0) ? 3 : 7;
+  int w = (col2 - col1 == 1) ? 6 : (col1 == 0 ? 3 : 2);
+  int y = 3 + row1;
+  int h = row2 - row1 + 1;
+  gfxRect(x, y, w, h);
 }
 
 static void fullRedraw(void) {
@@ -244,8 +242,8 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
 }
 
 static void onInput(int keys, int isDoubleTap) {
-  if (inputScreenNavigation(keys, isDoubleTap)) return;
-  if (screenInput(&screen, keys, isDoubleTap)) return;
+  if (screen.selectMode == 0 && inputScreenNavigation(keys, isDoubleTap)) return;
+  screenInput(&screen, keys, isDoubleTap);
 }
 
 const struct AppScreen screenChain = {

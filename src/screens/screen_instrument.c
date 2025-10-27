@@ -20,7 +20,7 @@ static struct ScreenData screenInstrumentNone = {
   .rows = 1,
   .cursorRow = 0,
   .cursorCol = 0,
-  .isSelectMode = -1,
+  .selectMode = -1,
   .getColumnCount = instrumentCommonColumnCount,
   .drawStatic = instrumentCommonDrawStatic,
   .drawCursor = instrumentCommonDrawCursor,
@@ -247,7 +247,7 @@ static void onInput(int keys, int isDoubleTap) {
   if (keys == 0) {
     playbackStopPreview(&playback, *pSongTrack);
   }
-  
+
   if (isCharEdit) {
     struct ScreenData* screen = instrumentScreen();
     char result = charEditInput(keys, isDoubleTap, project.instruments[cInstrument].name, screen->cursorCol, PROJECT_INSTRUMENT_NAME_LENGTH);

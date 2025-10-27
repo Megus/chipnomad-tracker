@@ -5,3 +5,4 @@ autosave.cnm
 devfile.yaml
 releases
 settings.txt
+*.sh

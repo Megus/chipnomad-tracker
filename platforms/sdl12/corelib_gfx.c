@@ -16,7 +16,6 @@ SDL_Surface *sdlScreen;
 static uint32_t fgColor = 0;
 static uint32_t bgColor = 0;
 static uint32_t cursorColor = 0;
-static uint32_t selectionColor = 0;
 static uint8_t* font = NULL;
 static char printBuffer[PRINT_BUFFER_SIZE];
 static int fontH;
@@ -66,11 +65,6 @@ void gfxSetBgColor(int rgb) {
 void gfxSetCursorColor(int rgb) {
   cursorColor = SDL_MapRGB(sdlScreen->format, (rgb & 0xff0000) >> 16, (rgb & 0xff00) >> 8, rgb & 0xff);
 }
-
-void gfxSetSelectionColor(int rgb) {
-  selectionColor = SDL_MapRGB(sdlScreen->format, (rgb & 0xff0000) >> 16, (rgb & 0xff00) >> 8, rgb & 0xff);
-}
-
 
 void gfxClear(void) {
   SDL_FillRect(sdlScreen, NULL, bgColor);
@@ -151,18 +145,18 @@ void gfxCursor(int x, int y, int w) {
   }
 }
 
-void gfxSelection(int x, int y, int w, int h) {
+void gfxRect(int x, int y, int w, int h) {
   int cx = CHAR_X(x);
   int cy = CHAR_Y(y);
   int cw = CHAR_X(w);
   int ch = CHAR_Y(h);
   for (int c = 0; c < cw; c++) {
-    gfxPoint(cx + c, cy, selectionColor);
-    gfxPoint(cx + c, cy + ch - 1, selectionColor);
+    gfxPoint(cx + c, cy, fgColor);
+    gfxPoint(cx + c, cy + ch - 1, fgColor);
   }
   for (int c = 0; c < ch; c++) {
-    gfxPoint(cx, cy + c, selectionColor);
-    gfxPoint(cx + cw - 1, cy + c, selectionColor);
+    gfxPoint(cx, cy + c, fgColor);
+    gfxPoint(cx + cw - 1, cy + c, fgColor);
   }
 }
 

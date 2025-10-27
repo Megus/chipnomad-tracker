@@ -19,19 +19,23 @@ static void drawField(int col, int row, int state);
 static void drawRowHeader(int row, int state);
 static void drawColHeader(int col, int state);
 static void drawCursor(int col, int row);
+static void drawSelection(int col1, int row1, int col2, int row2);
 static int onEdit(int col, int row, enum CellEditAction action);
+
+static int columnX[] = {3, 7, 10, 13, 16, 19, 22, 25, 28, 31};
 
 static struct ScreenData screen = {
   .rows = 16,
   .cursorRow = 0,
   .cursorCol = 0,
   .topRow = 0,
-  .isSelectMode = -1,
+  .selectMode = 0,
   .selectStartRow = 0,
   .selectStartCol = 0,
   .getColumnCount = getColumnCount,
   .drawStatic = drawStatic,
   .drawCursor = drawCursor,
+  .drawSelection = drawSelection,
   .drawRowHeader = drawRowHeader,
   .drawColHeader = drawColHeader,
   .drawField = drawField,
@@ -40,6 +44,7 @@ static struct ScreenData screen = {
 
 static void setup(int input) {
   phrase = project.chains[project.song[*pSongRow][*pSongTrack]].phrases[*pChainRow];
+  screen.selectMode = 0;
   isFxEdit = 0;
 }
 
@@ -62,26 +67,28 @@ static void fullRedraw(void) {
 }
 
 static void drawField(int col, int row, int state) {
+  int x = columnX[col];
+  int y = 3 + row;
   if (col == 0) {
     // Note
     uint8_t value = project.phrases[phrase].notes[row];
     setCellColor(state, value == EMPTY_VALUE_8, 1);
-    gfxPrint(3, 3 + row, noteName(value));
+    gfxPrint(x, y, noteName(value));
   } else if (col == 1 || col == 2) {
     // Instrument and volume
     uint8_t value = (col == 1) ? project.phrases[phrase].instruments[row] : project.phrases[phrase].volumes[row];
     setCellColor(state, value == EMPTY_VALUE_8, 1);
-    gfxPrint(4 + col * 3, 3 + row, byteToHexOrEmpty(value));
+    gfxPrint(x, y, byteToHexOrEmpty(value));
   } else if (col == 3 || col == 5 || col == 7) {
     // FX name
     uint8_t fx = project.phrases[phrase].fx[row][(col - 3) / 2][0];
     setCellColor(state, fx == EMPTY_VALUE_8, 1);
-    gfxPrint(4 + col * 3, 3 + row, fxNames[fx].name);
+    gfxPrint(x, y, fxNames[fx].name);
   } else if (col == 4 || col == 6 || col == 8) {
     // FX value
     uint8_t value = project.phrases[phrase].fx[row][(col - 4) / 2][1];
     setCellColor(state, 0, project.phrases[phrase].fx[row][(col - 3) / 2][0] != EMPTY_VALUE_8);
-    gfxPrint(4 + col * 3, 3 + row, byteToHex(value));
+    gfxPrint(x, y, byteToHex(value));
   }
 }
 
@@ -127,6 +134,16 @@ static void drawCursor(int col, int row) {
   if (col == 0 || col == 3 || col == 5 || col == 7) width = 3;
   gfxCursor(col == 0 ? 3 : 4 + col * 3, 3 + row, width);
 }
+
+static void drawSelection(int col1, int row1, int col2, int row2) {
+  int x = columnX[col1];
+  int w = columnX[col2 + 1] - x - 1;
+  int y = 3 + row1;
+  int h = row2 - row1 + 1;
+  if (col2 == 3 || col2 == 5 || col2 == 7) w++;
+  gfxRect(x, y, w, h);
+}
+
 
 static void draw(void) {
   if (isFxEdit) return;
@@ -351,8 +368,8 @@ static void onInput(int keys, int isDoubleTap) {
     return;
   }
 
-  if (inputScreenNavigation(keys, isDoubleTap)) return;
-  if (screenInput(&screen, keys, isDoubleTap)) return;
+  if (screen.selectMode == 0 && inputScreenNavigation(keys, isDoubleTap)) return;
+  screenInput(&screen, keys, isDoubleTap);
 }
 
 const struct AppScreen screenPhrase = {

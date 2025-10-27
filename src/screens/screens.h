@@ -33,7 +33,7 @@ struct ScreenData {
   int cursorRow;
   int cursorCol;
   int topRow; // For scrollable screens
-  int isSelectMode; // 0 - edit, 1 - select, -1 - select is disabled for this screen (e.g. Instrument screen)
+  int selectMode; // 0 - edit, 1 - select, -1 - select is disabled for this screen (e.g. Instrument screen)
   int selectStartRow;
   int selectStartCol;
   int (*getColumnCount)(int row);
@@ -67,6 +67,7 @@ void screenMessage(const char* format, ...);
 
 // Spreadsheet functions
 void screenFullRedraw(struct ScreenData* screen);
+void screenDrawOverlays(struct ScreenData* screen);
 int screenInput(struct ScreenData* screen, int keys, int isDoubleTap);
 
 // Utility functions

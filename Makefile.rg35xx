@@ -26,8 +26,6 @@ RG35xx:
 
 # RG35xx deployment
 APP := ChipNomad
-ADB := adb
-APPS := /mnt/mmc/Roms/APPS
 
 .PHONY: .RG35xx-sh
 .RG35xx-sh:
@@ -46,29 +44,3 @@ RG35xx-deploy: RG35xx .RG35xx-sh
 	cd $(BUILD)/deploy && zip -r $(APP).zip $(APP) $(APP).sh
 	mv $(BUILD)/deploy/$(APP).zip $(BUILD)/$(APP).zip
 	rm -rf $(BUILD)/deploy
-
-.PHONY: .check-adb
-.check-adb:
-	@which $(ADB) > /dev/null || (echo "adb not found, please install Android SDK" && exit 1)
-
-.PHONY: RG35xx-adb-install
-RG35xx-adb-install: .check-adb RG35xx .RG35xx-sh
-	$(ADB) shell mkdir -p $(APPS)/$(APP)
-	$(ADB) push $(BUILD)/chipnomad.rg35xx $(APPS)/$(APP)
-	$(ADB) push $(BUILD)/launcher.sh $(APPS)/$(APP).sh
-	$(ADB) push packaging/rg35xx/j2k.so $(APPS)/$(APP)
-	$(ADB) shell chmod 755 $(APPS)/$(APP)/chipnomad.rg35xx
-	$(ADB) shell chmod 755 $(APPS)/$(APP).sh
-
-.PHONY: RG35xx-adb-uninstall
-RG35xx-adb-uninstall: .check-adb
-	$(ADB) shell rm -rf $(APPS)/$(APP)
-	$(ADB) shell rm -f $(APPS)/$(APP).sh
-
-.PHONY: RG35xx-adb-kill
-RG35xx-adb-kill: .check-adb
-	$(ADB) shell kill $$($(ADB) shell ps | grep chipnomad.rg35xx | awk '{print $$2}')
-
-.PHONY: RG35xx-adb-logcat
-RG35xx-adb-logcat: .check-adb
-	$(ADB) logcat

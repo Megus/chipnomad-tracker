@@ -25,8 +25,11 @@ CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(XTRA_CFLAGS)
 .PHONY: PortMaster
 PortMaster:
 	$(DOCKER64) monkeyx/retro_builder:arm64 make -f Makefile.portmaster .PortMaster CC=gcc CPU=aarch64
+
+.PHONY: PortMaster32
+PortMaster32:
 	$(DOCKER32) monkeyx/retro_builder:arm32 make -f Makefile.portmaster .PortMaster CC=gcc CPU=armhf
 
 .PHONY: PortMaster-deploy
-PortMaster-deploy: PortMaster
+PortMaster-deploy: PortMaster PortMaster32
 # TODO: Implement PortMaster deployment package creation
