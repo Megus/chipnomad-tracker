@@ -1,9 +1,10 @@
-#include <pitch_table_csv.h>
+#include <pitch_table_utils.h>
 #include <corelib_file.h>
 #include <project.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 int pitchTableLoadCSV(const char* path) {
   int fileId = fileOpen(path, 0);
@@ -108,4 +109,42 @@ int pitchTableSaveCSV(const char* folderPath, const char* filename) {
 
   fileClose(fileId);
   return 0;
+}
+
+// Create 12TET scale
+void calculatePitchTableAY(struct Project* p) {
+  static char noteStrings[12][4] = { "C-1", "C#1", "D-1", "D#1", "E-1", "F-1", "F#1", "G-1", "G#1", "A-1", "A#1", "B-1" };
+
+  float clock = (float)(p->chipSetup.ay.clock);
+  int octaves = 9;
+  float cfreq = 16.35159783; // C-0 frequency for A4 = 440Hz. It's too low for 1.75MHz AY, but we'll keep it
+  float freq = cfreq;
+  float semitone = powf(2., 1. / 12.);
+
+  sprintf(p->pitchTable.name, "12TET %dHz", p->chipSetup.ay.clock);
+  p->pitchTable.length = octaves * 12;
+  p->pitchTable.octaveSize = 12;
+
+  for (int o = 0; o < octaves; o++) {
+    for (int c = 0; c < 12; c++) {
+      noteStrings[c][2] = 48 + o;
+
+      float periodf = clock / 16. / freq;
+
+      float freqL = clock / 16. / floorf(periodf);
+      float freqH = clock / 16. / ceilf(periodf);
+
+      int period = (fabsf(freqL - freq) < fabsf(freqH - freq)) ? floorf(periodf) : ceilf(periodf);
+      if (period > 4095) period = 4095; // AY only has 12 bits for period
+
+      p->pitchTable.values[o * 12 + c] = period;
+      strcpy(p->pitchTable.noteNames[o * 12 + c], noteStrings[c]);
+
+      freq *= semitone;
+    }
+
+    // Reset frequency calculation on each octave to minimize rounding errors
+    cfreq *= 2.;
+    freq = cfreq;
+  }
 }

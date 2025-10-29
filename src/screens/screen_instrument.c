@@ -3,6 +3,7 @@
 #include <corelib_gfx.h>
 #include <utils.h>
 #include <project.h>
+#include <project_utils.h>
 #include <screen_instrument.h>
 #include <string.h>
 

@@ -4,7 +4,7 @@
 #include <file_browser.h>
 #include <project.h>
 #include <string.h>
-#include <pitch_table_csv.h>
+#include <pitch_table_utils.h>
 
 static int isCharEdit = 0;
 static char* editingString = NULL;

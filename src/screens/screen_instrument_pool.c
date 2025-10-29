@@ -3,6 +3,7 @@
 #include <corelib_gfx.h>
 #include <utils.h>
 #include <project.h>
+#include <project_utils.h>
 #include <screen_instrument.h>
 #include <string.h>
 
@@ -24,20 +25,20 @@ static void setup(int input) {
 
 static void fullRedraw(void) {
   const struct ColorScheme cs = appSettings.colorScheme;
-  
+
   gfxSetFgColor(cs.textTitles);
   gfxPrintf(0, 0, "INSTRUMENT POOL");
-  
+
   gfxSetFgColor(cs.textInfo);
   gfxPrint(0, 2, "    Name            Type");
-  
+
   // Draw instruments
   int maxRow = topRow + 16;
   if (maxRow > PROJECT_MAX_INSTRUMENTS) maxRow = PROJECT_MAX_INSTRUMENTS;
-  
+
   for (int i = topRow; i < maxRow; i++) {
     int y = 3 + (i - topRow);
-    
+
     // Set color based on cursor position and instrument state
     if (i == cursorRow) {
       gfxSetFgColor(cs.textValue);
@@ -46,7 +47,7 @@ static void fullRedraw(void) {
     } else {
       gfxSetFgColor(cs.textDefault);
     }
-    
+
     // Draw cursor indicator and instrument number
     if (i == cursorRow) {
       gfxPrint(0, y, ">");
@@ -54,26 +55,26 @@ static void fullRedraw(void) {
       gfxPrint(0, y, " ");
     }
     gfxPrintf(1, y, "%02X", i);
-    
+
     // Draw instrument name
     if (!instrumentIsEmpty(i)) {
       gfxPrintf(4, y, "%-15s", project.instruments[i].name);
     } else {
       gfxPrint(4, y, "               ");
     }
-    
+
     // Draw instrument type
     gfxClearRect(20, y, 14, 1);
     gfxPrint(20, y, instrumentTypeName(project.instruments[i].type));
   }
-  
+
 
 }
 
 static void draw(void) {
   // Clear playback markers
   gfxClearRect(3, 3, 1, 16);
-  
+
   // Draw playback markers for currently playing instruments
   for (int track = 0; track < project.tracksCount; track++) {
     struct PlaybackTrackState* trackState = &playback.tracks[track];
@@ -93,7 +94,7 @@ static int editPressed = 0;
 static void onInput(int keys, int isDoubleTap) {
   int oldCursorRow = cursorRow;
   int oldTopRow = topRow;
-  
+
   // Handle Edit button press/release for instrument selection
   if (keys == keyEdit) {
     editPressed = 1;
@@ -106,7 +107,7 @@ static void onInput(int keys, int isDoubleTap) {
   } else if (keys != 0) {
     editPressed = 0;
   }
-  
+
   if (keys == keyUp) {
     if (cursorRow > 0) {
       cursorRow--;
@@ -187,19 +188,19 @@ static void onInput(int keys, int isDoubleTap) {
     }
     return;
   }
-  
+
   // Stop preview when keys are released
   if (keys == 0) {
     playbackStopPreview(&playback, *pSongTrack);
     editPressed = 0;
   }
-  
+
   // Stop preview when cursor moves
   if (oldCursorRow != cursorRow) {
     playbackStopPreview(&playback, *pSongTrack);
     editPressed = 0;
   }
-  
+
   // Redraw only cursor if position changed
   if (oldCursorRow != cursorRow) {
     // Clear old cursor line
@@ -220,7 +221,7 @@ static void onInput(int keys, int isDoubleTap) {
       gfxClearRect(20, oldY, 14, 1);
       gfxPrint(20, oldY, instrumentTypeName(project.instruments[oldCursorRow].type));
     }
-    
+
     // Draw new cursor line
     int newY = 3 + (cursorRow - topRow);
     gfxSetFgColor(appSettings.colorScheme.textValue);

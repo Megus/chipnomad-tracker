@@ -157,15 +157,15 @@ void outputRegistersAY(struct PlaybackState* state, int trackIdx, int chipIdx, s
 
         // Instrument table volume
         int tableIdx = track->note.instrumentTable.tableIdx;
-        if (tableIdx != EMPTY_VALUE_8 && p->tables[tableIdx].volumes[track->note.instrumentTable.rows[0]] != EMPTY_VALUE_8) {
-          volume *= p->tables[tableIdx].volumes[track->note.instrumentTable.rows[0]];
+        if (tableIdx != EMPTY_VALUE_8 && p->tables[tableIdx].rows[track->note.instrumentTable.rows[0]].volume != EMPTY_VALUE_8) {
+          volume *= p->tables[tableIdx].rows[track->note.instrumentTable.rows[0]].volume;
         } else {
           volume *= 15;
         }
 
         // Aux table volume
         tableIdx = track->note.auxTable.tableIdx;
-        if (tableIdx != EMPTY_VALUE_8 && p->tables[tableIdx].volumes[track->note.auxTable.rows[0]] != EMPTY_VALUE_8) {
+        if (tableIdx != EMPTY_VALUE_8 && p->tables[tableIdx].rows[track->note.auxTable.rows[0]].volume != EMPTY_VALUE_8) {
         } else {
           volume *= 15;
         }

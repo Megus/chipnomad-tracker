@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <math.h>
 #include <string.h>
 #include <project.h>
 #include <corelib_file.h>
@@ -8,12 +7,6 @@
 struct Project project;
 
 struct FXName fxNames[256];
-
-// Instrument type names
-char instrumentTypeNames[][16] = {
-  "None",
-  "AY",
-};
 
 // FX Names (in the order as they appear in FX select screen)
 struct FXName fxNamesCommon[] = {
@@ -49,62 +42,8 @@ void fillFXNames() {
   }
 }
 
-
-// Create 12TET scale
-void calculatePitchTableAY(struct Project* p) {
-  static char noteStrings[12][4] = { "C-1", "C#1", "D-1", "D#1", "E-1", "F-1", "F#1", "G-1", "G#1", "A-1", "A#1", "B-1" };
-
-  float clock = (float)(p->chipSetup.ay.clock);
-  int octaves = 9;
-  float cfreq = 16.35159783; // C-0 frequency for A4 = 440Hz. It's too low for 1.75MHz AY, but we'll keep it
-  float freq = cfreq;
-  float semitone = powf(2., 1. / 12.);
-
-  sprintf(p->pitchTable.name, "12TET %dHz", p->chipSetup.ay.clock);
-  p->pitchTable.length = octaves * 12;
-  p->pitchTable.octaveSize = 12;
-
-  for (int o = 0; o < octaves; o++) {
-    for (int c = 0; c < 12; c++) {
-      noteStrings[c][2] = 48 + o;
-
-      float periodf = clock / 16. / freq;
-
-      float freqL = clock / 16. / floorf(periodf);
-      float freqH = clock / 16. / ceilf(periodf);
-
-      int period = (fabsf(freqL - freq) < fabsf(freqH - freq)) ? floorf(periodf) : ceilf(periodf);
-      if (period > 4095) period = 4095; // AY only has 12 bits for period
-
-      p->pitchTable.values[o * 12 + c] = period;
-      strcpy(p->pitchTable.noteNames[o * 12 + c], noteStrings[c]);
-
-      freq *= semitone;
-    }
-
-    // Reset frequency calculation on each octave to minimize rounding errors
-    cfreq *= 2.;
-    freq = cfreq;
-  }
-}
-
 // Initialize project
 void projectInit(struct Project* p) {
-  // Init for AY
-  p->tickRate = 50;
-  p->chipType = chipAY;
-  p->chipsCount = 1;
-  p->chipSetup.ay = (struct ChipSetupAY){
-    .clock = 1750000,
-    .isYM = 0,
-    .stereoMode = ayStereoABC,
-    .stereoSeparation = 50,
-  };
-
-  p->tracksCount = p->chipsCount * 3; // AY/YM has 3 channels
-
-  calculatePitchTableAY(p);
-
   // Title
   strcpy(p->title, "");
   strcpy(p->author, "");
@@ -118,10 +57,9 @@ void projectInit(struct Project* p) {
 
   // Clean chains
   for (int c = 0; c < PROJECT_MAX_CHAINS; c++) {
-    p->chains[c].hasNotes = -1;
     for (int d = 0; d < 16; d++) {
-      p->chains[c].phrases[d] = EMPTY_VALUE_16;
-      p->chains[c].transpose[d] = 0;
+      p->chains[c].rows[d].phrase = EMPTY_VALUE_16;
+      p->chains[c].rows[d].transpose = 0;
     }
   }
 
@@ -136,17 +74,15 @@ void projectInit(struct Project* p) {
   p->grooves[0].speed[0] = 6;
   p->grooves[0].speed[1] = 6;
 
-
   // Clean phrases
   for (int c = 0; c < PROJECT_MAX_PHRASES; c++) {
-    p->phrases[c].hasNotes = -1;
     for (int d = 0; d < 16; d++) {
-      p->phrases[c].notes[d] = EMPTY_VALUE_8;
-      p->phrases[c].instruments[d] = EMPTY_VALUE_8;
-      p->phrases[c].volumes[d] = EMPTY_VALUE_8;
+      p->phrases[c].rows[d].note = EMPTY_VALUE_8;
+      p->phrases[c].rows[d].instrument = EMPTY_VALUE_8;
+      p->phrases[c].rows[d].volume = EMPTY_VALUE_8;
       for (int e = 0; e < 3; e++) {
-        p->phrases[c].fx[d][e][0] = EMPTY_VALUE_8;
-        p->phrases[c].fx[d][e][1] = 0;
+        p->phrases[c].rows[d].fx[e][0] = EMPTY_VALUE_8;
+        p->phrases[c].rows[d].fx[e][1] = 0;
       }
     }
   }
@@ -160,195 +96,16 @@ void projectInit(struct Project* p) {
   // Clean tables
   for (int c = 0; c < PROJECT_MAX_TABLES; c++) {
     for (int d = 0; d < 16; d++) {
-      p->tables[c].pitchFlags[d] = 0;
-      p->tables[c].pitchOffsets[d] = 0;
-      p->tables[c].volumes[d] = EMPTY_VALUE_8;
+      p->tables[c].rows[d].pitchFlag = 0;
+      p->tables[c].rows[d].pitchOffset = 0;
+      p->tables[c].rows[d].volume = EMPTY_VALUE_8;
       for (int e = 0; e < 4; e++) {
-        p->tables[c].fx[d][e][0] = EMPTY_VALUE_8;
-        p->tables[c].fx[d][e][1] = 0;
+        p->tables[c].rows[d].fx[e][0] = EMPTY_VALUE_8;
+        p->tables[c].rows[d].fx[e][1] = 0;
       }
     }
   }
 }
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// Utility functions
-//
-
-// Is chain empty?
-int8_t chainIsEmpty(int chain) {
-  for (int c = 0; c < 16; c++) {
-    if (project.chains[chain].phrases[c] != EMPTY_VALUE_16) return 0;
-  }
-
-  return 1;
-}
-
-// Does chain have notes?
-int8_t chainHasNotes(int chain) {
-  int8_t v = project.chains[chain].hasNotes;
-  if (v != -1) return v;
-
-  v = 0;
-  for (int c = 0; c < 16; c++) {
-    int phrase = project.chains[chain].phrases[c];
-    if (phrase != EMPTY_VALUE_16) v = phraseHasNotes(phrase);
-    if (v == 1) break;
-  }
-
-  project.chains[chain].hasNotes = v;
-
-  return v;
-}
-
-// Is phrase empty?
-int8_t phraseIsEmpty(int phrase) {
-  for (int c = 0; c < 16; c++) {
-    if (project.phrases[phrase].notes[c] != EMPTY_VALUE_8) return 0;
-    if (project.phrases[phrase].instruments[c] != EMPTY_VALUE_8) return 0;
-    if (project.phrases[phrase].volumes[c] != EMPTY_VALUE_8) return 0;
-    for (int d = 0; d < 3; d++) {
-      if (project.phrases[phrase].fx[c][d][0] != EMPTY_VALUE_8) return 0;
-      if (project.phrases[phrase].fx[c][d][1] != 0) return 0;
-    }
-  }
-
-  return 1;
-}
-
-// Does phrase have notes?
-int8_t phraseHasNotes(int phrase) {
-  int8_t v = project.phrases[phrase].hasNotes;
-  if (v != -1) return v;
-
-  v = 0;
-  for (int c = 0; c < 16; c++) {
-    if (project.phrases[phrase].notes[c] < PROJECT_MAX_PITCHES) {
-      v = 1;
-      break;
-    }
-  }
-
-  project.phrases[phrase].hasNotes = v;
-
-  return v;
-}
-
-// Is instrument empty?
-int8_t instrumentIsEmpty(int instrument) {
-  return project.instruments[instrument].type == instNone;
-}
-
-// Is table empty?
-int8_t tableIsEmpty(int table) {
-  for (int c = 0; c < 16; c++) {
-    if (project.tables[table].pitchFlags[c] != 0) return 0;
-    if (project.tables[table].pitchOffsets[c] != 0) return 0;
-    if (project.tables[table].volumes[c] != EMPTY_VALUE_8) return 0;
-    for (int d = 0; d < 4; d++) {
-      if (project.tables[table].fx[c][d][0] != EMPTY_VALUE_8) return 0;
-      if (project.tables[table].fx[c][d][1] != 0) return 0;
-    }
-  }
-
-  return 1;
-}
-
-// Is groove empty?
-int8_t grooveIsEmpty(int groove) {
-  for (int c = 0; c < 16; c++) {
-    if (project.grooves[groove].speed[c] != EMPTY_VALUE_8) return 0;
-  }
-  return 1;
-}
-
-// Instrument name
-char* instrumentName(uint8_t instrument) {
-  if (project.instruments[instrument].type == instNone) return "None";
-  if (strlen(project.instruments[instrument].name) == 0) {
-    switch (project.instruments[instrument].type) {
-      case instAY:
-        return "AY";
-        break;
-      default:
-        return "";
-        break;
-    }
-  } else {
-    return project.instruments[instrument].name;
-  }
-}
-
-// Note name in phrase
-char* noteName(uint8_t note) {
-  if (note == NOTE_OFF) {
-    return "OFF";
-  } else if (note < project.pitchTable.length) {
-    return project.pitchTable.noteNames[note];
-  } else {
-    return "---";
-  }
-}
-
-// Instrument type name
-char* instrumentTypeName(uint8_t type) {
-  if (type < sizeof(instrumentTypeNames) / sizeof(instrumentTypeNames[0])) {
-    return instrumentTypeNames[type];
-  }
-  return "Unknown";
-}
-
-// Get first note used with an instrument in the project
-uint8_t instrumentFirstNote(uint8_t instrument) {
-  // Search through all phrases for first use of this instrument
-  for (int p = 0; p < PROJECT_MAX_PHRASES; p++) {
-    if (phraseIsEmpty(p)) continue;
-    for (int row = 0; row < 16; row++) {
-      if (project.phrases[p].instruments[row] == instrument && 
-          project.phrases[p].notes[row] < project.pitchTable.length) {
-        return project.phrases[p].notes[row];
-      }
-    }
-  }
-  // Default to C in 4th octave if not found
-  return project.pitchTable.octaveSize * 4;
-}
-
-// Swap instrument references in all phrases
-static void instrumentSwapReferences(uint8_t inst1, uint8_t inst2) {
-  for (int p = 0; p < PROJECT_MAX_PHRASES; p++) {
-    for (int row = 0; row < 16; row++) {
-      uint8_t inst = project.phrases[p].instruments[row];
-      if (inst == inst1) {
-        project.phrases[p].instruments[row] = inst2;
-      } else if (inst == inst2) {
-        project.phrases[p].instruments[row] = inst1;
-      }
-    }
-  }
-}
-
-// Swap two instruments and their default tables
-void instrumentSwap(uint8_t inst1, uint8_t inst2) {
-  if (inst1 >= PROJECT_MAX_INSTRUMENTS || inst2 >= PROJECT_MAX_INSTRUMENTS || inst1 == inst2) {
-    return;
-  }
-  
-  // Swap instruments
-  struct Instrument temp = project.instruments[inst1];
-  project.instruments[inst1] = project.instruments[inst2];
-  project.instruments[inst2] = temp;
-  
-  // Swap default tables (table number matches instrument number)
-  struct Table tempTable = project.tables[inst1];
-  project.tables[inst1] = project.tables[inst2];
-  project.tables[inst2] = tempTable;
-  
-  // Swap instrument references in phrases
-  instrumentSwapReferences(inst1, inst2);
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -500,16 +257,15 @@ static int projectLoadChains(int fileId, struct Project* p) {
     if (strncmp(lpstr, "### Chain", 9)) break;
     if (sscanf(lpstr, "### Chain %X", &idx) != 1) return 1;
 
-    p->chains[idx].hasNotes = -1;
     for (int c = 0; c < 16; c++) {
       READ_STRING;
       if (strlen(lpstr) != 6) return 1;
 
       if (lpstr[0] == '-') {
-        p->chains[idx].phrases[c] = EMPTY_VALUE_16;
-        if (sscanf(lpstr + 4, "%hhX", &p->chains[idx].transpose[c]) != 1) return 1;
+        p->chains[idx].rows[c].phrase = EMPTY_VALUE_16;
+        if (sscanf(lpstr + 4, "%hhX", &p->chains[idx].rows[c].transpose) != 1) return 1;
       } else {
-        if (sscanf(lpstr, "%hX %hhX", &p->chains[idx].phrases[c], &p->chains[idx].transpose[c]) != 2) return 1;
+        if (sscanf(lpstr, "%hX %hhX", &p->chains[idx].rows[c].phrase, &p->chains[idx].rows[c].transpose) != 2) return 1;
       }
     }
   }
@@ -551,20 +307,20 @@ static int projectLoadPhrases(int fileId, struct Project* p) {
       READ_STRING;
       if (strlen(lpstr) != 30) return 1;
       // Note
-      p->phrases[idx].notes[c] = scanNote(lpstr, p);
+      p->phrases[idx].rows[c].note = scanNote(lpstr, p);
       // Instrument
-      p->phrases[idx].instruments[c] = scanByteOrEmpty(lpstr + 4);
+      p->phrases[idx].rows[c].instrument = scanByteOrEmpty(lpstr + 4);
       // Volume
-      p->phrases[idx].volumes[c] = scanByteOrEmpty(lpstr + 7);
+      p->phrases[idx].rows[c].volume = scanByteOrEmpty(lpstr + 7);
       // FX1
-      p->phrases[idx].fx[c][0][0] = scanFX(lpstr + 10, p);
-      p->phrases[idx].fx[c][0][1] = scanByteOrEmpty(lpstr + 14);
+      p->phrases[idx].rows[c].fx[0][0] = scanFX(lpstr + 10, p);
+      p->phrases[idx].rows[c].fx[0][1] = scanByteOrEmpty(lpstr + 14);
       // FX2
-      p->phrases[idx].fx[c][1][0] = scanFX(lpstr + 17, p);
-      p->phrases[idx].fx[c][1][1] = scanByteOrEmpty(lpstr + 21);
+      p->phrases[idx].rows[c].fx[1][0] = scanFX(lpstr + 17, p);
+      p->phrases[idx].rows[c].fx[1][1] = scanByteOrEmpty(lpstr + 21);
       // FX3
-      p->phrases[idx].fx[c][2][0] = scanFX(lpstr + 24, p);
-      p->phrases[idx].fx[c][2][1] = scanByteOrEmpty(lpstr + 28);
+      p->phrases[idx].rows[c].fx[2][0] = scanFX(lpstr + 24, p);
+      p->phrases[idx].rows[c].fx[2][1] = scanByteOrEmpty(lpstr + 28);
     }
   }
 
@@ -636,29 +392,29 @@ static int projectLoadTables(int fileId, struct Project* p) {
       if (strlen(lpstr) < 35) return 1;  // Minimum length check
 
       // Read pitch flag (single char)
-      p->tables[idx].pitchFlags[d] = (lpstr[0] == '=') ? 1 : 0;
+      p->tables[idx].rows[d].pitchFlag = (lpstr[0] == '=') ? 1 : 0;
 
       // Read pitch offset
-      p->tables[idx].pitchOffsets[d] = scanByteOrEmpty(lpstr + 2);
+      p->tables[idx].rows[d].pitchOffset = scanByteOrEmpty(lpstr + 2);
 
-      // Read volume offset
-      p->tables[idx].volumes[d] = scanByteOrEmpty(lpstr + 5);
+      // Read volume
+      p->tables[idx].rows[d].volume = scanByteOrEmpty(lpstr + 5);
 
       // Read FX1
-      p->tables[idx].fx[d][0][0] = scanFX(lpstr + 8, p);
-      p->tables[idx].fx[d][0][1] = scanByteOrEmpty(lpstr + 12);
+      p->tables[idx].rows[d].fx[0][0] = scanFX(lpstr + 8, p);
+      p->tables[idx].rows[d].fx[0][1] = scanByteOrEmpty(lpstr + 12);
 
       // Read FX2
-      p->tables[idx].fx[d][1][0] = scanFX(lpstr + 15, p);
-      p->tables[idx].fx[d][1][1] = scanByteOrEmpty(lpstr + 19);
+      p->tables[idx].rows[d].fx[1][0] = scanFX(lpstr + 15, p);
+      p->tables[idx].rows[d].fx[1][1] = scanByteOrEmpty(lpstr + 19);
 
       // Read FX3
-      p->tables[idx].fx[d][2][0] = scanFX(lpstr + 22, p);
-      p->tables[idx].fx[d][2][1] = scanByteOrEmpty(lpstr + 26);
+      p->tables[idx].rows[d].fx[2][0] = scanFX(lpstr + 22, p);
+      p->tables[idx].rows[d].fx[2][1] = scanByteOrEmpty(lpstr + 26);
 
       // Read FX4
-      p->tables[idx].fx[d][3][0] = scanFX(lpstr + 29, p);
-      p->tables[idx].fx[d][3][1] = scanByteOrEmpty(lpstr + 33);
+      p->tables[idx].rows[d].fx[3][0] = scanFX(lpstr + 29, p);
+      p->tables[idx].rows[d].fx[3][1] = scanByteOrEmpty(lpstr + 33);
     }
   }
 
@@ -831,11 +587,11 @@ static int projectSaveChains(int fileId) {
     if (!chainIsEmpty(c)) {
       filePrintf(fileId, "\n### Chain %X\n\n```\n", c);
       for (int d = 0; d < 16; d++) {
-        int phrase = project.chains[c].phrases[d];
+        int phrase = project.chains[c].rows[d].phrase;
         if (phrase == EMPTY_VALUE_16) {
-          filePrintf(fileId, "--- %s\n", byteToHex(project.chains[c].transpose[d]));
+          filePrintf(fileId, "--- %s\n", byteToHex(project.chains[c].rows[d].transpose));
         } else {
-          filePrintf(fileId, "%03X %s\n", project.chains[c].phrases[d], byteToHex(project.chains[c].transpose[d]));
+          filePrintf(fileId, "%03X %s\n", project.chains[c].rows[d].phrase, byteToHex(project.chains[c].rows[d].transpose));
         }
       }
       filePrintf(fileId, "```\n");
@@ -870,15 +626,15 @@ static int projectSavePhrases(int fileId) {
       filePrintf(fileId, "### Phrase %X\n\n```\n", c);
       for (int d = 0; d < 16; d++) {
         filePrintf(fileId, "%s %s %s %s %s %s %s %s %s\n",
-          noteName(project.phrases[c].notes[d]),
-          byteToHexOrEmpty(project.phrases[c].instruments[d]),
-          byteToHexOrEmpty(project.phrases[c].volumes[d]),
-          fxNames[project.phrases[c].fx[d][0][0]].name,
-          byteToHex(project.phrases[c].fx[d][0][1]),
-          fxNames[project.phrases[c].fx[d][1][0]].name,
-          byteToHex(project.phrases[c].fx[d][1][1]),
-          fxNames[project.phrases[c].fx[d][2][0]].name,
-          byteToHex(project.phrases[c].fx[d][2][1])
+          noteName(project.phrases[c].rows[d].note),
+          byteToHexOrEmpty(project.phrases[c].rows[d].instrument),
+          byteToHexOrEmpty(project.phrases[c].rows[d].volume),
+          fxNames[project.phrases[c].rows[d].fx[0][0]].name,
+          byteToHex(project.phrases[c].rows[d].fx[0][1]),
+          fxNames[project.phrases[c].rows[d].fx[1][0]].name,
+          byteToHex(project.phrases[c].rows[d].fx[1][1]),
+          fxNames[project.phrases[c].rows[d].fx[2][0]].name,
+          byteToHex(project.phrases[c].rows[d].fx[2][1])
         );
       }
       filePrintf(fileId, "```\n");
@@ -927,17 +683,17 @@ static int projectSaveTables(int fileId) {
       for (int d = 0; d < 16; d++) {
         // Save pitch flag as ~ or =
         filePrintf(fileId, "%c %s %s %s %s %s %s %s %s %s %s\n",
-          project.tables[c].pitchFlags[d] ? '=' : '~',
-          byteToHex(project.tables[c].pitchOffsets[d]),
-          byteToHexOrEmpty(project.tables[c].volumes[d]),
-          fxNames[project.tables[c].fx[d][0][0]].name,
-          byteToHex(project.tables[c].fx[d][0][1]),
-          fxNames[project.tables[c].fx[d][1][0]].name,
-          byteToHex(project.tables[c].fx[d][1][1]),
-          fxNames[project.tables[c].fx[d][2][0]].name,
-          byteToHex(project.tables[c].fx[d][2][1]),
-          fxNames[project.tables[c].fx[d][3][0]].name,
-          byteToHex(project.tables[c].fx[d][3][1])
+          project.tables[c].rows[d].pitchFlag ? '=' : '~',
+          byteToHex(project.tables[c].rows[d].pitchOffset),
+          byteToHexOrEmpty(project.tables[c].rows[d].volume),
+          fxNames[project.tables[c].rows[d].fx[0][0]].name,
+          byteToHex(project.tables[c].rows[d].fx[0][1]),
+          fxNames[project.tables[c].rows[d].fx[1][0]].name,
+          byteToHex(project.tables[c].rows[d].fx[1][1]),
+          fxNames[project.tables[c].rows[d].fx[2][0]].name,
+          byteToHex(project.tables[c].rows[d].fx[2][1]),
+          fxNames[project.tables[c].rows[d].fx[3][0]].name,
+          byteToHex(project.tables[c].rows[d].fx[3][1])
         );
       }
       filePrintf(fileId, "```\n");
@@ -1000,3 +756,71 @@ int projectSave(const char* path) {
   fileClose(fileId);
   return result;
 }
+
+
+
+// Convenience functions
+
+// Is chain empty?
+int8_t chainIsEmpty(int chain) {
+  for (int c = 0; c < 16; c++) {
+    if (project.chains[chain].rows[c].phrase != EMPTY_VALUE_16) return 0;
+  }
+
+  return 1;
+}
+
+// Is phrase empty?
+int8_t phraseIsEmpty(int phrase) {
+  for (int c = 0; c < 16; c++) {
+    if (project.phrases[phrase].rows[c].note != EMPTY_VALUE_8) return 0;
+    if (project.phrases[phrase].rows[c].instrument != EMPTY_VALUE_8) return 0;
+    if (project.phrases[phrase].rows[c].volume != EMPTY_VALUE_8) return 0;
+    for (int d = 0; d < 3; d++) {
+      if (project.phrases[phrase].rows[c].fx[d][0] != EMPTY_VALUE_8) return 0;
+      if (project.phrases[phrase].rows[c].fx[d][1] != 0) return 0;
+    }
+  }
+
+  return 1;
+}
+
+// Is instrument empty?
+int8_t instrumentIsEmpty(int instrument) {
+  return project.instruments[instrument].type == instNone;
+}
+
+// Is table empty?
+int8_t tableIsEmpty(int table) {
+  for (int c = 0; c < 16; c++) {
+    if (project.tables[table].rows[c].pitchFlag != 0) return 0;
+    if (project.tables[table].rows[c].pitchOffset != 0) return 0;
+    if (project.tables[table].rows[c].volume != EMPTY_VALUE_8) return 0;
+    for (int d = 0; d < 4; d++) {
+      if (project.tables[table].rows[c].fx[d][0] != EMPTY_VALUE_8) return 0;
+      if (project.tables[table].rows[c].fx[d][1] != 0) return 0;
+    }
+  }
+
+  return 1;
+}
+
+// Is groove empty?
+int8_t grooveIsEmpty(int groove) {
+  for (int c = 0; c < 16; c++) {
+    if (project.grooves[groove].speed[c] != EMPTY_VALUE_8) return 0;
+  }
+  return 1;
+}
+
+// Note name in phrase
+char* noteName(uint8_t note) {
+  if (note == NOTE_OFF) {
+    return "OFF";
+  } else if (note < project.pitchTable.length) {
+    return project.pitchTable.noteNames[note];
+  } else {
+    return "---";
+  }
+}
+

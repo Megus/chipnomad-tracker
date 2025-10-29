@@ -3,9 +3,11 @@
 #include <corelib_gfx.h>
 #include <utils.h>
 #include <project.h>
+#include <project_utils.h>
 #include <help.h>
 
-static int phrase = 0;
+static int phraseIdx = 0;
+static struct PhraseRow *phraseRows = NULL;
 static int isFxEdit = 0;
 
 static uint8_t lastNote = 48;
@@ -43,7 +45,8 @@ static struct ScreenData screen = {
 };
 
 static void setup(int input) {
-  phrase = project.chains[project.song[*pSongRow][*pSongTrack]].phrases[*pChainRow];
+  phraseIdx = project.chains[project.song[*pSongRow][*pSongTrack]].rows[*pChainRow].phrase;
+  phraseRows = project.phrases[phraseIdx].rows;
   screen.selectMode = 0;
   isFxEdit = 0;
 }
@@ -59,7 +62,7 @@ static int getColumnCount(int row) {
 
 static void drawStatic(void) {
   gfxSetFgColor(appSettings.colorScheme.textTitles);
-  gfxPrintf(0, 0, "PHRASE %03X", phrase);
+  gfxPrintf(0, 0, "PHRASE %03X", phraseIdx);
 }
 
 static void fullRedraw(void) {
@@ -71,23 +74,23 @@ static void drawField(int col, int row, int state) {
   int y = 3 + row;
   if (col == 0) {
     // Note
-    uint8_t value = project.phrases[phrase].notes[row];
+    uint8_t value = phraseRows[row].note;
     setCellColor(state, value == EMPTY_VALUE_8, 1);
     gfxPrint(x, y, noteName(value));
   } else if (col == 1 || col == 2) {
     // Instrument and volume
-    uint8_t value = (col == 1) ? project.phrases[phrase].instruments[row] : project.phrases[phrase].volumes[row];
+    uint8_t value = (col == 1) ? phraseRows[row].instrument : phraseRows[row].volume;
     setCellColor(state, value == EMPTY_VALUE_8, 1);
     gfxPrint(x, y, byteToHexOrEmpty(value));
   } else if (col == 3 || col == 5 || col == 7) {
     // FX name
-    uint8_t fx = project.phrases[phrase].fx[row][(col - 3) / 2][0];
+    uint8_t fx = phraseRows[row].fx[(col - 3) / 2][0];
     setCellColor(state, fx == EMPTY_VALUE_8, 1);
     gfxPrint(x, y, fxNames[fx].name);
   } else if (col == 4 || col == 6 || col == 8) {
     // FX value
-    uint8_t value = project.phrases[phrase].fx[row][(col - 4) / 2][1];
-    setCellColor(state, 0, project.phrases[phrase].fx[row][(col - 3) / 2][0] != EMPTY_VALUE_8);
+    uint8_t value = phraseRows[row].fx[(col - 4) / 2][1];
+    setCellColor(state, 0, phraseRows[row].fx[(col - 3) / 2][0] != EMPTY_VALUE_8);
     gfxPrint(x, y, byteToHex(value));
   }
 }
@@ -162,8 +165,8 @@ static void draw(void) {
     }
 
     // Phrase row
-    int playingPhrase = project.chains[project.song[track->songRow][*pSongTrack]].phrases[track->chainRow];
-    if (playingPhrase == phrase) {
+    int playingPhrase = project.chains[project.song[track->songRow][*pSongTrack]].rows[track->chainRow].phrase;
+    if (playingPhrase == phraseIdx) {
       int row = track->phraseRow;
       if (row >= 0 && row < 16) {
         gfxSetFgColor(appSettings.colorScheme.playMarkers);
@@ -184,27 +187,27 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 
   if (col == 0) {
     // Note
-    if (action == editClear && project.phrases[phrase].notes[row] == EMPTY_VALUE_8) {
+    if (action == editClear && phraseRows[row].note == EMPTY_VALUE_8) {
       // Special case: inserting OFF
-      project.phrases[phrase].notes[row] = NOTE_OFF;
+      phraseRows[row].note = NOTE_OFF;
       handled = 1;
     } else if (action == editClear) {
       // When clearing note, we also need to clear instrument and volume
-      handled = edit8withLimit(action, &project.phrases[phrase].notes[row], &lastNote, project.pitchTable.octaveSize, project.pitchTable.length - 1);
-      edit8withLimit(action, &project.phrases[phrase].instruments[row], &lastInstrument, 16, PROJECT_MAX_INSTRUMENTS - 1);
-      edit8withLimit(action, &project.phrases[phrase].volumes[row], &lastVolume, 16, maxVolume);
-    } else if (action == editTap && project.phrases[phrase].notes[row] == EMPTY_VALUE_8) {
+      handled = edit8withLimit(action, &phraseRows[row].note, &lastNote, project.pitchTable.octaveSize, project.pitchTable.length - 1);
+      edit8withLimit(action, &phraseRows[row].instrument, &lastInstrument, 16, PROJECT_MAX_INSTRUMENTS - 1);
+      edit8withLimit(action, &phraseRows[row].volume, &lastVolume, 16, maxVolume);
+    } else if (action == editTap && phraseRows[row].note == EMPTY_VALUE_8) {
       // When inserting note, also insert instrument and volume
-      project.phrases[phrase].notes[row] = lastNote;
-      project.phrases[phrase].instruments[row] = lastInstrument;
-      project.phrases[phrase].volumes[row] = lastVolume;
+      phraseRows[row].note = lastNote;
+      phraseRows[row].instrument = lastInstrument;
+      phraseRows[row].volume = lastVolume;
       handled = 1;
-    } else if (project.phrases[phrase].notes[row] != NOTE_OFF) {
-      handled = edit8withLimit(action, &project.phrases[phrase].notes[row], &lastNote, project.pitchTable.octaveSize, project.pitchTable.length - 1);
+    } else if (phraseRows[row].note != NOTE_OFF) {
+      handled = edit8withLimit(action, &phraseRows[row].note, &lastNote, project.pitchTable.octaveSize, project.pitchTable.length - 1);
       // When editing note also copy instrument and volume
       if (handled) {
-        lastInstrument = project.phrases[phrase].instruments[row];
-        lastVolume = project.phrases[phrase].volumes[row] ;
+        lastInstrument = phraseRows[row].instrument;
+        lastVolume = phraseRows[row].volume;
       }
     }
 
@@ -218,21 +221,21 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     if (action == editDoubleTap) {
 
     } else {
-      handled = edit8withLimit(action, &project.phrases[phrase].instruments[row], &lastInstrument, 16, PROJECT_MAX_INSTRUMENTS - 1);
+      handled = edit8withLimit(action, &phraseRows[row].instrument, &lastInstrument, 16, PROJECT_MAX_INSTRUMENTS - 1);
     }
 
-    uint8_t instrument = project.phrases[phrase].instruments[row];
+    uint8_t instrument = phraseRows[row].instrument;
     if (handled && instrument != EMPTY_VALUE_8) {
       screenMessage("%s: %s", byteToHex(instrument), instrumentName(instrument));
     }
 
   } else if (col == 2) {
     // Volume
-    handled = edit8withLimit(action, &project.phrases[phrase].volumes[row], &lastVolume, 16, maxVolume);
+    handled = edit8withLimit(action, &phraseRows[row].volume, &lastVolume, 16, maxVolume);
   } else if (col == 3 || col == 5 || col == 7) {
     // FX
     int fxIdx = (col - 3) / 2;
-    int result = editFX(action, project.phrases[phrase].fx[row][fxIdx], lastFX, 0);
+    int result = editFX(action, phraseRows[row].fx[fxIdx], lastFX, 0);
     if (result == 2) {
       // Edited FX without showing FX select screen
       drawField(col + 1, row, 0);
@@ -245,14 +248,14 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   } else if (col == 4 || col == 6 || col == 8) {
     // FX value
     int fxIdx = (col - 4) / 2;
-    if (project.phrases[phrase].fx[row][fxIdx][0] != EMPTY_VALUE_8) {
-      handled = editFXValue(action, project.phrases[phrase].fx[row][fxIdx], lastFX, 0);
+    if (phraseRows[row].fx[fxIdx][0] != EMPTY_VALUE_8) {
+      handled = editFXValue(action, phraseRows[row].fx[fxIdx], lastFX, 0);
     }
   }
 
   if (handled) {
-    project.phrases[phrase].hasNotes = -1;
-    project.chains[project.song[*pSongRow][*pSongTrack]].hasNotes = -1;
+    //phrase->hasNotes = -1;
+    //project.chains[project.song[*pSongRow][*pSongTrack]].hasNotes = -1;
     playbackStartPhraseRow(&playback, *pSongTrack, *pSongRow, *pChainRow, screen.cursorRow);
   }
 
@@ -267,9 +270,9 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
     if (screen.cursorCol > 2) {
       // If we currently on the table command, go to this table
       int fxIdx = (screen.cursorCol - 3) / 2;
-      uint8_t fxType = project.phrases[phrase].fx[screen.cursorRow][fxIdx][0];
+      uint8_t fxType = phraseRows[screen.cursorRow].fx[fxIdx][0];
       if (fxType == fxTBL || fxType == fxTBX) {
-        table = project.phrases[phrase].fx[screen.cursorRow][fxIdx][1];
+        table = phraseRows[screen.cursorRow].fx[fxIdx][1];
       }
     }
 
@@ -278,8 +281,8 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
     } else {
       int instrument = 0;
       for (int row = screen.cursorRow; row >= 0; row--) {
-        if (project.phrases[phrase].instruments[row] != EMPTY_VALUE_8) {
-          instrument = project.phrases[phrase].instruments[row];
+        if (phraseRows[row].instrument != EMPTY_VALUE_8) {
+          instrument = phraseRows[row].instrument;
           break;
         }
       }
@@ -296,9 +299,9 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
     if (screen.cursorCol > 2) {
       // If we currently on the groove command, go to this groove
       int fxIdx = (screen.cursorCol - 3) / 2;
-      uint8_t fxType = project.phrases[phrase].fx[screen.cursorRow][fxIdx][0];
+      uint8_t fxType = phraseRows[screen.cursorRow].fx[fxIdx][0];
       if (fxType == fxGRV || fxType == fxGGR) {
-        groove = project.phrases[phrase].fx[screen.cursorRow][fxIdx][1] & (PROJECT_MAX_GROOVES - 1);
+        groove = phraseRows[screen.cursorRow].fx[fxIdx][1] & (PROJECT_MAX_GROOVES - 1);
       }
     }
     screenSetup(&screenGroove, groove);
@@ -309,7 +312,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
     uint16_t chain = project.song[*pSongRow][*pSongTrack - 1];
     if (chain != EMPTY_VALUE_16 && !chainIsEmpty(chain)) {
       *pSongTrack -= 1;
-      while (project.chains[chain].phrases[*pChainRow] == EMPTY_VALUE_16) {
+      while (project.chains[chain].rows[*pChainRow].phrase == EMPTY_VALUE_16) {
         *pChainRow -= 1;
         if (*pChainRow == 0) break;
       }
@@ -323,7 +326,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
     uint16_t chain = project.song[*pSongRow][*pSongTrack + 1];
     if (chain != EMPTY_VALUE_16 && !chainIsEmpty(chain)) {
       *pSongTrack += 1;
-      while (project.chains[chain].phrases[*pChainRow] == EMPTY_VALUE_16) {
+      while (project.chains[chain].rows[*pChainRow].phrase == EMPTY_VALUE_16) {
         *pChainRow -= 1;
         if (*pChainRow == 0) break;
       }
@@ -334,7 +337,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
   } else if ((keys == (keyUp | keyOpt)) || (keys == keyUp && screen.cursorRow == 0)) {
     // Previous phrase in the chain
     if (*pChainRow == 0) return 1;
-    if (project.chains[project.song[*pSongRow][*pSongTrack]].phrases[*pChainRow - 1] != EMPTY_VALUE_16) {
+    if (project.chains[project.song[*pSongRow][*pSongTrack]].rows[*pChainRow - 1].phrase != EMPTY_VALUE_16) {
       *pChainRow -= 1;
       if (keys == keyUp) screen.cursorRow = 15;
       setup(-1);
@@ -345,7 +348,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
   } else if (keys == (keyDown | keyOpt) || (keys == keyDown && screen.cursorRow == 15)) {
     // Next phrase in the chain
     if (*pChainRow == 15) return 1;
-    if (project.chains[project.song[*pSongRow][*pSongTrack]].phrases[*pChainRow + 1] != EMPTY_VALUE_16) {
+    if (project.chains[project.song[*pSongRow][*pSongTrack]].rows[*pChainRow + 1].phrase != EMPTY_VALUE_16) {
       *pChainRow += 1;
       if (keys == keyDown) screen.cursorRow = 0;
       setup(-1);
@@ -360,7 +363,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
 static void onInput(int keys, int isDoubleTap) {
   if (isFxEdit) {
     int fxIdx = (screen.cursorCol - 3) / 2;
-    int result = fxEditInput(keys, isDoubleTap, project.phrases[phrase].fx[screen.cursorRow][fxIdx], lastFX);
+    int result = fxEditInput(keys, isDoubleTap, phraseRows[screen.cursorRow].fx[fxIdx], lastFX);
     if (result) {
       isFxEdit = 0;
       fullRedraw();

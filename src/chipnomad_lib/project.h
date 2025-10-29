@@ -20,76 +20,10 @@
 #define EMPTY_VALUE_8 (255)
 #define EMPTY_VALUE_16 (32767)
 
-///////////////////////////////////////////////////////////////////////////////
 // Song data structures
 
-// Chips
+// FX
 
-enum ChipType {
-  chipAY = 0,
-  chipTotalCount,
-};
-
-enum StereoModeAY {
-  ayStereoABC,
-  ayStereoACB,
-  ayStereoBAC,
-};
-
-struct ChipSetupAY {
-  int clock;
-  uint8_t isYM;
-  enum StereoModeAY stereoMode;
-  uint8_t stereoSeparation;
-};
-
-union ChipSetup {
-  struct ChipSetupAY ay;
-};
-
-// Tables
-
-struct Table {
-  uint8_t pitchFlags[16];
-  uint8_t pitchOffsets[16];
-  uint8_t volumes[16];
-  uint8_t fx[16][4][2];
-};
-
-// Instruments
-
-enum InstrumentType {
-  instNone = 0,
-  instAY = 1,
-};
-
-struct InstrumentAY {
-  uint8_t veA;
-  uint8_t veD;
-  uint8_t veS;
-  uint8_t veR;
-  uint8_t autoEnvN; // 0 - no auto-env
-  uint8_t autoEnvD;
-};
-
-union InstrumentChipData {
-  struct InstrumentAY ay;
-};
-
-struct Instrument {
-  uint8_t type; // enum InstrumentType
-  char name[PROJECT_INSTRUMENT_NAME_LENGTH + 1];
-  uint8_t tableSpeed;
-  uint8_t transposeEnabled;
-  union InstrumentChipData chip;
-};
-
-// Grooves
-struct Groove {
-  uint8_t speed[16];
-};
-
-// Phrases
 enum FX {
   fxARP, // Arpeggio
   fxARC, // Arpeggio config
@@ -126,7 +60,6 @@ enum FX {
   fxTotalCount
 };
 
-// Start from 0
 struct FXName {
   enum FX fx;
   char name[4];
@@ -138,20 +71,99 @@ extern int fxCommonCount;
 extern struct FXName fxNamesAY[]; // AY FX names
 extern int fxAYCount;
 
+// Chips
+
+enum ChipType {
+  chipAY = 0,
+  chipTotalCount,
+};
+
+enum StereoModeAY {
+  ayStereoABC,
+  ayStereoACB,
+  ayStereoBAC,
+};
+
+struct ChipSetupAY {
+  int clock;
+  uint8_t isYM;
+  enum StereoModeAY stereoMode;
+  uint8_t stereoSeparation;
+};
+
+union ChipSetup {
+  struct ChipSetupAY ay;
+};
+
+// Tables
+
+struct TableRow {
+  uint8_t pitchFlag;
+  uint8_t pitchOffset;
+  uint8_t volume;
+  uint8_t fx[4][2];
+};
+
+struct Table {
+  struct TableRow rows[16];
+};
+
+// Instruments
+
+enum InstrumentType {
+  instNone = 0,
+  instAY = 1,
+};
+
+struct InstrumentAY {
+  uint8_t veA;
+  uint8_t veD;
+  uint8_t veS;
+  uint8_t veR;
+  uint8_t autoEnvN; // 0 - no auto-env
+  uint8_t autoEnvD;
+};
+
+union InstrumentChipData {
+  struct InstrumentAY ay;
+};
+
+struct Instrument {
+  uint8_t type; // enum InstrumentType
+  char name[PROJECT_INSTRUMENT_NAME_LENGTH + 1];
+  uint8_t tableSpeed;
+  uint8_t transposeEnabled;
+  union InstrumentChipData chip;
+};
+
+// Grooves
+
+struct Groove {
+  uint8_t speed[16];
+};
+
+// Phrases
+
+struct PhraseRow {
+  uint8_t note;
+  uint8_t instrument;
+  uint8_t volume;
+  uint8_t fx[3][2];
+};
+
 struct Phrase {
-  int8_t hasNotes;
-  uint8_t notes[16];
-  uint8_t instruments[16];
-  uint8_t volumes[16];
-  uint8_t fx[16][3][2];
+  struct PhraseRow rows[16];
 };
 
 // Chains
 
+struct ChainRow {
+  uint16_t phrase;
+  uint8_t transpose;
+};
+
 struct Chain {
-  int8_t hasNotes;
-  uint16_t phrases[16];
-  uint8_t transpose[16];
+  struct ChainRow rows[16];
 };
 
 // Project
@@ -185,14 +197,13 @@ struct Project {
   struct Table tables[PROJECT_MAX_TABLES];
 };
 
-// Current song
+// Current project
 extern struct Project project;
-
-///////////////////////////////////////////////////////////////////////////////
-// Project functions
 
 extern char projectFileError[41];
 
+// Fill FX names (call this first before loading any projects)
+void fillFXNames();
 // Initialize an empty project
 void projectInit(struct Project* p);
 // Load project from a file
@@ -202,38 +213,15 @@ int projectSave(const char* path);
 
 // Is chain empty?
 int8_t chainIsEmpty(int chain);
-// Does chain have notes?
-int8_t chainHasNotes(int chain);
 // Is phrase empty?
 int8_t phraseIsEmpty(int phrase);
-// Does phrase have notes?
-int8_t phraseHasNotes(int phrase);
 // Is instrument empty?
 int8_t instrumentIsEmpty(int instrument);
 // Is table empty?
 int8_t tableIsEmpty(int table);
 // Is groove empty?
 int8_t grooveIsEmpty(int groove);
-// Instrument name
-char* instrumentName(uint8_t instrument);
-// Instrument type names
-extern char instrumentTypeNames[][16];
 // Note name in phrase
 char* noteName(uint8_t note);
-// Instrument type name
-char* instrumentTypeName(uint8_t type);
-// Get first note used with an instrument
-uint8_t instrumentFirstNote(uint8_t instrument);
-// Swap two instruments and their default tables
-void instrumentSwap(uint8_t inst1, uint8_t inst2);
-
-// Fill FX names
-void fillFXNames();
-
-// AY-specific project functions
-
-// Calculate 12TET pitch table for AY chip
-void calculatePitchTableAY(struct Project* p);
-
 
 #endif

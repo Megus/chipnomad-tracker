@@ -5,7 +5,8 @@
 #include <project.h>
 #include <help.h>
 
-static int table = 0;
+static int tableIdx = 0;
+static struct TableRow *tableRows = NULL;
 static int backToPhrase = 0;
 static uint8_t lastPitchValue = 0;
 static uint8_t lastVolume = 15;
@@ -43,7 +44,8 @@ static struct ScreenData screen = {
 
 static void setup(int input) {
   isFxEdit = 0;
-  table = input & 0xff;
+  tableIdx = input & 0xff;
+  tableRows = project.tables[tableIdx].rows;
   backToPhrase = (input & 0x1000) != 0;
   screen.selectMode = 0;
 }
@@ -53,7 +55,7 @@ static int getColumnCount(int row) {
 }
 static void drawStatic(void) {
   gfxSetFgColor(appSettings.colorScheme.textTitles);
-  gfxPrintf(0, 0, "TABLE %02X", table);
+  gfxPrintf(0, 0, "TABLE %02X", tableIdx);
 }
 
 static void drawField(int col, int row, int state) {
@@ -62,30 +64,30 @@ static void drawField(int col, int row, int state) {
 
   if (col == 0) {
     // Pitch flag
-    uint8_t pitchFlag = project.tables[table].pitchFlags[row];
+    uint8_t pitchFlag = tableRows[row].pitchFlag;
     setCellColor(state, 0, 1);
     gfxPrint(x, y, pitchFlag ? "=" : "~");
   } else if (col == 1) {
     // Pitch offset
-    uint8_t pitch = project.tables[table].pitchOffsets[row];
+    uint8_t pitch = tableRows[row].pitchOffset;
     setCellColor(state, 0, 1);
     gfxPrint(x, y, byteToHex(pitch));
   } else if (col == 2) {
     // Volume
-    uint8_t volume = project.tables[table].volumes[row];
+    uint8_t volume = tableRows[row].volume;
     setCellColor(state, volume == EMPTY_VALUE_8, 1);
     gfxPrint(x, y, byteToHexOrEmpty(volume));
   } else if (col % 2 == 1 && col >= 3) {
     // FX name (columns 3,5,7,9)
     int fxIdx = (col - 3) / 2;
-    uint8_t fx = project.tables[table].fx[row][fxIdx][0];
+    uint8_t fx = tableRows[row].fx[fxIdx][0];
     setCellColor(state, fx == EMPTY_VALUE_8, 1);
     gfxPrint(x, y, fxNames[fx].name);
   } else if (col % 2 == 0 && col >= 4) {
     // FX value (columns 4,6,8,10)
     int fxIdx = (col - 4) / 2;
-    uint8_t value = project.tables[table].fx[row][fxIdx][1];
-    setCellColor(state, 0, project.tables[table].fx[row][fxIdx][0] != EMPTY_VALUE_8);
+    uint8_t value = tableRows[row].fx[fxIdx][1];
+    setCellColor(state, 0, tableRows[row].fx[fxIdx][0] != EMPTY_VALUE_8);
     gfxPrint(x, y, byteToHex(value));
   }
 }
@@ -156,29 +158,29 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 
   if (col == 0) {
     // Pitch flag (toggle between 0 and 1)
-    handled = edit8noLast(action, &project.tables[table].pitchFlags[row], 1, 0, 1);
+    handled = edit8noLast(action, &tableRows[row].pitchFlag, 1, 0, 1);
     if (handled) {
-      screenMessage(project.tables[table].pitchFlags[row] ? "Absolute pitch" : "Pitch offset", 0);
+      screenMessage(tableRows[row].pitchFlag ? "Absolute pitch" : "Pitch offset", 0);
     }
   } else if (col == 1) {
     // Pitch offset
-    handled = edit8noLimit(action, &project.tables[table].pitchOffsets[row], &lastPitchValue, project.pitchTable.octaveSize);
+    handled = edit8noLimit(action, &tableRows[row].pitchOffset, &lastPitchValue, project.pitchTable.octaveSize);
     if (handled) {
-      if (project.tables[table].pitchFlags[row] == 1) {
+      if (tableRows[row].pitchFlag == 1) {
         // If pitch flag is 1, pitch is absolute
-        screenMessage("Note %s", noteName(project.tables[table].pitchOffsets[row]));
+        screenMessage("Note %s", noteName(tableRows[row].pitchOffset));
       } else {
         // If pitch flag is 0, pitch is offset
-        screenMessage("Pitch offset %hhd", project.tables[table].pitchOffsets[row]);
+        screenMessage("Pitch offset %hhd", tableRows[row].pitchOffset);
       }
     }
   } else if (col == 2) {
     // Volume
-    handled = edit8withLimit(action, &project.tables[table].volumes[row], &lastVolume, 16, maxVolume);
+    handled = edit8withLimit(action, &tableRows[row].volume, &lastVolume, 16, maxVolume);
   } else if (col % 2 == 1 && col >= 3) {
     // FX (columns 3,5,7,9)
     int fxIdx = (col - 3) / 2;
-    int result = editFX(action, project.tables[table].fx[row][fxIdx], lastFX, 1);
+    int result = editFX(action, tableRows[row].fx[fxIdx], lastFX, 1);
     if (result == 2) {
       drawField(col + 1, row, 0);
       handled = 1;
@@ -189,8 +191,8 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   } else if (col % 2 == 0 && col >= 4) {
     // FX value (columns 4,6,8,10)
     int fxIdx = (col - 4) / 2;
-    if (project.tables[table].fx[row][fxIdx][0] != EMPTY_VALUE_8) {
-      handled = editFXValue(action, project.tables[table].fx[row][fxIdx], lastFX, 1);
+    if (tableRows[row].fx[fxIdx][0] != EMPTY_VALUE_8) {
+      handled = editFXValue(action, tableRows[row].fx[fxIdx], lastFX, 1);
     }
   }
 
@@ -215,9 +217,9 @@ static void draw(void) {
   if (track->mode != playbackModeStopped) {
     int instrumentTableIdx = track->note.instrumentTable.tableIdx;
     int auxTableIdx = track->note.auxTable.tableIdx;
-    if (table == instrumentTableIdx) {
+    if (tableIdx == instrumentTableIdx) {
       pTable = &track->note.instrumentTable;
-    } else if (table == auxTableIdx) {
+    } else if (tableIdx == auxTableIdx) {
       pTable = &track->note.auxTable;
     }
   }
@@ -250,27 +252,29 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
     return 1;
   } if (keys == (keyLeft | keyOpt)) {
     // Previous table
-    if (table > 0) {
-      table--;
+    if (tableIdx > 0) {
+      setup(tableIdx - 1);
       fullRedraw();
     }
     return 1;
   } if (keys == (keyRight | keyOpt)) {
     // Next table
-    if (table < PROJECT_MAX_TABLES) {
-      table++;
+    if (tableIdx < PROJECT_MAX_TABLES) {
+      setup(tableIdx + 1);
       fullRedraw();
     }
   } if (keys == (keyUp | keyOpt)) {
     // +16 tables
-    table += 16;
-    if (table >= PROJECT_MAX_TABLES) table = PROJECT_MAX_TABLES - 1;
+    tableIdx += 16;
+    if (tableIdx >= PROJECT_MAX_TABLES) tableIdx = PROJECT_MAX_TABLES - 1;
+    setup(tableIdx);
     fullRedraw();
     return 1;
   } if (keys == (keyDown | keyOpt)) {
     // -16 tables
-    table -= 16;
-    if (table < 0) table = 0;
+    tableIdx -= 16;
+    if (tableIdx < 0) tableIdx = 0;
+    setup(tableIdx);
     fullRedraw();
     return 1;
   }
@@ -281,7 +285,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
 static void onInput(int keys, int isDoubleTap) {
   if (isFxEdit) {
     int fxIdx = (screen.cursorCol - 2) / 2;
-    int result = fxEditInput(keys, isDoubleTap, project.tables[table].fx[screen.cursorRow][fxIdx], lastFX);
+    int result = fxEditInput(keys, isDoubleTap, tableRows[screen.cursorRow].fx[fxIdx], lastFX);
     if (result) {
       isFxEdit = 0;
       fullRedraw();

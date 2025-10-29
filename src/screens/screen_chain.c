@@ -3,6 +3,7 @@
 #include <corelib_gfx.h>
 #include <utils.h>
 #include <project.h>
+#include <project_utils.h>
 #include <string.h>
 
 static int chain = 0;
@@ -57,7 +58,7 @@ static void drawStatic(void) {
 }
 
 static void drawField(int col, int row, int state) {
-  uint16_t phrase = project.chains[chain].phrases[row];
+  uint16_t phrase = project.chains[chain].rows[row].phrase;
 
   if (col == 0) {
     // Phrase
@@ -70,7 +71,7 @@ static void drawField(int col, int row, int state) {
   } else {
     // Transpose
     setCellColor(state, 0, phrase != EMPTY_VALUE_16 && phraseHasNotes(phrase));
-    gfxPrint(7, 3 + row, byteToHex(project.chains[chain].transpose[row]));
+    gfxPrint(7, 3 + row, byteToHex(project.chains[chain].rows[row].transpose));
   }
 }
 
@@ -145,12 +146,12 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 
   if (col == 0) {
     if (action == editDoubleTap) {
-      uint16_t current = project.chains[chain].phrases[row];
+      uint16_t current = project.chains[chain].rows[row].phrase;
 
       if (current != EMPTY_VALUE_16) {
         int nextEmpty = findEmptyPhrase(current + 1);
         if (nextEmpty != EMPTY_VALUE_16) {
-          project.chains[chain].phrases[row] = nextEmpty;
+          project.chains[chain].rows[row].phrase = nextEmpty;
           lastPhraseValue = nextEmpty;
           handled = 1;
         } else {
@@ -159,12 +160,12 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       }
     } else if (action == editShallowClone || action == editDeepClone) {
       // Phrase clone
-      uint16_t current = project.chains[chain].phrases[row];
+      uint16_t current = project.chains[chain].rows[row].phrase;
 
       if (current != EMPTY_VALUE_16) {
-        int nextEmpty = findEmptyPhrase(0);
+        int nextEmpty = findEmptyPhrase(current + 1);
         if (nextEmpty != EMPTY_VALUE_16) {
-          project.chains[chain].phrases[row] = nextEmpty;
+          project.chains[chain].rows[row].phrase = nextEmpty;
           lastPhraseValue = nextEmpty;
           memcpy(&project.phrases[nextEmpty], &project.phrases[current], sizeof(struct Phrase));
           handled = 1;
@@ -174,15 +175,15 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       }
 
     } else {
-      handled = edit16withLimit(action, &project.chains[chain].phrases[row], &lastPhraseValue, 16, PROJECT_MAX_PHRASES - 1);
+      handled = edit16withLimit(action, &project.chains[chain].rows[row].phrase, &lastPhraseValue, 16, PROJECT_MAX_PHRASES - 1);
     }
 
-    if (handled) {
+    /*if (handled) {
       project.chains[chain].hasNotes = -1;
-    }
+    }*/
   } else {
     // Transpose
-    handled = edit8noLimit(action, &project.chains[chain].transpose[row], &lastTransposeValue, project.pitchTable.octaveSize);
+    handled = edit8noLimit(action, &project.chains[chain].rows[row].transpose, &lastTransposeValue, project.pitchTable.octaveSize);
   }
 
   return handled;
@@ -191,7 +192,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 static int inputScreenNavigation(int keys, int isDoubleTap) {
   if (keys == (keyRight | keyShift)) {
     // To Phrase screen
-    int phrase = project.chains[chain].phrases[screen.cursorRow];
+    int phrase = project.chains[chain].rows[screen.cursorRow].phrase;
     if (phrase == EMPTY_VALUE_16) {
       screenMessage("Enter a phrase");
     } else {

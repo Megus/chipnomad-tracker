@@ -59,8 +59,8 @@ void tableReadFX(struct PlaybackState* state, int trackIdx, struct PlaybackTable
   struct Project* p = state->p;
 
   int tableRow = table->rows[fxIdx];
-  if (forceRead || p->tables[tableIdx].fx[tableRow][fxIdx][0] != EMPTY_VALUE_8) {
-    initFX(state, trackIdx, p->tables[tableIdx].fx[tableRow][fxIdx], &table->fx[fxIdx], 0);
+  if (forceRead || p->tables[tableIdx].rows[tableRow].fx[fxIdx][0] != EMPTY_VALUE_8) {
+    initFX(state, trackIdx, p->tables[tableIdx].rows[tableRow].fx[fxIdx], &table->fx[fxIdx], 0);
   }
 }
 
@@ -74,8 +74,8 @@ static void tableProgress(struct PlaybackState* state, int trackIdx, struct Play
     if (table->counters[i] >= table->speed[i]) {
       table->counters[i] = 0;
 
-      uint8_t fxType = p->tables[table->tableIdx].fx[table->rows[i]][i][0];
-      uint8_t fxValue = p->tables[table->tableIdx].fx[table->rows[i]][i][1];
+      uint8_t fxType = p->tables[table->tableIdx].rows[table->rows[i]].fx[i][0];
+      uint8_t fxValue = p->tables[table->tableIdx].rows[table->rows[i]].fx[i][1];
 
       // Special case for THO/HOP pointing to the same row - we should not progress further
       if (fxType == fxTHO && (fxValue & 0xf) == table->rows[i]) {
@@ -92,8 +92,8 @@ static void tableProgress(struct PlaybackState* state, int trackIdx, struct Play
         table->rows[i] = (table->rows[i] + 1) & 15;
 
         // Handle THO and HOP table FX right nere
-        fxType = p->tables[table->tableIdx].fx[table->rows[i]][i][0];
-        fxValue = p->tables[table->tableIdx].fx[table->rows[i]][i][1];
+        fxType = p->tables[table->tableIdx].rows[table->rows[i]].fx[i][0];
+        fxValue = p->tables[table->tableIdx].rows[table->rows[i]].fx[i][1];
         if (fxType == fxTHO) {
           // Hop on all FX lanes
           for (int c = 0; c < 4; c++) {
@@ -125,18 +125,18 @@ void readPhraseRow(struct PlaybackState* state, int trackIdx, int skipDelCheck) 
 
   uint16_t chainIdx = p->song[track->songRow][trackIdx];
   if (chainIdx != EMPTY_VALUE_16) {
-    uint16_t phraseIdx = p->chains[chainIdx].phrases[track->chainRow];
+    uint16_t phraseIdx = p->chains[chainIdx].rows[track->chainRow].phrase;
     if (phraseIdx != EMPTY_VALUE_16) {
       int phraseRow = track->phraseRow;
       struct Phrase* phrase = &p->phrases[phraseIdx];
-      uint8_t note = phrase->notes[phraseRow];
+      uint8_t note = phrase->rows[phraseRow].note;
 
       // Pre-scan FX if there's a DEL FX
       if (!skipDelCheck) {
         for (int i = 0; i < 3; i++) {
-          if (phrase->fx[phraseRow][i][0] == fxDEL && phrase->fx[phraseRow][i][1] != 0) {
+          if (phrase->rows[phraseRow].fx[i][0] == fxDEL && phrase->rows[phraseRow].fx[i][1] != 0) {
             track->note.fx[i].fx = fxDEL;
-            track->note.fx[i].value = phrase->fx[phraseRow][i][1];
+            track->note.fx[i].value = phrase->rows[phraseRow].fx[i][1];
             return;
           }
         }
@@ -144,8 +144,8 @@ void readPhraseRow(struct PlaybackState* state, int trackIdx, int skipDelCheck) 
 
       // FX
       for (int i = 0; i < 3; i++) {
-        if (phrase->fx[phraseRow][i][0] != EMPTY_VALUE_8 || note != EMPTY_VALUE_8) {
-          initFX(state, trackIdx, phrase->fx[phraseRow][i], &track->note.fx[i], (note != EMPTY_VALUE_8 && note != NOTE_OFF));
+        if (phrase->rows[phraseRow].fx[i][0] != EMPTY_VALUE_8 || note != EMPTY_VALUE_8) {
+          initFX(state, trackIdx, phrase->rows[phraseRow].fx[i], &track->note.fx[i], (note != EMPTY_VALUE_8 && note != NOTE_OFF));
         }
       }
 
@@ -163,7 +163,7 @@ void readPhraseRow(struct PlaybackState* state, int trackIdx, int skipDelCheck) 
       }
 
       // Instrument
-      uint8_t instrument = phrase->instruments[phraseRow];
+      uint8_t instrument = phrase->rows[phraseRow].instrument;
       if (instrument != EMPTY_VALUE_8) {
         track->note.instrument = instrument;
         setupInstrumentAY(state, trackIdx);
@@ -171,8 +171,8 @@ void readPhraseRow(struct PlaybackState* state, int trackIdx, int skipDelCheck) 
       }
 
       // Volume
-      uint8_t volume = phrase->volumes[phraseRow];
-      if (phrase->volumes[phraseRow] != EMPTY_VALUE_8) {
+      uint8_t volume = phrase->rows[phraseRow].volume;
+      if (phrase->rows[phraseRow].volume != EMPTY_VALUE_8) {
         track->note.volume = volume;
       }
     } else {
@@ -223,25 +223,25 @@ static void nextFrame(struct PlaybackState* state, int trackIdx) {
     // Tables
     int tableIdx = track->note.instrumentTable.tableIdx;
     if (tableIdx != EMPTY_VALUE_8) {
-      if (p->tables[tableIdx].pitchFlags[track->note.instrumentTable.rows[0]]) {
-        note = p->tables[tableIdx].pitchOffsets[track->note.instrumentTable.rows[0]];
+      if (p->tables[tableIdx].rows[track->note.instrumentTable.rows[0]].pitchFlag) {
+        note = p->tables[tableIdx].rows[track->note.instrumentTable.rows[0]].pitchOffset;
       } else {
-        note += (int8_t)(p->tables[tableIdx].pitchOffsets[track->note.instrumentTable.rows[0]]);
+        note += (int8_t)(p->tables[tableIdx].rows[track->note.instrumentTable.rows[0]].pitchOffset);
       }
     }
 
     tableIdx = track->note.auxTable.tableIdx;
     if (tableIdx != EMPTY_VALUE_8) {
-      if (p->tables[tableIdx].pitchFlags[track->note.auxTable.rows[0]]) {
-        note = p->tables[tableIdx].pitchOffsets[track->note.auxTable.rows[0]];
+      if (p->tables[tableIdx].rows[track->note.auxTable.rows[0]].pitchFlag) {
+        note = p->tables[tableIdx].rows[track->note.auxTable.rows[0]].pitchOffset;
       } else {
-        note += (int8_t)(p->tables[tableIdx].pitchOffsets[track->note.auxTable.rows[0]]);
+        note += (int8_t)(p->tables[tableIdx].rows[track->note.auxTable.rows[0]].pitchOffset);
       }
     }
 
     // Phrase transpose
     if (track->note.instrument != EMPTY_VALUE_8 && p->instruments[track->note.instrument].transposeEnabled) {
-      note += (int8_t)p->chains[p->song[track->songRow][trackIdx]].transpose[track->chainRow];
+      note += (int8_t)p->chains[p->song[track->songRow][trackIdx]].rows[track->chainRow].transpose;
     }
 
     // Offset from FX
@@ -279,7 +279,7 @@ static int moveToNextPhraseRow(struct PlaybackState* state, int trackIdx) {
       if (chain != EMPTY_VALUE_16) {
         int chainRow = track->chainRow;
         chainRow++;
-        if (chainRow >= 16 || p->chains[chain].phrases[chainRow] == EMPTY_VALUE_16) {
+        if (chainRow >= 16 || p->chains[chain].rows[chainRow].phrase == EMPTY_VALUE_16) {
           // Next song row
           int songRow = track->songRow;
           songRow++;
@@ -312,8 +312,8 @@ static int moveToNextPhraseRow(struct PlaybackState* state, int trackIdx) {
       int chain = p->song[track->songRow][trackIdx];
       int chainRow = track->chainRow;
       chainRow++;
-      if (chainRow >= 16 || p->chains[chain].phrases[chainRow] == EMPTY_VALUE_16) chainRow = 0;
-      if (p->chains[chain].phrases[chainRow] == EMPTY_VALUE_16) {
+      if (chainRow >= 16 || p->chains[chain].rows[chainRow].phrase == EMPTY_VALUE_16) chainRow = 0;
+      if (p->chains[chain].rows[chainRow].phrase == EMPTY_VALUE_16) {
         // Empty chain, stop playback
         resetTrack(state, trackIdx);
         track->mode = playbackModeStopped;
@@ -388,7 +388,7 @@ void playbackStartSong(struct PlaybackState* state, int songRow, int chainRow) {
   for (int trackIdx = 0; trackIdx < p->tracksCount; trackIdx++) {
     struct PlaybackTrackState* track = &state->tracks[trackIdx];
 
-    if (p->song[songRow][trackIdx] != EMPTY_VALUE_16 && p->chains[p->song[songRow][trackIdx]].phrases[chainRow] != EMPTY_VALUE_16) {
+    if (p->song[songRow][trackIdx] != EMPTY_VALUE_16 && p->chains[p->song[songRow][trackIdx]].rows[chainRow].phrase != EMPTY_VALUE_16) {
       track->queue.mode = playbackModeSong;
       track->queue.songRow = songRow;
       track->queue.chainRow = chainRow;
@@ -403,7 +403,7 @@ void playbackStartChain(struct PlaybackState* state, int trackIdx, int songRow, 
   struct Project* p = state->p;
   struct PlaybackTrackState* track = &state->tracks[trackIdx];
 
-  if (p->chains[p->song[songRow][trackIdx]].phrases[chainRow] != EMPTY_VALUE_16) {
+  if (p->chains[p->song[songRow][trackIdx]].rows[chainRow].phrase != EMPTY_VALUE_16) {
     track->queue.mode = playbackModeChain;
     track->queue.songRow = songRow;
     track->queue.chainRow = chainRow;
