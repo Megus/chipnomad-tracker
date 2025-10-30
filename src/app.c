@@ -195,7 +195,6 @@ void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
       int isDoubleTap = (value == keyEdit && editDoubleTapCount > 0) ? 1 : 0;
 
       if (value & dPadMask) {
-        printf("start autorepeat");
         // Key repeats are only applicable to d-pad
         keyRepeatCount = appSettings.keyRepeatDelay;
         // As we don't support multiple d-pad keys, keep only the last pressed one

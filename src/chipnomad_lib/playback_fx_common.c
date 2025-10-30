@@ -419,12 +419,12 @@ void initFX(struct PlaybackState* state, int trackIdx, uint8_t* fx, struct Playb
 int handleFX(struct PlaybackState* state, int trackIdx) {
   struct PlaybackTrackState* track = &state->tracks[trackIdx];
 
-  handleAllTableFX(state, trackIdx);
-
   // Phrase FX
   for (int i = 0; i < 3; i++) {
     handleFXInternal(state, trackIdx, &track->note.fx[i], NULL);
   }
+
+  handleAllTableFX(state, trackIdx);
 
   return 0;
 }
