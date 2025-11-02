@@ -113,9 +113,6 @@ static void appInput(int keys, int isDoubleTap) {
  * @brief Initialize the application: setup audio system, load auto-saved project, show the first screen
  */
 void appSetup(void) {
-  // Load settings
-  settingsLoad();
-
   // Keyboard input reset
   pressedButtons = 0;
   editDoubleTapCount = 0;

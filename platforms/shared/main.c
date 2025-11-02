@@ -5,8 +5,12 @@
 #include <corelib_gfx.h>
 #include <corelib_mainloop.h>
 #include <app.h>
+#include <common.h>
 
 int main(int argv, char** args) {
+  // Load settings
+  settingsLoad();
+
   if (gfxSetup() != 0) return 1;
 
   appSetup();
