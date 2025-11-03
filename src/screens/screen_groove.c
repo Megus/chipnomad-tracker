@@ -3,6 +3,7 @@
 #include <corelib_gfx.h>
 #include <utils.h>
 #include <project.h>
+#include <copy_paste.h>
 
 static int groove = 0;
 static uint8_t lastValue = 0;
@@ -73,10 +74,6 @@ static void drawSelection(int col1, int row1, int col2, int row2) {
   gfxRect(3, 3 + row1, 2, row2 - row1 + 1);
 }
 
-static int onEdit(int col, int row, enum CellEditAction action) {
-  return edit8withLimit(action, &project.grooves[groove].speed[row], &lastValue, 16, EMPTY_VALUE_8 - 1);
-}
-
 static void fullRedraw(void) {
   screenFullRedraw(&screen);
 }
@@ -93,6 +90,25 @@ static void draw(void) {
       gfxPrint(2, 3 + row, ">");
     }
   }
+}
+
+static int onEdit(int col, int row, enum CellEditAction action) {
+  if (action == editCopy) {
+    int startCol, startRow, endCol, endRow;
+    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    copyGroove(groove, startRow, endRow, 0);
+    return 1;
+  } else if (action == editCut) {
+    int startCol, startRow, endCol, endRow;
+    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    copyGroove(groove, startRow, endRow, 1);
+    return 1;
+  } else if (action == editPaste) {
+    pasteGroove(groove, row);
+    fullRedraw();
+    return 1;
+  }
+  return edit8withLimit(action, &project.grooves[groove].speed[row], &lastValue, 16, EMPTY_VALUE_8 - 1);
 }
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {

@@ -68,21 +68,21 @@ static void selectFont(void) {
 static void createFontTexture(void) {
   fontTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, fontPixelW * 95, fontH);
   SDL_SetTextureBlendMode(fontTexture, SDL_BLENDMODE_BLEND);
-  
+
   SDL_SetRenderTarget(renderer, fontTexture);
   SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
   SDL_RenderClear(renderer);
-  
+
   for (int ch = 0; ch < 95; ch++) {
     int charX = ch * fontPixelW;
     charRects[ch] = (SDL_Rect){charX, 0, fontPixelW, fontH};
-    
+
     for (int l = 0; l < fontH; l++) {
       for (int c = 0; c < fontW; c++) {
         uint8_t fontByte = font[ch * fontW * fontH + l * fontW + c];
         int bitsToDraw = (c == fontW - 1 && fontPixelW % 8 != 0) ? fontPixelW % 8 : 8;
         uint8_t mask = 0x80;
-        
+
         for (int b = 0; b < bitsToDraw; b++) {
           if (fontByte & mask) {
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -93,7 +93,7 @@ static void createFontTexture(void) {
       }
     }
   }
-  
+
   SDL_SetRenderTarget(renderer, NULL);
 }
 
@@ -245,7 +245,7 @@ void gfxPrint(int x, int y, const char* text) {
   cx = CHAR_X(x);
   cy = CHAR_Y(y);
   SDL_SetTextureColorMod(fontTexture, (fgColor >> 16) & 0xFF, (fgColor >> 8) & 0xFF, fgColor & 0xFF);
-  
+
   for (int i = 0; i < len; i++) {
     uint8_t C = text[i];
     if (C == '\r' && text[i + 1] == '\n') {
@@ -293,7 +293,7 @@ void gfxRect(int x, int y, int w, int h) {
   int cw = w * fontPixelW;
   int ch = h * fontH;
   setColor(fgColor);
-  
+
   SDL_Rect rects[4] = {
     {cx, cy, cw, 1},           // top
     {cx, cy + ch - 1, cw, 1}, // bottom

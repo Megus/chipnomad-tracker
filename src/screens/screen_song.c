@@ -5,6 +5,7 @@
 #include <project.h>
 #include <project_utils.h>
 #include <playback.h>
+#include <copy_paste.h>
 #include <string.h>
 
 // Screen state variables
@@ -162,7 +163,21 @@ static int findEmptyChain(int startChain) {
 }
 
 static int onEdit(int col, int row, enum CellEditAction action) {
-  if (action == editDoubleTap) {
+  if (action == editCopy) {
+    int startCol, startRow, endCol, endRow;
+    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    copySong(startCol, startRow, endCol, endRow, 0);
+    return 1;
+  } else if (action == editCut) {
+    int startCol, startRow, endCol, endRow;
+    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    copySong(startCol, startRow, endCol, endRow, 1);
+    return 1;
+  } else if (action == editPaste) {
+    pasteSong(col, row);
+    fullRedraw();
+    return 1;
+  } else if (action == editDoubleTap) {
     // Find the first chain with no phrases
     int current = project.song[row][col];
 

@@ -24,7 +24,10 @@ enum CellEditAction {
   editIncreaseBig,
   editDecreaseBig,
   editShallowClone,
-  editDeepClone
+  editDeepClone,
+  editCopy,
+  editCut,
+  editPaste
 };
 
 struct ScreenData {
@@ -72,6 +75,7 @@ int screenInput(struct ScreenData* screen, int keys, int isDoubleTap);
 
 // Utility functions
 void setCellColor(int state, int isEmpty, int hasContent);
+void getSelectionBounds(struct ScreenData* screen, int* startCol, int* startRow, int* endCol, int* endRow);
 
 // Confirmation dialog
 void confirmSetup(const char* message, void (*confirmCallback)(void), void (*cancelCallback)(void));

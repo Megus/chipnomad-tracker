@@ -3,6 +3,7 @@
 #include <corelib_gfx.h>
 #include <utils.h>
 #include <project.h>
+#include <copy_paste.h>
 #include <help.h>
 
 static int tableIdx = 0;
@@ -152,7 +153,66 @@ static void drawSelection(int col1, int row1, int col2, int row2) {
 }
 
 
+
+static void fullRedraw(void) {
+  screenFullRedraw(&screen);
+}
+
+static void draw(void) {
+  if (isFxEdit) return;
+
+  gfxClearRect(2, 3, 1, 16);
+  gfxClearRect(9, 3, 1, 16);
+  gfxClearRect(15, 3, 1, 16);
+  gfxClearRect(21, 3, 1, 16);
+  gfxClearRect(27, 3, 1, 16);
+
+  struct PlaybackTrackState* track = &playback.tracks[*pSongTrack];
+  struct PlaybackTableState* pTable = NULL;
+  if (track->mode != playbackModeStopped) {
+    int instrumentTableIdx = track->note.instrumentTable.tableIdx;
+    int auxTableIdx = track->note.auxTable.tableIdx;
+    if (tableIdx == instrumentTableIdx) {
+      pTable = &track->note.instrumentTable;
+    } else if (tableIdx == auxTableIdx) {
+      pTable = &track->note.auxTable;
+    }
+  }
+  if (pTable != NULL) {
+    gfxSetFgColor(appSettings.colorScheme.playMarkers);
+    int row = pTable->rows[0];
+    if (row >= 0 && row < 16) {
+      gfxPrint(2, 3 + row, ">");
+      gfxPrint(9, 3 + row, ">");
+    }
+    row = pTable->rows[1];
+    gfxPrint(15, 3 + row, ">");
+    row = pTable->rows[2];
+    gfxPrint(21, 3 + row, ">");
+    row = pTable->rows[3];
+    gfxPrint(27, 3 + row, ">");
+  }
+
+  screenDrawOverlays(&screen);
+}
+
 static int onEdit(int col, int row, enum CellEditAction action) {
+  if (action == editCopy) {
+    int startCol, startRow, endCol, endRow;
+    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    copyTable(tableIdx, startCol, startRow, endCol, endRow, 0);
+    return 1;
+  } else if (action == editCut) {
+    int startCol, startRow, endCol, endRow;
+    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    copyTable(tableIdx, startCol, startRow, endCol, endRow, 1);
+    return 1;
+  } else if (action == editPaste) {
+    pasteTable(tableIdx, col, row);
+    fullRedraw();
+    return 1;
+  }
+
   int handled = 0;
   uint8_t maxVolume = 15;
 
@@ -197,48 +257,6 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   }
 
   return handled;
-}
-
-static void fullRedraw(void) {
-  screenFullRedraw(&screen);
-}
-
-static void draw(void) {
-  if (isFxEdit) return;
-
-  gfxClearRect(2, 3, 1, 16);
-  gfxClearRect(9, 3, 1, 16);
-  gfxClearRect(15, 3, 1, 16);
-  gfxClearRect(21, 3, 1, 16);
-  gfxClearRect(27, 3, 1, 16);
-
-  struct PlaybackTrackState* track = &playback.tracks[*pSongTrack];
-  struct PlaybackTableState* pTable = NULL;
-  if (track->mode != playbackModeStopped) {
-    int instrumentTableIdx = track->note.instrumentTable.tableIdx;
-    int auxTableIdx = track->note.auxTable.tableIdx;
-    if (tableIdx == instrumentTableIdx) {
-      pTable = &track->note.instrumentTable;
-    } else if (tableIdx == auxTableIdx) {
-      pTable = &track->note.auxTable;
-    }
-  }
-  if (pTable != NULL) {
-    gfxSetFgColor(appSettings.colorScheme.playMarkers);
-    int row = pTable->rows[0];
-    if (row >= 0 && row < 16) {
-      gfxPrint(2, 3 + row, ">");
-      gfxPrint(9, 3 + row, ">");
-    }
-    row = pTable->rows[1];
-    gfxPrint(15, 3 + row, ">");
-    row = pTable->rows[2];
-    gfxPrint(21, 3 + row, ">");
-    row = pTable->rows[3];
-    gfxPrint(27, 3 + row, ">");
-  }
-
-  screenDrawOverlays(&screen);
 }
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {

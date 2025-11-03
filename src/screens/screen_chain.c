@@ -4,6 +4,7 @@
 #include <utils.h>
 #include <project.h>
 #include <project_utils.h>
+#include <copy_paste.h>
 #include <string.h>
 
 static int chain = 0;
@@ -142,6 +143,22 @@ int findEmptyPhrase(int start) {
 }
 
 static int onEdit(int col, int row, enum CellEditAction action) {
+  if (action == editCopy) {
+    int startCol, startRow, endCol, endRow;
+    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    copyChain(chain, startCol, startRow, endCol, endRow, 0);
+    return 1;
+  } else if (action == editCut) {
+    int startCol, startRow, endCol, endRow;
+    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    copyChain(chain, startCol, startRow, endCol, endRow, 1);
+    return 1;
+  } else if (action == editPaste) {
+    pasteChain(chain, col, row);
+    fullRedraw();
+    return 1;
+  }
+
   int handled = 0;
 
   if (col == 0) {
