@@ -11,7 +11,7 @@ int main(int argv, char** args) {
   // Load settings
   settingsLoad();
 
-  if (gfxSetup() != 0) return 1;
+  if (gfxSetup(&appSettings.screenWidth, &appSettings.screenHeight) != 0) return 1;
 
   appSetup();
   mainLoopRun(appDraw, appOnEvent);

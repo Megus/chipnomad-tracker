@@ -11,6 +11,8 @@
 #define SETTINGS_FILENAME "settings.txt"
 
 struct AppSettings appSettings = {
+  .screenWidth = 0, // 0 to auto-detect resolution
+  .screenHeight = 0, // 0 to auto-detect resolution
   .audioSampleRate = 44100,
   .audioBufferSize = 2048,
   .doubleTapFrames = 10,
@@ -43,6 +45,8 @@ int settingsSave(void) {
   int fileId = fileOpen(SETTINGS_FILENAME, 1);
   if (fileId == -1) return 1;
 
+  filePrintf(fileId, "screenWidth: %d\n", appSettings.screenWidth);
+  filePrintf(fileId, "screenHeight: %d\n", appSettings.screenHeight);
   filePrintf(fileId, "audioSampleRate: %d\n", appSettings.audioSampleRate);
   filePrintf(fileId, "audioBufferSize: %d\n", appSettings.audioBufferSize);
   filePrintf(fileId, "doubleTapFrames: %d\n", appSettings.doubleTapFrames);
@@ -73,7 +77,11 @@ int settingsLoad(void) {
 
   char* line;
   while ((line = fileReadString(fileId)) != NULL) {
-    if (strncmp(line, "audioSampleRate: ", 17) == 0) {
+    if (strncmp(line, "screenWidth: ", 13) == 0) {
+      sscanf(line + 13, "%d", &appSettings.screenWidth);
+    } else if (strncmp(line, "screenHeight: ", 14) == 0) {
+      sscanf(line + 14, "%d", &appSettings.screenHeight);
+    } else if (strncmp(line, "audioSampleRate: ", 17) == 0) {
       sscanf(line + 17, "%d", &appSettings.audioSampleRate);
     } else if (strncmp(line, "audioBufferSize: ", 17) == 0) {
       sscanf(line + 17, "%d", &appSettings.audioBufferSize);

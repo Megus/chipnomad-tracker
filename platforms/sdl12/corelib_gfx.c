@@ -22,9 +22,15 @@ static int fontH;
 static int fontW;
 static int isDirty;
 
+// Font surface optimization
+static SDL_Surface* charSurfaces[95]; // ASCII 32-126
+
 static char charBuffer[80];
 
-int gfxSetup(void) {
+int gfxSetup(int *screenWidth, int *screenHeight) {
+  // Currently, SDL1.2 build is only for pre-2024 RG35xx which has 640x480 screen
+  // So I ignore passed screenWidth and screenHeight
+
   if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
     printf("SDL2 Initialization Error: %s\n", SDL_GetError());
     return 1;
@@ -45,12 +51,36 @@ int gfxSetup(void) {
   fontW = 2; // In bytes
   fontH = 24;
 
+  // Create character surfaces
+  for (int ch = 0; ch < 95; ch++) {
+    charSurfaces[ch] = SDL_CreateRGBSurface(SDL_SWSURFACE, fontW * 8, fontH, 32, 0, 0, 0, 0);
+    SDL_FillRect(charSurfaces[ch], NULL, SDL_MapRGB(charSurfaces[ch]->format, 0, 0, 0));
+    SDL_SetColorKey(charSurfaces[ch], SDL_SRCCOLORKEY, SDL_MapRGB(charSurfaces[ch]->format, 0, 0, 0));
+    
+    for (int l = 0; l < fontH; l++) {
+      for (int c = 0; c < fontW; c++) {
+        uint8_t fontByte = font[ch * fontW * fontH + l * fontW + c];
+        uint8_t mask = 0x80;
+        
+        for (int b = 0; b < 8; b++) {
+          if (fontByte & mask) {
+            ((Uint32 *)charSurfaces[ch]->pixels)[l * charSurfaces[ch]->w + (c * 8 + b)] = SDL_MapRGB(charSurfaces[ch]->format, 255, 255, 255);
+          }
+          mask >>= 1;
+        }
+      }
+    }
+  }
+
   isDirty = 1;
 
   return 0;
 }
 
 void gfxCleanup(void) {
+  for (int i = 0; i < 95; i++) {
+    if (charSurfaces[i]) SDL_FreeSurface(charSurfaces[i]);
+  }
   SDL_FreeSurface(sdlScreen);
 }
 
@@ -76,12 +106,6 @@ void gfxPoint(int x, int y, uint32_t color) {
   isDirty = 1;
 }
 
-void gfxFillRect(int x, int y, int w, int h) {
-  SDL_Rect rect = { CHAR_X(x), CHAR_Y(y), CHAR_X(w), CHAR_Y(h) };
-  SDL_FillRect(sdlScreen, &rect, fgColor);
-  isDirty = 1;
-}
-
 void gfxClearRect(int x, int y, int w, int h) {
   SDL_Rect rect = { CHAR_X(x), CHAR_Y(y), CHAR_X(w), CHAR_Y(h) };
   SDL_FillRect(sdlScreen, &rect, bgColor);
@@ -93,36 +117,54 @@ void gfxPrint(int x, int y, const char* text) {
 
   int cx = CHAR_X(x);
   int cy = CHAR_Y(y);
-
   int len = (int)strlen(text);
 
+  // Draw background rectangles first
+  for (int i = 0; i < len; i++) {
+    if (text[i] == '\r' && text[i + 1] == '\n') {
+      i++;
+      cx = CHAR_X(x);
+      cy += fontH;
+      continue;
+    }
+    SDL_Rect bgRect = {cx, cy, fontW * 8, fontH};
+    SDL_FillRect(sdlScreen, &bgRect, bgColor);
+    cx += fontW * 8;
+    if (cx > WINDOW_WIDTH) {
+      cx = CHAR_X(x);
+      cy += fontH;
+    }
+  }
+
+  // Draw characters
+  cx = CHAR_X(x);
+  cy = CHAR_Y(y);
+  
   for (int i = 0; i < len; i++) {
     uint8_t C = text[i];
     if (C == '\r' && text[i + 1] == '\n') {
       i++;
-      cx = x;
+      cx = CHAR_X(x);
       cy += fontH;
       if (cy > WINDOW_HEIGHT) {
-        cy = y;
+        cy = CHAR_Y(y);
       }
       continue;
     }
 
-    for (int l = 0; l < fontH; l++) {
-      for (int c = 0; c < fontW; c++) {
-        uint8_t mask = 0x80;
-        int fontByte = font[(C - 32) * fontW * fontH + l * fontW + c];
-
-        for (int b = 0; b < 8; b++) {
-          ((Uint32 *)sdlScreen->pixels)[(cy + l) * sdlScreen->w + (cx + c * 8 + b)] = (fontByte & mask) ? fgColor : bgColor;
-          mask = mask >> 1;
-        }
-      }
+    if (C >= 32 && C <= 126) {
+      // Create colored version of character
+      SDL_Surface* coloredChar = SDL_DisplayFormat(charSurfaces[C - 32]);
+      SDL_SetColors(coloredChar, &(SDL_Color){(fgColor >> 16) & 0xFF, (fgColor >> 8) & 0xFF, fgColor & 0xFF}, 255, 1);
+      
+      SDL_Rect dstRect = {cx, cy, fontW * 8, fontH};
+      SDL_BlitSurface(coloredChar, NULL, sdlScreen, &dstRect);
+      SDL_FreeSurface(coloredChar);
     }
 
     cx += fontW * 8;
     if (cx > WINDOW_WIDTH) {
-      cx = x;
+      cx = CHAR_X(x);
       cy += fontH;
     }
   }
@@ -138,11 +180,9 @@ void gfxPrintf(int x, int y, const char* format, ...) {
 }
 
 void gfxCursor(int x, int y, int w) {
-  int cx = CHAR_X(x);
-  int cy = CHAR_Y(y) + fontH - 1;
-  for (int c = 0; c < CHAR_X(w); c++) {
-    gfxPoint(cx + c, cy, cursorColor);
-  }
+  SDL_Rect rect = { CHAR_X(x), CHAR_Y(y) + fontH - 1, CHAR_X(w), 1 };
+  SDL_FillRect(sdlScreen, &rect, cursorColor);
+  isDirty = 1;
 }
 
 void gfxRect(int x, int y, int w, int h) {
@@ -150,14 +190,18 @@ void gfxRect(int x, int y, int w, int h) {
   int cy = CHAR_Y(y);
   int cw = CHAR_X(w);
   int ch = CHAR_Y(h);
-  for (int c = 0; c < cw; c++) {
-    gfxPoint(cx + c, cy, fgColor);
-    gfxPoint(cx + c, cy + ch - 1, fgColor);
+  
+  SDL_Rect rects[4] = {
+    {cx, cy, cw, 1},           // top
+    {cx, cy + ch - 1, cw, 1}, // bottom
+    {cx, cy, 1, ch},          // left
+    {cx + cw - 1, cy, 1, ch}  // right
+  };
+  
+  for (int i = 0; i < 4; i++) {
+    SDL_FillRect(sdlScreen, &rects[i], fgColor);
   }
-  for (int c = 0; c < ch; c++) {
-    gfxPoint(cx, cy + c, fgColor);
-    gfxPoint(cx + cw - 1, cy + c, fgColor);
-  }
+  isDirty = 1;
 }
 
 void gfxUpdateScreen(void) {

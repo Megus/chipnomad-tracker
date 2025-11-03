@@ -24,6 +24,8 @@ struct ColorScheme {
 };
 
 struct AppSettings {
+  int screenWidth;
+  int screenHeight;
   int audioSampleRate;
   int audioBufferSize;
   int doubleTapFrames;
