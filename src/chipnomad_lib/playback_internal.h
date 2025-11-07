@@ -5,6 +5,7 @@
 
 void handleNoteOff(struct PlaybackState* state, int trackIdx);
 void readPhraseRow(struct PlaybackState* state, int trackIdx, int skilDelCheck);
+void readPhraseRowDirect(struct PlaybackState* state, int trackIdx, struct PhraseRow* phraseRow, int skipDelCheck);
 void tableInit(struct PlaybackState* state, int trackIdx, struct PlaybackTableState* table, int tableIdx, int speed);
 void tableReadFX(struct PlaybackState* state, int trackIdx, struct PlaybackTableState* table, int fxIdx, int forceRead);
 void initFX(struct PlaybackState* state, int trackIdx, uint8_t* fx, struct PlaybackFXState *fxState, int forceCleanState);

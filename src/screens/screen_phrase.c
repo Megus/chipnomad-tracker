@@ -273,7 +273,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   if (handled) {
     //phrase->hasNotes = -1;
     //project.chains[project.song[*pSongRow][*pSongTrack]].hasNotes = -1;
-    playbackStartPhraseRow(&playback, *pSongTrack, *pSongRow, *pChainRow, screen.cursorRow);
+    playbackStartPhraseRow(&playback, *pSongTrack, &phraseRows[screen.cursorRow]);
   }
 
   return handled;

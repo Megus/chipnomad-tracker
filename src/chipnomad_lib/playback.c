@@ -36,6 +36,8 @@ static void resetTrack(struct PlaybackState* state, int trackIdx) {
     track->note.fx[i].fx = EMPTY_VALUE_8;
   }
 
+  // Clear cached phrase row
+  memset(&track->currentPhraseRow, EMPTY_VALUE_8, sizeof(track->currentPhraseRow));
 
   resetTrackAY(state, trackIdx);
 }
@@ -116,9 +118,68 @@ void handleNoteOff(struct PlaybackState* state, int trackIdx) {
   noteOffInstrumentAY(state, trackIdx);
 }
 
+
+
+void readPhraseRowDirect(struct PlaybackState* state, int trackIdx, struct PhraseRow* phraseRow, int skipDelCheck) {
+  struct PlaybackTrackState* track = &state->tracks[trackIdx];
+  struct Project* p = state->p;
+  uint8_t note = phraseRow->note;
+
+  // Pre-scan FX if there's a DEL FX
+  if (!skipDelCheck) {
+    for (int i = 0; i < 3; i++) {
+      if (phraseRow->fx[i][0] == fxDEL && phraseRow->fx[i][1] != 0) {
+        track->note.fx[i].fx = fxDEL;
+        track->note.fx[i].value = phraseRow->fx[i][1];
+        return;
+      }
+    }
+  }
+
+  // FX
+  for (int i = 0; i < 3; i++) {
+    if (phraseRow->fx[i][0] != EMPTY_VALUE_8 || note != EMPTY_VALUE_8) {
+      initFX(state, trackIdx, phraseRow->fx[i], &track->note.fx[i], (note != EMPTY_VALUE_8 && note != NOTE_OFF));
+    }
+  }
+
+  // Note
+  if (note != EMPTY_VALUE_8) {
+    if (note == NOTE_OFF) {
+      handleNoteOff(state, trackIdx);
+    } else {
+      track->note.noteBase = note;
+      track->note.pitchOffsetAcc = 0;
+      track->note.noteOffsetAcc = 0;
+      track->note.volumeOffsetAcc = 0;
+      tableInit(state, trackIdx, &track->note.auxTable, EMPTY_VALUE_8, 1);
+    }
+  }
+
+  // Instrument
+  uint8_t instrument = phraseRow->instrument;
+  if (instrument != EMPTY_VALUE_8) {
+    track->note.instrument = instrument;
+    setupInstrumentAY(state, trackIdx);
+    tableInit(state, trackIdx, &track->note.instrumentTable, instrument, p->instruments[instrument].tableSpeed);
+  }
+
+  // Volume
+  uint8_t volume = phraseRow->volume;
+  if (phraseRow->volume != EMPTY_VALUE_8) {
+    track->note.volume = volume;
+  }
+}
+
 void readPhraseRow(struct PlaybackState* state, int trackIdx, int skipDelCheck) {
   struct PlaybackTrackState* track = &state->tracks[trackIdx];
   struct Project* p = state->p;
+
+  // If using phrase row mode, use cached phrase row
+  if (track->mode == playbackModePhraseRow) {
+    readPhraseRowDirect(state, trackIdx, &track->currentPhraseRow, skipDelCheck);
+    return;
+  }
 
   // If nothing is playing, skip it
   if (track->mode == playbackModeStopped || track->songRow == EMPTY_VALUE_16) return;
@@ -129,52 +190,7 @@ void readPhraseRow(struct PlaybackState* state, int trackIdx, int skipDelCheck) 
     if (phraseIdx != EMPTY_VALUE_16) {
       int phraseRow = track->phraseRow;
       struct Phrase* phrase = &p->phrases[phraseIdx];
-      uint8_t note = phrase->rows[phraseRow].note;
-
-      // Pre-scan FX if there's a DEL FX
-      if (!skipDelCheck) {
-        for (int i = 0; i < 3; i++) {
-          if (phrase->rows[phraseRow].fx[i][0] == fxDEL && phrase->rows[phraseRow].fx[i][1] != 0) {
-            track->note.fx[i].fx = fxDEL;
-            track->note.fx[i].value = phrase->rows[phraseRow].fx[i][1];
-            return;
-          }
-        }
-      }
-
-      // FX
-      for (int i = 0; i < 3; i++) {
-        if (phrase->rows[phraseRow].fx[i][0] != EMPTY_VALUE_8 || note != EMPTY_VALUE_8) {
-          initFX(state, trackIdx, phrase->rows[phraseRow].fx[i], &track->note.fx[i], (note != EMPTY_VALUE_8 && note != NOTE_OFF));
-        }
-      }
-
-      // Note
-      if (note != EMPTY_VALUE_8) {
-        if (note == NOTE_OFF) {
-          handleNoteOff(state, trackIdx);
-        } else {
-          track->note.noteBase = note;
-          track->note.pitchOffsetAcc = 0;
-          track->note.noteOffsetAcc = 0;
-          track->note.volumeOffsetAcc = 0;
-          tableInit(state, trackIdx, &track->note.auxTable, EMPTY_VALUE_8, 1);
-        }
-      }
-
-      // Instrument
-      uint8_t instrument = phrase->rows[phraseRow].instrument;
-      if (instrument != EMPTY_VALUE_8) {
-        track->note.instrument = instrument;
-        setupInstrumentAY(state, trackIdx);
-        tableInit(state, trackIdx, &track->note.instrumentTable, instrument, p->instruments[instrument].tableSpeed);
-      }
-
-      // Volume
-      uint8_t volume = phrase->rows[phraseRow].volume;
-      if (phrase->rows[phraseRow].volume != EMPTY_VALUE_8) {
-        track->note.volume = volume;
-      }
+      readPhraseRowDirect(state, trackIdx, &phrase->rows[phraseRow], skipDelCheck);
     } else {
       // Safeguard for phrase in chain
       resetTrack(state, trackIdx);
@@ -204,7 +220,7 @@ static void nextFrame(struct PlaybackState* state, int trackIdx) {
   handleFX(state, trackIdx);
 
   // Instrument
-  enum InstrumentType instType = p->instruments[track->note.instrument].type;
+  enum InstrumentType instType = (track->note.instrument != EMPTY_VALUE_8) ? p->instruments[track->note.instrument].type : instNone;
   switch (instType) {
     case instAY:
       handleInstrumentAY(state, trackIdx);
@@ -422,15 +438,15 @@ void playbackStartPhrase(struct PlaybackState* state, int trackIdx, int songRow,
   track->queue.phraseRow = 0;
 }
 
-void playbackStartPhraseRow(struct PlaybackState* state, int trackIdx, int songRow, int chainRow, int phraseRow) {
+void playbackStartPhraseRow(struct PlaybackState* state, int trackIdx, struct PhraseRow* phraseRow) {
+  resetTrack(state, trackIdx);
+
   struct PlaybackTrackState* track = &state->tracks[trackIdx];
 
-  if (!(track->mode == playbackModePhraseRow || track->mode == playbackModeStopped)) return;
-
+  // Set up phrase row playback
   track->queue.mode = playbackModePhraseRow;
-  track->queue.songRow = songRow;
-  track->queue.chainRow = chainRow;
-  track->queue.phraseRow = phraseRow;
+  track->songRow = 0;
+  track->currentPhraseRow = *phraseRow;
 }
 
 void playbackQueuePhrase(struct PlaybackState* state, int trackIdx, int songRow, int chainRow) {
@@ -520,24 +536,25 @@ int playbackNextFrame(struct PlaybackState* state, struct SoundChip* chips) {
 }
 
 void playbackPreviewNote(struct PlaybackState* state, int trackIdx, uint8_t note, uint8_t instrument) {
-  resetTrack(state, trackIdx);
+  // Create a phrase row for preview
+  struct PhraseRow phraseRow = {0};
+  phraseRow.note = note;
+  phraseRow.instrument = instrument;
+  phraseRow.volume = 15;
 
-  struct PlaybackTrackState* track = &state->tracks[trackIdx];
-
-  // Set up preview playback
-  track->mode = playbackModePhraseRow;
-  track->songRow = 0;
-  track->note.noteBase = note;
-  track->note.noteFinal = note;
-  track->note.instrument = instrument;
-  track->note.volume = 15;
-
-  // Initialize instrument
-  if (instrument != EMPTY_VALUE_8) {
-    setupInstrumentAY(state, trackIdx);
-    tableInit(state, trackIdx, &track->note.instrumentTable, instrument, state->p->instruments[instrument].tableSpeed);
+  // Set up empty FX
+  for (int i = 0; i < 3; i++) {
+    phraseRow.fx[i][0] = EMPTY_VALUE_8;
+    phraseRow.fx[i][1] = EMPTY_VALUE_8;
   }
+
+  // Use unified phrase row playback
+  playbackStartPhraseRow(state, trackIdx, &phraseRow);
 }
+
+
+
+
 
 void playbackStopPreview(struct PlaybackState* state, int trackIdx) {
   if (state->tracks[trackIdx].mode == playbackModePhraseRow) {

@@ -113,6 +113,9 @@ struct PlaybackTrackState {
 
   // Currently playing note
   struct PlaybackNoteState note;
+
+  // Cached phrase row data
+  struct PhraseRow currentPhraseRow;
 };
 
 struct PlaybackAYChipState {
@@ -176,15 +179,13 @@ void playbackStartChain(struct PlaybackState* state, int trackIdx, int songRow, 
 void playbackStartPhrase(struct PlaybackState* state, int trackIdx, int songRow, int chainRow);
 
 /**
- * Starts playback of a specific row in a phrase
+ * Starts playback of a phrase row
  *
  * @param state Pointer to the playback state
  * @param trackIdx Index of the track to play
- * @param songRow Row position in the song
- * @param chainRow Row position in the chain
- * @param phraseRow Starting row position in the phrase
+ * @param phraseRow Phrase row data to play
  */
-void playbackStartPhraseRow(struct PlaybackState* state, int trackIdx, int songRow, int chainRow, int phraseRow);
+void playbackStartPhraseRow(struct PlaybackState* state, int trackIdx, struct PhraseRow* phraseRow);
 
 /**
  * Queues a phrase for playback on a specific track
@@ -214,6 +215,8 @@ void playbackStop(struct PlaybackState* state);
  */
 void playbackPreviewNote(struct PlaybackState* state, int trackIdx, uint8_t note, uint8_t instrument);
 
+
+
 /**
  * Stops preview playback on a specific track
  *
@@ -230,6 +233,8 @@ void playbackStopPreview(struct PlaybackState* state, int trackIdx);
  * @return 1 if all tracks have finished playing, 0 if any track is still active
  */
 int playbackNextFrame(struct PlaybackState* state, struct SoundChip* chips);
+
+
 
 
 #endif
