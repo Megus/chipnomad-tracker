@@ -16,6 +16,7 @@ static int tickRateI = 0;
 static uint16_t tickRateF = 0;
 
 static void onProjectLoaded(const char* path) {
+  playbackStop(&playback);
   if (projectLoad(path) == 0) {
     extractFilenameWithoutExtension(path, appSettings.projectFilename, FILENAME_LENGTH + 1);
 
