@@ -155,15 +155,6 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
   return 0;
 }
 
-static int findEmptyChain(int startChain) {
-  for (int c = startChain; c < PROJECT_MAX_CHAINS; c++) {
-    if (chainIsEmpty(c)) {
-      return c;
-    }
-  }
-  return EMPTY_VALUE_16;
-}
-
 static int editCell(int col, int row, enum CellEditAction action) {
   if (action == editDoubleTap) {
     int current = project.song[row][col];
@@ -180,17 +171,25 @@ static int editCell(int col, int row, enum CellEditAction action) {
   } else if (action == editShallowClone) {
     int current = project.song[row][col];
     if (current != EMPTY_VALUE_16) {
-      int nextEmpty = findEmptyChain(current + 1);
-      if (nextEmpty != EMPTY_VALUE_16) {
-        project.song[row][col] = nextEmpty;
-        lastChainValue = nextEmpty;
-        memcpy(&project.chains[nextEmpty], &project.chains[current], sizeof(struct Chain));
-        screenMessage(MESSAGE_TIME, "Shallow-cloned chain");
-      } else {
-        screenMessage(MESSAGE_TIME, "No free chains");
+      int cloned = cloneChainToNext(current);
+      if (cloned != EMPTY_VALUE_16) {
+        project.song[row][col] = cloned;
+        lastChainValue = cloned;
+        return 1;
       }
     }
-    return 1;
+    return 0;
+  } else if (action == editDeepClone) {
+    int current = project.song[row][col];
+    if (current != EMPTY_VALUE_16) {
+      int cloned = deepCloneChainToNext(current);
+      if (cloned != EMPTY_VALUE_16) {
+        project.song[row][col] = cloned;
+        lastChainValue = cloned;
+        return 1;
+      }
+    }
+    return 0;
   }
   return edit16withLimit(action, &project.song[row][col], &lastChainValue, 16, PROJECT_MAX_CHAINS - 1);
 }
@@ -231,6 +230,23 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       fullRedraw();
     }
     return success;
+  } else if (action == editShallowClone || action == editDeepClone) {
+    int startCol, startRow, endCol, endRow;
+    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    int clonedCount = 0;
+    for (int r = startRow; r <= endRow; r++) {
+      for (int c = startCol; c <= endCol; c++) {
+        if (editCell(c, r, action)) clonedCount++;
+      }
+    }
+    if (clonedCount > 0) {
+      const char* msg = (action == editShallowClone) ? "Shallow-cloned" : "Deep-cloned";
+      screenMessage(MESSAGE_TIME, "%s %d chain%s", msg, clonedCount, clonedCount == 1 ? "" : "s");
+      return 1;
+    } else {
+      screenMessage(MESSAGE_TIME, "No chains to clone");
+      return 0;
+    }
   } else if (applyMultiEdit(&screen, action, editCell)) {
     return 1;
   } else if (action == editCopy) {

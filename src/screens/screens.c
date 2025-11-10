@@ -8,6 +8,7 @@
 const struct AppScreen* currentScreen = NULL;
 
 static int messageTimer = -1;
+static char messageBuffer[42] = "";
 
 void drawScreenMap() {
   const static int smY = 15;
@@ -65,10 +66,18 @@ void screenSetup(const struct AppScreen* screen, int input) {
 void screenDraw() {
   currentScreen->draw();
 
+  // Draw cached message
+  if (strlen(messageBuffer) > 0) {
+    gfxSetFgColor(appSettings.colorScheme.textDefault);
+    gfxClearRect(0, 19, 40, 1);
+    gfxPrint(0, 19, messageBuffer);
+  }
+
   if (messageTimer >= 0) {
     messageTimer--;
     if (messageTimer == 0) {
-      screenMessage(0, "");
+      messageBuffer[0] = '\0';
+      gfxClearRect(0, 19, 40, 1);
     }
   }
 }
@@ -82,15 +91,10 @@ void screenMessage(int time, const char* format, ...) {
 
   messageTimer = time;
 
-  static char buffer[42];
-  gfxSetFgColor(appSettings.colorScheme.textDefault);
-  gfxClearRect(0, 19, 40, 1);
-
   va_list args;
   va_start(args, format);
-  vsnprintf(buffer, 41, format, args);
+  vsnprintf(messageBuffer, 41, format, args);
   va_end(args);
-  gfxPrint(0, 19, buffer);
 }
 
 
@@ -285,6 +289,7 @@ static int inputNormalMode(struct ScreenData* screen, int keys, int isDoubleTap)
 }
 
 static int optPressed = 0;
+static int shallowClonePressed = 0;
 
 static void redrawSelection(struct ScreenData* screen) {
   int startCol, startRow, endCol, endRow;
@@ -324,6 +329,13 @@ static int inputSelectMode(struct ScreenData* screen, int keys, int isDoubleTap)
       screenFullRedraw(screen);
       redrawn = 1;
       optPressed = 0;
+    } else if (keys == 0 && shallowClonePressed) {
+      // Exit select mode on Shift release after shallow clone
+      screen->selectMode = 0;
+      screenFullRedraw(screen);
+      redrawn = 1;
+      shallowClonePressed = 0;
+      handled = 1;
     } else if (keys == (keyEdit | keyOpt)) {
       // Cut and exit select mode
       handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editCut);
@@ -344,9 +356,17 @@ static int inputSelectMode(struct ScreenData* screen, int keys, int isDoubleTap)
     } else if (keys == (keyDown | keyEdit)) {
       // Multi-edit: big decrease values in selection
       handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editMultiDecreaseBig);
-    } else if (keys == (keyShift | keyEdit)) {
-      // Shallow copy
+    } else if (keys == (keyShift | keyEdit) && !shallowClonePressed) {
+      // Shallow clone
       handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editShallowClone);
+      shallowClonePressed = 1;
+    } else if (keys == (keyShift | keyEdit) && shallowClonePressed) {
+      // Deep clone (second press while Shift still held)
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editDeepClone);
+      screen->selectMode = 0;
+      shallowClonePressed = 0;
+      screenFullRedraw(screen);
+      redrawn = 1;
     } else if (keys & keyOpt) {
       optPressed = 1;
     }

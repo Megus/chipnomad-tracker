@@ -374,3 +374,112 @@ int switchSongSelectionMode(struct ScreenData* screen) {
   }
   return 1;
 }
+
+// Find empty chain slot
+int findEmptyChain(int start) {
+  for (int i = start; i < PROJECT_MAX_CHAINS; i++) {
+    if (chainIsEmpty(i)) return i;
+  }
+  return EMPTY_VALUE_16;
+}
+
+// Find empty phrase slot
+int findEmptyPhrase(int start) {
+  for (int i = start; i < PROJECT_MAX_PHRASES; i++) {
+    if (phraseIsEmpty(i)) return i;
+  }
+  return EMPTY_VALUE_16;
+}
+
+// Clone chain (shallow)
+int cloneChain(int srcIdx, int dstIdx) {
+  if (srcIdx >= PROJECT_MAX_CHAINS || dstIdx >= PROJECT_MAX_CHAINS) return 0;
+  project.chains[dstIdx] = project.chains[srcIdx];
+  return 1;
+}
+
+// Clone phrase
+int clonePhrase(int srcIdx, int dstIdx) {
+  if (srcIdx >= PROJECT_MAX_PHRASES || dstIdx >= PROJECT_MAX_PHRASES) return 0;
+  project.phrases[dstIdx] = project.phrases[srcIdx];
+  return 1;
+}
+
+// Deep clone phrases within an existing chain
+int deepCloneChain(int chainIdx) {
+  if (chainIdx >= PROJECT_MAX_CHAINS) return 0;
+  
+  // Find all distinct phrases used in the chain
+  uint16_t usedPhrases[16];
+  uint16_t phraseMapping[16];
+  int distinctCount = 0;
+  
+  for (int row = 0; row < 16; row++) {
+    uint16_t phraseIdx = project.chains[chainIdx].rows[row].phrase;
+    if (phraseIdx == EMPTY_VALUE_16) {
+      phraseMapping[row] = EMPTY_VALUE_16;
+      continue;
+    }
+    
+    // Check if phrase already processed
+    int found = -1;
+    for (int i = 0; i < distinctCount; i++) {
+      if (usedPhrases[i] == phraseIdx) {
+        found = i;
+        break;
+      }
+    }
+    
+    if (found == -1) {
+      // New phrase, find empty slot
+      int newPhraseIdx = findEmptyPhrase(0);
+      if (newPhraseIdx == EMPTY_VALUE_16) return 0;
+      
+      // Clone the phrase
+      clonePhrase(phraseIdx, newPhraseIdx);
+      
+      usedPhrases[distinctCount] = phraseIdx;
+      phraseMapping[row] = newPhraseIdx;
+      distinctCount++;
+    } else {
+      // Reuse existing mapping
+      for (int i = 0; i < row; i++) {
+        if (project.chains[chainIdx].rows[i].phrase == phraseIdx) {
+          phraseMapping[row] = phraseMapping[i];
+          break;
+        }
+      }
+    }
+  }
+  
+  // Update chain with new phrase references
+  for (int row = 0; row < 16; row++) {
+    project.chains[chainIdx].rows[row].phrase = phraseMapping[row];
+  }
+  
+  return 1;
+}
+
+// Consolidated cloning functions
+int cloneChainToNext(int srcIdx) {
+  int nextEmpty = findEmptyChain(srcIdx + 1);
+  if (nextEmpty == EMPTY_VALUE_16) return EMPTY_VALUE_16;
+  cloneChain(srcIdx, nextEmpty);
+  return nextEmpty;
+}
+
+int clonePhraseToNext(int srcIdx) {
+  int nextEmpty = findEmptyPhrase(srcIdx + 1);
+  if (nextEmpty == EMPTY_VALUE_16) return EMPTY_VALUE_16;
+  clonePhrase(srcIdx, nextEmpty);
+  return nextEmpty;
+}
+
+int deepCloneChainToNext(int srcIdx) {
+  int nextEmpty = findEmptyChain(srcIdx + 1);
+  if (nextEmpty == EMPTY_VALUE_16) return EMPTY_VALUE_16;
+  cloneChain(srcIdx, nextEmpty);
+  if (!deepCloneChain(nextEmpty)) return EMPTY_VALUE_16;
+  return nextEmpty;
+}
+

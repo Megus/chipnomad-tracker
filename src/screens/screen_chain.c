@@ -135,15 +135,6 @@ static void draw(void) {
 // Input handling
 //
 
-int findEmptyPhrase(int start) {
-  for (int i = start; i < PROJECT_MAX_PHRASES; i++) {
-    if (phraseIsEmpty(i)) {
-      return i;
-    }
-  }
-  return EMPTY_VALUE_16;
-}
-
 static int editCell(int col, int row, enum CellEditAction action) {
   if (col == 0) {
     if (action == editDoubleTap) {
@@ -161,17 +152,14 @@ static int editCell(int col, int row, enum CellEditAction action) {
     } else if (action == editShallowClone || action == editDeepClone) {
       uint16_t current = project.chains[chain].rows[row].phrase;
       if (current != EMPTY_VALUE_16) {
-        int nextEmpty = findEmptyPhrase(current + 1);
-        if (nextEmpty != EMPTY_VALUE_16) {
-          project.chains[chain].rows[row].phrase = nextEmpty;
-          lastPhraseValue = nextEmpty;
-          memcpy(&project.phrases[nextEmpty], &project.phrases[current], sizeof(struct Phrase));
-          screenMessage(MESSAGE_TIME, "Cloned phrase");
-        } else {
-          screenMessage(MESSAGE_TIME, "No empty phrases");
+        int cloned = clonePhraseToNext(current);
+        if (cloned != EMPTY_VALUE_16) {
+          project.chains[chain].rows[row].phrase = cloned;
+          lastPhraseValue = cloned;
+          return 1;
         }
       }
-      return 1;
+      return 0;
     }
     return edit16withLimit(action, &project.chains[chain].rows[row].phrase, &lastPhraseValue, 16, PROJECT_MAX_PHRASES - 1);
   } else {
@@ -188,6 +176,22 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   } else if (action == editMultiIncreaseBig || action == editMultiDecreaseBig) {
     if (!isSingleColumnSelection(&screen)) return 0;
     return applyMultiEdit(&screen, action, editCell);
+  } else if (action == editShallowClone || action == editDeepClone) {
+    int startCol, startRow, endCol, endRow;
+    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    int clonedCount = 0;
+    for (int r = startRow; r <= endRow; r++) {
+      for (int c = startCol; c <= endCol; c++) {
+        if (editCell(c, r, action)) clonedCount++;
+      }
+    }
+    if (clonedCount > 0) {
+      screenMessage(MESSAGE_TIME, "Cloned %d phrase%s", clonedCount, clonedCount == 1 ? "" : "s");
+      return 1;
+    } else {
+      screenMessage(MESSAGE_TIME, "No phrases to clone");
+      return 0;
+    }
   } else if (action == editCopy) {
     int startCol, startRow, endCol, endRow;
     getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
