@@ -3,6 +3,8 @@
 
 #include <common.h>
 
+#define MESSAGE_TIME (60)
+
 struct AppScreen {
   void (*setup)(int input);
   void (*fullRedraw)(void);
@@ -66,7 +68,8 @@ extern const struct AppScreen screenTable;
 extern const struct AppScreen* currentScreen;
 
 void screenSetup(const struct AppScreen* screen, int input);
-void screenMessage(const char* format, ...);
+void screenDraw(void);
+void screenMessage(int time, const char* format, ...);
 
 // Spreadsheet functions
 void screenFullRedraw(struct ScreenData* screen);

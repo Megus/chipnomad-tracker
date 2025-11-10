@@ -172,7 +172,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
           lastPhraseValue = nextEmpty;
           handled = 1;
         } else {
-          screenMessage("No empty phrases");
+          screenMessage(MESSAGE_TIME, "No empty phrases");
         }
       }
     } else if (action == editShallowClone || action == editDeepClone) {
@@ -186,8 +186,10 @@ static int onEdit(int col, int row, enum CellEditAction action) {
           lastPhraseValue = nextEmpty;
           memcpy(&project.phrases[nextEmpty], &project.phrases[current], sizeof(struct Phrase));
           handled = 1;
+
+          screenMessage(MESSAGE_TIME, "Cloned phrase");
         } else {
-          screenMessage("No empty phrases");
+          screenMessage(MESSAGE_TIME, "No empty phrases");
         }
       }
 
@@ -211,7 +213,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
     // To Phrase screen
     int phrase = project.chains[chain].rows[screen.cursorRow].phrase;
     if (phrase == EMPTY_VALUE_16) {
-      screenMessage("Enter a phrase");
+      screenMessage(0, "Enter a phrase");
     } else {
       screenSetup(&screenPhrase, -1);
     }

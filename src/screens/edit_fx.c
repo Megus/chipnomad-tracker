@@ -51,7 +51,7 @@ int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastValue, int isTa
     fxEditFullDraw(fx[0]);
     result = 1;
   }
-  if (result != 1) screenMessage("%s", helpFXHint(fx, isTable));
+  if (result != 1) screenMessage(0, "%s", helpFXHint(fx, isTable));
   return result;
 }
 
@@ -63,7 +63,7 @@ int editFXValue(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX, int is
   }
 
   int handled = edit8noLimit(action, &fx[1], &lastFX[1], bigStep);
-  screenMessage(helpFXHint(fx, 0));
+  screenMessage(0, helpFXHint(fx, 0));
   return handled;
 }
 

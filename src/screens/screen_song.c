@@ -137,7 +137,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
     int chain = project.song[screen.cursorRow][screen.cursorCol];
 
     if (chain == EMPTY_VALUE_16) {
-      screenMessage("Enter a chain");
+      screenMessage(0, "Enter a chain");
     } else {
       screenSetup(&screenChain, -1);
     }
@@ -186,6 +186,8 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       if (nextEmpty != EMPTY_VALUE_16) {
         project.song[row][col] = nextEmpty;
         lastChainValue = nextEmpty;
+      } else {
+        screenMessage(MESSAGE_TIME, "No free chains");
       }
     }
     return 1;
@@ -200,6 +202,10 @@ static int onEdit(int col, int row, enum CellEditAction action) {
         lastChainValue = nextEmpty;
 
         memcpy(&project.chains[nextEmpty], &project.chains[current], sizeof(struct Chain));
+
+        screenMessage(MESSAGE_TIME, "Shallow-cloned chain");
+      } else {
+        screenMessage(MESSAGE_TIME, "No free chains");
       }
     }
     return 1;

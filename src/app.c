@@ -82,8 +82,8 @@ static void appInput(int keys, int isDoubleTap) {
   int volumeChanged = 0;
 
   if (keys == 0) {
-    // Clean screen message when nothing is pressed
-    screenMessage("");
+    // Clean untimed screen message when nothing is pressed
+    screenMessage(0, "");
   }
 
   // Volume control
@@ -152,7 +152,7 @@ void appCleanup(void) {
 void appDraw(void) {
   const struct ColorScheme cs = appSettings.colorScheme;
 
-  currentScreen->draw();
+  screenDraw();
 
   // Tracks
   char digit[2] = "0";

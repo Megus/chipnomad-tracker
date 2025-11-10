@@ -220,7 +220,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     // Pitch flag (toggle between 0 and 1)
     handled = edit8noLast(action, &tableRows[row].pitchFlag, 1, 0, 1);
     if (handled) {
-      screenMessage(tableRows[row].pitchFlag ? "Absolute pitch" : "Pitch offset", 0);
+      screenMessage(0, tableRows[row].pitchFlag ? "Absolute pitch" : "Pitch offset", 0);
     }
   } else if (col == 1) {
     // Pitch offset
@@ -228,10 +228,10 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     if (handled) {
       if (tableRows[row].pitchFlag == 1) {
         // If pitch flag is 1, pitch is absolute
-        screenMessage("Note %s", noteName(tableRows[row].pitchOffset));
+        screenMessage(0, "Note %s", noteName(tableRows[row].pitchOffset));
       } else {
         // If pitch flag is 0, pitch is offset
-        screenMessage("Pitch offset %hhd", tableRows[row].pitchOffset);
+        screenMessage(0, "Pitch offset %hhd", tableRows[row].pitchOffset);
       }
     }
   } else if (col == 2) {

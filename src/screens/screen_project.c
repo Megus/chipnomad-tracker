@@ -15,6 +15,8 @@ static int editingStringLength = 0;
 static int tickRateI = 0;
 static uint16_t tickRateF = 0;
 
+static int songScreenInput = 0;
+
 static void onProjectLoaded(const char* path) {
   playbackStop(&playback);
   if (projectLoad(path) == 0) {
@@ -27,6 +29,12 @@ static void onProjectLoaded(const char* path) {
       strncpy(appSettings.projectPath, path, pathLen);
       appSettings.projectPath[pathLen] = 0;
     }
+
+    // Jump to the song beginning
+    *pSongRow = 0;
+    *pSongTrack = 0;
+    *pChainRow = 0;
+    songScreenInput = 0x1234;
   }
   screenSetup(&screenProject, 0);
 }
@@ -286,7 +294,8 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {
   if (keys == (keyDown | keyShift)) {
-    screenSetup(&screenSong, 0);
+    screenSetup(&screenSong, songScreenInput);
+    songScreenInput = 0;
     return 1;
   }
   return 0;

@@ -243,7 +243,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 
     uint8_t instrument = phraseRows[row].instrument;
     if (handled && instrument != EMPTY_VALUE_8) {
-      screenMessage("%s: %s", byteToHex(instrument), instrumentName(instrument));
+      screenMessage(0, "%s: %s", byteToHex(instrument), instrumentName(instrument));
     }
 
   } else if (col == 2) {

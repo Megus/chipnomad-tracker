@@ -1,10 +1,13 @@
 #include <stdarg.h>
+#include <string.h>
 #include <screens.h>
 #include <project.h>
 #include <corelib_gfx.h>
 #include <utils.h>
 
 const struct AppScreen* currentScreen = NULL;
+
+static int messageTimer = -1;
 
 void drawScreenMap() {
   const static int smY = 15;
@@ -59,7 +62,26 @@ void screenSetup(const struct AppScreen* screen, int input) {
   drawScreenMap();
 }
 
-void screenMessage(const char* format, ...) {
+void screenDraw() {
+  currentScreen->draw();
+
+  if (messageTimer >= 0) {
+    messageTimer--;
+    if (messageTimer == 0) {
+      screenMessage(0, "");
+    }
+  }
+}
+
+
+void screenMessage(int time, const char* format, ...) {
+  // Don't clear timed messages
+  if (messageTimer > 0 && strlen(format) == 0) {
+    return;
+  }
+
+  messageTimer = time;
+
   static char buffer[42];
   gfxSetFgColor(appSettings.colorScheme.textDefault);
   gfxClearRect(0, 19, 40, 1);
@@ -300,13 +322,13 @@ static int inputSelectMode(struct ScreenData* screen, int keys, int isDoubleTap)
       int oldSelCol2 = max(screen->selectStartCol, oldCursorCol);
       int oldSelRow1 = min(screen->selectStartRow, oldCursorRow);
       int oldSelRow2 = max(screen->selectStartRow, oldCursorRow);
-      
+
       int newSelCol1, newSelRow1, newSelCol2, newSelRow2;
       getSelectionBounds(screen, &newSelCol1, &newSelRow1, &newSelCol2, &newSelRow2);
-      
+
       // Erase old selection rectangle
       screenDrawSelection(screen, 0, oldSelCol1, oldSelRow1, oldSelCol2, oldSelRow2);
-      
+
       // Re-render cells that are no longer selected
       for (int row = oldSelRow1; row <= oldSelRow2; row++) {
         for (int col = oldSelCol1; col <= oldSelCol2; col++) {
@@ -316,7 +338,7 @@ static int inputSelectMode(struct ScreenData* screen, int keys, int isDoubleTap)
           }
         }
       }
-      
+
       // Render cells that are now selected
       for (int row = newSelRow1; row <= newSelRow2; row++) {
         for (int col = newSelCol1; col <= newSelCol2; col++) {
@@ -325,7 +347,7 @@ static int inputSelectMode(struct ScreenData* screen, int keys, int isDoubleTap)
           }
         }
       }
-      
+
       // Draw new selection rectangle
       screenDrawSelection(screen, 1, newSelCol1, newSelRow1, newSelCol2, newSelRow2);
     }
