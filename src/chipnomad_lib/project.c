@@ -327,6 +327,42 @@ static int projectLoadPhrases(int fileId, struct Project* p) {
   return 0;
 }
 
+static int loadInstrument(int fileId, struct Instrument* instrument, struct Project* p) {
+  // Read name
+  READ_STRING;
+  if (!strncmp(lpstr, "- Name:", 7)) {
+    if (sscanf(lpstr, "- Name: %[^\n]", instrument->name) != 1) {
+      instrument->name[0] = 0; // Empty instrument name
+    }
+  }
+
+  // Read type
+  READ_STRING;
+  if (sscanf(lpstr, "- Type: %hhd", &instrument->type) != 1) return 1;
+
+  // Read table speed
+  READ_STRING;
+  if (sscanf(lpstr, "- Table speed: %hhu", &instrument->tableSpeed) != 1) return 1;
+
+  // Read transpose enabled
+  READ_STRING;
+  if (sscanf(lpstr, "- Transpose: %hhu", &instrument->transposeEnabled) != 1) return 1;
+
+  if (instrument->type == instAY) {
+    // Read volume envelope
+    READ_STRING;
+    if (sscanf(lpstr, "- Volume envelope: %hhu,%hhu,%hhu,%hhu",
+        &instrument->chip.ay.veA, &instrument->chip.ay.veD,
+        &instrument->chip.ay.veS, &instrument->chip.ay.veR) != 4) return 1;
+
+    // Read auto envelope
+    READ_STRING;
+    if (sscanf(lpstr, "- Auto envelope: %hhu,%hhu",
+        &instrument->chip.ay.autoEnvN, &instrument->chip.ay.autoEnvD) != 2) return 1;
+  }
+  return 0;
+}
+
 static int projectLoadInstruments(int fileId, struct Project* p) {
   int idx;
 
@@ -336,44 +372,42 @@ static int projectLoadInstruments(int fileId, struct Project* p) {
     READ_STRING;
     if (strncmp(lpstr, "### Instrument", 13)) break;
     if (sscanf(lpstr, "### Instrument %X", &idx) != 1) return 1;
-
-    // Read name
-    READ_STRING;
-    if (!strncmp(lpstr, "- Name:", 7)) {
-      if (sscanf(lpstr, "- Name: %[^\n]", p->instruments[idx].name) != 1) {
-        p->instruments[idx].name[0] = 0; // Empty instrument name
-      }
-    }
-
-    // Read type
-    READ_STRING;
-    if (sscanf(lpstr, "- Type: %hhd", &p->instruments[idx].type) != 1) return 1;
-
-    // Read table speed
-    READ_STRING;
-    if (sscanf(lpstr, "- Table speed: %hhu", &p->instruments[idx].tableSpeed) != 1) return 1;
-
-    // Read transpose enabled
-    READ_STRING;
-    if (sscanf(lpstr, "- Transpose: %hhu", &p->instruments[idx].transposeEnabled) != 1) return 1;
-
-    if (p->instruments[idx].type == instAY) {
-      // Read volume envelope
-      READ_STRING;
-      if (sscanf(lpstr, "- Volume envelope: %hhu,%hhu,%hhu,%hhu",
-          &p->instruments[idx].chip.ay.veA,
-          &p->instruments[idx].chip.ay.veD,
-          &p->instruments[idx].chip.ay.veS,
-          &p->instruments[idx].chip.ay.veR) != 4) return 1;
-
-      // Read auto envelope
-      READ_STRING;
-      if (sscanf(lpstr, "- Auto envelope: %hhu,%hhu",
-          &p->instruments[idx].chip.ay.autoEnvN,
-          &p->instruments[idx].chip.ay.autoEnvD) != 2) return 1;
-    }
+    if (loadInstrument(fileId, &p->instruments[idx], p)) return 1;
   }
 
+  return 0;
+}
+
+static int loadTable(int fileId, struct Table* table, struct Project* p) {
+  for (int d = 0; d < 16; d++) {
+    READ_STRING;
+    if (strlen(lpstr) < 35) return 1;  // Minimum length check
+
+    // Read pitch flag (single char)
+    table->rows[d].pitchFlag = (lpstr[0] == '=') ? 1 : 0;
+
+    // Read pitch offset
+    table->rows[d].pitchOffset = scanByteOrEmpty(lpstr + 2);
+
+    // Read volume
+    table->rows[d].volume = scanByteOrEmpty(lpstr + 5);
+
+    // Read FX1
+    table->rows[d].fx[0][0] = scanFX(lpstr + 8, p);
+    table->rows[d].fx[0][1] = scanByteOrEmpty(lpstr + 12);
+
+    // Read FX2
+    table->rows[d].fx[1][0] = scanFX(lpstr + 15, p);
+    table->rows[d].fx[1][1] = scanByteOrEmpty(lpstr + 19);
+
+    // Read FX3
+    table->rows[d].fx[2][0] = scanFX(lpstr + 22, p);
+    table->rows[d].fx[2][1] = scanByteOrEmpty(lpstr + 26);
+
+    // Read FX4
+    table->rows[d].fx[3][0] = scanFX(lpstr + 29, p);
+    table->rows[d].fx[3][1] = scanByteOrEmpty(lpstr + 33);
+  }
   return 0;
 }
 
@@ -386,36 +420,7 @@ static int projectLoadTables(int fileId, struct Project* p) {
     READ_STRING;
     if (strncmp(lpstr, "### Table", 9)) break;
     if (sscanf(lpstr, "### Table %X", &idx) != 1) return 1;
-
-    for (int d = 0; d < 16; d++) {
-      READ_STRING;
-      if (strlen(lpstr) < 35) return 1;  // Minimum length check
-
-      // Read pitch flag (single char)
-      p->tables[idx].rows[d].pitchFlag = (lpstr[0] == '=') ? 1 : 0;
-
-      // Read pitch offset
-      p->tables[idx].rows[d].pitchOffset = scanByteOrEmpty(lpstr + 2);
-
-      // Read volume
-      p->tables[idx].rows[d].volume = scanByteOrEmpty(lpstr + 5);
-
-      // Read FX1
-      p->tables[idx].rows[d].fx[0][0] = scanFX(lpstr + 8, p);
-      p->tables[idx].rows[d].fx[0][1] = scanByteOrEmpty(lpstr + 12);
-
-      // Read FX2
-      p->tables[idx].rows[d].fx[1][0] = scanFX(lpstr + 15, p);
-      p->tables[idx].rows[d].fx[1][1] = scanByteOrEmpty(lpstr + 19);
-
-      // Read FX3
-      p->tables[idx].rows[d].fx[2][0] = scanFX(lpstr + 22, p);
-      p->tables[idx].rows[d].fx[2][1] = scanByteOrEmpty(lpstr + 26);
-
-      // Read FX4
-      p->tables[idx].rows[d].fx[3][0] = scanFX(lpstr + 29, p);
-      p->tables[idx].rows[d].fx[3][1] = scanByteOrEmpty(lpstr + 33);
-    }
+    if (loadTable(fileId, &p->tables[idx], p)) return 1;
   }
 
   return 0;
@@ -644,62 +649,56 @@ static int projectSavePhrases(int fileId) {
   return 0;
 }
 
+static int saveInstrument(int fileId, int idx, struct Instrument* instrument) {
+  filePrintf(fileId, "\n### Instrument %X\n\n", idx);
+  filePrintf(fileId, "- Name: %s\n", instrument->name);
+  filePrintf(fileId, "- Type: %hhd\n", instrument->type);
+  filePrintf(fileId, "- Table speed: %hhu\n", instrument->tableSpeed);
+  filePrintf(fileId, "- Transpose: %hhu\n", instrument->transposeEnabled);
+
+  if (instrument->type == instAY) {
+    filePrintf(fileId, "- Volume envelope: %hhu,%hhu,%hhu,%hhu\n",
+      instrument->chip.ay.veA, instrument->chip.ay.veD,
+      instrument->chip.ay.veS, instrument->chip.ay.veR);
+    filePrintf(fileId, "- Auto envelope: %hhd,%hhd\n",
+      instrument->chip.ay.autoEnvN, instrument->chip.ay.autoEnvD);
+  }
+  return 0;
+}
+
+static int saveTable(int fileId, int idx, struct Table* table) {
+  filePrintf(fileId, "\n### Table %X\n\n```\n", idx);
+  for (int d = 0; d < 16; d++) {
+    filePrintf(fileId, "%c %s %s %s %s %s %s %s %s %s %s\n",
+      table->rows[d].pitchFlag ? '=' : '~',
+      byteToHex(table->rows[d].pitchOffset),
+      byteToHexOrEmpty(table->rows[d].volume),
+      fxNames[table->rows[d].fx[0][0]].name, byteToHex(table->rows[d].fx[0][1]),
+      fxNames[table->rows[d].fx[1][0]].name, byteToHex(table->rows[d].fx[1][1]),
+      fxNames[table->rows[d].fx[2][0]].name, byteToHex(table->rows[d].fx[2][1]),
+      fxNames[table->rows[d].fx[3][0]].name, byteToHex(table->rows[d].fx[3][1]));
+  }
+  filePrintf(fileId, "```\n");
+  return 0;
+}
+
 static int projectSaveInstruments(int fileId) {
   filePrintf(fileId, "\n## Instruments\n");
-
   for (int c = 0; c < PROJECT_MAX_INSTRUMENTS; c++) {
     if (!instrumentIsEmpty(c)) {
-      filePrintf(fileId, "\n### Instrument %X\n\n", c);
-      filePrintf(fileId, "- Name: %s\n", project.instruments[c].name);
-      filePrintf(fileId, "- Type: %hhd\n", project.instruments[c].type);
-      filePrintf(fileId, "- Table speed: %hhu\n", project.instruments[c].tableSpeed);
-      filePrintf(fileId, "- Transpose: %hhu\n", project.instruments[c].transposeEnabled);
-
-      if (project.instruments[c].type == instAY) {
-        // Save AY-specific parameters
-        filePrintf(fileId, "- Volume envelope: %hhu,%hhu,%hhu,%hhu\n",
-          project.instruments[c].chip.ay.veA,
-          project.instruments[c].chip.ay.veD,
-          project.instruments[c].chip.ay.veS,
-          project.instruments[c].chip.ay.veR
-        );
-        filePrintf(fileId, "- Auto envelope: %hhd,%hhd\n",
-          project.instruments[c].chip.ay.autoEnvN,
-          project.instruments[c].chip.ay.autoEnvD
-        );
-      }
+      saveInstrument(fileId, c, &project.instruments[c]);
     }
   }
-
   return 0;
 }
 
 static int projectSaveTables(int fileId) {
   filePrintf(fileId, "\n## Tables\n");
-
   for (int c = 0; c < PROJECT_MAX_TABLES; c++) {
     if (!tableIsEmpty(c)) {
-      filePrintf(fileId, "\n### Table %X\n\n```\n", c);
-      for (int d = 0; d < 16; d++) {
-        // Save pitch flag as ~ or =
-        filePrintf(fileId, "%c %s %s %s %s %s %s %s %s %s %s\n",
-          project.tables[c].rows[d].pitchFlag ? '=' : '~',
-          byteToHex(project.tables[c].rows[d].pitchOffset),
-          byteToHexOrEmpty(project.tables[c].rows[d].volume),
-          fxNames[project.tables[c].rows[d].fx[0][0]].name,
-          byteToHex(project.tables[c].rows[d].fx[0][1]),
-          fxNames[project.tables[c].rows[d].fx[1][0]].name,
-          byteToHex(project.tables[c].rows[d].fx[1][1]),
-          fxNames[project.tables[c].rows[d].fx[2][0]].name,
-          byteToHex(project.tables[c].rows[d].fx[2][1]),
-          fxNames[project.tables[c].rows[d].fx[3][0]].name,
-          byteToHex(project.tables[c].rows[d].fx[3][1])
-        );
-      }
-      filePrintf(fileId, "```\n");
+      saveTable(fileId, c, &project.tables[c]);
     }
   }
-
   return 0;
 }
 
@@ -822,5 +821,51 @@ char* noteName(uint8_t note) {
   } else {
     return "---";
   }
+}
+
+// Save instrument to file
+int instrumentSave(const char* path, int instrumentIdx) {
+  projectFileError[0] = 0;
+
+  int fileId = fileOpen(path, 1);
+  if (fileId == -1) {
+    sprintf(projectFileError, "Can't open file");
+    return 1;
+  }
+
+  filePrintf(fileId, "# ChipNomad Instrument\n\n");
+  saveInstrument(fileId, 0, &project.instruments[instrumentIdx]);
+  saveTable(fileId, 0, &project.tables[instrumentIdx]);
+
+  fileClose(fileId);
+  return 0;
+}
+
+static int instrumentLoadInternal(int fileId, int instrumentIdx) {
+  READ_STRING; if (strcmp(lpstr, "# ChipNomad Instrument")) return 1;
+  READ_STRING; if (strncmp(lpstr, "### Instrument", 14)) return 1;
+
+  if (loadInstrument(fileId, &project.instruments[instrumentIdx], &project)) return 1;
+
+  READ_STRING; if (strncmp(lpstr, "### Table", 9)) return 1;
+
+  if (loadTable(fileId, &project.tables[instrumentIdx], &project)) return 1;
+
+  return 0;
+}
+
+// Load instrument from file
+int instrumentLoad(const char* path, int instrumentIdx) {
+  projectFileError[0] = 0;
+
+  int fileId = fileOpen(path, 0);
+  if (fileId == -1) {
+    sprintf(projectFileError, "Can't open file");
+    return 1;
+  }
+
+  int result = instrumentLoadInternal(fileId, instrumentIdx);
+  fileClose(fileId);
+  return result;
 }
 

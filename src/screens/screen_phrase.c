@@ -216,7 +216,11 @@ static int editCell(int col, int row, enum CellEditAction action) {
   } else if (col == 1) {
     // Instrument
     if (action == editDoubleTap) {
-      // No special action for double tap
+      uint8_t nextInstrument = findEmptyInstrument(0);
+      if (nextInstrument != EMPTY_VALUE_8) {
+        phraseRows[row].instrument = nextInstrument;
+        handled = 1;
+      }
     } else {
       handled = edit8withLimit(action, &phraseRows[row].instrument, &lastInstrument, 16, PROJECT_MAX_INSTRUMENTS - 1);
     }
@@ -298,6 +302,21 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     pastePhrase(phraseIdx, col, row);
     fullRedraw();
     return 1;
+  } else if (action == editShallowClone) {
+    int startCol, startRow, endCol, endRow;
+    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    
+    // Handle instrument column cloning
+    if (startCol == 1 && endCol == 1) {
+      int distinctCount = cloneInstrumentsInPhrase(phraseIdx, startRow, endRow);
+      if (distinctCount == 0) {
+        screenMessage(MESSAGE_TIME, "No empty instruments");
+        return 0;
+      }
+      screenMessage(MESSAGE_TIME, "Cloned %d instrument%s", distinctCount, distinctCount == 1 ? "" : "s");
+      return 1;
+    }
+    return 0;
   } else {
     return editCell(col, row, action);
   }

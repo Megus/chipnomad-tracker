@@ -210,6 +210,10 @@ void projectInit(struct Project* p);
 int projectLoad(const char* path);
 // Save project to a file
 int projectSave(const char* path);
+// Save instrument to a file
+int instrumentSave(const char* path, int instrumentIdx);
+// Load instrument from a file
+int instrumentLoad(const char* path, int instrumentIdx);
 
 // Is chain empty?
 int8_t chainIsEmpty(int chain);

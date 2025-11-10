@@ -1,16 +1,61 @@
 #include <screens.h>
 #include <common.h>
 #include <corelib_gfx.h>
+#include <corelib_file.h>
 #include <utils.h>
 #include <project.h>
 #include <project_utils.h>
 #include <screen_instrument.h>
+#include <copy_paste.h>
+#include <file_browser.h>
 #include <string.h>
 
 extern const struct AppScreen screenInstrumentPool;
 
 int cInstrument = 0;
 static int isCharEdit = 0;
+
+static void getInstrumentFilename(char* filename, int size) {
+  if (strlen(project.instruments[cInstrument].name) > 0) {
+    snprintf(filename, size, "%s", project.instruments[cInstrument].name);
+  } else {
+    snprintf(filename, size, "instrument_%02X", cInstrument);
+  }
+}
+
+static void onInstrumentLoaded(const char* path) {
+  if (instrumentLoad(path, cInstrument) == 0) {
+    // Save the directory path
+    char* lastSeparator = strrchr(path, PATH_SEPARATOR);
+    if (lastSeparator) {
+      int pathLen = lastSeparator - path;
+      if (pathLen < PATH_LENGTH) {
+        strncpy(appSettings.instrumentPath, path, pathLen);
+        appSettings.instrumentPath[pathLen] = 0;
+      }
+    }
+  }
+  screenSetup(&screenInstrument, cInstrument);
+}
+
+static void onInstrumentSaved(const char* folderPath) {
+  // The file browser constructs the full path internally, but we need to recreate it
+  // since the callback only gives us the folder path
+  char fullPath[2048];
+  char filename[32];
+  getInstrumentFilename(filename, sizeof(filename));
+  snprintf(fullPath, sizeof(fullPath), "%s%s%s.cni", folderPath, PATH_SEPARATOR_STR, filename);
+  
+  if (instrumentSave(fullPath, cInstrument) == 0) {
+    strncpy(appSettings.instrumentPath, folderPath, PATH_LENGTH);
+    appSettings.instrumentPath[PATH_LENGTH - 1] = 0;
+  }
+  screenSetup(&screenInstrument, cInstrument);
+}
+
+static void onInstrumentCancelled(void) {
+  screenSetup(&screenInstrument, cInstrument);
+}
 
 static void drawRowHeader(int row, int state);
 static void drawColHeader(int col, int state);
@@ -160,11 +205,19 @@ int instrumentCommonOnEdit(int col, int row, enum CellEditAction action) {
       fullRedraw();
     }
   } else if (row == 0 && col == 1) {
-    // Load
-    // TODO: Screen setup for instrument load
+    // Load instrument
+    fileBrowserSetup("LOAD INSTRUMENT", ".cni", appSettings.instrumentPath, onInstrumentLoaded, onInstrumentCancelled);
+    screenSetup(&screenFileBrowser, 0);
   } else if (row == 0 && col == 2) {
-    // Save
-    // TODO: Screen setup for instrument save
+    // Save instrument
+    if (instrumentIsEmpty(cInstrument)) {
+      screenMessage(MESSAGE_TIME, "Cannot save empty instrument");
+    } else {
+      char filename[32];
+      getInstrumentFilename(filename, sizeof(filename));
+      fileBrowserSetupFolderMode("SAVE INSTRUMENT", appSettings.instrumentPath, filename, ".cni", onInstrumentSaved, onInstrumentCancelled);
+      screenSetup(&screenFileBrowser, 0);
+    }
   } else if (row == 1) {
     // Instrument name
     int res = editCharacter(action, project.instruments[cInstrument].name, col, PROJECT_INSTRUMENT_NAME_LENGTH);
@@ -238,6 +291,16 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
       uint8_t note = instrumentFirstNote(cInstrument);
       playbackPreviewNote(&playback, *pSongTrack, note, cInstrument);
     }
+    return 1;
+  } else if (keys == (keyShift | keyOpt)) {
+    // Copy instrument
+    copyInstrument(cInstrument);
+    screenMessage(MESSAGE_TIME, "Copied instrument");
+    return 1;
+  } else if (keys == (keyShift | keyEdit)) {
+    // Paste instrument
+    pasteInstrument(cInstrument);
+    fullRedraw();
     return 1;
   }
   return 0;

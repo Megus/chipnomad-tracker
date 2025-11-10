@@ -5,6 +5,7 @@
 #include <project.h>
 #include <project_utils.h>
 #include <screen_instrument.h>
+#include <copy_paste.h>
 #include <string.h>
 
 static int cursorRow = 0;
@@ -186,6 +187,16 @@ static void onInput(int keys, int isDoubleTap) {
       uint8_t note = instrumentFirstNote(cursorRow);
       playbackPreviewNote(&playback, *pSongTrack, note, cursorRow);
     }
+    return;
+  } else if (keys == (keyShift | keyOpt)) {
+    // Copy instrument
+    copyInstrument(cursorRow);
+    screenMessage(MESSAGE_TIME, "Copied instrument");
+    return;
+  } else if (keys == (keyShift | keyEdit)) {
+    // Paste instrument
+    pasteInstrument(cursorRow);
+    fullRedraw();
     return;
   }
 

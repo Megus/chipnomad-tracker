@@ -7,19 +7,22 @@ struct Chain cpBufChain;
 struct Phrase cpBufPhrase;
 struct Table cpBufTable;
 struct Groove cpBufGroove;
+struct Instrument cpBufInstrument;
+struct Table cpBufInstrumentTable;
 
-static int cpBufGrooveLength;
-static int cpBufSongRows;
-static int cpBufSongCols;
-static int cpBufChainRows;
+static int cpBufGrooveLength = 0;
+static int cpBufSongRows = 0;
+static int cpBufSongCols = 0;
+static int cpBufChainRows = 0;
 static int cpBufChainStartCol;
 static int cpBufChainEndCol;
-static int cpBufPhraseRows;
+static int cpBufPhraseRows = 0;
 static int cpBufPhraseStartCol;
 static int cpBufPhraseEndCol;
-static int cpBufTableRows;
+static int cpBufTableRows = 0;
 static int cpBufTableStartCol;
 static int cpBufTableEndCol;
+static int cpBufInstrumentValid = 0;
 
 void copyGroove(int grooveIdx, int startRow, int endRow, int isCut) {
   cpBufGrooveLength = endRow - startRow + 1;
@@ -391,6 +394,14 @@ int findEmptyPhrase(int start) {
   return EMPTY_VALUE_16;
 }
 
+// Find empty instrument slot
+int findEmptyInstrument(int start) {
+  for (int i = start; i < PROJECT_MAX_INSTRUMENTS; i++) {
+    if (project.instruments[i].type == instNone) return i;
+  }
+  return EMPTY_VALUE_8;
+}
+
 // Clone chain (shallow)
 int cloneChain(int srcIdx, int dstIdx) {
   if (srcIdx >= PROJECT_MAX_CHAINS || dstIdx >= PROJECT_MAX_CHAINS) return 0;
@@ -402,6 +413,14 @@ int cloneChain(int srcIdx, int dstIdx) {
 int clonePhrase(int srcIdx, int dstIdx) {
   if (srcIdx >= PROJECT_MAX_PHRASES || dstIdx >= PROJECT_MAX_PHRASES) return 0;
   project.phrases[dstIdx] = project.phrases[srcIdx];
+  return 1;
+}
+
+// Clone instrument
+int cloneInstrument(int srcIdx, int dstIdx) {
+  if (srcIdx >= PROJECT_MAX_INSTRUMENTS || dstIdx >= PROJECT_MAX_INSTRUMENTS) return 0;
+  project.instruments[dstIdx] = project.instruments[srcIdx];
+  project.tables[dstIdx] = project.tables[srcIdx];
   return 1;
 }
 
@@ -475,11 +494,79 @@ int clonePhraseToNext(int srcIdx) {
   return nextEmpty;
 }
 
+int cloneInstrumentToNext(int srcIdx) {
+  int nextEmpty = findEmptyInstrument(srcIdx + 1);
+  if (nextEmpty == EMPTY_VALUE_8) return EMPTY_VALUE_8;
+  cloneInstrument(srcIdx, nextEmpty);
+  return nextEmpty;
+}
+
 int deepCloneChainToNext(int srcIdx) {
   int nextEmpty = findEmptyChain(srcIdx + 1);
   if (nextEmpty == EMPTY_VALUE_16) return EMPTY_VALUE_16;
   cloneChain(srcIdx, nextEmpty);
   if (!deepCloneChain(nextEmpty)) return EMPTY_VALUE_16;
   return nextEmpty;
+}
+
+int cloneInstrumentsInPhrase(int phraseIdx, int startRow, int endRow) {
+  uint8_t usedInstruments[16];
+  uint8_t instrumentMapping[16];
+  int distinctCount = 0;
+  
+  // Find all distinct instruments in selection
+  for (int r = startRow; r <= endRow; r++) {
+    uint8_t instIdx = project.phrases[phraseIdx].rows[r].instrument;
+    if (instIdx == EMPTY_VALUE_8) {
+      instrumentMapping[r - startRow] = EMPTY_VALUE_8;
+      continue;
+    }
+    
+    // Check if instrument already processed
+    int found = -1;
+    for (int i = 0; i < distinctCount; i++) {
+      if (usedInstruments[i] == instIdx) {
+        found = i;
+        break;
+      }
+    }
+    
+    if (found == -1) {
+      // New instrument, clone it
+      int newInstIdx = cloneInstrumentToNext(instIdx);
+      if (newInstIdx == EMPTY_VALUE_8) return 0;
+      
+      usedInstruments[distinctCount] = instIdx;
+      instrumentMapping[r - startRow] = newInstIdx;
+      distinctCount++;
+    } else {
+      // Reuse existing mapping
+      for (int i = 0; i < r - startRow; i++) {
+        if (project.phrases[phraseIdx].rows[startRow + i].instrument == instIdx) {
+          instrumentMapping[r - startRow] = instrumentMapping[i];
+          break;
+        }
+      }
+    }
+  }
+  
+  // Update phrase with new instrument references
+  for (int r = startRow; r <= endRow; r++) {
+    project.phrases[phraseIdx].rows[r].instrument = instrumentMapping[r - startRow];
+  }
+  
+  return distinctCount;
+}
+
+void copyInstrument(int instrumentIdx) {
+  cpBufInstrument = project.instruments[instrumentIdx];
+  cpBufInstrumentTable = project.tables[instrumentIdx];
+  cpBufInstrumentValid = 1;
+}
+
+void pasteInstrument(int instrumentIdx) {
+  if (!cpBufInstrumentValid) return;
+  project.instruments[instrumentIdx] = cpBufInstrument;
+  project.tables[instrumentIdx] = cpBufInstrumentTable;
 }
 

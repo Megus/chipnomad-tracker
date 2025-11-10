@@ -22,15 +22,23 @@ void pastePhrase(int phraseIdx, int startCol, int startRow);
 // Table copy/paste
 void copyTable(int tableIdx, int startCol, int startRow, int endCol, int endRow, int isCut);
 void pasteTable(int tableIdx, int startCol, int startRow);
+
+// Instrument copy/paste
+void copyInstrument(int instrumentIdx);
+void pasteInstrument(int instrumentIdx);
 // Clone functionality
 int findEmptyChain(int start);
 int findEmptyPhrase(int start);
+int findEmptyInstrument(int start);
 int cloneChain(int srcIdx, int dstIdx);
 int clonePhrase(int srcIdx, int dstIdx);
+int cloneInstrument(int srcIdx, int dstIdx);
 int deepCloneChain(int chainIdx);
 int cloneChainToNext(int srcIdx);
 int clonePhraseToNext(int srcIdx);
+int cloneInstrumentToNext(int srcIdx);
 int deepCloneChainToNext(int srcIdx);
+int cloneInstrumentsInPhrase(int phraseIdx, int startRow, int endRow);
 
 // Selection mode switching
 int switchPhraseSelectionMode(struct ScreenData* screen);
