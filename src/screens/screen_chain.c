@@ -28,6 +28,8 @@ static struct ScreenData screen = {
   .selectMode = 0,
   .selectStartRow = 0,
   .selectStartCol = 0,
+  .selectAnchorRow = 0,
+  .selectAnchorCol = 0,
   .getColumnCount = getColumnCount,
   .drawStatic = drawStatic,
   .drawCursor = drawCursor,
@@ -143,7 +145,21 @@ int findEmptyPhrase(int start) {
 }
 
 static int onEdit(int col, int row, enum CellEditAction action) {
-  if (action == editCopy) {
+  if (action == editSwitchSelection) {
+    return switchChainSelectionMode(&screen);
+  } else if (action == editMultiIncrease || action == editMultiDecrease) {
+    if (!isSingleColumnSelection(&screen)) return 0;
+    int startCol, startRow, endCol, endRow;
+    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    for (int r = startRow; r <= endRow; r++) {
+      if (startCol == 0) {
+        edit16withLimit(action, &project.chains[chain].rows[r].phrase, &lastPhraseValue, 16, PROJECT_MAX_PHRASES - 1);
+      } else {
+        edit8noLimit(action, &project.chains[chain].rows[r].transpose, &lastTransposeValue, project.pitchTable.octaveSize);
+      }
+    }
+    return 1;
+  } else if (action == editCopy) {
     int startCol, startRow, endCol, endRow;
     getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
     copyChain(chain, startCol, startRow, endCol, endRow, 0);

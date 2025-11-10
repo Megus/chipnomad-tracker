@@ -1,5 +1,8 @@
 #include <project.h>
 
+// Forward declaration
+struct ScreenData;
+
 // Groove copy/paste
 void copyGroove(int grooveIdx, int startRow, int endRow, int isCut);
 void pasteGroove(int grooveIdx, int startRow);
@@ -19,3 +22,9 @@ void pastePhrase(int phraseIdx, int startCol, int startRow);
 // Table copy/paste
 void copyTable(int tableIdx, int startCol, int startRow, int endCol, int endRow, int isCut);
 void pasteTable(int tableIdx, int startCol, int startRow);
+// Selection mode switching
+int switchPhraseSelectionMode(struct ScreenData* screen);
+int switchTableSelectionMode(struct ScreenData* screen);
+int switchChainSelectionMode(struct ScreenData* screen);
+int switchGrooveSelectionMode(struct ScreenData* screen);
+int switchSongSelectionMode(struct ScreenData* screen);

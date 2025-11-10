@@ -29,7 +29,10 @@ enum CellEditAction {
   editDeepClone,
   editCopy,
   editCut,
-  editPaste
+  editPaste,
+  editSwitchSelection,
+  editMultiIncrease,
+  editMultiDecrease
 };
 
 struct ScreenData {
@@ -41,6 +44,8 @@ struct ScreenData {
   int selectMode; // 0 - edit, 1 - select, -1 - select is disabled for this screen (e.g. Instrument screen)
   int selectStartRow;
   int selectStartCol;
+  int selectAnchorRow; // Original cell where selection mode was entered
+  int selectAnchorCol; // Original cell where selection mode was entered
   int (*getColumnCount)(int row);
   void (*drawStatic)(void);
   void (*drawCursor)(int col, int row);
@@ -79,6 +84,7 @@ int screenInput(struct ScreenData* screen, int keys, int isDoubleTap);
 // Utility functions
 void setCellColor(int state, int isEmpty, int hasContent);
 void getSelectionBounds(struct ScreenData* screen, int* startCol, int* startRow, int* endCol, int* endRow);
+int isSingleColumnSelection(struct ScreenData* screen);
 
 // Confirmation dialog
 void confirmSetup(const char* message, void (*confirmCallback)(void), void (*cancelCallback)(void));

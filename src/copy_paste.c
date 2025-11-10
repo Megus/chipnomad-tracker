@@ -1,4 +1,5 @@
 #include <copy_paste.h>
+#include <screens.h>
 #include <string.h>
 
 uint16_t cpBufSong[PROJECT_MAX_LENGTH][PROJECT_MAX_TRACKS];
@@ -258,4 +259,118 @@ void pasteTable(int tableIdx, int startCol, int startRow) {
       }
     }
   }
+}
+
+// Selection mode switching helpers
+static int isSingleCell(int startCol, int startRow, int endCol, int endRow) {
+  return startCol == endCol && startRow == endRow;
+}
+
+static int isFullColumn(int startCol, int startRow, int endCol, int endRow) {
+  return startCol == endCol && startRow == 0 && endRow == 15;
+}
+
+static int isFullRow(int startRow, int endRow, int startCol, int endCol, int maxCol) {
+  return startRow == endRow && startCol == 0 && endCol == maxCol;
+}
+
+static void selectColumn(struct ScreenData* screen) {
+  screen->selectStartRow = 0;
+  screen->selectStartCol = screen->selectAnchorCol;
+  screen->cursorRow = 15;
+  screen->cursorCol = screen->selectAnchorCol;
+}
+
+static void selectRow(struct ScreenData* screen, int maxCol) {
+  screen->selectStartRow = screen->selectAnchorRow;
+  screen->selectStartCol = 0;
+  screen->cursorRow = screen->selectAnchorRow;
+  screen->cursorCol = maxCol;
+}
+
+static void selectAll(struct ScreenData* screen, int maxCol) {
+  screen->selectStartRow = 0;
+  screen->selectStartCol = 0;
+  screen->cursorRow = 15;
+  screen->cursorCol = maxCol;
+}
+
+// Selection mode switching
+int switchPhraseSelectionMode(struct ScreenData* screen) {
+  int startCol, startRow, endCol, endRow;
+  getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
+  
+  if (isSingleCell(startCol, startRow, endCol, endRow)) {
+    selectColumn(screen);
+    return 0;
+  }
+  if (isFullColumn(startCol, startRow, endCol, endRow)) {
+    selectRow(screen, 8);
+    return 0;
+  }
+  if (isFullRow(startRow, endRow, startCol, endCol, 8)) {
+    selectAll(screen, 8);
+    return 0;
+  }
+  return 1;
+}
+
+int switchTableSelectionMode(struct ScreenData* screen) {
+  int startCol, startRow, endCol, endRow;
+  getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
+  
+  if (isSingleCell(startCol, startRow, endCol, endRow)) {
+    selectColumn(screen);
+    return 0;
+  }
+  if (isFullColumn(startCol, startRow, endCol, endRow)) {
+    selectRow(screen, 10);
+    return 0;
+  }
+  if (isFullRow(startRow, endRow, startCol, endCol, 10)) {
+    selectAll(screen, 10);
+    return 0;
+  }
+  return 1;
+}
+
+int switchChainSelectionMode(struct ScreenData* screen) {
+  int startCol, startRow, endCol, endRow;
+  getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
+  
+  if (isSingleCell(startCol, startRow, endCol, endRow)) {
+    selectColumn(screen);
+    return 0;
+  }
+  if (isFullColumn(startCol, startRow, endCol, endRow)) {
+    selectRow(screen, 1);
+    return 0;
+  }
+  if (isFullRow(startRow, endRow, startCol, endCol, 1)) {
+    selectAll(screen, 1);
+    return 0;
+  }
+  return 1;
+}
+
+int switchGrooveSelectionMode(struct ScreenData* screen) {
+  int startCol, startRow, endCol, endRow;
+  getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
+  
+  if (isSingleCell(startCol, startRow, endCol, endRow)) {
+    selectAll(screen, 0);
+    return 0;
+  }
+  return 1;
+}
+
+int switchSongSelectionMode(struct ScreenData* screen) {
+  int startCol, startRow, endCol, endRow;
+  getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
+  
+  if (isSingleCell(startCol, startRow, endCol, endRow)) {
+    selectRow(screen, screen->getColumnCount(screen->selectAnchorRow) - 1);
+    return 0;
+  }
+  return 1;
 }

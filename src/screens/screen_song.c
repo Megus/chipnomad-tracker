@@ -28,6 +28,8 @@ static struct ScreenData screen = {
   .selectMode = 0,
   .selectStartRow = 0,
   .selectStartCol = 0,
+  .selectAnchorRow = 0,
+  .selectAnchorCol = 0,
   .getColumnCount = getColumnCount,
   .drawStatic = drawStatic,
   .drawCursor = drawCursor,
@@ -163,7 +165,18 @@ static int findEmptyChain(int startChain) {
 }
 
 static int onEdit(int col, int row, enum CellEditAction action) {
-  if (action == editCopy) {
+  if (action == editSwitchSelection) {
+    return switchSongSelectionMode(&screen);
+  } else if (action == editMultiIncrease || action == editMultiDecrease) {
+    int startCol, startRow, endCol, endRow;
+    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    for (int r = startRow; r <= endRow; r++) {
+      for (int c = startCol; c <= endCol; c++) {
+        edit16withLimit(action, &project.song[r][c], &lastChainValue, 16, PROJECT_MAX_CHAINS - 1);
+      }
+    }
+    return 1;
+  } else if (action == editCopy) {
     int startCol, startRow, endCol, endRow;
     getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
     copySong(startCol, startRow, endCol, endRow, 0);

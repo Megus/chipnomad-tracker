@@ -4,6 +4,10 @@
 int edit16withLimit(enum CellEditAction action, uint16_t* value, uint16_t* lastValue, uint16_t bigStep, uint16_t max) {
   int handled = 0;
 
+  // Convert multi-edit actions to regular actions
+  if (action == editMultiIncrease) action = editIncrease;
+  if (action == editMultiDecrease) action = editDecrease;
+
   switch (action) {
     case editClear:
       if (*value != EMPTY_VALUE_16) {
@@ -60,6 +64,10 @@ int edit8withLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValu
 }
 
 int edit8noLast(enum CellEditAction action, uint8_t* value, uint8_t bigStep, uint8_t min, uint8_t max) {
+  // Convert multi-edit actions to regular actions
+  if (action == editMultiIncrease) action = editIncrease;
+  if (action == editMultiDecrease) action = editDecrease;
+
   switch (action) {
     case editTap:
       return 1;
@@ -93,6 +101,10 @@ int edit8noLast(enum CellEditAction action, uint8_t* value, uint8_t bigStep, uin
 
 int edit8noLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep) {
   int handled = 0;
+
+  // Convert multi-edit actions to regular actions
+  if (action == editMultiIncrease) action = editIncrease;
+  if (action == editMultiDecrease) action = editDecrease;
 
   switch (action) {
     case editClear:

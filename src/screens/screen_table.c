@@ -33,6 +33,8 @@ static struct ScreenData screen = {
   .selectMode = 0,
   .selectStartRow = 0,
   .selectStartCol = 0,
+  .selectAnchorRow = 0,
+  .selectAnchorCol = 0,
   .getColumnCount = getColumnCount,
   .drawStatic = drawStatic,
   .drawCursor = drawCursor,
@@ -197,7 +199,28 @@ static void draw(void) {
 }
 
 static int onEdit(int col, int row, enum CellEditAction action) {
-  if (action == editCopy) {
+  if (action == editSwitchSelection) {
+    return switchTableSelectionMode(&screen);
+  } else if (action == editMultiIncrease || action == editMultiDecrease) {
+    if (!isSingleColumnSelection(&screen)) return 0;
+    int startCol, startRow, endCol, endRow;
+    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    for (int r = startRow; r <= endRow; r++) {
+      if (col == 0) {
+        edit8noLast(action, &tableRows[r].pitchFlag, 1, 0, 1);
+      } else if (col == 1) {
+        edit8noLimit(action, &tableRows[r].pitchOffset, &lastPitchValue, project.pitchTable.octaveSize);
+      } else if (col == 2) {
+        edit8withLimit(action, &tableRows[r].volume, &lastVolume, 16, 15);
+      } else if (col >= 4 && col <= 10 && (col % 2) == 0) {
+        int fxIdx = (col - 4) / 2;
+        if (tableRows[r].fx[fxIdx][0] != EMPTY_VALUE_8) {
+          editFXValue(action, tableRows[r].fx[fxIdx], lastFX, 1);
+        }
+      }
+    }
+    return 1;
+  } else if (action == editCopy) {
     int startCol, startRow, endCol, endRow;
     getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
     copyTable(tableIdx, startCol, startRow, endCol, endRow, 0);

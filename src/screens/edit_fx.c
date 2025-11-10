@@ -18,6 +18,10 @@ void fxEditFullDraw(uint8_t currentFX);
 int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastValue, int isTable) {
   int result = 0;
 
+  // Convert multi-edit actions to regular actions
+  if (action == editMultiIncrease) action = editIncrease;
+  if (action == editMultiDecrease) action = editDecrease;
+
   if (action == editClear) {
     // Clear FX
     if (fx[0] != EMPTY_VALUE_8) {
@@ -56,6 +60,10 @@ int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastValue, int isTa
 }
 
 int editFXValue(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable) {
+  // Convert multi-edit actions to regular actions
+  if (action == editMultiIncrease) action = editIncrease;
+  if (action == editMultiDecrease) action = editDecrease;
+
   uint8_t bigStep = 16;
   if (fx[0] == fxENT) {
     // AY Envelope note

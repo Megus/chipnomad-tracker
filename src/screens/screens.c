@@ -209,6 +209,8 @@ static int inputNormalMode(struct ScreenData* screen, int keys, int isDoubleTap)
       screen->selectMode = 1;
       screen->selectStartRow = screen->cursorRow;
       screen->selectStartCol = screen->cursorCol;
+      screen->selectAnchorRow = screen->cursorRow;
+      screen->selectAnchorCol = screen->cursorCol;
       screenFullRedraw(screen);
       handled = 1;
       redrawn = 1;
@@ -284,6 +286,16 @@ static int inputNormalMode(struct ScreenData* screen, int keys, int isDoubleTap)
 
 static int optPressed = 0;
 
+static void redrawSelection(struct ScreenData* screen) {
+  int startCol, startRow, endCol, endRow;
+  getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
+  for (int r = startRow; r <= endRow; r++) {
+    for (int c = startCol; c <= endCol; c++) {
+      screen->drawField(c, r, stateSelected);
+    }
+  }
+}
+
 static int inputSelectMode(struct ScreenData* screen, int keys, int isDoubleTap) {
   int oldCursorCol = screen->cursorCol;
   int oldCursorRow = screen->cursorRow;
@@ -293,9 +305,21 @@ static int inputSelectMode(struct ScreenData* screen, int keys, int isDoubleTap)
   inputCursorCommon(screen, keys, &handled, &redrawn);
 
   if (!handled) {
-    if (keys == 0 && optPressed) {
+    if (keys == (keyShift | keyOpt)) {
+      // Switch selection mode
+      int exitSelection = screen->onEdit(screen->cursorCol, screen->cursorRow, editSwitchSelection);
+      if (exitSelection) {
+        screen->selectMode = 0;
+        screen->cursorRow = screen->selectAnchorRow;
+        screen->cursorCol = screen->selectAnchorCol;
+      }
+      screenFullRedraw(screen);
+      redrawn = 1;
+      handled = 1;
+    } else if (keys == 0 && optPressed) {
       // Copy and exit select mode on Opt release (no keys pressed)
       handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editCopy);
+      if (handled) screenMessage(0, "Copied selection");
       screen->selectMode = 0;
       screenFullRedraw(screen);
       redrawn = 1;
@@ -303,12 +327,19 @@ static int inputSelectMode(struct ScreenData* screen, int keys, int isDoubleTap)
     } else if (keys == (keyEdit | keyOpt)) {
       // Cut and exit select mode
       handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editCut);
+      if (handled) screenMessage(0, "Cut selection");
       screen->selectMode = 0;
       screenFullRedraw(screen);
       redrawn = 1;
       optPressed = 0;
+    } else if (keys == (keyRight | keyEdit)) {
+      // Multi-edit: increase values in selection
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editMultiIncrease);
+    } else if (keys == (keyLeft | keyEdit)) {
+      // Multi-edit: decrease values in selection
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editMultiDecrease);
     } else if (keys == (keyShift | keyEdit)) {
-      // Shallow copy (to be refactored)
+      // Shallow copy
       handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editShallowClone);
     } else if (keys & keyOpt) {
       optPressed = 1;
@@ -347,10 +378,14 @@ static int inputSelectMode(struct ScreenData* screen, int keys, int isDoubleTap)
           }
         }
       }
-
-      // Draw new selection rectangle
-      screenDrawSelection(screen, 1, newSelCol1, newSelRow1, newSelCol2, newSelRow2);
+    } else {
+      // Cursor didn't move, redraw selection for multi-edit/shallow copy
+      redrawSelection(screen);
     }
+    // Draw new selection rectangle
+    int selCol1, selRow1, selCol2, selRow2;
+    getSelectionBounds(screen, &selCol1, &selRow1, &selCol2, &selRow2);
+    screenDrawSelection(screen, 1, selCol1, selRow1, selCol2, selRow2);
   }
 
   return handled;
@@ -391,4 +426,10 @@ void getSelectionBounds(struct ScreenData* screen, int* startCol, int* startRow,
   *endCol = max(screen->selectStartCol, screen->cursorCol);
   *startRow = min(screen->selectStartRow, screen->cursorRow);
   *endRow = max(screen->selectStartRow, screen->cursorRow);
+}
+
+int isSingleColumnSelection(struct ScreenData* screen) {
+  int startCol, startRow, endCol, endRow;
+  getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
+  return startCol == endCol;
 }

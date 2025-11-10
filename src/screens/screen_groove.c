@@ -23,6 +23,10 @@ static struct ScreenData screen = {
   .cursorCol = 0,
   .topRow = 0,
   .selectMode = 0,
+  .selectStartRow = 0,
+  .selectStartCol = 0,
+  .selectAnchorRow = 0,
+  .selectAnchorCol = 0,
   .getColumnCount = getColumnCount,
   .drawStatic = drawStatic,
   .drawCursor = drawCursor,
@@ -93,7 +97,17 @@ static void draw(void) {
 }
 
 static int onEdit(int col, int row, enum CellEditAction action) {
-  if (action == editCopy) {
+  if (action == editSwitchSelection) {
+    return switchGrooveSelectionMode(&screen);
+  } else if (action == editMultiIncrease || action == editMultiDecrease) {
+    if (!isSingleColumnSelection(&screen)) return 0;
+    int startCol, startRow, endCol, endRow;
+    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    for (int r = startRow; r <= endRow; r++) {
+      edit8withLimit(action, &project.grooves[groove].speed[r], &lastValue, 16, EMPTY_VALUE_8 - 1);
+    }
+    return 1;
+  } else if (action == editCopy) {
     int startCol, startRow, endCol, endRow;
     getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
     copyGroove(groove, startRow, endRow, 0);
