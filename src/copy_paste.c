@@ -114,15 +114,15 @@ void copyPhrase(int phraseIdx, int startCol, int startRow, int endCol, int endRo
       if (startCol <= 0 && endCol >= 0) project.phrases[phraseIdx].rows[startRow + row].note = EMPTY_VALUE_8;
       if (startCol <= 1 && endCol >= 1) project.phrases[phraseIdx].rows[startRow + row].instrument = EMPTY_VALUE_8;
       if (startCol <= 2 && endCol >= 2) project.phrases[phraseIdx].rows[startRow + row].volume = EMPTY_VALUE_8;
-      if (startCol <= 3 && endCol >= 3) {
+      if (startCol <= 3 && endCol >= 4) {
         project.phrases[phraseIdx].rows[startRow + row].fx[0][0] = EMPTY_VALUE_8;
         project.phrases[phraseIdx].rows[startRow + row].fx[0][1] = 0;
       }
-      if (startCol <= 4 && endCol >= 4) {
+      if (startCol <= 5 && endCol >= 6) {
         project.phrases[phraseIdx].rows[startRow + row].fx[1][0] = EMPTY_VALUE_8;
         project.phrases[phraseIdx].rows[startRow + row].fx[1][1] = 0;
       }
-      if (startCol <= 5 && endCol >= 5) {
+      if (startCol <= 7 && endCol >= 8) {
         project.phrases[phraseIdx].rows[startRow + row].fx[2][0] = EMPTY_VALUE_8;
         project.phrases[phraseIdx].rows[startRow + row].fx[2][1] = 0;
       }
@@ -193,19 +193,19 @@ void copyTable(int tableIdx, int startCol, int startRow, int endCol, int endRow,
       if (startCol <= 0 && endCol >= 0) project.tables[tableIdx].rows[startRow + row].pitchFlag = 0;
       if (startCol <= 1 && endCol >= 1) project.tables[tableIdx].rows[startRow + row].pitchOffset = 0;
       if (startCol <= 2 && endCol >= 2) project.tables[tableIdx].rows[startRow + row].volume = EMPTY_VALUE_8;
-      if (startCol <= 3 && endCol >= 3) {
+      if (startCol <= 3 && endCol >= 4) {
         project.tables[tableIdx].rows[startRow + row].fx[0][0] = EMPTY_VALUE_8;
         project.tables[tableIdx].rows[startRow + row].fx[0][1] = 0;
       }
-      if (startCol <= 4 && endCol >= 4) {
+      if (startCol <= 5 && endCol >= 6) {
         project.tables[tableIdx].rows[startRow + row].fx[1][0] = EMPTY_VALUE_8;
         project.tables[tableIdx].rows[startRow + row].fx[1][1] = 0;
       }
-      if (startCol <= 5 && endCol >= 5) {
+      if (startCol <= 7 && endCol >= 8) {
         project.tables[tableIdx].rows[startRow + row].fx[2][0] = EMPTY_VALUE_8;
         project.tables[tableIdx].rows[startRow + row].fx[2][1] = 0;
       }
-      if (startCol <= 6 && endCol >= 6) {
+      if (startCol <= 9 && endCol >= 10) {
         project.tables[tableIdx].rows[startRow + row].fx[3][0] = EMPTY_VALUE_8;
         project.tables[tableIdx].rows[startRow + row].fx[3][1] = 0;
       }

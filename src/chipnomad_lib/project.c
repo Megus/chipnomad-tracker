@@ -12,7 +12,7 @@ struct FXName fxNames[256];
 struct FXName fxNamesCommon[] = {
   {fxARP, "ARP"}, {fxARC, "ARC"}, {fxPVB, "PVB"}, {fxPBN, "PBN"}, {fxPSL, "PSL"}, {fxPIT, "PIT"},
   {fxVOL, "VOL"}, {fxRET, "RET"}, {fxDEL, "DEL"}, {fxOFF, "OFF"}, {fxKIL, "KIL"},
-  {fxTIC, "TIC"}, {fxTBL, "TBL"}, {fxTBX, "TBX"}, {fxTHO, "THO"},
+  {fxTIC, "TIC"}, {fxTBL, "TBL"}, {fxTBX, "TBX"}, {fxTHO, "THO"}, {fxTXH, "TXH"},
   {fxGRV, "GRV"}, {fxGGR, "GGR"}, {fxHOP, "HOP"},
 };
 int fxCommonCount = sizeof(fxNamesCommon) / sizeof(struct FXName);

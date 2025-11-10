@@ -65,7 +65,10 @@ char* helpFXHint(uint8_t* fx, int isTable) {
       sprintf(buffer, "Aux table %s", byteToHex(fx[1]));
       break;
     case fxTHO: // Table hop
-      sprintf(buffer, "Jump to table row %hhX", fx[1] & 0xf);
+      sprintf(buffer, "Jump to instrument table row %hhX", fx[1] & 0xf);
+      break;
+    case fxTXH: // Aux table hop
+      sprintf(buffer, "Jump to aux table row %hhX", fx[1] & 0xf);
       break;
     case fxGRV: // Track groove
       sprintf(buffer, "Track groove %hhu", fx[1]);
@@ -158,7 +161,8 @@ static const char* fxHelpText[] = {
   [fxTIC] = "Table Speed\nSets instrument table\nplayback speed",
   [fxTBL] = "Set Table\nSwitches to specified\ninstrument table",
   [fxTBX] = "Aux Table\nSets auxiliary table\nfor this track",
-  [fxTHO] = "Table Hop\nJumps to specific\ntable row",
+  [fxTHO] = "Table Hop\nJumps to specific\ninstrument table row",
+  [fxTXH] = "Aux Table Hop\nJumps to specific\naux table row",
   [fxGRV] = "Track Groove\nSets groove for\nthis track only",
   [fxGGR] = "Global Groove\nSets groove for\nall tracks",
   [fxHOP] = "Hop\nJumps to song row\nor stops playback",

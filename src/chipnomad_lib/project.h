@@ -40,6 +40,7 @@ enum FX {
   fxTBL, // Set instrument table
   fxTBX, // Set aux table
   fxTHO, // Table hop
+  fxTXH, // Aux table hop
   fxGRV, // Track groove
   fxGGR, // Global groove
   fxHOP, // Hop

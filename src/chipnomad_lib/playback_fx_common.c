@@ -167,11 +167,11 @@ static void handleFX_TBL(struct PlaybackState* state, struct PlaybackTrackState*
   fx->fx = EMPTY_VALUE_8;
 }
 
-// THO - Table hop
+// THO - Table hop (instrument table only)
 static void handleFX_THO(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
   fx->fx = EMPTY_VALUE_8;
   if (tableState == NULL) {
-    // FX is in Phrase
+    // FX is in Phrase - hop only in instrument table
     if (track->note.instrumentTable.tableIdx != EMPTY_VALUE_8) {
       for (int i = 0; i < 4; i++) {
         track->note.instrumentTable.counters[i] = 0;
@@ -179,6 +179,15 @@ static void handleFX_THO(struct PlaybackState* state, struct PlaybackTrackState*
         tableReadFX(state, trackIdx, &track->note.instrumentTable, i, 0);
       }
     }
+    handleAllTableFX(state, trackIdx);
+  }
+}
+
+// TXH - Aux table hop
+static void handleFX_TXH(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  fx->fx = EMPTY_VALUE_8;
+  if (tableState == NULL) {
+    // FX is in Phrase - hop only in aux table
     if (track->note.auxTable.tableIdx != EMPTY_VALUE_8) {
       for (int i = 0; i < 4; i++) {
         track->note.auxTable.counters[i] = 0;
@@ -364,6 +373,7 @@ static int handleFXInternal(struct PlaybackState* state, int trackIdx, struct Pl
   else if (fx->fx == fxTBX) handleFX_TBX(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxTBL) handleFX_TBL(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxTHO) handleFX_THO(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxTXH) handleFX_TXH(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxTIC) handleFX_TIC(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxVOL) handleFX_VOL(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxGRV) handleFX_GRV(state, track, trackIdx, fx, tableState);
