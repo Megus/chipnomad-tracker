@@ -107,6 +107,9 @@ void fxEditFullDraw(uint8_t currentFX) {
   currentGroup = 0;
   currentIdx = 0;
 
+  // Draw help for current FX
+  drawFXHelp((enum FX)currentFX);
+
   // Draw each FX group
   for (int groupIdx = 0; groupIdx < 2; groupIdx++) {
     drawGroupHeader(groupIdx);
@@ -171,6 +174,10 @@ int fxEditInput(int keys, int isDoubleTap, uint8_t* fx, uint8_t* lastFX) {
       }
     }
     drawFX(currentGroup, currentIdx, stateFocus);
+    
+    // Update help text for newly selected FX
+    gfxClearRect(0, 1, 40, 5);
+    drawFXHelp(getGroup(currentGroup)[currentIdx].fx);
   }
 
   return 0;

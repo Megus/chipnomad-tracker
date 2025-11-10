@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <utils.h>
 #include <project.h>
+#include <corelib_gfx.h>
+#include <common.h>
 
 char* helpFXHint(uint8_t* fx, int isTable) {
   static char buffer[41]; // Max length of a hint string
@@ -141,6 +143,80 @@ char* helpFXHint(uint8_t* fx, int isTable) {
 }
 
 
+static const char* fxHelpText[] = {
+  [fxARP] = "Arpeggio\nCycles through 0, high, low\nsemitone offsets",
+  [fxARC] = "Arpeggio Config\nSets arp direction, octave\nand timing",
+  [fxPVB] = "Pitch Vibrato\nOscillates pitch up/down\nwith speed and depth",
+  [fxPBN] = "Pitch Bend\nSlides pitch by amount\nper step continuously",
+  [fxPSL] = "Pitch Slide\nSlides to target pitch\nover specified tics",
+  [fxPIT] = "Pitch Offset\nAdds fixed offset\nto note pitch",
+  [fxVOL] = "Volume Offset\nAdds/subtracts from\ncurrent volume",
+  [fxRET] = "Retrigger\nRetriggers note every\nN tics",
+  [fxDEL] = "Delay\nDelays note start\nby N tics",
+  [fxOFF] = "Note Off\nSends note off\nafter N tics",
+  [fxKIL] = "Kill Note\nStops note completely\nafter N tics",
+  [fxTIC] = "Table Speed\nSets instrument table\nplayback speed",
+  [fxTBL] = "Set Table\nSwitches to specified\ninstrument table",
+  [fxTBX] = "Aux Table\nSets auxiliary table\nfor this track",
+  [fxTHO] = "Table Hop\nJumps to specific\ntable row",
+  [fxGRV] = "Track Groove\nSets groove for\nthis track only",
+  [fxGGR] = "Global Groove\nSets groove for\nall tracks",
+  [fxHOP] = "Hop\nJumps to song row\nor stops playback",
+  [fxAYM] = "AY Mixer\nControls tone/noise mix\nand envelope mode",
+  [fxERT] = "Envelope Retrigger\nRestarts AY envelope\nfrom beginning",
+  [fxNOI] = "Noise Offset\nAdds offset to\nnoise period",
+  [fxNOA] = "Noise Absolute\nSets noise period\nto exact value",
+  [fxEAU] = "Auto Envelope\nAutomatic envelope\nperiod from note",
+  [fxEVB] = "Envelope Vibrato\nOscillates envelope\nperiod up/down",
+  [fxEBN] = "Envelope Bend\nSlides envelope period\nby amount per step",
+  [fxESL] = "Envelope Slide\nSlides to envelope\nperiod over N tics",
+  [fxENT] = "Envelope Note\nSets envelope period\nfrom note value",
+  [fxEPT] = "Envelope Offset\nAdds offset to\nenvelope period",
+  [fxEPL] = "Envelope Low\nSets low byte of\nenvelope period",
+  [fxEPH] = "Envelope High\nSets high byte of\nenvelope period"
+};
+
 char* helpFXDescription(enum FX fxIdx) {
+  if (fxIdx < fxTotalCount && fxHelpText[fxIdx]) {
+    return (char*)fxHelpText[fxIdx];
+  }
   return "";
+}
+
+void drawFXHelp(enum FX fxIdx) {
+  const char* helpText = helpFXDescription(fxIdx);
+  if (!helpText || !helpText[0]) return;
+  
+  gfxSetFgColor(appSettings.colorScheme.textDefault);
+  
+  char line[41];
+  int y = 1;
+  int pos = 0;
+  int lineStart = 0;
+  
+  while (helpText[pos] && y <= 5) {
+    if (helpText[pos] == '\n' || pos - lineStart >= 39) {
+      int len = pos - lineStart;
+      if (len > 39) len = 39;
+      strncpy(line, &helpText[lineStart], len);
+      line[len] = '\0';
+      gfxPrint(1, y++, line);
+      
+      if (helpText[pos] == '\n') {
+        pos++;
+      }
+      lineStart = pos;
+    } else {
+      pos++;
+    }
+  }
+  
+  // Print remaining text if any
+  if (lineStart < pos && y <= 5) {
+    int len = pos - lineStart;
+    if (len > 39) len = 39;
+    strncpy(line, &helpText[lineStart], len);
+    line[len] = '\0';
+    gfxPrint(1, y, line);
+  }
 }

@@ -5,5 +5,6 @@
 
 char* helpFXHint(uint8_t* fx, int isTable);
 char* helpFXDescription(enum FX fxIdx);
+void drawFXHelp(enum FX fxIdx);
 
 #endif
