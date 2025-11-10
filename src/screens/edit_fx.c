@@ -17,10 +17,7 @@ void fxEditFullDraw(uint8_t currentFX);
 
 int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastValue, int isTable) {
   int result = 0;
-
-  // Convert multi-edit actions to regular actions
-  if (action == editMultiIncrease) action = editIncrease;
-  if (action == editMultiDecrease) action = editDecrease;
+  action = convertMultiAction(action);
 
   if (action == editClear) {
     // Clear FX
@@ -60,9 +57,7 @@ int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastValue, int isTa
 }
 
 int editFXValue(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable) {
-  // Convert multi-edit actions to regular actions
-  if (action == editMultiIncrease) action = editIncrease;
-  if (action == editMultiDecrease) action = editDecrease;
+  action = convertMultiAction(action);
 
   uint8_t bigStep = 16;
   if (fx[0] == fxENT) {

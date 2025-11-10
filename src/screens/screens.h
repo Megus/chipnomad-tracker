@@ -32,7 +32,9 @@ enum CellEditAction {
   editPaste,
   editSwitchSelection,
   editMultiIncrease,
-  editMultiDecrease
+  editMultiDecrease,
+  editMultiIncreaseBig,
+  editMultiDecreaseBig
 };
 
 struct ScreenData {
@@ -95,6 +97,13 @@ int edit8withLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValu
 int edit8noLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep);
 int edit8noLast(enum CellEditAction action, uint8_t* value, uint8_t bigStep, uint8_t min, uint8_t max);
 int edit16withOverflow(enum CellEditAction action, uint16_t* value, uint16_t bigStep, uint16_t min, uint16_t max);
+int applyMultiEdit(struct ScreenData* screen, enum CellEditAction action, 
+                   int (*editFunc)(int col, int row, enum CellEditAction action));
+int applyPhraseRotation(int phraseIdx, int startRow, int endRow, int direction);
+int applyTableRotation(int tableIdx, int startRow, int endRow, int direction);
+int applySongMoveDown(int startCol, int startRow, int endCol, int endRow);
+int applySongMoveUp(int startCol, int startRow, int endCol, int endRow);
+enum CellEditAction convertMultiAction(enum CellEditAction action);
 
 // Character edit
 int editCharacter(enum CellEditAction action, char* str, int idx, int maxLen);
@@ -104,6 +113,7 @@ char charEditInput(int keys, int isDoubleTap, char* str, int idx, int maxLen);
 int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable);
 int editFXValue(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable);
 int fxEditInput(int keys, int isDoubleTap, uint8_t* fx, uint8_t* lastFX);
+void fxEditFullDraw(uint8_t currentFX);
 
 #endif
 

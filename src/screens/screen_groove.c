@@ -96,17 +96,16 @@ static void draw(void) {
   }
 }
 
+static int editCell(int col, int row, enum CellEditAction action) {
+  return edit8withLimit(action, &project.grooves[groove].speed[row], &lastValue, 16, EMPTY_VALUE_8 - 1);
+}
+
 static int onEdit(int col, int row, enum CellEditAction action) {
   if (action == editSwitchSelection) {
     return switchGrooveSelectionMode(&screen);
   } else if (action == editMultiIncrease || action == editMultiDecrease) {
     if (!isSingleColumnSelection(&screen)) return 0;
-    int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
-    for (int r = startRow; r <= endRow; r++) {
-      edit8withLimit(action, &project.grooves[groove].speed[r], &lastValue, 16, EMPTY_VALUE_8 - 1);
-    }
-    return 1;
+    return applyMultiEdit(&screen, action, editCell);
   } else if (action == editCopy) {
     int startCol, startRow, endCol, endRow;
     getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
@@ -121,8 +120,9 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     pasteGroove(groove, row);
     fullRedraw();
     return 1;
+  } else {
+    return editCell(col, row, action);
   }
-  return edit8withLimit(action, &project.grooves[groove].speed[row], &lastValue, 16, EMPTY_VALUE_8 - 1);
 }
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {

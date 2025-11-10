@@ -198,44 +198,7 @@ static void draw(void) {
   screenDrawOverlays(&screen);
 }
 
-static int onEdit(int col, int row, enum CellEditAction action) {
-  if (action == editSwitchSelection) {
-    return switchTableSelectionMode(&screen);
-  } else if (action == editMultiIncrease || action == editMultiDecrease) {
-    if (!isSingleColumnSelection(&screen)) return 0;
-    int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
-    for (int r = startRow; r <= endRow; r++) {
-      if (col == 0) {
-        edit8noLast(action, &tableRows[r].pitchFlag, 1, 0, 1);
-      } else if (col == 1) {
-        edit8noLimit(action, &tableRows[r].pitchOffset, &lastPitchValue, project.pitchTable.octaveSize);
-      } else if (col == 2) {
-        edit8withLimit(action, &tableRows[r].volume, &lastVolume, 16, 15);
-      } else if (col >= 4 && col <= 10 && (col % 2) == 0) {
-        int fxIdx = (col - 4) / 2;
-        if (tableRows[r].fx[fxIdx][0] != EMPTY_VALUE_8) {
-          editFXValue(action, tableRows[r].fx[fxIdx], lastFX, 1);
-        }
-      }
-    }
-    return 1;
-  } else if (action == editCopy) {
-    int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
-    copyTable(tableIdx, startCol, startRow, endCol, endRow, 0);
-    return 1;
-  } else if (action == editCut) {
-    int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
-    copyTable(tableIdx, startCol, startRow, endCol, endRow, 1);
-    return 1;
-  } else if (action == editPaste) {
-    pasteTable(tableIdx, col, row);
-    fullRedraw();
-    return 1;
-  }
-
+static int editCell(int col, int row, enum CellEditAction action) {
   int handled = 0;
   uint8_t maxVolume = 15;
 
@@ -250,10 +213,8 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     handled = edit8noLimit(action, &tableRows[row].pitchOffset, &lastPitchValue, project.pitchTable.octaveSize);
     if (handled) {
       if (tableRows[row].pitchFlag == 1) {
-        // If pitch flag is 1, pitch is absolute
         screenMessage(0, "Note %s", noteName(tableRows[row].pitchOffset));
       } else {
-        // If pitch flag is 0, pitch is offset
         screenMessage(0, "Pitch offset %hhd", tableRows[row].pitchOffset);
       }
     }
@@ -280,6 +241,56 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   }
 
   return handled;
+}
+
+static int onEdit(int col, int row, enum CellEditAction action) {
+  if (action == editSwitchSelection) {
+    return switchTableSelectionMode(&screen);
+  } else if (action == editMultiIncrease || action == editMultiDecrease) {
+    if (!isSingleColumnSelection(&screen)) return 0;
+    return applyMultiEdit(&screen, action, editCell);
+  } else if (action == editMultiIncreaseBig || action == editMultiDecreaseBig) {
+    int startCol, startRow, endCol, endRow;
+    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    
+    // Check if full width selection (all columns)
+    if (startCol == 0 && endCol == 10) {
+      // Rotation mode
+      int direction = (action == editMultiIncreaseBig) ? -1 : 1;
+      applyTableRotation(tableIdx, startRow, endRow, direction);
+      fullRedraw();
+      return 1;
+    } else if (isSingleColumnSelection(&screen)) {
+      // Single column: big increase/decrease or FX selection
+      if (startCol == 3 || startCol == 5 || startCol == 7 || startCol == 9) {
+        // FX type column: show FX selection
+        int fxIdx = (startCol - 3) / 2;
+        fxEditFullDraw(tableRows[screen.cursorRow].fx[fxIdx][0]);
+        isFxEdit = 1;
+        return 0;
+      } else {
+        // Regular big increase/decrease for other columns
+        return applyMultiEdit(&screen, action, editCell);
+      }
+    }
+    return 0;
+  } else if (action == editCopy) {
+    int startCol, startRow, endCol, endRow;
+    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    copyTable(tableIdx, startCol, startRow, endCol, endRow, 0);
+    return 1;
+  } else if (action == editCut) {
+    int startCol, startRow, endCol, endRow;
+    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    copyTable(tableIdx, startCol, startRow, endCol, endRow, 1);
+    return 1;
+  } else if (action == editPaste) {
+    pasteTable(tableIdx, col, row);
+    fullRedraw();
+    return 1;
+  } else {
+    return editCell(col, row, action);
+  }
 }
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {
@@ -325,10 +336,24 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
 
 static void onInput(int keys, int isDoubleTap) {
   if (isFxEdit) {
-    int fxIdx = (screen.cursorCol - 2) / 2;
+    int fxIdx = (screen.cursorCol - 3) / 2;
     int result = fxEditInput(keys, isDoubleTap, tableRows[screen.cursorRow].fx[fxIdx], lastFX);
     if (result) {
       isFxEdit = 0;
+      
+      // If in selection mode and on FX type column, fill selection with selected FX
+      if (screen.selectMode == 1 && (screen.cursorCol == 3 || screen.cursorCol == 5 || screen.cursorCol == 7 || screen.cursorCol == 9)) {
+        int startCol, startRow, endCol, endRow;
+        getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+        
+        if (isSingleColumnSelection(&screen)) {
+          uint8_t selectedFX = tableRows[screen.cursorRow].fx[fxIdx][0];
+          for (int r = startRow; r <= endRow; r++) {
+            tableRows[r].fx[fxIdx][0] = selectedFX;
+          }
+        }
+      }
+      
       fullRedraw();
     }
     return;

@@ -144,21 +144,50 @@ int findEmptyPhrase(int start) {
   return EMPTY_VALUE_16;
 }
 
+static int editCell(int col, int row, enum CellEditAction action) {
+  if (col == 0) {
+    if (action == editDoubleTap) {
+      uint16_t current = project.chains[chain].rows[row].phrase;
+      if (current != EMPTY_VALUE_16) {
+        int nextEmpty = findEmptyPhrase(current + 1);
+        if (nextEmpty != EMPTY_VALUE_16) {
+          project.chains[chain].rows[row].phrase = nextEmpty;
+          lastPhraseValue = nextEmpty;
+        } else {
+          screenMessage(MESSAGE_TIME, "No empty phrases");
+        }
+      }
+      return 1;
+    } else if (action == editShallowClone || action == editDeepClone) {
+      uint16_t current = project.chains[chain].rows[row].phrase;
+      if (current != EMPTY_VALUE_16) {
+        int nextEmpty = findEmptyPhrase(current + 1);
+        if (nextEmpty != EMPTY_VALUE_16) {
+          project.chains[chain].rows[row].phrase = nextEmpty;
+          lastPhraseValue = nextEmpty;
+          memcpy(&project.phrases[nextEmpty], &project.phrases[current], sizeof(struct Phrase));
+          screenMessage(MESSAGE_TIME, "Cloned phrase");
+        } else {
+          screenMessage(MESSAGE_TIME, "No empty phrases");
+        }
+      }
+      return 1;
+    }
+    return edit16withLimit(action, &project.chains[chain].rows[row].phrase, &lastPhraseValue, 16, PROJECT_MAX_PHRASES - 1);
+  } else {
+    return edit8noLimit(action, &project.chains[chain].rows[row].transpose, &lastTransposeValue, project.pitchTable.octaveSize);
+  }
+}
+
 static int onEdit(int col, int row, enum CellEditAction action) {
   if (action == editSwitchSelection) {
     return switchChainSelectionMode(&screen);
   } else if (action == editMultiIncrease || action == editMultiDecrease) {
     if (!isSingleColumnSelection(&screen)) return 0;
-    int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
-    for (int r = startRow; r <= endRow; r++) {
-      if (startCol == 0) {
-        edit16withLimit(action, &project.chains[chain].rows[r].phrase, &lastPhraseValue, 16, PROJECT_MAX_PHRASES - 1);
-      } else {
-        edit8noLimit(action, &project.chains[chain].rows[r].transpose, &lastTransposeValue, project.pitchTable.octaveSize);
-      }
-    }
-    return 1;
+    return applyMultiEdit(&screen, action, editCell);
+  } else if (action == editMultiIncreaseBig || action == editMultiDecreaseBig) {
+    if (!isSingleColumnSelection(&screen)) return 0;
+    return applyMultiEdit(&screen, action, editCell);
   } else if (action == editCopy) {
     int startCol, startRow, endCol, endRow;
     getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
@@ -173,55 +202,9 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     pasteChain(chain, col, row);
     fullRedraw();
     return 1;
-  }
-
-  int handled = 0;
-
-  if (col == 0) {
-    if (action == editDoubleTap) {
-      uint16_t current = project.chains[chain].rows[row].phrase;
-
-      if (current != EMPTY_VALUE_16) {
-        int nextEmpty = findEmptyPhrase(current + 1);
-        if (nextEmpty != EMPTY_VALUE_16) {
-          project.chains[chain].rows[row].phrase = nextEmpty;
-          lastPhraseValue = nextEmpty;
-          handled = 1;
-        } else {
-          screenMessage(MESSAGE_TIME, "No empty phrases");
-        }
-      }
-    } else if (action == editShallowClone || action == editDeepClone) {
-      // Phrase clone
-      uint16_t current = project.chains[chain].rows[row].phrase;
-
-      if (current != EMPTY_VALUE_16) {
-        int nextEmpty = findEmptyPhrase(current + 1);
-        if (nextEmpty != EMPTY_VALUE_16) {
-          project.chains[chain].rows[row].phrase = nextEmpty;
-          lastPhraseValue = nextEmpty;
-          memcpy(&project.phrases[nextEmpty], &project.phrases[current], sizeof(struct Phrase));
-          handled = 1;
-
-          screenMessage(MESSAGE_TIME, "Cloned phrase");
-        } else {
-          screenMessage(MESSAGE_TIME, "No empty phrases");
-        }
-      }
-
-    } else {
-      handled = edit16withLimit(action, &project.chains[chain].rows[row].phrase, &lastPhraseValue, 16, PROJECT_MAX_PHRASES - 1);
-    }
-
-    /*if (handled) {
-      project.chains[chain].hasNotes = -1;
-    }*/
   } else {
-    // Transpose
-    handled = edit8noLimit(action, &project.chains[chain].rows[row].transpose, &lastTransposeValue, project.pitchTable.octaveSize);
+    return editCell(col, row, action);
   }
-
-  return handled;
 }
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {

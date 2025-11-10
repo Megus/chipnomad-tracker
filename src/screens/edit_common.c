@@ -1,12 +1,33 @@
 #include <screens.h>
 #include <project.h>
 
+enum CellEditAction convertMultiAction(enum CellEditAction action) {
+  if (action == editMultiIncrease) return editIncrease;
+  if (action == editMultiDecrease) return editDecrease;
+  if (action == editMultiIncreaseBig) return editIncreaseBig;
+  if (action == editMultiDecreaseBig) return editDecreaseBig;
+  return action;
+}
+
+int applyMultiEdit(struct ScreenData* screen, enum CellEditAction action, 
+                   int (*editFunc)(int col, int row, enum CellEditAction action)) {
+  if (action != editMultiIncrease && action != editMultiDecrease && 
+      action != editMultiIncreaseBig && action != editMultiDecreaseBig) return 0;
+  
+  int startCol, startRow, endCol, endRow;
+  getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
+  
+  for (int r = startRow; r <= endRow; r++) {
+    for (int c = startCol; c <= endCol; c++) {
+      editFunc(c, r, action);
+    }
+  }
+  return 1;
+}
+
 int edit16withLimit(enum CellEditAction action, uint16_t* value, uint16_t* lastValue, uint16_t bigStep, uint16_t max) {
   int handled = 0;
-
-  // Convert multi-edit actions to regular actions
-  if (action == editMultiIncrease) action = editIncrease;
-  if (action == editMultiDecrease) action = editDecrease;
+  action = convertMultiAction(action);
 
   switch (action) {
     case editClear:
@@ -64,9 +85,7 @@ int edit8withLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValu
 }
 
 int edit8noLast(enum CellEditAction action, uint8_t* value, uint8_t bigStep, uint8_t min, uint8_t max) {
-  // Convert multi-edit actions to regular actions
-  if (action == editMultiIncrease) action = editIncrease;
-  if (action == editMultiDecrease) action = editDecrease;
+  action = convertMultiAction(action);
 
   switch (action) {
     case editTap:
@@ -101,10 +120,7 @@ int edit8noLast(enum CellEditAction action, uint8_t* value, uint8_t bigStep, uin
 
 int edit8noLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep) {
   int handled = 0;
-
-  // Convert multi-edit actions to regular actions
-  if (action == editMultiIncrease) action = editIncrease;
-  if (action == editMultiDecrease) action = editDecrease;
+  action = convertMultiAction(action);
 
   switch (action) {
     case editClear:
@@ -168,4 +184,99 @@ int edit16withOverflow(enum CellEditAction action, uint16_t* value, uint16_t big
       break;
   }
   return 0;
+}
+
+int applyPhraseRotation(int phraseIdx, int startRow, int endRow, int direction) {
+  if (startRow == endRow) return 0;
+  
+  struct PhraseRow* rows = project.phrases[phraseIdx].rows;
+  
+  if (direction > 0) {
+    // Rotate down: move last row to first
+    struct PhraseRow temp = rows[endRow];
+    for (int r = endRow; r > startRow; r--) {
+      rows[r] = rows[r - 1];
+    }
+    rows[startRow] = temp;
+  } else {
+    // Rotate up: move first row to last
+    struct PhraseRow temp = rows[startRow];
+    for (int r = startRow; r < endRow; r++) {
+      rows[r] = rows[r + 1];
+    }
+    rows[endRow] = temp;
+  }
+  
+  return 1;
+}
+
+int applyTableRotation(int tableIdx, int startRow, int endRow, int direction) {
+  if (startRow == endRow) return 0;
+  
+  struct TableRow* rows = project.tables[tableIdx].rows;
+  
+  if (direction > 0) {
+    // Rotate down: move last row to first
+    struct TableRow temp = rows[endRow];
+    for (int r = endRow; r > startRow; r--) {
+      rows[r] = rows[r - 1];
+    }
+    rows[startRow] = temp;
+  } else {
+    // Rotate up: move first row to last
+    struct TableRow temp = rows[startRow];
+    for (int r = startRow; r < endRow; r++) {
+      rows[r] = rows[r + 1];
+    }
+    rows[endRow] = temp;
+  }
+  
+  return 1;
+}
+
+int applySongMoveDown(int startCol, int startRow, int endCol, int endRow) {
+  // Check if we can move down (bottom row must be empty)
+  for (int c = startCol; c <= endCol; c++) {
+    if (project.song[PROJECT_MAX_LENGTH - 1][c] != EMPTY_VALUE_16) {
+      return 0;
+    }
+  }
+  
+  // Push everything below selection down by 1 row (from bottom up)
+  for (int c = startCol; c <= endCol; c++) {
+    for (int r = PROJECT_MAX_LENGTH - 1; r > endRow + 1; r--) {
+      project.song[r][c] = project.song[r - 1][c];
+    }
+  }
+  
+  // Move selection down by 1 row
+  for (int c = startCol; c <= endCol; c++) {
+    for (int r = endRow; r >= startRow; r--) {
+      project.song[r + 1][c] = project.song[r][c];
+    }
+    project.song[startRow][c] = EMPTY_VALUE_16;
+  }
+  
+  return 1;
+}
+
+int applySongMoveUp(int startCol, int startRow, int endCol, int endRow) {
+  // Check if we can move up (space above selection must be empty)
+  if (startRow == 0) return 0;
+  
+  for (int c = startCol; c <= endCol; c++) {
+    if (project.song[startRow - 1][c] != EMPTY_VALUE_16) {
+      return 0; // Can't move up
+    }
+  }
+  
+  // Move selection up
+  for (int c = startCol; c <= endCol; c++) {
+    for (int r = startRow - 1; r < endRow; r++) {
+      project.song[r][c] = project.song[r + 1][c];
+    }
+    project.song[endRow][c] = EMPTY_VALUE_16;
+  }
+  
+  return 1;
 }

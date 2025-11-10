@@ -184,28 +184,106 @@ static void draw(void) {
 // Input handling
 //
 
+static int editCell(int col, int row, enum CellEditAction action) {
+  int handled = 0;
+  uint8_t maxVolume = 15;
+
+  if (col == 0) {
+    // Note
+    if (action == editClear && phraseRows[row].note == EMPTY_VALUE_8) {
+      phraseRows[row].note = NOTE_OFF;
+      handled = 1;
+    } else if (action == editClear) {
+      handled = edit8withLimit(action, &phraseRows[row].note, &lastNote, project.pitchTable.octaveSize, project.pitchTable.length - 1);
+      edit8withLimit(action, &phraseRows[row].instrument, &lastInstrument, 16, PROJECT_MAX_INSTRUMENTS - 1);
+      edit8withLimit(action, &phraseRows[row].volume, &lastVolume, 16, maxVolume);
+    } else if (action == editTap && phraseRows[row].note == EMPTY_VALUE_8) {
+      phraseRows[row].note = lastNote;
+      phraseRows[row].instrument = lastInstrument;
+      phraseRows[row].volume = lastVolume;
+      handled = 1;
+    } else if (phraseRows[row].note != NOTE_OFF) {
+      handled = edit8withLimit(action, &phraseRows[row].note, &lastNote, project.pitchTable.octaveSize, project.pitchTable.length - 1);
+      if (handled) {
+        lastInstrument = phraseRows[row].instrument;
+        lastVolume = phraseRows[row].volume;
+      }
+    }
+    if (handled) {
+      drawField(1, row, 0);
+      drawField(2, row, 0);
+    }
+  } else if (col == 1) {
+    // Instrument
+    if (action == editDoubleTap) {
+      // No special action for double tap
+    } else {
+      handled = edit8withLimit(action, &phraseRows[row].instrument, &lastInstrument, 16, PROJECT_MAX_INSTRUMENTS - 1);
+    }
+    uint8_t instrument = phraseRows[row].instrument;
+    if (handled && instrument != EMPTY_VALUE_8) {
+      screenMessage(0, "%s: %s", byteToHex(instrument), instrumentName(instrument));
+    }
+  } else if (col == 2) {
+    // Volume
+    handled = edit8withLimit(action, &phraseRows[row].volume, &lastVolume, 16, maxVolume);
+  } else if (col == 3 || col == 5 || col == 7) {
+    // FX
+    int fxIdx = (col - 3) / 2;
+    int result = editFX(action, phraseRows[row].fx[fxIdx], lastFX, 0);
+    if (result == 2) {
+      drawField(col + 1, row, 0);
+      handled = 1;
+    } else if (result == 1) {
+      isFxEdit = 1;
+      handled = 0;
+    }
+  } else if (col == 4 || col == 6 || col == 8) {
+    // FX value
+    int fxIdx = (col - 4) / 2;
+    if (phraseRows[row].fx[fxIdx][0] != EMPTY_VALUE_8) {
+      handled = editFXValue(action, phraseRows[row].fx[fxIdx], lastFX, 0);
+    }
+  }
+
+  if (handled) {
+    playbackStartPhraseRow(&playback, *pSongTrack, &phraseRows[screen.cursorRow]);
+  }
+
+  return handled;
+}
+
 static int onEdit(int col, int row, enum CellEditAction action) {
   if (action == editSwitchSelection) {
     return switchPhraseSelectionMode(&screen);
   } else if (action == editMultiIncrease || action == editMultiDecrease) {
     if (!isSingleColumnSelection(&screen)) return 0;
+    return applyMultiEdit(&screen, action, editCell);
+  } else if (action == editMultiIncreaseBig || action == editMultiDecreaseBig) {
     int startCol, startRow, endCol, endRow;
     getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
-    for (int r = startRow; r <= endRow; r++) {
-      if (col == 0) {
-        edit8withLimit(action, &phraseRows[r].note, &lastNote, project.pitchTable.octaveSize, project.pitchTable.length - 1);
-      } else if (col == 1) {
-        edit8withLimit(action, &phraseRows[r].instrument, &lastInstrument, 16, PROJECT_MAX_INSTRUMENTS - 1);
-      } else if (col == 2) {
-        edit8withLimit(action, &phraseRows[r].volume, &lastVolume, 16, 15);
-      } else if (col >= 4 && col <= 8 && (col % 2) == 0) {
-        int fxIdx = (col - 4) / 2;
-        if (phraseRows[r].fx[fxIdx][0] != EMPTY_VALUE_8) {
-          editFXValue(action, phraseRows[r].fx[fxIdx], lastFX, 0);
-        }
+    
+    // Check if full width selection (all columns)
+    if (startCol == 0 && endCol == 8) {
+      // Rotation mode
+      int direction = (action == editMultiIncreaseBig) ? -1 : 1;
+      applyPhraseRotation(phraseIdx, startRow, endRow, direction);
+      fullRedraw();
+      return 1;
+    } else if (isSingleColumnSelection(&screen)) {
+      // Single column: big increase/decrease or FX selection
+      if (startCol == 3 || startCol == 5 || startCol == 7) {
+        // FX type column: fill selection with selected FX type
+        int fxIdx = (startCol - 3) / 2;
+        fxEditFullDraw(phraseRows[screen.cursorRow].fx[fxIdx][0]);
+        isFxEdit = 1;
+        return 0;
+      } else {
+        // Regular big increase/decrease for note, volume, instrument, FX value
+        return applyMultiEdit(&screen, action, editCell);
       }
     }
-    return 1;
+    return 0;
   } else if (action == editCopy) {
     int startCol, startRow, endCol, endRow;
     getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
@@ -220,86 +298,9 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     pastePhrase(phraseIdx, col, row);
     fullRedraw();
     return 1;
+  } else {
+    return editCell(col, row, action);
   }
-
-  int handled = 0;
-  uint8_t maxVolume = 15; // This is for AY, will add m ore conditions in the future
-
-  if (col == 0) {
-    // Note
-    if (action == editClear && phraseRows[row].note == EMPTY_VALUE_8) {
-      // Special case: inserting OFF
-      phraseRows[row].note = NOTE_OFF;
-      handled = 1;
-    } else if (action == editClear) {
-      // When clearing note, we also need to clear instrument and volume
-      handled = edit8withLimit(action, &phraseRows[row].note, &lastNote, project.pitchTable.octaveSize, project.pitchTable.length - 1);
-      edit8withLimit(action, &phraseRows[row].instrument, &lastInstrument, 16, PROJECT_MAX_INSTRUMENTS - 1);
-      edit8withLimit(action, &phraseRows[row].volume, &lastVolume, 16, maxVolume);
-    } else if (action == editTap && phraseRows[row].note == EMPTY_VALUE_8) {
-      // When inserting note, also insert instrument and volume
-      phraseRows[row].note = lastNote;
-      phraseRows[row].instrument = lastInstrument;
-      phraseRows[row].volume = lastVolume;
-      handled = 1;
-    } else if (phraseRows[row].note != NOTE_OFF) {
-      handled = edit8withLimit(action, &phraseRows[row].note, &lastNote, project.pitchTable.octaveSize, project.pitchTable.length - 1);
-      // When editing note also copy instrument and volume
-      if (handled) {
-        lastInstrument = phraseRows[row].instrument;
-        lastVolume = phraseRows[row].volume;
-      }
-    }
-
-    if (handled) {
-      // Also draw instrument and volume as they could change
-      drawField(1, row, 0);
-      drawField(2, row, 0);
-    }
-  } else if (col == 1) {
-    // Instrument
-    if (action == editDoubleTap) {
-
-    } else {
-      handled = edit8withLimit(action, &phraseRows[row].instrument, &lastInstrument, 16, PROJECT_MAX_INSTRUMENTS - 1);
-    }
-
-    uint8_t instrument = phraseRows[row].instrument;
-    if (handled && instrument != EMPTY_VALUE_8) {
-      screenMessage(0, "%s: %s", byteToHex(instrument), instrumentName(instrument));
-    }
-
-  } else if (col == 2) {
-    // Volume
-    handled = edit8withLimit(action, &phraseRows[row].volume, &lastVolume, 16, maxVolume);
-  } else if (col == 3 || col == 5 || col == 7) {
-    // FX
-    int fxIdx = (col - 3) / 2;
-    int result = editFX(action, phraseRows[row].fx[fxIdx], lastFX, 0);
-    if (result == 2) {
-      // Edited FX without showing FX select screen
-      drawField(col + 1, row, 0);
-      handled = 1;
-    } else if (result == 1) {
-      // Showing FX select screen
-      isFxEdit = 1;
-      handled = 0;
-    }
-  } else if (col == 4 || col == 6 || col == 8) {
-    // FX value
-    int fxIdx = (col - 4) / 2;
-    if (phraseRows[row].fx[fxIdx][0] != EMPTY_VALUE_8) {
-      handled = editFXValue(action, phraseRows[row].fx[fxIdx], lastFX, 0);
-    }
-  }
-
-  if (handled) {
-    //phrase->hasNotes = -1;
-    //project.chains[project.song[*pSongRow][*pSongTrack]].hasNotes = -1;
-    playbackStartPhraseRow(&playback, *pSongTrack, &phraseRows[screen.cursorRow]);
-  }
-
-  return handled;
 }
 
 
@@ -406,6 +407,20 @@ static void onInput(int keys, int isDoubleTap) {
     int result = fxEditInput(keys, isDoubleTap, phraseRows[screen.cursorRow].fx[fxIdx], lastFX);
     if (result) {
       isFxEdit = 0;
+      
+      // If in selection mode and on FX type column, fill selection with selected FX
+      if (screen.selectMode == 1 && (screen.cursorCol == 3 || screen.cursorCol == 5 || screen.cursorCol == 7)) {
+        int startCol, startRow, endCol, endRow;
+        getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+        
+        if (isSingleColumnSelection(&screen)) {
+          uint8_t selectedFX = phraseRows[screen.cursorRow].fx[fxIdx][0];
+          for (int r = startRow; r <= endRow; r++) {
+            phraseRows[r].fx[fxIdx][0] = selectedFX;
+          }
+        }
+      }
+      
       fullRedraw();
     }
     return;

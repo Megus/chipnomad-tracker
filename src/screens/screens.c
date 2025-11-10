@@ -338,6 +338,12 @@ static int inputSelectMode(struct ScreenData* screen, int keys, int isDoubleTap)
     } else if (keys == (keyLeft | keyEdit)) {
       // Multi-edit: decrease values in selection
       handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editMultiDecrease);
+    } else if (keys == (keyUp | keyEdit)) {
+      // Multi-edit: big increase values in selection
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editMultiIncreaseBig);
+    } else if (keys == (keyDown | keyEdit)) {
+      // Multi-edit: big decrease values in selection
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editMultiDecreaseBig);
     } else if (keys == (keyShift | keyEdit)) {
       // Shallow copy
       handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editShallowClone);

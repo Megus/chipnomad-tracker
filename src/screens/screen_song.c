@@ -164,17 +164,74 @@ static int findEmptyChain(int startChain) {
   return EMPTY_VALUE_16;
 }
 
+static int editCell(int col, int row, enum CellEditAction action) {
+  if (action == editDoubleTap) {
+    int current = project.song[row][col];
+    if (current != EMPTY_VALUE_16) {
+      int nextEmpty = findEmptyChain(current + 1);
+      if (nextEmpty != EMPTY_VALUE_16) {
+        project.song[row][col] = nextEmpty;
+        lastChainValue = nextEmpty;
+      } else {
+        screenMessage(MESSAGE_TIME, "No free chains");
+      }
+    }
+    return 1;
+  } else if (action == editShallowClone) {
+    int current = project.song[row][col];
+    if (current != EMPTY_VALUE_16) {
+      int nextEmpty = findEmptyChain(current + 1);
+      if (nextEmpty != EMPTY_VALUE_16) {
+        project.song[row][col] = nextEmpty;
+        lastChainValue = nextEmpty;
+        memcpy(&project.chains[nextEmpty], &project.chains[current], sizeof(struct Chain));
+        screenMessage(MESSAGE_TIME, "Shallow-cloned chain");
+      } else {
+        screenMessage(MESSAGE_TIME, "No free chains");
+      }
+    }
+    return 1;
+  }
+  return edit16withLimit(action, &project.song[row][col], &lastChainValue, 16, PROJECT_MAX_CHAINS - 1);
+}
+
 static int onEdit(int col, int row, enum CellEditAction action) {
   if (action == editSwitchSelection) {
     return switchSongSelectionMode(&screen);
-  } else if (action == editMultiIncrease || action == editMultiDecrease) {
+  } else if (action == editMultiIncreaseBig || action == editMultiDecreaseBig) {
+    if (screen.selectMode != 1) return 0;
+    
     int startCol, startRow, endCol, endRow;
     getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
-    for (int r = startRow; r <= endRow; r++) {
-      for (int c = startCol; c <= endCol; c++) {
-        edit16withLimit(action, &project.song[r][c], &lastChainValue, 16, PROJECT_MAX_CHAINS - 1);
+    
+    int success = 0;
+    if (action == editMultiDecreaseBig) {
+      success = applySongMoveDown(startCol, startRow, endCol, endRow);
+      if (success) {
+        screen.selectStartRow++;
+        screen.cursorRow++;
+        // Scroll down if selection moved below visible area
+        if (screen.cursorRow >= screen.topRow + 16) {
+          screen.topRow++;
+        }
+      }
+    } else {
+      success = applySongMoveUp(startCol, startRow, endCol, endRow);
+      if (success) {
+        screen.selectStartRow--;
+        screen.cursorRow--;
+        // Scroll up if selection moved above visible area
+        if (screen.cursorRow < screen.topRow) {
+          screen.topRow--;
+        }
       }
     }
+    
+    if (success) {
+      fullRedraw();
+    }
+    return success;
+  } else if (applyMultiEdit(&screen, action, editCell)) {
     return 1;
   } else if (action == editCopy) {
     int startCol, startRow, endCol, endRow;
@@ -190,40 +247,8 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     pasteSong(col, row);
     fullRedraw();
     return 1;
-  } else if (action == editDoubleTap) {
-    // Find the first chain with no phrases
-    int current = project.song[row][col];
-
-    if (current != EMPTY_VALUE_16) {
-      int nextEmpty = findEmptyChain(current + 1);
-      if (nextEmpty != EMPTY_VALUE_16) {
-        project.song[row][col] = nextEmpty;
-        lastChainValue = nextEmpty;
-      } else {
-        screenMessage(MESSAGE_TIME, "No free chains");
-      }
-    }
-    return 1;
-  } else if (action == editShallowClone) {
-    // Shallow chain clone
-    int current = project.song[row][col];
-
-    if (current != EMPTY_VALUE_16) {
-      int nextEmpty = findEmptyChain(current + 1);
-      if (nextEmpty != EMPTY_VALUE_16) {
-        project.song[row][col] = nextEmpty;
-        lastChainValue = nextEmpty;
-
-        memcpy(&project.chains[nextEmpty], &project.chains[current], sizeof(struct Chain));
-
-        screenMessage(MESSAGE_TIME, "Shallow-cloned chain");
-      } else {
-        screenMessage(MESSAGE_TIME, "No free chains");
-      }
-    }
-    return 1;
   } else {
-    return edit16withLimit(action, &project.song[row][col], &lastChainValue, 16, PROJECT_MAX_CHAINS - 1);
+    return editCell(col, row, action);
   }
   return 0;
 }
