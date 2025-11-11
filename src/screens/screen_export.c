@@ -131,10 +131,10 @@ static int fileExists(const char* path) {
   return 0;
 }
 
-static void generateExportPath(char* outputPath, int maxLen) {
+void generateExportPath(char* outputPath, int maxLen, const char* extension) {
   char basePath[512];
-  snprintf(basePath, sizeof(basePath), "%s%s%s.wav",
-           appSettings.projectPath, PATH_SEPARATOR_STR, appSettings.projectFilename);
+  snprintf(basePath, sizeof(basePath), "%s%s%s.%s",
+           appSettings.projectPath, PATH_SEPARATOR_STR, appSettings.projectFilename, extension);
 
   if (!fileExists(basePath)) {
     strncpy(outputPath, basePath, maxLen - 1);
@@ -143,8 +143,8 @@ static void generateExportPath(char* outputPath, int maxLen) {
   }
 
   for (int i = 1; i <= 999; i++) {
-    snprintf(outputPath, maxLen, "%s%s%s_%03d.wav",
-             appSettings.projectPath, PATH_SEPARATOR_STR, appSettings.projectFilename, i);
+    snprintf(outputPath, maxLen, "%s%s%s_%03d.%s",
+             appSettings.projectPath, PATH_SEPARATOR_STR, appSettings.projectFilename, i, extension);
     if (!fileExists(outputPath)) {
       return;
     }
@@ -161,7 +161,7 @@ int exportCommonOnEdit(int col, int row, enum CellEditAction action) {
   if (row == 0) {
     // WAV Export
     char exportPath[1024];
-    generateExportPath(exportPath, sizeof(exportPath));
+    generateExportPath(exportPath, sizeof(exportPath), "wav");
 
     if (exportProjectToWAV(exportPath, &project, 0, sampleRates[currentSampleRateIndex], bitDepths[currentBitDepthIndex]) == 0) {
       screenMessage(MESSAGE_TIME, "Exported to %s", strrchr(exportPath, PATH_SEPARATOR) + 1);

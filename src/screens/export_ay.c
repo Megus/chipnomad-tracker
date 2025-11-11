@@ -1,7 +1,10 @@
 #include <screen_export.h>
 #include <corelib_gfx.h>
+#include <corelib_file.h>
 #include <common.h>
 #include <screens.h>
+#include <export.h>
+#include <string.h>
 
 static int getColumnCount(int row) {
   // The first 3 rows come from the common export screen fields
@@ -39,8 +42,15 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   int handled = 0;
 
   if (row == SCR_EXPORT_ROWS) {
-    // PSG Export - placeholder for now
-    screenMessage(MESSAGE_TIME, "PSG export not implemented yet");
+    // PSG Export
+    char exportPath[1024];
+    generateExportPath(exportPath, sizeof(exportPath), "psg");
+
+    if (exportProjectToPSG(exportPath, &project, 0) == 0) {
+      screenMessage(MESSAGE_TIME, "Exported to %s", strrchr(exportPath, PATH_SEPARATOR) + 1);
+    } else {
+      screenMessage(MESSAGE_TIME, "Export failed");
+    }
     handled = 1;
   }
 
