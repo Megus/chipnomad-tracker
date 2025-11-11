@@ -69,6 +69,10 @@ int filePrintf(int fileId, const char* format, ...) {
   return fileWrite(fileId, writeBuffer, strlen(writeBuffer));
 }
 
+int fileSeek(int fileId, long offset, int whence) {
+  return fseek(files[fileId], offset, whence);
+}
+
 struct FileEntry* fileListDirectory(const char* path, const char* extension, int* entryCount) {
   DIR* dir = opendir(path);
   if (!dir) {

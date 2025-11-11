@@ -8,17 +8,15 @@ static int init(struct SoundChip* self) {
   return 0;
 }
 
-static void render(struct SoundChip* self, int16_t* buffer, int samples, float volume) {
+static void render(struct SoundChip* self, float* buffer, int samples) {
   struct ayumi* ay = self->userdata;
 
   for (int c = 0; c < samples; c++) {
     ayumi_process(ay);
     ayumi_remove_dc(ay);
-    int l = ay->left * volume * 20000;
-    int r = ay->right * volume * 20000;
-
-    *buffer++ = l;
-    *buffer++ = r;
+    
+    *buffer++ = ay->left;
+    *buffer++ = ay->right;
   }
 }
 

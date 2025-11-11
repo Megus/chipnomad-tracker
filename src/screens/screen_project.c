@@ -226,8 +226,9 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
       fullRedraw();
       handled = 1;
     } else if (col == 3) {
-      printf("Export\n");
-      handled = 1;
+      // Export - go to export screen
+      screenSetup(&screenExport, 0);
+      handled = 0;
     }
   } else if (row == 1) {
     // File name

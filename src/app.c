@@ -45,11 +45,11 @@ static int inputPlayback(int keys, int isDoubleTap) {
     // Stop any preview first
     playbackStop(&playback);
     if (currentScreen == &screenSong || currentScreen == &screenProject) {
-      playbackStartSong(&playback, *pSongRow, 0);
+      playbackStartSong(&playback, *pSongRow, 0, 1);
     } else if (currentScreen == &screenChain) {
-      playbackStartChain(&playback, *pSongTrack, *pSongRow, *pChainRow);
+      playbackStartChain(&playback, *pSongTrack, *pSongRow, *pChainRow, 1);
     } else {
-      playbackStartPhrase(&playback, *pSongTrack, *pSongRow, *pChainRow);
+      playbackStartPhrase(&playback, *pSongTrack, *pSongRow, *pChainRow, 1);
     }
     return 1;
   }
@@ -58,9 +58,9 @@ static int inputPlayback(int keys, int isDoubleTap) {
     // Stop any preview first
     playbackStop(&playback);
     if (currentScreen == &screenSong || currentScreen == &screenProject) {
-      playbackStartSong(&playback, *pSongRow, 0);
+      playbackStartSong(&playback, *pSongRow, 0, 1);
     } else {
-      playbackStartSong(&playback, *pSongRow, *pChainRow);
+      playbackStartSong(&playback, *pSongRow, *pChainRow, 1);
     }
     return 1;
   }

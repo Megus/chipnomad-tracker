@@ -32,6 +32,7 @@ struct AppSettings {
   int keyRepeatDelay;
   int keyRepeatSpeed;
   float volume;
+  float mixVolume;
   struct ColorScheme colorScheme;
   char projectFilename[FILENAME_LENGTH + 1];
   char projectPath[PATH_LENGTH + 1];

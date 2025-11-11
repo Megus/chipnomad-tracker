@@ -1,0 +1,17 @@
+#ifndef __SCREEN_EXPORT_H__
+#define __SCREEN_EXPORT_H__
+
+#include <screens.h>
+
+// Common rows on the export screen
+#define SCR_EXPORT_ROWS (3)
+
+int exportCommonColumnCount(int row);
+void exportCommonDrawStatic(void);
+void exportCommonDrawCursor(int col, int row);
+void exportCommonDrawField(int col, int row, int state);
+int exportCommonOnEdit(int col, int row, enum CellEditAction action);
+
+extern struct ScreenData screenExportAY;
+
+#endif

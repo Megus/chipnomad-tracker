@@ -31,6 +31,7 @@ static void resetTrack(struct PlaybackState* state, int trackIdx) {
   track->note.volume3 = 0;
   track->note.instrumentTable.tableIdx = EMPTY_VALUE_8;
   track->note.auxTable.tableIdx = EMPTY_VALUE_8;
+  track->mode = playbackModeStopped;
 
   for (int i = 0; i < 3; i++) {
     track->note.fx[i].fx = EMPTY_VALUE_8;
@@ -293,24 +294,25 @@ static int moveToNextPhraseRow(struct PlaybackState* state, int trackIdx) {
       // Next chain row
       int chain = p->song[track->songRow][trackIdx];
       if (chain != EMPTY_VALUE_16) {
-        int chainRow = track->chainRow;
-        chainRow++;
+        int chainRow = track->chainRow + 1;
         if (chainRow >= 16 || p->chains[chain].rows[chainRow].phrase == EMPTY_VALUE_16) {
           // Next song row
-          int songRow = track->songRow;
-          songRow++;
+          int songRow = track->songRow + 1;
           track->chainRow = 0;
           if (songRow >= PROJECT_MAX_LENGTH || p->song[songRow][trackIdx] == EMPTY_VALUE_16) {
-            while (songRow > 0) {
-              songRow--;
-              if (p->song[songRow][trackIdx] == EMPTY_VALUE_16) {
-                songRow++;
-                break;
+            if (track->loop) {
+              while (songRow > 0) {
+                songRow--;
+                if (p->song[songRow][trackIdx] == EMPTY_VALUE_16) {
+                  songRow++;
+                  break;
+                }
               }
+            } else {
+              songRow = -1;
             }
           }
-          if (p->song[songRow][trackIdx] == EMPTY_VALUE_16) {
-            // No chains, stop track playback
+          if (songRow < 0 || p->song[songRow][trackIdx] == EMPTY_VALUE_16) {
             resetTrack(state, trackIdx);
             stopped = 1;
           } else {
@@ -326,13 +328,12 @@ static int moveToNextPhraseRow(struct PlaybackState* state, int trackIdx) {
     // Chain playback
     else if (track->mode == playbackModeChain) {
       int chain = p->song[track->songRow][trackIdx];
-      int chainRow = track->chainRow;
-      chainRow++;
-      if (chainRow >= 16 || p->chains[chain].rows[chainRow].phrase == EMPTY_VALUE_16) chainRow = 0;
-      if (p->chains[chain].rows[chainRow].phrase == EMPTY_VALUE_16) {
-        // Empty chain, stop playback
+      int chainRow = track->chainRow + 1;
+      if (chainRow >= 16 || p->chains[chain].rows[chainRow].phrase == EMPTY_VALUE_16) {
+        chainRow = track->loop ? 0 : -1;
+      }
+      if (chainRow < 0 || p->chains[chain].rows[chainRow].phrase == EMPTY_VALUE_16) {
         resetTrack(state, trackIdx);
-        track->mode = playbackModeStopped;
         stopped = 1;
       } else {
         track->chainRow = chainRow;
@@ -340,7 +341,12 @@ static int moveToNextPhraseRow(struct PlaybackState* state, int trackIdx) {
     }
     // Phrase playback
     else if (track->mode == playbackModePhrase) {
-      track->chainRow = track->queue.chainRow;
+      if (track->loop) {
+        track->chainRow = track->queue.chainRow;
+      } else {
+        resetTrack(state, trackIdx);
+        stopped = 1;
+      }
     }
   }
 
@@ -380,6 +386,7 @@ void playbackInit(struct PlaybackState* state, struct Project* project) {
   for (int c = 0; c < PROJECT_MAX_TRACKS; c++) {
     resetTrack(state, c);
     state->tracks[c].queue.mode = playbackModeNone;
+    state->tracks[c].queue.loop = 0;
   }
 
   // TODO: Properly initialize other global chip states, but for now it's AY only
@@ -396,7 +403,7 @@ int playbackIsPlaying(struct PlaybackState* state) {
 }
 
 
-void playbackStartSong(struct PlaybackState* state, int songRow, int chainRow) {
+void playbackStartSong(struct PlaybackState* state, int songRow, int chainRow, int loop) {
   if (playbackIsPlaying(state)) return;
 
   struct Project* p = state->p;
@@ -409,11 +416,12 @@ void playbackStartSong(struct PlaybackState* state, int songRow, int chainRow) {
       track->queue.songRow = songRow;
       track->queue.chainRow = chainRow;
       track->queue.phraseRow = 0;
+      track->queue.loop = loop;
     }
   }
 }
 
-void playbackStartChain(struct PlaybackState* state, int trackIdx, int songRow, int chainRow) {
+void playbackStartChain(struct PlaybackState* state, int trackIdx, int songRow, int chainRow, int loop) {
   if (playbackIsPlaying(state)) return;
 
   struct Project* p = state->p;
@@ -424,10 +432,11 @@ void playbackStartChain(struct PlaybackState* state, int trackIdx, int songRow, 
     track->queue.songRow = songRow;
     track->queue.chainRow = chainRow;
     track->queue.phraseRow = 0;
+    track->queue.loop = loop;
   }
 }
 
-void playbackStartPhrase(struct PlaybackState* state, int trackIdx, int songRow, int chainRow) {
+void playbackStartPhrase(struct PlaybackState* state, int trackIdx, int songRow, int chainRow, int loop) {
   if (playbackIsPlaying(state)) return;
 
   struct PlaybackTrackState* track = &state->tracks[trackIdx];
@@ -436,6 +445,7 @@ void playbackStartPhrase(struct PlaybackState* state, int trackIdx, int songRow,
   track->queue.songRow = songRow;
   track->queue.chainRow = chainRow;
   track->queue.phraseRow = 0;
+  track->queue.loop = loop;
 }
 
 void playbackStartPhraseRow(struct PlaybackState* state, int trackIdx, struct PhraseRow* phraseRow) {
@@ -457,6 +467,7 @@ void playbackQueuePhrase(struct PlaybackState* state, int trackIdx, int songRow,
   track->queue.songRow = songRow;
   track->queue.chainRow = chainRow;
   track->queue.phraseRow = 0;
+  track->queue.loop = track->loop;
 }
 
 void playbackStop(struct PlaybackState* state) {
@@ -480,6 +491,7 @@ int playbackNextFrame(struct PlaybackState* state, struct SoundChip* chips) {
       track->songRow = track->queue.songRow;
       track->chainRow = track->queue.chainRow;
       track->phraseRow = track->queue.phraseRow;
+      track->loop = track->queue.loop;
 
       // "Consume" queued event
       track->queue.mode = playbackModeNone;
@@ -551,10 +563,6 @@ void playbackPreviewNote(struct PlaybackState* state, int trackIdx, uint8_t note
   // Use unified phrase row playback
   playbackStartPhraseRow(state, trackIdx, &phraseRow);
 }
-
-
-
-
 
 void playbackStopPreview(struct PlaybackState* state, int trackIdx) {
   if (state->tracks[trackIdx].mode == playbackModePhraseRow) {

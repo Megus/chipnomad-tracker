@@ -12,6 +12,14 @@ static void* aFrameCallbackUserdata;
 static float frameSampleCounter;
 
 static void audioCallback(int16_t* buffer, int stereoSamples) {
+  static float* floatBuffer = NULL;
+  static int floatBufferSize = 0;
+  
+  if (floatBufferSize < stereoSamples * 2) {
+    floatBuffer = realloc(floatBuffer, stereoSamples * 2 * sizeof(float));
+    floatBufferSize = stereoSamples * 2;
+  }
+  
   int samplesLeft = stereoSamples;
 
   while (samplesLeft != 0) {
@@ -23,12 +31,20 @@ static void audioCallback(int16_t* buffer, int stereoSamples) {
     }
 
     int samplesToRender = ((int)frameSampleCounter < samplesLeft) ? (int)frameSampleCounter : samplesLeft;
+    int bufferOffset = (stereoSamples - samplesLeft) * 2;
 
-    audioManager.chips[0].render(&audioManager.chips[0], buffer, samplesToRender, appSettings.volume);
+    audioManager.chips[0].render(&audioManager.chips[0], floatBuffer + bufferOffset, samplesToRender);
 
-    buffer += samplesToRender * 2;
     samplesLeft -= samplesToRender;
     frameSampleCounter -= (float)samplesToRender;
+  }
+  
+  // Convert float to int16_t with volume
+  for (int i = 0; i < stereoSamples * 2; i++) {
+    int sample = floatBuffer[i] * appSettings.volume * appSettings.mixVolume * 32767;
+    if (sample > 32767) sample = 32767;
+    if (sample < -32768) sample = -32768;
+    buffer[i] = sample;
   }
 }
 
@@ -62,6 +78,10 @@ static void resume(void) {
   audioPause(0);
 }
 
+static void render(float* buffer, int stereoSamples) {
+  audioManager.chips[0].render(&audioManager.chips[0], buffer, stereoSamples);
+}
+
 static void stop() {
   audioCleanup();
 }
@@ -71,6 +91,7 @@ struct AudioManager audioManager = {
   .start = start,
   .initChips = initChips,
   .setFrameCallback = setFrameCallback,
+  .render = render,
   .pause = pause,
   .resume = resume,
   .stop = stop

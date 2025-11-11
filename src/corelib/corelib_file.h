@@ -25,6 +25,9 @@ int fileWrite(int fileId, void* data, int length);
 // Returns number of bytes written
 int filePrintf(int fileId, const char* format, ...);
 
+// File positioning
+int fileSeek(int fileId, long offset, int whence);
+
 // File browser functions
 struct FileEntry {
   char name[256];

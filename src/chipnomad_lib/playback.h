@@ -71,6 +71,7 @@ struct PlaybackTrackQueue {
   int songRow;
   int chainRow;
   int phraseRow;
+  int loop;
 };
 
 enum PlaybackArpType {
@@ -101,6 +102,7 @@ struct PlaybackTrackState {
   int songRow;
   int chainRow;
   int phraseRow;
+  int loop;
 
   // Groove
   uint8_t grooveIdx;
@@ -155,8 +157,9 @@ int playbackIsPlaying(struct PlaybackState* state);
  * @param state Pointer to the playback state
  * @param songRow Starting row position in the song
  * @param chainRow Starting row position in the chain
+ * @param loop Whether to loop when reaching the end
  */
-void playbackStartSong(struct PlaybackState* state, int songRow, int chainRow);
+void playbackStartSong(struct PlaybackState* state, int songRow, int chainRow, int loop);
 
 /**
  * Starts chain playback for a specific track
@@ -165,8 +168,9 @@ void playbackStartSong(struct PlaybackState* state, int songRow, int chainRow);
  * @param trackIdx Index of the track to play
  * @param songRow Row position in the song containing the chain
  * @param chainRow Starting row position in the chain
+ * @param loop Whether to loop when reaching the end
  */
-void playbackStartChain(struct PlaybackState* state, int trackIdx, int songRow, int chainRow);
+void playbackStartChain(struct PlaybackState* state, int trackIdx, int songRow, int chainRow, int loop);
 
 /**
  * Starts phrase playback for a specific track
@@ -175,8 +179,9 @@ void playbackStartChain(struct PlaybackState* state, int trackIdx, int songRow, 
  * @param trackIdx Index of the track to play
  * @param songRow Row position in the song containing the phrase
  * @param chainRow Row position in the chain containing the phrase
+ * @param loop Whether to loop when reaching the end
  */
-void playbackStartPhrase(struct PlaybackState* state, int trackIdx, int songRow, int chainRow);
+void playbackStartPhrase(struct PlaybackState* state, int trackIdx, int songRow, int chainRow, int loop);
 
 /**
  * Starts playback of a phrase row

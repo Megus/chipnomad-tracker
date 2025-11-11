@@ -1,0 +1,193 @@
+#include <screen_export.h>
+#include <common.h>
+#include <corelib_gfx.h>
+#include <corelib_file.h>
+#include <project.h>
+#include <screens.h>
+#include <export.h>
+#include <string.h>
+
+static void drawRowHeader(int row, int state) {}
+static void drawColHeader(int col, int state) {}
+static void drawSelection(int col1, int row1, int col2, int row2) {}
+
+static int sampleRates[] = {44100, 48000, 88200, 96000};
+static int bitDepths[] = {16, 24, 32};
+static int currentSampleRateIndex = 0;
+static int currentBitDepthIndex = 0;
+
+static struct ScreenData screenExportCommon = {
+  .rows = 3,
+  .cursorRow = 0,
+  .cursorCol = 0,
+  .selectMode = -1,
+  .getColumnCount = exportCommonColumnCount,
+  .drawStatic = exportCommonDrawStatic,
+  .drawCursor = exportCommonDrawCursor,
+  .drawRowHeader = drawRowHeader,
+  .drawColHeader = drawColHeader,
+  .drawSelection = drawSelection,
+  .drawField = exportCommonDrawField,
+  .onEdit = exportCommonOnEdit,
+};
+
+static struct ScreenData* exportScreen(void) {
+  struct ScreenData* data = &screenExportCommon;
+  if (project.chipType == chipAY) {
+    data = &screenExportAY;
+  }
+  return data;
+}
+
+static void setup(int input) {
+  currentSampleRateIndex = 0;
+  currentBitDepthIndex = 0;
+}
+
+static void fullRedraw(void) {
+  struct ScreenData* screen = exportScreen();
+  screenFullRedraw(screen);
+}
+
+static void draw(void) {
+}
+
+static void onInput(int keys, int isDoubleTap) {
+  if (keys == keyOpt) {
+    screenSetup(&screenProject, 0);
+    return;
+  }
+
+  struct ScreenData* screen = exportScreen();
+  screenInput(screen, keys, isDoubleTap);
+}
+
+const struct AppScreen screenExport = {
+  .setup = setup,
+  .fullRedraw = fullRedraw,
+  .draw = draw,
+  .onInput = onInput
+};
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Common part of the export screen
+//
+
+int exportCommonColumnCount(int row) {
+  if (row == 0) {
+    return 1; // WAV export
+  } else if (row == 1) {
+    return 1; // Sample rate
+  } else if (row == 2) {
+    return 1; // Bit depth
+  }
+  return 1;
+}
+
+void exportCommonDrawStatic(void) {
+  const struct ColorScheme cs = appSettings.colorScheme;
+
+  gfxSetFgColor(cs.textTitles);
+  gfxPrint(0, 0, "EXPORT");
+
+  gfxSetFgColor(cs.textValue);
+  gfxPrint(0, 2, "WAV");
+  gfxSetFgColor(cs.textDefault);
+  gfxPrint(0, 3, "Sample rate");
+  gfxPrint(0, 4, "Bit depth");
+}
+
+void exportCommonDrawCursor(int col, int row) {
+  if (row == 0) {
+    gfxCursor(13, 2, 6); // Export
+  } else if (row == 1) {
+    gfxCursor(13, 3, 5); // Sample rate
+  } else if (row == 2) {
+    gfxCursor(13, 4, 2); // Bit depth
+  }
+}
+
+void exportCommonDrawField(int col, int row, int state) {
+  gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+
+  if (row == 0) {
+    gfxPrint(13, 2, "Export");
+  } else if (row == 1) {
+    gfxClearRect(13, 3, 6, 1);
+    gfxPrintf(13, 3, "%d", sampleRates[currentSampleRateIndex]);
+  } else if (row == 2) {
+    gfxClearRect(13, 4, 2, 1);
+    gfxPrintf(13, 4, "%d", bitDepths[currentBitDepthIndex]);
+  }
+}
+
+static int fileExists(const char* path) {
+  int fileId = fileOpen(path, 0);
+  if (fileId != -1) {
+    fileClose(fileId);
+    return 1;
+  }
+  return 0;
+}
+
+static void generateExportPath(char* outputPath, int maxLen) {
+  char basePath[512];
+  snprintf(basePath, sizeof(basePath), "%s%s%s.wav",
+           appSettings.projectPath, PATH_SEPARATOR_STR, appSettings.projectFilename);
+
+  if (!fileExists(basePath)) {
+    strncpy(outputPath, basePath, maxLen - 1);
+    outputPath[maxLen - 1] = 0;
+    return;
+  }
+
+  for (int i = 1; i <= 999; i++) {
+    snprintf(outputPath, maxLen, "%s%s%s_%03d.wav",
+             appSettings.projectPath, PATH_SEPARATOR_STR, appSettings.projectFilename, i);
+    if (!fileExists(outputPath)) {
+      return;
+    }
+  }
+
+  // Fallback if all numbers are taken
+  strncpy(outputPath, basePath, maxLen - 1);
+  outputPath[maxLen - 1] = 0;
+}
+
+int exportCommonOnEdit(int col, int row, enum CellEditAction action) {
+  int handled = 0;
+
+  if (row == 0) {
+    // WAV Export
+    char exportPath[1024];
+    generateExportPath(exportPath, sizeof(exportPath));
+
+    if (exportProjectToWAV(exportPath, &project, 0, sampleRates[currentSampleRateIndex], bitDepths[currentBitDepthIndex]) == 0) {
+      screenMessage(MESSAGE_TIME, "Exported to %s", strrchr(exportPath, PATH_SEPARATOR) + 1);
+    } else {
+      screenMessage(MESSAGE_TIME, "Export failed");
+    }
+    handled = 1;
+  } else if (row == 1) {
+    // Sample rate selection
+    if (action == editIncrease) {
+      currentSampleRateIndex = (currentSampleRateIndex + 1) % 4;
+      handled = 1;
+    } else if (action == editDecrease) {
+      currentSampleRateIndex = (currentSampleRateIndex + 3) % 4;
+      handled = 1;
+    }
+  } else if (row == 2) {
+    // Bit depth selection
+    if (action == editIncrease) {
+      currentBitDepthIndex = (currentBitDepthIndex + 1) % 3;
+      handled = 1;
+    } else if (action == editDecrease) {
+      currentBitDepthIndex = (currentBitDepthIndex + 2) % 3;
+      handled = 1;
+    }
+  }
+
+  return handled;
+}

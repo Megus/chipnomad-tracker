@@ -19,6 +19,7 @@ struct AppSettings appSettings = {
   .keyRepeatDelay = 16,
   .keyRepeatSpeed = 2,
   .volume = DEFAULT_VOLUME,
+  .mixVolume = 20000.0f / 32767.0f,
   .colorScheme = {
     .background = 0x000f1a,
     .textEmpty = 0x002638,
@@ -53,6 +54,7 @@ int settingsSave(void) {
   filePrintf(fileId, "keyRepeatDelay: %d\n", appSettings.keyRepeatDelay);
   filePrintf(fileId, "keyRepeatSpeed: %d\n", appSettings.keyRepeatSpeed);
   filePrintf(fileId, "volume: %f\n", appSettings.volume);
+  filePrintf(fileId, "mixVolume: %f\n", appSettings.mixVolume);
   filePrintf(fileId, "colorBackground: 0x%06x\n", appSettings.colorScheme.background);
   filePrintf(fileId, "colorTextEmpty: 0x%06x\n", appSettings.colorScheme.textEmpty);
   filePrintf(fileId, "colorTextInfo: 0x%06x\n", appSettings.colorScheme.textInfo);
@@ -93,6 +95,8 @@ int settingsLoad(void) {
       sscanf(line + 16, "%d", &appSettings.keyRepeatSpeed);
     } else if (strncmp(line, "volume: ", 8) == 0) {
       sscanf(line + 8, "%f", &appSettings.volume);
+    } else if (strncmp(line, "mixVolume: ", 11) == 0) {
+      sscanf(line + 11, "%f", &appSettings.mixVolume);
     } else if (strncmp(line, "colorBackground: ", 17) == 0) {
       sscanf(line + 17, "0x%x", &appSettings.colorScheme.background);
     } else if (strncmp(line, "colorTextEmpty: ", 16) == 0) {

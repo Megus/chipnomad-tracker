@@ -15,6 +15,7 @@ struct AudioManager {
   int (*start)(int sampleRate, int audioBufferSize, float tickRate);
   void (*initChips)(void);
   void (*setFrameCallback)(FrameCallback *callback, void* userdata);
+  void (*render)(float* buffer, int stereoSamples);
   void (*pause)(void);
   void (*resume)(void);
   void (*stop)();

@@ -10,7 +10,7 @@ struct SoundChip {
 
   int (*init)(struct SoundChip* self);
   void (*setRegister)(struct SoundChip* self, uint16_t reg, uint8_t value);
-  void (*render)(struct SoundChip* self, int16_t* buffer, int samples, float volume);
+  void (*render)(struct SoundChip* self, float* buffer, int samples);
   int (*cleanup)(struct SoundChip* self);
 };
 
