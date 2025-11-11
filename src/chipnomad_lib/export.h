@@ -14,8 +14,6 @@ typedef struct {
 
 typedef struct {
     int fileId;
-    int tickRate;
-    int currentTick;
 } PSGExporter;
 
 // Streaming WAV export
