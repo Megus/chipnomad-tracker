@@ -125,8 +125,9 @@ void appSetup(void) {
   fillFXNames();
 
   // Try to load an auto-saved project
-  if (projectLoad(AUTOSAVE_FILENAME)) {
-    projectInit(&project);
+  if (projectLoad(getAutosavePath())) {
+    // Failed to load autosave, initialize empty project
+    projectInitAY();
   }
 
   // Initialize audio system
@@ -227,7 +228,7 @@ void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
       break;
     case eventExit:
       // Auto-save the current project on exit
-      projectSave(AUTOSAVE_FILENAME);
+      projectSave(getAutosavePath());
       // Save settings on exit
       settingsSave();
       break;

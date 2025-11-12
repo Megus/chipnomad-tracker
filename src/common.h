@@ -53,5 +53,6 @@ int settingsLoad(void);
 
 // Utility functions
 void extractFilenameWithoutExtension(const char* path, char* output, int maxLength);
+const char* getAutosavePath(void);
 
 #endif

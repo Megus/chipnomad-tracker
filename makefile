@@ -34,6 +34,10 @@ RG35xx RG35xx-deploy:
 PortMaster PortMaster-deploy:
 	$(MAKE) -f Makefile.portmaster $@
 
+.PHONY: macOS macOS-deploy
+macOS macOS-deploy:
+	$(MAKE) -f Makefile.macos $@
+
 .PHONY: clean
 clean:
 	rm -rf build
@@ -50,3 +54,6 @@ clean-rg35xx:
 
 clean-portmaster:
 	rm -rf build/portmaster
+
+clean-macOS:
+	rm -rf build/macos
