@@ -4,29 +4,19 @@
 #include <stdint.h>
 #include <project.h>
 
-typedef struct {
-    int fileId;
-    int sampleRate;
-    int channels;
-    int bitDepth;
-    int totalSamples;
-} WAVExporter;
+// Forward declaration
+struct Exporter;
 
-typedef struct {
-    int fileId;
-} PSGExporter;
+// Exporter interface (OOP-like with function pointers)
+typedef struct Exporter {
+    void* data; // Private implementation data
+    int (*next)(struct Exporter* self); // Returns seconds rendered, -1 if done
+    int (*finish)(struct Exporter* self);
+    void (*cancel)(struct Exporter* self);
+} Exporter;
 
-// Streaming WAV export
-WAVExporter* wavExportStart(const char* filename, int sampleRate, int channels, int bitDepth);
-int wavExportWrite(WAVExporter* exporter, float* buffer, int samples);
-int wavExportFinish(WAVExporter* exporter);
-
-// Streaming PSG export
-PSGExporter* psgExportStart(const char* filename, int tickRate);
-int psgExportFinish(PSGExporter* exporter);
-
-// Project export
-int exportProjectToWAV(const char* filename, struct Project* project, int startRow, int sampleRate, int bitDepth);
-int exportProjectToPSG(const char* filename, struct Project* project, int startRow);
+// Export factory functions
+Exporter* createWAVExporter(const char* filename, struct Project* project, int startRow, int sampleRate, int bitDepth);
+Exporter* createPSGExporter(const char* filename, struct Project* project, int startRow);
 
 #endif

@@ -7,38 +7,25 @@
 #include <playback.h>
 #include <chips.h>
 
+// PSG implementation data
+typedef struct {
+    int fileId;
+    struct PlaybackState playbackState;
+    struct SoundChip chip;
+    int allTracksStopped;
+    int renderedSeconds;
+    float tickRate;
+    char filename[1024];
+} PSGExporterData;
+
 static void writePSGHeader(int fileId) {
   char header[16] = "PSG\x1a\0\0\0\0\0\0\0\0\0\0\0\0";
   fileWrite(fileId, header, 16);
 }
 
-PSGExporter* psgExportStart(const char* filename, int tickRate) {
-  PSGExporter* exporter = malloc(sizeof(PSGExporter));
-  if (!exporter) return NULL;
-
-  exporter->fileId = fileOpen(filename, 1);
-  if (exporter->fileId == -1) {
-    free(exporter);
-    return NULL;
-  }
-
-  writePSGHeader(exporter->fileId);
-  return exporter;
-}
-
-
-
-int psgExportFinish(PSGExporter* exporter) {
-  if (!exporter || exporter->fileId == -1) return -1;
-
-  fileClose(exporter->fileId);
-  free(exporter);
-  return 0;
-}
-
 // PSG recording chip implementation
 typedef struct {
-  PSGExporter* exporter;
+  int fileId;
   uint8_t lastRegs[14];
 } PSGChipData;
 
@@ -47,7 +34,7 @@ static int psgChipInit(struct SoundChip* self) {
   for (int i = 0; i < 14; i++) {
     data->lastRegs[i] = 0;
   }
-  data->lastRegs[7] = 0x3f; // Default mixer value
+  data->lastRegs[7] = 0x3f;
   return 0;
 }
 
@@ -57,16 +44,14 @@ static void psgChipSetRegister(struct SoundChip* self, uint16_t reg, uint8_t val
   PSGChipData* data = (PSGChipData*)self->userdata;
   self->regs[reg] = value;
 
-  // Only write if value changed (except reg 13 - envelope shape always writes)
   if (data->lastRegs[reg] != value || reg == 13) {
     uint8_t regData[2] = {reg, value};
-    fileWrite(data->exporter->fileId, regData, 2);
+    fileWrite(data->fileId, regData, 2);
     data->lastRegs[reg] = value;
   }
 }
 
 static void psgChipRender(struct SoundChip* self, float* buffer, int samples) {
-  // No audio rendering for PSG export
   for (int i = 0; i < samples * 2; i++) {
     buffer[i] = 0.0f;
   }
@@ -77,9 +62,9 @@ static int psgChipCleanup(struct SoundChip* self) {
   return 0;
 }
 
-static struct SoundChip createPSGChip(PSGExporter* exporter) {
+static struct SoundChip createPSGChip(int fileId) {
   PSGChipData* data = malloc(sizeof(PSGChipData));
-  data->exporter = exporter;
+  data->fileId = fileId;
 
   struct SoundChip chip = {
     .userdata = data,
@@ -97,30 +82,82 @@ static struct SoundChip createPSGChip(PSGExporter* exporter) {
   return chip;
 }
 
-int exportProjectToPSG(const char* filename, struct Project* project, int startRow) {
-  PSGExporter* exporter = psgExportStart(filename, (int)project->tickRate);
-  if (!exporter) return -1;
+// PSG exporter methods
+static int psgNext(Exporter* self) {
+  PSGExporterData* data = (PSGExporterData*)self->data;
+  if (data->allTracksStopped) return -1;
 
-  // Initialize playback
-  struct PlaybackState playbackState;
-  playbackInit(&playbackState, project);
+  int framesPerChunk = (int)(data->tickRate * 10 + 0.5f); // 10 seconds
+  int framesRendered = 0;
 
-  // Create PSG recording chip
-  struct SoundChip chip = createPSGChip(exporter);
-  chip.init(&chip);
-
-  // Start song playback without looping
-  playbackStartSong(&playbackState, startRow, 0, 0);
-
-  int allTracksStopped = 0;
-  do {
-    // Write frame marker
+  while (framesRendered < framesPerChunk && !data->allTracksStopped) {
     uint8_t frameMarker = 0xFF;
-    fileWrite(exporter->fileId, &frameMarker, 1);
+    fileWrite(data->fileId, &frameMarker, 1);
+    
+    data->allTracksStopped = playbackNextFrame(&data->playbackState, &data->chip);
+    framesRendered++;
+  }
 
-    allTracksStopped = playbackNextFrame(&playbackState, &chip);
-  } while (!allTracksStopped);
+  if (data->allTracksStopped) return -1;
+  
+  data->renderedSeconds += 10;
+  return data->renderedSeconds;
+}
 
-  chip.cleanup(&chip);
-  return psgExportFinish(exporter);
+static int psgFinish(Exporter* self) {
+  PSGExporterData* data = (PSGExporterData*)self->data;
+  
+  data->chip.cleanup(&data->chip);
+  fileClose(data->fileId);
+  free(data);
+  free(self);
+  return 0;
+}
+
+static void psgCancel(Exporter* self) {
+  PSGExporterData* data = (PSGExporterData*)self->data;
+  
+  data->chip.cleanup(&data->chip);
+  fileClose(data->fileId);
+  fileDelete(data->filename);
+  free(data);
+  free(self);
+}
+
+Exporter* createPSGExporter(const char* filename, struct Project* project, int startRow) {
+  Exporter* exporter = malloc(sizeof(Exporter));
+  if (!exporter) return NULL;
+
+  PSGExporterData* data = malloc(sizeof(PSGExporterData));
+  if (!data) {
+    free(exporter);
+    return NULL;
+  }
+
+  data->fileId = fileOpen(filename, 1);
+  if (data->fileId == -1) {
+    free(data);
+    free(exporter);
+    return NULL;
+  }
+
+  writePSGHeader(data->fileId);
+  
+  data->allTracksStopped = 0;
+  data->renderedSeconds = 0;
+  data->tickRate = project->tickRate;
+  strncpy(data->filename, filename, sizeof(data->filename) - 1);
+  data->filename[sizeof(data->filename) - 1] = 0;
+  
+  playbackInit(&data->playbackState, project);
+  data->chip = createPSGChip(data->fileId);
+  data->chip.init(&data->chip);
+  playbackStartSong(&data->playbackState, startRow, 0, 0);
+
+  exporter->data = data;
+  exporter->next = psgNext;
+  exporter->finish = psgFinish;
+  exporter->cancel = psgCancel;
+
+  return exporter;
 }

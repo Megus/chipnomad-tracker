@@ -144,3 +144,7 @@ int fileDirectoryExists(const char* path) {
   struct stat statBuf;
   return (stat(path, &statBuf) == 0 && S_ISDIR(statBuf.st_mode)) ? 1 : 0;
 }
+
+int fileDelete(const char* path) {
+  return remove(path) == 0 ? 0 : -1;
+}

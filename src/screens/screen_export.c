@@ -7,6 +7,9 @@
 #include <export.h>
 #include <string.h>
 
+// Export state
+Exporter* currentExporter = NULL;
+
 static void drawRowHeader(int row, int state) {}
 static void drawColHeader(int col, int state) {}
 static void drawSelection(int col1, int row1, int col2, int row2) {}
@@ -50,9 +53,31 @@ static void fullRedraw(void) {
 }
 
 static void draw(void) {
+  if (currentExporter) {
+    int seconds = currentExporter->next(currentExporter);
+    if (seconds == -1) {
+      if (currentExporter->finish(currentExporter) == 0) {
+        screenMessage(MESSAGE_TIME, "Export completed");
+      } else {
+        screenMessage(MESSAGE_TIME, "Export failed");
+      }
+      currentExporter = NULL;
+    } else {
+      screenMessage(MESSAGE_TIME, "Exporting... %ds. B to cancel", seconds);
+    }
+  }
 }
 
 static void onInput(int keys, int isDoubleTap) {
+  if (currentExporter) {
+    if (keys == keyOpt) {
+      currentExporter->cancel(currentExporter);
+      currentExporter = NULL;
+      screenMessage(MESSAGE_TIME, "Export cancelled");
+    }
+    return; // Block all other input during export
+  }
+
   if (keys == keyOpt) {
     screenSetup(&screenProject, 0);
     return;
@@ -160,13 +185,16 @@ int exportCommonOnEdit(int col, int row, enum CellEditAction action) {
 
   if (row == 0) {
     // WAV Export
+    if (currentExporter) return 1; // Already exporting
+    
     char exportPath[1024];
     generateExportPath(exportPath, sizeof(exportPath), "wav");
 
-    if (exportProjectToWAV(exportPath, &project, 0, sampleRates[currentSampleRateIndex], bitDepths[currentBitDepthIndex]) == 0) {
-      screenMessage(MESSAGE_TIME, "Exported to %s", strrchr(exportPath, PATH_SEPARATOR) + 1);
+    currentExporter = createWAVExporter(exportPath, &project, 0, sampleRates[currentSampleRateIndex], bitDepths[currentBitDepthIndex]);
+    if (currentExporter) {
+      screenMessage(MESSAGE_TIME, "Starting export...");
     } else {
-      screenMessage(MESSAGE_TIME, "Export failed");
+      screenMessage(MESSAGE_TIME, "Export failed to start");
     }
     handled = 1;
   } else if (row == 1) {

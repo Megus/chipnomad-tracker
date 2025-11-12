@@ -43,13 +43,16 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 
   if (row == SCR_EXPORT_ROWS) {
     // PSG Export
+    if (currentExporter) return 1; // Already exporting
+    
     char exportPath[1024];
     generateExportPath(exportPath, sizeof(exportPath), "psg");
 
-    if (exportProjectToPSG(exportPath, &project, 0) == 0) {
-      screenMessage(MESSAGE_TIME, "Exported to %s", strrchr(exportPath, PATH_SEPARATOR) + 1);
+    currentExporter = createPSGExporter(exportPath, &project, 0);
+    if (currentExporter) {
+      screenMessage(MESSAGE_TIME, "Starting export...");
     } else {
-      screenMessage(MESSAGE_TIME, "Export failed");
+      screenMessage(MESSAGE_TIME, "Export failed to start");
     }
     handled = 1;
   }

@@ -8,6 +8,21 @@
 #include <chips.h>
 #include <common.h>
 
+// WAV implementation data
+typedef struct {
+    int fileId;
+    int sampleRate;
+    int channels;
+    int bitDepth;
+    int totalSamples;
+    struct PlaybackState playbackState;
+    struct SoundChip chip;
+    float frameSampleCounter;
+    int allTracksStopped;
+    int renderedSeconds;
+    char filename[1024];
+} WAVExporterData;
+
 typedef struct {
     char riff[4];
     uint32_t fileSize;
@@ -32,7 +47,7 @@ static void writeWAVHeader(int fileId, int sampleRate, int channels, int bitDept
     memcpy(header.wave, "WAVE", 4);
     memcpy(header.fmt, "fmt ", 4);
     header.fmtSize = 16;
-    header.audioFormat = (bitDepth == 32) ? 3 : 1; // IEEE float for 32-bit, PCM for others
+    header.audioFormat = (bitDepth == 32) ? 3 : 1;
     header.channels = channels;
     header.sampleRate = sampleRate;
     header.bitsPerSample = bitDepth;
@@ -44,116 +59,133 @@ static void writeWAVHeader(int fileId, int sampleRate, int channels, int bitDept
     fileWrite(fileId, &header, sizeof(WAVHeader));
 }
 
-WAVExporter* wavExportStart(const char* filename, int sampleRate, int channels, int bitDepth) {
-    WAVExporter* exporter = malloc(sizeof(WAVExporter));
-    if (!exporter) return NULL;
-
-    exporter->fileId = fileOpen(filename, 1);
-    if (exporter->fileId == -1) {
-        free(exporter);
-        return NULL;
-    }
-
-    exporter->sampleRate = sampleRate;
-    exporter->channels = channels;
-    exporter->bitDepth = bitDepth;
-    exporter->totalSamples = 0;
-
-    // Write placeholder header
-    writeWAVHeader(exporter->fileId, sampleRate, channels, bitDepth, 0);
-
-    return exporter;
-}
-
-int wavExportWrite(WAVExporter* exporter, float* buffer, int samples) {
-    if (!exporter || exporter->fileId == -1) return -1;
-
-    if (exporter->bitDepth == 16) {
-        for (int i = 0; i < samples * exporter->channels; i++) {
+static int wavExportWrite(WAVExporterData* data, float* buffer, int samples) {
+    if (data->bitDepth == 16) {
+        for (int i = 0; i < samples * data->channels; i++) {
             int sample = (int)(buffer[i] * appSettings.mixVolume * 32767.0f);
             if (sample > 32767) sample = 32767;
             if (sample < -32768) sample = -32768;
             int16_t finalSample = (int16_t)sample;
-            fileWrite(exporter->fileId, &finalSample, sizeof(int16_t));
+            fileWrite(data->fileId, &finalSample, sizeof(int16_t));
         }
-    } else if (exporter->bitDepth == 24) {
-        for (int i = 0; i < samples * exporter->channels; i++) {
+    } else if (data->bitDepth == 24) {
+        for (int i = 0; i < samples * data->channels; i++) {
             int sample = (int)(buffer[i] * appSettings.mixVolume * 8388607.0f);
             if (sample > 8388607) sample = 8388607;
             if (sample < -8388608) sample = -8388608;
             uint8_t bytes[3] = {sample & 0xFF, (sample >> 8) & 0xFF, (sample >> 16) & 0xFF};
-            fileWrite(exporter->fileId, bytes, 3);
+            fileWrite(data->fileId, bytes, 3);
         }
-    } else if (exporter->bitDepth == 32) {
-        for (int i = 0; i < samples * exporter->channels; i++) {
+    } else if (data->bitDepth == 32) {
+        for (int i = 0; i < samples * data->channels; i++) {
             float sample = buffer[i] * appSettings.mixVolume;
-            fileWrite(exporter->fileId, &sample, sizeof(float));
+            fileWrite(data->fileId, &sample, sizeof(float));
         }
     }
-
-    exporter->totalSamples += samples;
+    data->totalSamples += samples;
     return 0;
 }
 
-int wavExportFinish(WAVExporter* exporter) {
-    if (!exporter || exporter->fileId == -1) return -1;
+// WAV exporter methods
+static int wavNext(Exporter* self) {
+    WAVExporterData* data = (WAVExporterData*)self->data;
+    if (data->allTracksStopped) return -1;
 
-    int dataSize = exporter->totalSamples * exporter->channels * (exporter->bitDepth / 8);
-
-    // Update header with correct sizes
-    fileSeek(exporter->fileId, 0, 0); // SEEK_SET = 0
-    writeWAVHeader(exporter->fileId, exporter->sampleRate, exporter->channels, exporter->bitDepth, dataSize);
-
-    fileClose(exporter->fileId);
-    free(exporter);
-    return 0;
-}
-
-int exportProjectToWAV(const char* filename, struct Project* project, int startRow, int sampleRate, int bitDepth) {
-    WAVExporter* exporter = wavExportStart(filename, sampleRate, 2, bitDepth);
-    if (!exporter) return -1;
-
-    // Initialize playback
-    struct PlaybackState playbackState;
-    playbackInit(&playbackState, project);
-
-    // Create and configure sound chip
-    struct SoundChip chip = createChipAY(sampleRate, project->chipSetup);
-
-    // Start song playback without looping
-    playbackStartSong(&playbackState, startRow, 0, 0);
-
-    // Render audio in chunks
+    const int samplesPerSecond = data->sampleRate;
     const int chunkSize = 1024;
-    float buffer[chunkSize * 2]; // Stereo
-    float frameSampleCounter = 0.0f;
-    int allTracksStopped = 0;
+    float buffer[chunkSize * 2];
+    int totalSamplesRendered = 0;
 
-    do {
+    while (totalSamplesRendered < samplesPerSecond && !data->allTracksStopped) {
         int samplesRendered = 0;
+        int samplesToRender = (samplesPerSecond - totalSamplesRendered < chunkSize) ? 
+                             (samplesPerSecond - totalSamplesRendered) : chunkSize;
 
-        while (samplesRendered < chunkSize && !allTracksStopped) {
-            // Handle frame timing
-            if ((int)frameSampleCounter == 0) {
-                frameSampleCounter += sampleRate / project->tickRate;
-                allTracksStopped = playbackNextFrame(&playbackState, &chip);
-
+        while (samplesRendered < samplesToRender && !data->allTracksStopped) {
+            if ((int)data->frameSampleCounter == 0) {
+                data->frameSampleCounter += data->sampleRate / data->playbackState.p->tickRate;
+                data->allTracksStopped = playbackNextFrame(&data->playbackState, &data->chip);
             }
 
-            int samplesToRender = ((int)frameSampleCounter < (chunkSize - samplesRendered)) ?
-                                  (int)frameSampleCounter : (chunkSize - samplesRendered);
+            int frameSamples = ((int)data->frameSampleCounter < (samplesToRender - samplesRendered)) ?
+                              (int)data->frameSampleCounter : (samplesToRender - samplesRendered);
 
-            chip.render(&chip, buffer + samplesRendered * 2, samplesToRender);
-
-            samplesRendered += samplesToRender;
-            frameSampleCounter -= (float)samplesToRender;
+            data->chip.render(&data->chip, buffer + samplesRendered * 2, frameSamples);
+            samplesRendered += frameSamples;
+            data->frameSampleCounter -= (float)frameSamples;
         }
 
         if (samplesRendered > 0) {
-            wavExportWrite(exporter, buffer, samplesRendered);
+            wavExportWrite(data, buffer, samplesRendered);
+            totalSamplesRendered += samplesRendered;
         }
-    } while (!allTracksStopped);
+    }
 
-    chip.cleanup(&chip);
-    return wavExportFinish(exporter);
+    return data->allTracksStopped ? -1 : ++data->renderedSeconds;
 }
+
+static int wavFinish(Exporter* self) {
+    WAVExporterData* data = (WAVExporterData*)self->data;
+    
+    int dataSize = data->totalSamples * data->channels * (data->bitDepth / 8);
+    fileSeek(data->fileId, 0, 0);
+    writeWAVHeader(data->fileId, data->sampleRate, data->channels, data->bitDepth, dataSize);
+    
+    data->chip.cleanup(&data->chip);
+    fileClose(data->fileId);
+    free(data);
+    free(self);
+    return 0;
+}
+
+static void wavCancel(Exporter* self) {
+    WAVExporterData* data = (WAVExporterData*)self->data;
+    
+    data->chip.cleanup(&data->chip);
+    fileClose(data->fileId);
+    fileDelete(data->filename);
+    free(data);
+    free(self);
+}
+
+Exporter* createWAVExporter(const char* filename, struct Project* project, int startRow, int sampleRate, int bitDepth) {
+    Exporter* exporter = malloc(sizeof(Exporter));
+    if (!exporter) return NULL;
+
+    WAVExporterData* data = malloc(sizeof(WAVExporterData));
+    if (!data) {
+        free(exporter);
+        return NULL;
+    }
+
+    data->fileId = fileOpen(filename, 1);
+    if (data->fileId == -1) {
+        free(data);
+        free(exporter);
+        return NULL;
+    }
+
+    data->sampleRate = sampleRate;
+    data->channels = 2;
+    data->bitDepth = bitDepth;
+    data->totalSamples = 0;
+    data->frameSampleCounter = 0.0f;
+    data->allTracksStopped = 0;
+    data->renderedSeconds = 0;
+    strncpy(data->filename, filename, sizeof(data->filename) - 1);
+    data->filename[sizeof(data->filename) - 1] = 0;
+
+    writeWAVHeader(data->fileId, sampleRate, 2, bitDepth, 0);
+    
+    playbackInit(&data->playbackState, project);
+    data->chip = createChipAY(sampleRate, project->chipSetup);
+    playbackStartSong(&data->playbackState, startRow, 0, 0);
+
+    exporter->data = data;
+    exporter->next = wavNext;
+    exporter->finish = wavFinish;
+    exporter->cancel = wavCancel;
+
+    return exporter;
+}
+

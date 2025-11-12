@@ -3,8 +3,14 @@
 
 #include <screens.h>
 
+// Forward declaration
+struct Exporter;
+
 // Common rows on the export screen
 #define SCR_EXPORT_ROWS (3)
+
+// Export state
+extern struct Exporter* currentExporter;
 
 int exportCommonColumnCount(int row);
 void exportCommonDrawStatic(void);

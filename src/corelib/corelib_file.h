@@ -28,6 +28,9 @@ int filePrintf(int fileId, const char* format, ...);
 // File positioning
 int fileSeek(int fileId, long offset, int whence);
 
+// File operations
+int fileDelete(const char* path);
+
 // File browser functions
 struct FileEntry {
   char name[256];
