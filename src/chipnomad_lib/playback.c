@@ -258,7 +258,10 @@ static void nextFrame(struct PlaybackState* state, int trackIdx) {
 
     // Phrase transpose
     if (track->note.instrument != EMPTY_VALUE_8 && p->instruments[track->note.instrument].transposeEnabled) {
-      note += (int8_t)p->chains[p->song[track->songRow][trackIdx]].rows[track->chainRow].transpose;
+      uint16_t chainIdx = p->song[track->songRow][trackIdx];
+      if (chainIdx != EMPTY_VALUE_16) {
+        note += (int8_t)p->chains[chainIdx].rows[track->chainRow].transpose;
+      }
     }
 
     // Offset from FX
