@@ -39,6 +39,7 @@ PortMaster-deploy: PortMaster PortMaster32
 	@cp $(BUILD)/chipnomad.aarch64 /tmp/chipnomad-pm-package/chipnomad/
 	@cp $(BUILD)/chipnomad.armhf /tmp/chipnomad-pm-package/chipnomad/
 	@cp -r packaging/portmaster/* /tmp/chipnomad-pm-package/
+	@mv /tmp/chipnomad-pm-package/chipnomad.gptk /tmp/chipnomad-pm-package/chipnomad/
 	@cp -r packaging/common/* /tmp/chipnomad-pm-package/chipnomad/
 	@sed -i '' "s/BUILD_DATE_PLACEHOLDER/$$(date +%Y%m%dT%H%M%S)/g" /tmp/chipnomad-pm-package/gameinfo.xml
 	$(eval VERSION := $(shell grep 'appVersion.*=' src/version.c | cut -d'"' -f2))

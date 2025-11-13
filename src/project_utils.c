@@ -22,9 +22,6 @@ void projectInitAY() {
 
 // Does chain have notes?
 int8_t chainHasNotes(int chain) {
-  /*int8_t v = project.chains[chain].hasNotes;
-  if (v != -1) return v;*/
-
   int8_t v = 0;
   for (int c = 0; c < 16; c++) {
     int phrase = project.chains[chain].rows[c].phrase;
@@ -32,16 +29,11 @@ int8_t chainHasNotes(int chain) {
     if (v == 1) break;
   }
 
-  //project.chains[chain].hasNotes = v;
-
   return v;
 }
 
 // Does phrase have notes?
 int8_t phraseHasNotes(int phrase) {
-  /*int8_t v = project.phrases[phrase].hasNotes;
-  if (v != -1) return v;*/
-
   int8_t v = 0;
   for (int c = 0; c < 16; c++) {
     if (project.phrases[phrase].rows[c].note < PROJECT_MAX_PITCHES) {
@@ -49,8 +41,6 @@ int8_t phraseHasNotes(int phrase) {
       break;
     }
   }
-
-  //project.phrases[phrase].hasNotes = v;
 
   return v;
 }
@@ -129,4 +119,48 @@ void instrumentSwap(uint8_t inst1, uint8_t inst2) {
 
   // Swap instrument references in phrases
   instrumentSwapReferences(inst1, inst2);
+}
+
+// Check if chain is used in the song
+static int chainIsUsedInSong(int chainIdx) {
+  for (int row = 0; row < PROJECT_MAX_LENGTH; row++) {
+    for (int col = 0; col < PROJECT_MAX_TRACKS; col++) {
+      if (project.song[row][col] == chainIdx) return 1;
+    }
+  }
+  return 0;
+}
+
+// Check if phrase is used in any chain
+static int phraseIsUsedInChains(int phraseIdx) {
+  for (int c = 0; c < PROJECT_MAX_CHAINS; c++) {
+    for (int row = 0; row < 16; row++) {
+      if (project.chains[c].rows[row].phrase == phraseIdx) return 1;
+    }
+  }
+  return 0;
+}
+
+// Find empty chain slot (empty and not used in project)
+int findEmptyChain(int start) {
+  for (int i = start; i < PROJECT_MAX_CHAINS; i++) {
+    if (chainIsEmpty(i) && !chainIsUsedInSong(i)) return i;
+  }
+  return EMPTY_VALUE_16;
+}
+
+// Find empty phrase slot (empty and not used in project)
+int findEmptyPhrase(int start) {
+  for (int i = start; i < PROJECT_MAX_PHRASES; i++) {
+    if (phraseIsEmpty(i) && !phraseIsUsedInChains(i)) return i;
+  }
+  return EMPTY_VALUE_16;
+}
+
+// Find empty instrument slot
+int findEmptyInstrument(int start) {
+  for (int i = start; i < PROJECT_MAX_INSTRUMENTS; i++) {
+    if (project.instruments[i].type == instNone) return i;
+  }
+  return EMPTY_VALUE_8;
 }

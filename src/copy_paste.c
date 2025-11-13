@@ -1,5 +1,6 @@
 #include <copy_paste.h>
 #include <screens.h>
+#include <project_utils.h>
 #include <string.h>
 
 uint16_t cpBufSong[PROJECT_MAX_LENGTH][PROJECT_MAX_TRACKS];
@@ -378,29 +379,7 @@ int switchSongSelectionMode(struct ScreenData* screen) {
   return 1;
 }
 
-// Find empty chain slot
-int findEmptyChain(int start) {
-  for (int i = start; i < PROJECT_MAX_CHAINS; i++) {
-    if (chainIsEmpty(i)) return i;
-  }
-  return EMPTY_VALUE_16;
-}
 
-// Find empty phrase slot
-int findEmptyPhrase(int start) {
-  for (int i = start; i < PROJECT_MAX_PHRASES; i++) {
-    if (phraseIsEmpty(i)) return i;
-  }
-  return EMPTY_VALUE_16;
-}
-
-// Find empty instrument slot
-int findEmptyInstrument(int start) {
-  for (int i = start; i < PROJECT_MAX_INSTRUMENTS; i++) {
-    if (project.instruments[i].type == instNone) return i;
-  }
-  return EMPTY_VALUE_8;
-}
 
 // Clone chain (shallow)
 int cloneChain(int srcIdx, int dstIdx) {

@@ -15,4 +15,8 @@ char* instrumentTypeName(uint8_t type);
 uint8_t instrumentFirstNote(uint8_t instrument);
 // Swap two instruments and their default tables
 void instrumentSwap(uint8_t inst1, uint8_t inst2);
+// Find empty slots
+int findEmptyChain(int start);
+int findEmptyPhrase(int start);
+int findEmptyInstrument(int start);
 

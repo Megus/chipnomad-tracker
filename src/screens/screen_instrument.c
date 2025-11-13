@@ -45,7 +45,7 @@ static void onInstrumentSaved(const char* folderPath) {
   char filename[32];
   getInstrumentFilename(filename, sizeof(filename));
   snprintf(fullPath, sizeof(fullPath), "%s%s%s.cni", folderPath, PATH_SEPARATOR_STR, filename);
-  
+
   if (instrumentSave(fullPath, cInstrument) == 0) {
     strncpy(appSettings.instrumentPath, folderPath, PATH_LENGTH);
     appSettings.instrumentPath[PATH_LENGTH - 1] = 0;

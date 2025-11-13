@@ -113,7 +113,27 @@ static void screenDrawSelection(struct ScreenData* screen, int drawOrErase, int 
   screen->drawSelection(col1, row1, col2, row2);
 }
 
+static void validateCursorBounds(struct ScreenData* screen) {
+  // Validate row bounds
+  if (screen->cursorRow >= screen->rows) {
+    screen->cursorRow = screen->rows - 1;
+  }
+  if (screen->cursorRow < 0) {
+    screen->cursorRow = 0;
+  }
+  
+  // Validate column bounds for current row
+  int maxCol = screen->getColumnCount(screen->cursorRow) - 1;
+  if (screen->cursorCol > maxCol) {
+    screen->cursorCol = maxCol;
+  }
+  if (screen->cursorCol < 0) {
+    screen->cursorCol = 0;
+  }
+}
+
 void screenFullRedraw(struct ScreenData* screen) {
+  validateCursorBounds(screen);
   gfxClearRect(0, 0, 40, 20);
 
   // Static content
@@ -270,6 +290,7 @@ static int inputNormalMode(struct ScreenData* screen, int keys, int isDoubleTap)
   }
 
   if (handled && !redrawn) {
+    validateCursorBounds(screen);
     if (oldCursorCol != screen->cursorCol || oldCursorRow != screen->cursorRow) {
       // Erase old cursor and headers
       screen->drawField(oldCursorCol, oldCursorRow, 0);
@@ -373,6 +394,7 @@ static int inputSelectMode(struct ScreenData* screen, int keys, int isDoubleTap)
   }
 
   if (handled && !redrawn) {
+    validateCursorBounds(screen);
     if (oldCursorCol != screen->cursorCol || oldCursorRow != screen->cursorRow) {
       // Calculate old and new selection bounds
       int oldSelCol1 = min(screen->selectStartCol, oldCursorCol);

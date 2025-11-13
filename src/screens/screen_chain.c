@@ -62,18 +62,24 @@ static void drawStatic(void) {
 
 static void drawField(int col, int row, int state) {
   uint16_t phrase = project.chains[chain].rows[row].phrase;
+  int hasContent = phrase != EMPTY_VALUE_16 && phraseHasNotes(phrase);
 
   if (col == 0) {
     // Phrase
-    setCellColor(state, phrase == EMPTY_VALUE_16, phrase != EMPTY_VALUE_16 && phraseHasNotes(phrase));
+    setCellColor(state, phrase == EMPTY_VALUE_16, hasContent);
     if (phrase == EMPTY_VALUE_16) {
       gfxPrint(3, 3 + row, "---");
     } else {
       gfxPrintf(3, 3 + row, "%03X", phrase);
     }
+    // Also draw transpose to keep colors synchronized (only if not in selection mode)
+    if (screen.selectMode == 0) {
+      setCellColor(0, 0, hasContent);
+      gfxPrint(7, 3 + row, byteToHex(project.chains[chain].rows[row].transpose));
+    }
   } else {
     // Transpose
-    setCellColor(state, 0, phrase != EMPTY_VALUE_16 && phraseHasNotes(phrase));
+    setCellColor(state, 0, hasContent);
     gfxPrint(7, 3 + row, byteToHex(project.chains[chain].rows[row].transpose));
   }
 }

@@ -4,6 +4,7 @@
 #include <corelib_gfx.h>
 #include <utils.h>
 #include <project.h>
+#include <project_utils.h>
 #include <version.h>
 #include <audio_manager.h>
 #include <file_browser.h>
@@ -18,6 +19,11 @@ static uint16_t tickRateF = 0;
 static int songScreenInput = 0;
 
 static void onProjectLoaded(const char* path) {
+  if (!path) {
+    screenSetup(&screenProject, 0);
+    return;
+  }
+  
   playbackStop(&playback);
   if (projectLoad(path) == 0) {
     extractFilenameWithoutExtension(path, appSettings.projectFilename, FILENAME_LENGTH + 1);
@@ -26,14 +32,16 @@ static void onProjectLoaded(const char* path) {
     char* lastSeparator = strrchr(path, PATH_SEPARATOR);
     if (lastSeparator) {
       int pathLen = lastSeparator - path;
-      strncpy(appSettings.projectPath, path, pathLen);
-      appSettings.projectPath[pathLen] = 0;
+      if (pathLen > 0 && pathLen < PATH_LENGTH) {
+        strncpy(appSettings.projectPath, path, pathLen);
+        appSettings.projectPath[pathLen] = 0;
+      }
     }
 
     // Jump to the song beginning
-    *pSongRow = 0;
-    *pSongTrack = 0;
-    *pChainRow = 0;
+    if (pSongRow) *pSongRow = 0;
+    if (pSongTrack) *pSongTrack = 0;
+    if (pChainRow) *pChainRow = 0;
     songScreenInput = 0x1234;
   }
   screenSetup(&screenProject, 0);
@@ -221,7 +229,7 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
       screenSetup(&screenFileBrowser, 0);
     } else if (col == 2) {
       // New project
-      projectInit(&project);
+      projectInitAY();
       appSettings.projectFilename[0] = 0; // Clear filename
       fullRedraw();
       handled = 1;

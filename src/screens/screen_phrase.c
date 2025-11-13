@@ -250,7 +250,7 @@ static int editCell(int col, int row, enum CellEditAction action) {
     }
   }
 
-  if (handled) {
+  if (handled && (!playbackIsPlaying(&playback) || playback.tracks[*pSongTrack].mode == playbackModePhraseRow)) {
     playbackStartPhraseRow(&playback, *pSongTrack, &phraseRows[screen.cursorRow]);
   }
 

@@ -27,9 +27,6 @@ void pasteTable(int tableIdx, int startCol, int startRow);
 void copyInstrument(int instrumentIdx);
 void pasteInstrument(int instrumentIdx);
 // Clone functionality
-int findEmptyChain(int start);
-int findEmptyPhrase(int start);
-int findEmptyInstrument(int start);
 int cloneChain(int srcIdx, int dstIdx);
 int clonePhrase(int srcIdx, int dstIdx);
 int cloneInstrument(int srcIdx, int dstIdx);
