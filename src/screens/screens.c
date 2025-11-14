@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <screens.h>
+#include <screen_settings.h>
 #include <project.h>
 #include <corelib_gfx.h>
 #include <utils.h>
@@ -29,6 +30,11 @@ void drawScreenMap() {
   } else if (currentScreen == &screenInstrument || currentScreen == &screenInstrumentPool) {
     gfxPrint(38, smY + 2, "P");
   }
+  
+  // Show Settings below Song
+  if (currentScreen == &screenSong) {
+    gfxPrint(35, smY + 2, "S");
+  }
 
   // Highlight current screen
   gfxSetFgColor(cs.textDefault);
@@ -48,6 +54,8 @@ void drawScreenMap() {
     gfxPrint(35, smY, "P");
   } else if (currentScreen == &screenGroove) {
     gfxPrint(37, smY, "G");
+  } else if (currentScreen == &screenSettings) {
+    gfxPrint(35, smY + 2, "S");
   }
 }
 
@@ -312,6 +320,13 @@ static int inputNormalMode(struct ScreenData* screen, int keys, int isDoubleTap)
 static int optPressed = 0;
 static int shallowClonePressed = 0;
 
+static void moveCursorToSelectionStart(struct ScreenData* screen) {
+  int startCol, startRow, endCol, endRow;
+  getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
+  screen->cursorCol = startCol;
+  screen->cursorRow = startRow;
+}
+
 static void redrawSelection(struct ScreenData* screen) {
   int startCol, startRow, endCol, endRow;
   getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
@@ -345,7 +360,10 @@ static int inputSelectMode(struct ScreenData* screen, int keys, int isDoubleTap)
     } else if (keys == 0 && optPressed) {
       // Copy and exit select mode on Opt release (no keys pressed)
       handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editCopy);
-      if (handled) screenMessage(0, "Copied selection");
+      if (handled) {
+        screenMessage(0, "Copied selection");
+        moveCursorToSelectionStart(screen);
+      }
       screen->selectMode = 0;
       screenFullRedraw(screen);
       redrawn = 1;
@@ -360,7 +378,10 @@ static int inputSelectMode(struct ScreenData* screen, int keys, int isDoubleTap)
     } else if (keys == (keyEdit | keyOpt)) {
       // Cut and exit select mode
       handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editCut);
-      if (handled) screenMessage(0, "Cut selection");
+      if (handled) {
+        screenMessage(0, "Cut selection");
+        moveCursorToSelectionStart(screen);
+      }
       screen->selectMode = 0;
       screenFullRedraw(screen);
       redrawn = 1;

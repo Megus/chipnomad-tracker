@@ -125,3 +125,9 @@ void mainLoopDelay(int ms) {
 void mainLoopQuit(void) {
   SDL_Quit();
 }
+
+void mainLoopTriggerQuit(void) {
+  SDL_Event quitEvent;
+  quitEvent.type = SDL_QUIT;
+  SDL_PushEvent(&quitEvent);
+}

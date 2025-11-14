@@ -203,8 +203,11 @@ void projectCommonDrawField(int col, int row, int state) {
     gfxClearRect(7, 5, PROJECT_TITLE_LENGTH, 1);
     gfxPrintf(7, 5, "%s", project.author);
   } else if (row == 4) {
-    // Tick rate
-    gfxPrintf(13, 7, "%03d.%03d Hz", tickRateI, tickRateF);
+    // Tick rate and BPM
+    gfxClearRect(13, 7, 27, 1);
+    float tickRate = (float)tickRateI + (float)tickRateF / 1000.0f;
+    float bpm = tickRate * 60.0f / 24.0f;
+    gfxPrintf(13, 7, "%03d.%03dHz (%.1f BPM)", tickRateI, tickRateF, bpm);
   } else if (row == 5) {
     // Chip type
     gfxPrint(13, 8, "AY/YM");

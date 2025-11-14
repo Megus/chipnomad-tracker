@@ -1,4 +1,5 @@
 #include <screens.h>
+#include <screen_settings.h>
 #include <common.h>
 #include <corelib_gfx.h>
 #include <utils.h>
@@ -149,6 +150,12 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
   // Go to Project screen
   if (keys == (keyUp | keyShift)) {
     screenSetup(&screenProject, 0);
+    return 1;
+  }
+
+  // Go to Settings screen
+  if (keys == (keyDown | keyShift)) {
+    screenSetup(&screenSettings, 0);
     return 1;
   }
 
