@@ -181,6 +181,7 @@ struct ScreenData screenInstrumentAY = {
   .rows = 7,
   .cursorRow = 0,
   .cursorCol = 0,
+  .selectMode = -1,
   .getColumnCount = getColumnCount,
   .drawStatic = drawStatic,
   .drawCursor = drawCursor,

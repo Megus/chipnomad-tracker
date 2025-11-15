@@ -3,11 +3,18 @@
 #include <string.h>
 
 // Character keyboard layout
-static const char* keyboardRows[] = {
+static const char* keyboardRowsUpper[] = {
   "1234567890",
   "QWERTYUIOP",
   "ASDFGHJKL-",
   "ZXCVBNM !_",
+};
+
+static const char* keyboardRowsLower[] = {
+  "1234567890",
+  "qwertyuiop",
+  "asdfghjkl-",
+  "zxcvbnm !_",
 };
 
 #define NUM_KEYBOARD_ROWS 4
@@ -17,9 +24,15 @@ static int currentCol = 0;
 static int prevRow = 1;     // Track previous cursor position
 static int prevCol = 0;
 static int lastSelectedChar = 0;
+static int isUppercase = 1; // Start with uppercase
 
 void updateCursorPosition();
 void charEditFullDraw(char startChar);
+
+// Helper function to get current keyboard rows
+static const char** getCurrentKeyboardRows() {
+  return isUppercase ? keyboardRowsUpper : keyboardRowsLower;
+}
 
 // Trim empty characters from the end of the string
 void trimStr(char* str) {
@@ -51,13 +64,20 @@ int editCharacter(enum CellEditAction action, char* str, int idx, int maxLen) {
 * @return char Selected character (0 if no selection made)
 */
 char charEditInput(int keys, int isDoubleTap, char* str, int idx, int maxLen) {
+  // Handle Shift key to toggle between uppercase and lowercase
+  if (keys & keyShift) {
+    isUppercase = !isUppercase;
+    charEditFullDraw(0);
+    return 0;
+  }
+
   // If no keys are pressed, return the currently selected character
   if (keys == 0) {
     char selectedChar = 0;
 
     // Get the character at the current position
     if (currentRow >= 0 && currentRow < NUM_KEYBOARD_ROWS) {
-      const char* row = keyboardRows[currentRow];
+      const char* row = getCurrentKeyboardRows()[currentRow];
       int rowLen = strlen(row);
 
       if (currentCol >= 0 && currentCol < rowLen) {
@@ -90,7 +110,7 @@ char charEditInput(int keys, int isDoubleTap, char* str, int idx, int maxLen) {
       }
 
       // Adjust column if needed
-      const char* row = keyboardRows[currentRow];
+      const char* row = getCurrentKeyboardRows()[currentRow];
       int rowLen = strlen(row);
       if (currentCol >= rowLen) {
         currentCol = rowLen - 1;
@@ -108,7 +128,7 @@ char charEditInput(int keys, int isDoubleTap, char* str, int idx, int maxLen) {
       }
 
       // Adjust column if needed
-      const char* row = keyboardRows[currentRow];
+      const char* row = getCurrentKeyboardRows()[currentRow];
       int rowLen = strlen(row);
       if (currentCol >= rowLen) {
         currentCol = rowLen - 1;
@@ -120,7 +140,7 @@ char charEditInput(int keys, int isDoubleTap, char* str, int idx, int maxLen) {
     }
     else if (keys & keyLeft) {
       // Move left in the current row
-      const char* row = keyboardRows[currentRow];
+      const char* row = getCurrentKeyboardRows()[currentRow];
       int rowLen = strlen(row);
 
       currentCol--;
@@ -134,7 +154,7 @@ char charEditInput(int keys, int isDoubleTap, char* str, int idx, int maxLen) {
     }
     else if (keys & keyRight) {
       // Move right in the current row
-      const char* row = keyboardRows[currentRow];
+      const char* row = getCurrentKeyboardRows()[currentRow];
       int rowLen = strlen(row);
 
       currentCol++;
@@ -157,6 +177,7 @@ char charEditInput(int keys, int isDoubleTap, char* str, int idx, int maxLen) {
 */
 void updateCursorPosition() {
   // Calculate positions for previous and current cursor
+  const char** keyboardRows = getCurrentKeyboardRows();
   const char* prevRow_str = keyboardRows[prevRow];
   const char* currRow_str = keyboardRows[currentRow];
   int prevRowLen = strlen(prevRow_str);
@@ -195,16 +216,24 @@ void charEditFullDraw(char startChar) {
   gfxClear();
 
   // If a valid startChar is provided, try to select it
-  if (startChar != 0) {
-    // Try to find the character in the keyboard layout
+  if (startChar != 0 && startChar != ' ') {
+    // Try to find the character in both keyboard layouts
     for (int row = 0; row < NUM_KEYBOARD_ROWS; row++) {
-      const char* keyRow = keyboardRows[row];
-      char* pos = strchr(keyRow, startChar);
-
+      char* pos = strchr(keyboardRowsUpper[row], startChar);
       if (pos != NULL) {
-        // Found the character, set the current position
+        isUppercase = 1;
         currentRow = row;
-        currentCol = pos - keyRow;
+        currentCol = pos - keyboardRowsUpper[row];
+        prevRow = currentRow;
+        prevCol = currentCol;
+        break;
+      }
+      
+      pos = strchr(keyboardRowsLower[row], startChar);
+      if (pos != NULL) {
+        isUppercase = 0;
+        currentRow = row;
+        currentCol = pos - keyboardRowsLower[row];
         prevRow = currentRow;
         prevCol = currentCol;
         break;
@@ -214,6 +243,7 @@ void charEditFullDraw(char startChar) {
 
   // Draw keyboard layout
   int yPos = 6;
+  const char** keyboardRows = getCurrentKeyboardRows();
   for (int row = 0; row < NUM_KEYBOARD_ROWS; row++) {
     const char* keyRow = keyboardRows[row];
     int rowLen = strlen(keyRow);
@@ -239,4 +269,11 @@ void charEditFullDraw(char startChar) {
 
     yPos++;
   }
+
+  // Draw hint at the bottom
+  gfxSetFgColor(appSettings.colorScheme.textInfo);
+  const char* hint = isUppercase ? "SHIFT: lowercase" : "SHIFT: uppercase";
+  int hintLen = strlen(hint);
+  int hintX = (40 - hintLen) / 2;
+  gfxPrint(hintX, 18, hint);
 }

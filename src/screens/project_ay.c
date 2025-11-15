@@ -150,6 +150,7 @@ struct ScreenData screenProjectAY = {
   .rows = 12,
   .cursorRow = 0,
   .cursorCol = 0,
+  .selectMode = -1,
   .getColumnCount = getColumnCount,
   .drawStatic = drawStatic,
   .drawCursor = drawCursor,
