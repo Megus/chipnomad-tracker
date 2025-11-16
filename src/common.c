@@ -25,6 +25,7 @@ struct AppSettings appSettings = {
   .keyRepeatSpeed = 2,
   .volume = DEFAULT_VOLUME,
   .mixVolume = 20000.0f / 32767.0f,
+  .pitchConflictWarning = 0,
   .colorScheme = {
     .background = 0x000f1a,
     .textEmpty = 0x002638,
@@ -35,6 +36,7 @@ struct AppSettings appSettings = {
     .playMarkers = 0xefe000,
     .cursor = 0x7ddcff,
     .selection = 0x00d090,
+    .warning = 0xff4040,
   },
   .projectFilename = "",
   .projectPath = "",
@@ -88,6 +90,7 @@ int settingsSave(void) {
   filePrintf(fileId, "keyRepeatSpeed: %d\n", appSettings.keyRepeatSpeed);
   filePrintf(fileId, "volume: %f\n", appSettings.volume);
   filePrintf(fileId, "mixVolume: %f\n", appSettings.mixVolume);
+  filePrintf(fileId, "pitchConflictWarning: %d\n", appSettings.pitchConflictWarning);
   filePrintf(fileId, "colorBackground: 0x%06x\n", appSettings.colorScheme.background);
   filePrintf(fileId, "colorTextEmpty: 0x%06x\n", appSettings.colorScheme.textEmpty);
   filePrintf(fileId, "colorTextInfo: 0x%06x\n", appSettings.colorScheme.textInfo);
@@ -97,6 +100,7 @@ int settingsSave(void) {
   filePrintf(fileId, "colorPlayMarkers: 0x%06x\n", appSettings.colorScheme.playMarkers);
   filePrintf(fileId, "colorCursor: 0x%06x\n", appSettings.colorScheme.cursor);
   filePrintf(fileId, "colorSelection: 0x%06x\n", appSettings.colorScheme.selection);
+  filePrintf(fileId, "colorWarning: 0x%06x\n", appSettings.colorScheme.warning);
   filePrintf(fileId, "projectFilename: %s\n", appSettings.projectFilename);
   filePrintf(fileId, "projectPath: %s\n", appSettings.projectPath);
   filePrintf(fileId, "pitchTablePath: %s\n", appSettings.pitchTablePath);
@@ -136,6 +140,8 @@ int settingsLoad(void) {
       sscanf(line + 8, "%f", &appSettings.volume);
     } else if (strncmp(line, "mixVolume: ", 11) == 0) {
       sscanf(line + 11, "%f", &appSettings.mixVolume);
+    } else if (strncmp(line, "pitchConflictWarning: ", 22) == 0) {
+      sscanf(line + 22, "%d", &appSettings.pitchConflictWarning);
     } else if (strncmp(line, "colorBackground: ", 17) == 0) {
       sscanf(line + 17, "0x%x", &appSettings.colorScheme.background);
     } else if (strncmp(line, "colorTextEmpty: ", 16) == 0) {
@@ -154,6 +160,8 @@ int settingsLoad(void) {
       sscanf(line + 13, "0x%x", &appSettings.colorScheme.cursor);
     } else if (strncmp(line, "colorSelection: ", 16) == 0) {
       sscanf(line + 16, "0x%x", &appSettings.colorScheme.selection);
+    } else if (strncmp(line, "colorWarning: ", 14) == 0) {
+      sscanf(line + 14, "0x%x", &appSettings.colorScheme.warning);
     } else if (strncmp(line, "projectFilename: ", 17) == 0) {
       strncpy(appSettings.projectFilename, line + 17, FILENAME_LENGTH);
       appSettings.projectFilename[FILENAME_LENGTH] = 0;
