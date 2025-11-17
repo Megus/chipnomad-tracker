@@ -1,6 +1,7 @@
 #include <screens.h>
 #include <corelib_file.h>
 #include <corelib_gfx.h>
+#include <screen_create_folder.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -20,6 +21,10 @@ static void (*onFileSelected)(const char* path);
 static void (*onCancelled)(void);
 static char pendingSavePath[2048];
 
+// Forward declarations
+static void fileBrowserRefreshWithSelection(const char* selectName);
+void fileBrowserRefresh(void);
+
 static void doSave(void) {
   if (onFileSelected) {
     onFileSelected(currentPath);
@@ -27,6 +32,15 @@ static void doSave(void) {
 }
 
 static void cancelSave(void) {
+  screenSetup(&screenFileBrowser, 0);
+}
+
+static void onFolderCreated(void) {
+  fileBrowserRefresh();
+  screenSetup(&screenFileBrowser, 0);
+}
+
+static void onCreateFolderCancelled(void) {
   screenSetup(&screenFileBrowser, 0);
 }
 
@@ -60,8 +74,8 @@ static void fileBrowserRefreshWithSelection(const char* selectName) {
   if (selectName) {
     for (int i = 0; i < entryCount; i++) {
       if (strcmp(entries[i].name, selectName) == 0) {
-        selectedIndex = i;
-        if (selectedIndex >= VISIBLE_ENTRIES) {
+        selectedIndex = isFolderMode ? i + 2 : i;
+        if (selectedIndex >= topIndex + VISIBLE_ENTRIES) {
           topIndex = selectedIndex - VISIBLE_ENTRIES + 1;
         }
         break;
@@ -130,29 +144,36 @@ void fileBrowserDraw(void) {
     gfxPrint(0, 1, displayPath);
   }
 
-  // Draw file list
-  int startIdx = 0;
-  int displayOffset = 0;
+  int totalItems = entryCount + (isFolderMode ? 2 : 0);
   
-  // In folder mode, add "Save to [folder]" as first entry
-  if (isFolderMode) {
-    if (topIndex == 0) {
-      int y = 3;
-      if (selectedIndex == 0) {
-        gfxSetFgColor(appSettings.colorScheme.textValue);
-        gfxPrint(0, y, ">");
-      } else {
-        gfxSetFgColor(appSettings.colorScheme.textDefault);
-        gfxPrint(0, y, " ");
-      }
+  for (int i = 0; i < VISIBLE_ENTRIES && (topIndex + i) < totalItems; i++) {
+    int itemIndex = topIndex + i;
+    int y = 3 + i;
+    
+    // Draw cursor
+    if (itemIndex == selectedIndex) {
+      gfxSetFgColor(appSettings.colorScheme.textValue);
+      gfxPrint(0, y, ">");
+    } else {
+      gfxSetFgColor(appSettings.colorScheme.textDefault);
+      gfxPrint(0, y, " ");
+    }
+    
+    if (isFolderMode && itemIndex == 0) {
+      // Draw "Save to" option
+      static char saveText[40];
+      static char folderName[256];
       
-      char saveText[35];
-      char* folderName = strrchr(currentPath, PATH_SEPARATOR);
-      if (folderName) {
-        folderName++; // Skip the separator
-        if (*folderName == 0) folderName = PATH_SEPARATOR_STR; // Root directory case
+      char* lastSep = strrchr(currentPath, PATH_SEPARATOR);
+      if (lastSep) {
+        strncpy(folderName, lastSep + 1, 255);
+        folderName[255] = 0;
+        if (folderName[0] == 0) {
+          strcpy(folderName, PATH_SEPARATOR_STR);
+        }
       } else {
-        folderName = currentPath;
+        strncpy(folderName, currentPath, 255);
+        folderName[255] = 0;
       }
       
       int nameLen = strlen(folderName);
@@ -161,52 +182,51 @@ void fileBrowserDraw(void) {
       } else {
         snprintf(saveText, sizeof(saveText), "Save to [...%.19s]", folderName + nameLen - 19);
       }
-      saveText[34] = 0; // Ensure null termination
-      gfxPrint(2, y, saveText);
-      displayOffset = 1;
-    } else {
-      startIdx = 1;
-    }
-  }
-  
-  for (int i = startIdx; i < VISIBLE_ENTRIES - displayOffset && (topIndex + i - displayOffset) < entryCount; i++) {
-    int entryIdx = topIndex + i - displayOffset;
-    int y = 3 + i;
-
-    if (entryIdx + displayOffset == selectedIndex) {
-      gfxSetFgColor(appSettings.colorScheme.textValue);
-      gfxPrint(0, y, ">");
-    } else {
-      gfxSetFgColor(appSettings.colorScheme.textDefault);
-      gfxPrint(0, y, " ");
-    }
-
-    // Set color based on mode and entry type
-    if (isFolderMode) {
-      if (entries[entryIdx].isDirectory) {
-        gfxSetFgColor(appSettings.colorScheme.textDefault);
+      
+      if (itemIndex == selectedIndex) {
+        gfxSetFgColor(appSettings.colorScheme.textValue);
       } else {
-        gfxSetFgColor(appSettings.colorScheme.textInfo);
+        gfxSetFgColor(appSettings.colorScheme.textDefault);
       }
+      gfxPrint(2, y, saveText);
+      
+    } else if (isFolderMode && itemIndex == 1) {
+      // Draw "Create Folder" option
+      if (itemIndex == selectedIndex) {
+        gfxSetFgColor(appSettings.colorScheme.textValue);
+      } else {
+        gfxSetFgColor(appSettings.colorScheme.textDefault);
+      }
+      gfxPrint(2, y, "Create Folder");
+      
     } else {
-      gfxSetFgColor(appSettings.colorScheme.textDefault);
+      // Draw file entry
+      int entryIdx = isFolderMode ? itemIndex - 2 : itemIndex;
+      
+      if (isFolderMode) {
+        if (entries[entryIdx].isDirectory) {
+          gfxSetFgColor(appSettings.colorScheme.textDefault);
+        } else {
+          gfxSetFgColor(appSettings.colorScheme.textInfo);
+        }
+      } else {
+        gfxSetFgColor(appSettings.colorScheme.textDefault);
+      }
+      
+      char displayName[35];
+      if (entries[entryIdx].isDirectory) {
+        snprintf(displayName, sizeof(displayName), "[%.31s]", entries[entryIdx].name);
+      } else {
+        snprintf(displayName, sizeof(displayName), "%.34s", entries[entryIdx].name);
+      }
+      gfxPrint(2, y, displayName);
     }
-
-    char displayName[35];
-    if (entries[entryIdx].isDirectory) {
-      snprintf(displayName, sizeof(displayName), "[%.31s]", entries[entryIdx].name);
-    } else {
-      snprintf(displayName, sizeof(displayName), "%.34s", entries[entryIdx].name);
-    }
-    gfxPrint(2, y, displayName);
   }
-
-
 }
 
 int fileBrowserInput(int keys, int isDoubleTap) {
   int maxIndex = entryCount - 1;
-  if (isFolderMode) maxIndex++; // Add 1 for "Save to" option
+  if (isFolderMode) maxIndex += 2; // Add 2 for "Save to" and "Create Folder" options
   
   if (keys == keyUp && selectedIndex > 0) {
     selectedIndex--;
@@ -231,7 +251,7 @@ int fileBrowserInput(int keys, int isDoubleTap) {
   } else if (keys == keyRight) {
     // Page down
     selectedIndex += VISIBLE_ENTRIES;
-    if (selectedIndex >= entryCount) selectedIndex = entryCount - 1;
+    if (selectedIndex > maxIndex) selectedIndex = maxIndex;
     if (selectedIndex >= topIndex + VISIBLE_ENTRIES) {
       topIndex = selectedIndex - VISIBLE_ENTRIES + 1;
     }
@@ -258,23 +278,27 @@ int fileBrowserInput(int keys, int isDoubleTap) {
       }
     }
     
-    int entryIdx = isFolderMode ? selectedIndex - 1 : selectedIndex;
+    // Handle "Create Folder" option in folder mode
+    if (isFolderMode && selectedIndex == 1) {
+      createFolderSetup(currentPath, onFolderCreated, onCreateFolderCancelled);
+      screenSetup(&screenCreateFolder, 0);
+      return 0;
+    }
+    
+    int entryIdx = isFolderMode ? selectedIndex - 2 : selectedIndex;
     if (entryIdx >= 0 && entries[entryIdx].isDirectory) {
       // Enter directory
       if (strcmp(entries[entryIdx].name, "..") == 0) {
-        // Go up one level - remember current folder name
+        // Go up one level - stay on [..] entry
         char* lastSeparator = strrchr(currentPath, PATH_SEPARATOR);
         if (lastSeparator && lastSeparator != currentPath) {
-          char folderName[256];
-          strncpy(folderName, lastSeparator + 1, 255);
-          folderName[255] = 0;
           *lastSeparator = 0;
-          fileBrowserRefreshWithSelection(folderName);
+          fileBrowserRefreshWithSelection("..");
           return 1;
         } else if (strlen(currentPath) > 1) {
           // Go to root
           strcpy(currentPath, PATH_SEPARATOR_STR);
-          fileBrowserRefresh();
+          fileBrowserRefreshWithSelection("..");
           return 1;
         }
       } else {

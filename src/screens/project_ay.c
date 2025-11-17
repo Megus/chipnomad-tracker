@@ -12,14 +12,16 @@ static char stereoModes[3][5] = {
   "BAC",
 };
 
-static int clockPresets[4] = {
+static int clockPresets[5] = {
+  750000,    // 0.75 MHz
   1000000,   // 1 MHz
   1750000,   // 1.75 MHz
   1773400,   // 1.7734 MHz
   2000000    // 2 MHz
 };
 
-static char clockNames[4][11] = {
+static char clockNames[5][11] = {
+  "0.75 MHz",
   "1 MHz",
   "1.75 MHz",
   "1.7734 MHz",
@@ -27,7 +29,7 @@ static char clockNames[4][11] = {
 };
 
 static int getClockPresetIndex(int clock) {
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < 5; i++) {
     if (clockPresets[i] == clock) return i;
   }
   return -1; // Not found
@@ -132,7 +134,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     int presetIndex = getClockPresetIndex(project.chipSetup.ay.clock);
     if (presetIndex < 0) presetIndex = 0; // Default to first preset if not found
     uint8_t newIndex = presetIndex;
-    handled = edit8noLast(action, &newIndex, 1, 0, 3);
+    handled = edit8noLast(action, &newIndex, 1, 0, 4);
     if (handled) {
       project.chipSetup.ay.clock = clockPresets[newIndex];
       updateChipAYClock(&audioManager.chips[0], project.chipSetup.ay.clock, appSettings.audioSampleRate);

@@ -30,6 +30,7 @@ int fileSeek(int fileId, long offset, int whence);
 
 // File operations
 int fileDelete(const char* path);
+int fileCreateDirectory(const char* path);
 
 // File browser functions
 struct FileEntry {

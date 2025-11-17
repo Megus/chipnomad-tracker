@@ -252,7 +252,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   } else if (action == editMultiIncreaseBig || action == editMultiDecreaseBig) {
     int startCol, startRow, endCol, endRow;
     getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
-    
+
     // Check if full width selection (all columns)
     if (startCol == 0 && endCol == 10) {
       // Rotation mode
@@ -311,7 +311,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
     return 1;
   } if (keys == (keyRight | keyOpt)) {
     // Next table
-    if (tableIdx < PROJECT_MAX_TABLES) {
+    if (tableIdx < PROJECT_MAX_TABLES - 1) {
       setup(tableIdx + 1);
       fullRedraw();
     }
@@ -340,12 +340,12 @@ static void onInput(int keys, int isDoubleTap) {
     int result = fxEditInput(keys, isDoubleTap, tableRows[screen.cursorRow].fx[fxIdx], lastFX);
     if (result) {
       isFxEdit = 0;
-      
+
       // If in selection mode and on FX type column, fill selection with selected FX
       if (screen.selectMode == 1 && (screen.cursorCol == 3 || screen.cursorCol == 5 || screen.cursorCol == 7 || screen.cursorCol == 9)) {
         int startCol, startRow, endCol, endRow;
         getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
-        
+
         if (isSingleColumnSelection(&screen)) {
           uint8_t selectedFX = tableRows[screen.cursorRow].fx[fxIdx][0];
           for (int r = startRow; r <= endRow; r++) {
@@ -353,7 +353,7 @@ static void onInput(int keys, int isDoubleTap) {
           }
         }
       }
-      
+
       fullRedraw();
     }
     return;

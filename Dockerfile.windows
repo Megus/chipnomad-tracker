@@ -1,0 +1,21 @@
+FROM ubuntu:22.04
+
+# Install MinGW cross-compiler and build tools
+RUN apt-get update && apt-get install -y \
+    gcc-mingw-w64-x86-64 \
+    make \
+    wget \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and setup SDL2 for MinGW
+RUN wget https://github.com/libsdl-org/SDL/releases/download/release-2.32.6/SDL2-devel-2.32.6-mingw.tar.gz \
+    && tar -xzf SDL2-devel-2.32.6-mingw.tar.gz \
+    && mv SDL2-2.32.6 /opt/SDL2 \
+    && rm SDL2-devel-2.32.6-mingw.tar.gz
+
+ENV SDL_PATH=/opt/SDL2
+ENV CC=x86_64-w64-mingw32-gcc
+ENV CXX=x86_64-w64-mingw32-g++
+
+WORKDIR /workspace

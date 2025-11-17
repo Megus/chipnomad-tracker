@@ -7,6 +7,7 @@ void fileBrowserSetupFolderMode(const char* title, const char* startPath, const 
 
 // Refresh the current directory listing
 void fileBrowserRefresh(void);
+void fileBrowserSetPath(const char* path);
 
 // Draw the file browser
 void fileBrowserDraw(void);
