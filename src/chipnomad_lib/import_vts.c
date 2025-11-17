@@ -9,19 +9,20 @@
 #define VTS_COL_NOISE       1
 #define VTS_COL_ENVELOPE    2
 #define VTS_COL_PITCH       4
+#define VTS_COL_NOISE_OFFSET 10
 #define VTS_COL_VOLUME      15
 #define VTS_COL_NOISE_FREQ  16
 #define VTS_COL_LOOP_START  16
 #define VTS_COL_LOOP_END    25
 
 #define VTS_PITCH_THRESHOLD 256
-#define VTS_PITCH_SCALE     2
 #define CHIPNOMAD_PIT_MAX   127
 #define CHIPNOMAD_PIT_MIN   -128
 #define TABLE_ROW_COUNT     16
+#define VTS_REFERENCE_NOTE  "C-4"
 
 #define FX_SLOT_CONTROL  0
-#define FX_SLOT_NOISE    1  //noise and env offsets.. todo: FIX :D 
+#define FX_SLOT_NOISE    1
 #define FX_SLOT_MIXER    2
 #define FX_SLOT_PITCH    3
 
@@ -42,12 +43,23 @@ static int parseVTSOffset(const char* str) {
   int value = 0;
   
   if (str[0] == '-') sign = -1;
+  if (str[0] == '+') sign = 1;
   
   for (int i = 1; i <= 3; i++) {
     if (str[i] == '_') break;
+    
+    int digit = 0;
     if (str[i] >= '0' && str[i] <= '9') {
-      value = value * 10 + (str[i] - '0');
+      digit = str[i] - '0';
+    } else if (str[i] >= 'A' && str[i] <= 'F') {
+      digit = str[i] - 'A' + 10;
+    } else if (str[i] >= 'a' && str[i] <= 'f') {
+      digit = str[i] - 'a' + 10;
+    } else {
+      break;
     }
+    
+    value = value * 16 + digit;
   }
   
   return sign * value;
@@ -78,6 +90,24 @@ static void setPitEffect(struct TableRow* row, int pitValue) {
   row->fx[FX_SLOT_PITCH][1] = (uint8_t)pitValue;
 }
 
+static int findReferenceNote() {
+  // Find Ref note in the pitch table
+  // This will be used as anchor for absolute pitch mode
+  for (int i = 0; i < project.pitchTable.length; i++) {
+    if (strcmp(project.pitchTable.noteNames[i], VTS_REFERENCE_NOTE) == 0) {
+      return i;
+    }
+  }
+  return project.pitchTable.length / 2;
+}
+
+static int getReferenceNotePeriod(int referenceNoteIdx) {
+  if (referenceNoteIdx >= 0 && referenceNoteIdx < project.pitchTable.length) {
+    return project.pitchTable.values[referenceNoteIdx];
+  }
+  return 1000;
+}
+
 static void parseVTSLine(const char* line, struct TableRow* row) {
   initTableRow(row);
   
@@ -92,7 +122,25 @@ static void parseVTSLine(const char* line, struct TableRow* row) {
     row->volume = parseVTSHex(line[VTS_COL_VOLUME]);
   }
   
-  if (hasNoise && len > VTS_COL_NOISE_FREQ) {
+  if (len > VTS_COL_VOLUME + 1) {
+    char volModifier = line[VTS_COL_VOLUME + 1];
+    if (volModifier == '-') {
+      row->fx[FX_SLOT_CONTROL][0] = fxVOL;
+      row->fx[FX_SLOT_CONTROL][1] = 0xFF;
+    } else if (volModifier == '+') {
+      row->fx[FX_SLOT_CONTROL][0] = fxVOL;
+      row->fx[FX_SLOT_CONTROL][1] = 0x01;
+    }
+  }
+  
+  if (len >= VTS_COL_NOISE_OFFSET + 4 && 
+      (line[VTS_COL_NOISE_OFFSET] == '+' || line[VTS_COL_NOISE_OFFSET] == '-')) {
+    int noiseOffset = parseVTSOffset(&line[VTS_COL_NOISE_OFFSET]);
+    if (noiseOffset != 0) {
+      row->fx[FX_SLOT_NOISE][0] = fxNOA;
+      row->fx[FX_SLOT_NOISE][1] = (uint8_t)(int8_t)noiseOffset;
+    }
+  } else if (hasNoise && len > VTS_COL_NOISE_FREQ) {
     char noiseChar = line[VTS_COL_NOISE_FREQ];
     if (isValidDataChar(noiseChar) && noiseChar != 'L' && noiseChar != 'l') {
       row->fx[FX_SLOT_NOISE][0] = fxNOI;
@@ -198,20 +246,82 @@ int instrumentLoadVTS(const char* path, int instrumentIdx) {
     rowCount++;
   }
   
-  for (int i = 1; i < rowCount; i++) {
-    int delta = vtsOffsets[i] - vtsOffsets[i-1];
+  /* Convert VTS pitch offsets to ChipNomad pitch commands
+     Strategy:
+     - Below threshold: Use PIT command (relative pitch adjustment, 128 range)
+     - Above threshold: Use absolute note (C-4 reference) + or - PIT for fine-tuning
+
+  Note: VTS offsets are cumulative/absolute (relative to 0), but we convert to deltas*/ 
+  
+  int referenceNoteIdx = findReferenceNote();
+  int referencePeriod = getReferenceNotePeriod(referenceNoteIdx);
+  
+  for (int i = 0; i < rowCount; i++) {
+    int currentVTSOffset = vtsOffsets[i];
+    int prevOffset = (i > 0) ? vtsOffsets[i-1] : 0;
+    int delta = currentVTSOffset - prevOffset;
     
-    if (delta == 0) continue;
-    
-    if (abs(delta) < VTS_PITCH_THRESHOLD) {
-      int pitValue = delta / VTS_PITCH_SCALE;
-      pitValue = clampToInt8(pitValue);
+    if (abs(currentVTSOffset) < VTS_PITCH_THRESHOLD) {
+      if (delta != 0) {
+        int pitValue = clampToInt8(-delta);
+        setPitEffect(&table->rows[i], pitValue);
+      }
+    } else {
       
-      if (pitValue == 0) {
-        pitValue = (delta > 0) ? 1 : -1;
+      int semitones = 0;
+      int accumulatedPeriod = 0;
+      int currentNote = referenceNoteIdx;
+      int direction = (currentVTSOffset > 0) ? -1 : 1;
+      int absOffset = abs(currentVTSOffset);
+      
+      // Walk pitch table to find how many whole semitones fit in the absolute VTS offset
+      while (currentNote >= 0 && currentNote < project.pitchTable.length - 1) {
+        int nextNote = currentNote + direction;
+        if (nextNote < 0 || nextNote >= project.pitchTable.length) break;
+        
+        int stepSize = abs(project.pitchTable.values[currentNote] - 
+                          project.pitchTable.values[nextNote]);
+        
+        if (accumulatedPeriod + stepSize > absOffset) break;
+        
+        accumulatedPeriod += stepSize;
+        semitones++;
+        currentNote = nextNote;
       }
       
-      setPitEffect(&table->rows[i], pitValue);
+      semitones *= direction;
+      
+      int prevSemitones = 0;
+      int prevAccumulated = 0;
+      int prevNote = referenceNoteIdx;
+      int prevDirection = (prevOffset > 0) ? -1 : 1;
+      int absPrevOffset = abs(prevOffset);
+      
+      while (prevNote >= 0 && prevNote < project.pitchTable.length - 1) {
+        int nextNote = prevNote + prevDirection;
+        if (nextNote < 0 || nextNote >= project.pitchTable.length) break;
+        
+        int stepSize = abs(project.pitchTable.values[prevNote] - 
+                          project.pitchTable.values[nextNote]);
+        
+        if (prevAccumulated + stepSize > absPrevOffset) break;
+        
+        prevAccumulated += stepSize;
+        prevSemitones++;
+        prevNote = nextNote;
+      }
+      
+      prevSemitones *= prevDirection;
+      
+      table->rows[i].pitchOffset = (int8_t)clampToInt8(semitones);
+      
+      int semitoneDelta = (direction * accumulatedPeriod) - (prevDirection * prevAccumulated);
+      int pitDelta = delta - semitoneDelta;
+      
+      if (pitDelta != 0) {
+        int pitValue = clampToInt8(-pitDelta);
+        setPitEffect(&table->rows[i], pitValue);
+      }
     }
   }
   
