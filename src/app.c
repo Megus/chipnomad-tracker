@@ -8,6 +8,8 @@
 #include <project_utils.h>
 #include <playback.h>
 
+#define TRACK_WARNING_COOLDOWN_FRAMES 5
+
 // Input handling vars:
 
 /** Currently pressed buttons */
@@ -16,6 +18,10 @@ static int pressedButtons;
 static int editDoubleTapCount;
 /** Frame counter for key repeats */
 static int keyRepeatCount;
+
+// Track warning vars:
+/** Cooldown counters for each track */
+static int trackWarningCooldown[PROJECT_MAX_TRACKS];
 
 /**
  * @brief Update chip registers for the next frame
@@ -155,6 +161,18 @@ void appDraw(void) {
 
   screenDraw();
 
+  // Check for track warnings if enabled
+  if (appSettings.pitchConflictWarning && audioManager.chips[0].detectWarnings) {
+    audioManager.chips[0].detectWarnings(&audioManager.chips[0], trackWarningCooldown, TRACK_WARNING_COOLDOWN_FRAMES);
+  }
+  
+  // Decrease warning cooldowns
+  for (int i = 0; i < project.tracksCount; i++) {
+    if (trackWarningCooldown[i] > 0) {
+      trackWarningCooldown[i]--;
+    }
+  }
+
   // Tracks
   char digit[2] = "0";
   for (int c = 0; c < project.tracksCount; c++) {
@@ -165,7 +183,11 @@ void appDraw(void) {
     uint8_t note = playback.tracks[c].note.noteFinal;
     char* noteStr = noteName(note);
 
-    gfxSetFgColor(noteStr[0] == '-' ? cs.textEmpty : cs.textValue);
+    // Use warning color if track warning is active
+    int useWarningColor = (trackWarningCooldown[c] > 0);
+    
+    gfxSetFgColor(useWarningColor ? cs.warning : 
+                  (noteStr[0] == '-' ? cs.textEmpty : cs.textValue));
     gfxPrint(37, 3 + c, noteStr);
   }
 }

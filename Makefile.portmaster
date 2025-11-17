@@ -24,10 +24,16 @@ CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(XTRA_CFLAGS)
 
 .PHONY: PortMaster
 PortMaster:
+	@./check-docker.sh || exit 1
+	@echo "Ensuring PortMaster ARM64 Docker image is available..."
+	@docker pull monkeyx/retro_builder:arm64 || echo "Warning: Failed to pull ARM64 image"
 	$(DOCKER64) monkeyx/retro_builder:arm64 make -f Makefile.portmaster .PortMaster CC=gcc CPU=aarch64
 
 .PHONY: PortMaster32
 PortMaster32:
+	@./check-docker.sh || exit 1
+	@echo "Ensuring PortMaster ARM32 Docker image is available..."
+	@docker pull monkeyx/retro_builder:arm32 || echo "Warning: Failed to pull ARM32 image"
 	$(DOCKER32) monkeyx/retro_builder:arm32 make -f Makefile.portmaster .PortMaster CC=gcc CPU=armhf
 
 .PHONY: PortMaster-deploy
@@ -43,7 +49,7 @@ PortMaster-deploy: PortMaster PortMaster32
 	@cp -r packaging/common/* /tmp/chipnomad-pm-package/chipnomad/
 	@sed -i '' "s/BUILD_DATE_PLACEHOLDER/$$(date +%Y%m%dT%H%M%S)/g" /tmp/chipnomad-pm-package/gameinfo.xml
 	$(eval VERSION := $(shell grep 'appVersion.*=' src/version.c | cut -d'"' -f2))
-	@cd /tmp/chipnomad-pm-package && zip -r ChipNomad-PortMaster-$$(date +%Y-%m-%d)-$(VERSION).zip .
-	@mv /tmp/chipnomad-pm-package/ChipNomad-PortMaster-*.zip releases/
+	@cd /tmp/chipnomad-pm-package && zip -r ChipNomad-$$(date +%Y-%m-%d)-$(VERSION)-PortMaster.zip .
+	@mv /tmp/chipnomad-pm-package/ChipNomad-*-PortMaster.zip releases/
 	@rm -rf /tmp/chipnomad-pm-package
 	@echo "PortMaster package created in releases/"

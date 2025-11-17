@@ -161,3 +161,11 @@ int fileDirectoryExists(const char* path) {
 int fileDelete(const char* path) {
   return remove(path) == 0 ? 0 : -1;
 }
+
+int fileCreateDirectory(const char* path) {
+#ifdef _WIN32
+  return mkdir(path) == 0 ? 0 : -1;
+#else
+  return mkdir(path, 0755) == 0 ? 0 : -1;
+#endif
+}

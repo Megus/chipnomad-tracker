@@ -21,6 +21,7 @@ struct ColorScheme {
   int playMarkers;
   int cursor;
   int selection;
+  int warning;
 };
 
 struct AppSettings {
@@ -33,6 +34,7 @@ struct AppSettings {
   int keyRepeatSpeed;
   float volume;
   float mixVolume;
+  int pitchConflictWarning;
   struct ColorScheme colorScheme;
   char projectFilename[FILENAME_LENGTH + 1];
   char projectPath[PATH_LENGTH + 1];

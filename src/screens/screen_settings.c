@@ -14,7 +14,7 @@ static void settingsDrawField(int col, int row, int state);
 static int settingsOnEdit(int col, int row, enum CellEditAction action);
 
 static struct ScreenData screenSettingsData = {
-  .rows = 1,
+  .rows = 2,
   .cursorRow = 0,
   .cursorCol = 0,
   .selectMode = -1,
@@ -38,22 +38,21 @@ static void draw(void) {
 }
 
 int settingsColumnCount(int row) {
-  return 1; // Only one button
+  return 1;
 }
 
 void settingsDrawStatic(void) {
   const struct ColorScheme cs = appSettings.colorScheme;
-  
+
   gfxSetFgColor(cs.textTitles);
   gfxPrint(0, 0, "SETTINGS");
-  
-  gfxSetFgColor(cs.textInfo);
-  gfxPrint(12, 10, "Under construction");
 }
 
 void settingsDrawCursor(int col, int row) {
   if (row == 0 && col == 0) {
-    gfxCursor(0, 2, 14); // "Quit ChipNomad"
+    gfxCursor(23, 2, 3); // Under ON/OFF value
+  } else if (row == 1 && col == 0) {
+    gfxCursor(0, 17, 14); // "Quit ChipNomad"
   }
 }
 
@@ -64,15 +63,23 @@ void settingsDrawColHeader(int col, int state) {
 }
 
 void settingsDrawField(int col, int row, int state) {
-  gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-  
   if (row == 0 && col == 0) {
-    gfxPrint(0, 2, "Quit ChipNomad");
+    gfxSetFgColor(appSettings.colorScheme.textDefault);
+    gfxPrint(0, 2, "Pitch conflict warning");
+    gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    gfxPrint(23, 2, appSettings.pitchConflictWarning ? "ON " : "OFF");
+  } else if (row == 1 && col == 0) {
+    gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    gfxPrint(0, 17, "Quit ChipNomad");
   }
 }
 
 int settingsOnEdit(int col, int row, enum CellEditAction action) {
-  if (row == 0 && col == 0 && action == editTap) {
+  if (row == 0 && col == 0) {
+    // Pitch conflict warning (0/1)
+    static uint8_t lastValue = 0;
+    return edit8withLimit(action, (uint8_t*)&appSettings.pitchConflictWarning, &lastValue, 1, 1);
+  } else if (row == 1 && col == 0 && action == editTap) {
     // Trigger exit event
     mainLoopTriggerQuit();
     return 1;

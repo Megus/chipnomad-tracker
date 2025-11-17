@@ -4,11 +4,13 @@ ChipNomad is a multi-platform tracker with LSDJ-like interface designed for crea
 
 [ChipNomad manual](docs/manual.md)
 
+[Join ChipNomad Discord server](https://discord.gg/PJarAn2QCW)
+
 ## Currently supported platforms
 
-- Anbernic RG35xx with GarlicOS 1.4
-- Miyoo Mini with MiyooCFW (not tested but should work)
-- macOS (Apple Silicon)
+- [PortMaster](https://portmaster.games) ([list of supported devices](https://portmaster.games/supported-devices.html))
+- Pre-2024 Anbernic RG35xx with GarlicOS 1.4
+- macOS
 - Windows
 
 ## Hardware Requirements
@@ -30,52 +32,67 @@ I have Anbernic RG35xx with Garlic OS which allows installing 3rd party native a
 
 ## Building
 
-ChipNomad can be built using either the traditional makefile or CMake:
-
-### Using Makefile
+### Quick Start
 
 ```bash
-# Build for desktop (Linux/macOS)
-./build-desktop.sh
+# Build for current platform (macOS/Linux)
+make desktop
 
-# Build for Windows
-# On Windows, run:
-build-windows.bat
-
-# Build for RG35xx
-./build-rg.sh
+# Build all platform releases
+./deploy-all.sh
+# or
+make deploy-all
 ```
 
-### Windows-specific Setup
+### Platform-Specific Builds
 
-To build ChipNomad on Windows:
+#### Desktop (macOS/Linux)
+```bash
+# Simple build
+make desktop
+./build-desktop.sh
 
-1. Install MinGW (Minimalist GNU for Windows) which includes gcc, make, and other build tools
-   - Download from [MinGW website](https://www.mingw-w64.org/) or use [MSYS2](https://www.msys2.org/)
-   - Make sure MinGW's bin directory is in your PATH environment variable
+# macOS app bundle with packaging
+make macOS-deploy
+```
 
-2. Download SDL development libraries for MinGW from [GitHub](https://github.com/libsdl-org/SDL/releases/tag/release-2.32.6)
-   - Extract the SDL files to a directory of your choice (e.g., `C:\SDL`)
+#### Windows
+```bash
+# Cross-compile from macOS/Linux (recommended)
+make windows-deploy
 
-3. Set the SDL_PATH environment variable to your SDL installation directory (optional)
-   ```
-   set SDL_PATH=C:\path\to\SDL
-   ```
-   - If not set, the build script will use the default path `C:\SDL`
+# Native Windows build
+build-windows.bat  # On Windows with MinGW
+```
 
-4. Run `build-windows.bat` to build the application
-   - The script will automatically copy SDL.dll to the build directory if SDL_PATH is set
+#### Handheld Consoles
+```bash
+# PortMaster (multiple ARM devices)
+make PortMaster-deploy
 
-5. The executable will be created at `build\chipnomad.exe`
+# RG35xx specific
+make RG35xx-deploy
+```
 
-#### Troubleshooting
+### Requirements
 
-If you encounter issues:
+#### For Cross-Platform Builds (Docker)
+- Docker installed and running
+- No additional setup required
 
-- **SDL.dll not found**: Copy SDL.dll from your SDL installation's bin directory to the build directory or to your Windows system directory
-- **Compilation errors**: Verify that MinGW is properly installed and in your PATH
-- **Linker errors**: Verify that SDL development libraries are correctly installed and SDL_PATH is set correctly
-- **Runtime errors**: Make sure SDL.dll is accessible to the application
+#### For Native Builds
+- **macOS**: Xcode Command Line Tools, Homebrew, SDL2
+- **Linux**: GCC, SDL2 development libraries
+- **Windows**: MinGW-w64, SDL2 development libraries
+
+### Native Windows Setup (Optional)
+
+For Windows developers who prefer native builds:
+
+1. Install [MinGW-w64](https://www.mingw-w64.org/) or [MSYS2](https://www.msys2.org/)
+2. Download [SDL2 development libraries](https://github.com/libsdl-org/SDL/releases/tag/release-2.32.6)
+3. Set `SDL_PATH` environment variable (optional)
+4. Run `build-windows.bat`
 
 ## Acknowledgements
 

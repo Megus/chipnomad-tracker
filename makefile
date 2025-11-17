@@ -38,6 +38,14 @@ PortMaster PortMaster-deploy:
 macOS macOS-deploy:
 	$(MAKE) -f Makefile.macos $@
 
+.PHONY: windows-deploy
+windows-deploy:
+	$(MAKE) -f Makefile.windows windows-deploy
+
+.PHONY: deploy-all
+deploy-all:
+	./deploy-all.sh
+
 .PHONY: clean
 clean:
 	rm -rf build
