@@ -12,7 +12,7 @@ static int entryCount = 0;
 static int selectedIndex = 0;
 static int topIndex = 0;
 static char currentPath[2048];
-static char fileExtension[8];
+static char fileExtension[32];
 static char browserTitle[32];
 static char saveFilename[256];
 static char saveExtension[8];
@@ -91,8 +91,8 @@ void fileBrowserRefresh(void) {
 void fileBrowserSetup(const char* title, const char* extension, const char* startPath, void (*fileCallback)(const char*), void (*cancelCallback)(void)) {
   strncpy(browserTitle, title, 31);
   browserTitle[31] = 0;
-  strncpy(fileExtension, extension, 7);
-  fileExtension[7] = 0;
+  strncpy(fileExtension, extension, 31);
+  fileExtension[31] = 0;
   isFolderMode = 0;
   onFileSelected = fileCallback;
   onCancelled = cancelCallback;
