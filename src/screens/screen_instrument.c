@@ -8,7 +8,9 @@
 #include <screen_instrument.h>
 #include <copy_paste.h>
 #include <file_browser.h>
+#include <import_vts.h>
 #include <string.h>
+#include <strings.h>
 
 extern const struct AppScreen screenInstrumentPool;
 
@@ -23,8 +25,49 @@ static void getInstrumentFilename(char* filename, int size) {
   }
 }
 
+typedef int (*ImportHandler)(const char* path, int instrumentIdx);
+
+typedef struct {
+  const char* extension;
+  ImportHandler handler;
+  const char* successMsg;
+  const char* errorMsg;
+} InstrumentFormat;
+
+static const InstrumentFormat importFormats[] = {
+  { ".vts", instrumentLoadVTS, "VTS sample imported", "Failed to import VTS" },
+};
+
 static void onInstrumentLoaded(const char* path) {
-  if (instrumentLoad(path, cInstrument) == 0) {
+  int result = 1;
+  const char* ext = strrchr(path, '.');
+  int formatHandled = 0;
+  
+  if (ext != NULL) {
+    for (size_t i = 0; i < sizeof(importFormats) / sizeof(importFormats[0]); i++) {
+      if (strcasecmp(ext, importFormats[i].extension) == 0) {
+        result = importFormats[i].handler(path, cInstrument);
+        if (result == 0) {
+          screenMessage(MESSAGE_TIME, importFormats[i].successMsg);
+        } else {
+          screenMessage(MESSAGE_TIME, importFormats[i].errorMsg);
+        }
+        formatHandled = 1;
+        break;
+      }
+    }
+  }
+  
+  if (!formatHandled) {
+    result = instrumentLoad(path, cInstrument);
+    if (result == 0) {
+      screenMessage(MESSAGE_TIME, "Instrument loaded");
+    } else {
+      screenMessage(MESSAGE_TIME, "Failed to load instrument");
+    }
+  }
+  
+  if (result == 0) {
     // Save the directory path
     char* lastSeparator = strrchr(path, PATH_SEPARATOR);
     if (lastSeparator) {
@@ -205,8 +248,8 @@ int instrumentCommonOnEdit(int col, int row, enum CellEditAction action) {
       fullRedraw();
     }
   } else if (row == 0 && col == 1) {
-    // Load instrument
-    fileBrowserSetup("LOAD INSTRUMENT", ".cni", appSettings.instrumentPath, onInstrumentLoaded, onInstrumentCancelled);
+    // Load instrument (supports .cni and .vts formats)
+    fileBrowserSetup("LOAD INSTRUMENT", ".cni,.vts", appSettings.instrumentPath, onInstrumentLoaded, onInstrumentCancelled);
     screenSetup(&screenFileBrowser, 0);
   } else if (row == 0 && col == 2) {
     // Save instrument

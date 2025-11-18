@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <strings.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -106,10 +107,22 @@ struct FileEntry* fileListDirectory(const char* path, const char* extension, int
     
     int isDir = S_ISDIR(statBuf.st_mode);
     
-    // If it's a file, check extension
-    if (!isDir && extension) {
+    if (!isDir && extension && extension[0] != '\0') {
       char* dot = strrchr(entry->d_name, '.');
-      if (!dot || strcmp(dot, extension) != 0) continue;
+      if (!dot) continue;
+      
+      int match = 0;
+      const char* pos = extension;
+      while (pos) {
+        if (strcasecmp(pos, dot) == 0 || 
+            (strncasecmp(pos, dot, strlen(dot)) == 0 && pos[strlen(dot)] == ',')) {
+          match = 1;
+          break;
+        }
+        pos = strchr(pos, ',');
+        if (pos) pos++;
+      }
+      if (!match) continue;
     }
     
     // Resize array if needed
