@@ -25,15 +25,15 @@ CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(XTRA_CFLAGS)
 .PHONY: PortMaster
 PortMaster:
 	@./check-docker.sh || exit 1
-	@echo "Ensuring PortMaster ARM64 Docker image is available..."
-	@docker pull monkeyx/retro_builder:arm64 || echo "Warning: Failed to pull ARM64 image"
+#	@echo "Ensuring PortMaster ARM64 Docker image is available..."
+#	@docker pull monkeyx/retro_builder:arm64 || echo "Warning: Failed to pull ARM64 image"
 	$(DOCKER64) monkeyx/retro_builder:arm64 make -f Makefile.portmaster .PortMaster CC=gcc CPU=aarch64
 
 .PHONY: PortMaster32
 PortMaster32:
 	@./check-docker.sh || exit 1
-	@echo "Ensuring PortMaster ARM32 Docker image is available..."
-	@docker pull monkeyx/retro_builder:arm32 || echo "Warning: Failed to pull ARM32 image"
+#	@echo "Ensuring PortMaster ARM32 Docker image is available..."
+#	@docker pull monkeyx/retro_builder:arm32 || echo "Warning: Failed to pull ARM32 image"
 	$(DOCKER32) monkeyx/retro_builder:arm32 make -f Makefile.portmaster .PortMaster CC=gcc CPU=armhf
 
 .PHONY: PortMaster-deploy
