@@ -361,6 +361,18 @@ static int handleAllTableFX(struct PlaybackState* state, int trackIdx) {
   return 0;
 }
 
+static int handlePriorityFXInternal(struct PlaybackState* state, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
+  struct PlaybackTrackState* track = &state->tracks[trackIdx];
+
+  if (fx->fx == EMPTY_VALUE_8) return 0;
+  else if (fx->fx == fxTBX) handleFX_TBX(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxTBL) handleFX_TBL(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxTHO) handleFX_THO(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxTXH) handleFX_TXH(state, track, trackIdx, fx, tableState);
+
+  return 0;
+}
+
 static int handleFXInternal(struct PlaybackState* state, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
   struct PlaybackTrackState* track = &state->tracks[trackIdx];
 
@@ -370,10 +382,6 @@ static int handleFXInternal(struct PlaybackState* state, int trackIdx, struct Pl
   else if (fx->fx == fxARC) handleFX_ARC(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxPBN) handleFX_PBN(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxPIT) handleFX_PIT(state, track, trackIdx, fx, tableState);
-  else if (fx->fx == fxTBX) handleFX_TBX(state, track, trackIdx, fx, tableState);
-  else if (fx->fx == fxTBL) handleFX_TBL(state, track, trackIdx, fx, tableState);
-  else if (fx->fx == fxTHO) handleFX_THO(state, track, trackIdx, fx, tableState);
-  else if (fx->fx == fxTXH) handleFX_TXH(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxTIC) handleFX_TIC(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxVOL) handleFX_VOL(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxGRV) handleFX_GRV(state, track, trackIdx, fx, tableState);
@@ -384,6 +392,11 @@ static int handleFXInternal(struct PlaybackState* state, int trackIdx, struct Pl
   else if (fx->fx == fxRET) handleFX_RET(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxPVB) handleFX_PVB(state, track, trackIdx, fx, tableState);
   else if (fx->fx == fxPSL) handleFX_PSL(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxTBX) handleFX_TBX(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxTBL) handleFX_TBL(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxTHO) handleFX_THO(state, track, trackIdx, fx, tableState);
+  else if (fx->fx == fxTXH) handleFX_TXH(state, track, trackIdx, fx, tableState);
+
   // Chip specific FX
   else {
     handleFX_AY(state, trackIdx, fx, tableState);
@@ -429,12 +442,17 @@ void initFX(struct PlaybackState* state, int trackIdx, uint8_t* fx, struct Playb
 int handleFX(struct PlaybackState* state, int trackIdx) {
   struct PlaybackTrackState* track = &state->tracks[trackIdx];
 
+  // Handle priority Phrase FX
+  for (int i = 0; i < 3; i++) {
+    handlePriorityFXInternal(state, trackIdx, &track->note.fx[i], NULL);
+  }
+
+  handleAllTableFX(state, trackIdx);
+
   // Phrase FX
   for (int i = 0; i < 3; i++) {
     handleFXInternal(state, trackIdx, &track->note.fx[i], NULL);
   }
-
-  handleAllTableFX(state, trackIdx);
 
   return 0;
 }

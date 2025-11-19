@@ -14,7 +14,11 @@ static void handleFX_AYM(struct PlaybackState* state, struct PlaybackTrackState*
 // NOA - Absolute noise period value
 static void handleFX_NOA(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
   fx->fx = EMPTY_VALUE_8;
-  track->note.chip.ay.noiseBase = fx->value & 0x1f;
+  if (fx->value == EMPTY_VALUE_8) {
+    track->note.chip.ay.noiseBase = EMPTY_VALUE_8;
+  } else {
+    track->note.chip.ay.noiseBase = fx->value & 0x1f;
+  }
 }
 
 // NOI - Relative noise period value

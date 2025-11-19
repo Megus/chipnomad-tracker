@@ -47,10 +47,17 @@ void tableInit(struct PlaybackState* state, int trackIdx, struct PlaybackTableSt
   table->tableIdx = tableIdx;
   if (tableIdx == EMPTY_VALUE_8) return;
 
+  struct Project* p = state->p;
+
   for (int i = 0; i < 4; i++) {
     table->counters[i] = 0;
     table->rows[i] = 0;
     table->speed[i] = speed;
+
+    // Check if row 15 has TIC effect for this column
+    if (p->tables[tableIdx].rows[15].fx[i][0] == fxTIC) {
+      table->speed[i] = p->tables[tableIdx].rows[15].fx[i][1];
+    }
 
     tableReadFX(state, trackIdx, table, i, 1);
   }
@@ -139,7 +146,7 @@ void readPhraseRowDirect(struct PlaybackState* state, int trackIdx, struct Phras
 
   // FX
   for (int i = 0; i < 3; i++) {
-    if (phraseRow->fx[i][0] != EMPTY_VALUE_8 || note != EMPTY_VALUE_8) {
+    if (phraseRow->fx[i][0] != EMPTY_VALUE_8 || (note != EMPTY_VALUE_8 && note != NOTE_OFF)) {
       initFX(state, trackIdx, phraseRow->fx[i], &track->note.fx[i], (note != EMPTY_VALUE_8 && note != NOTE_OFF));
     }
   }

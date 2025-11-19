@@ -102,7 +102,11 @@ char* helpFXHint(uint8_t* fx, int isTable) {
       sprintf(buffer, "Noise period offset %hhd", fx[1]);
       break;
     case fxNOA: // Noise (absolute)
-      sprintf(buffer, "Noise pereiod %s", byteToHex(fx[1]));
+      if (fx[1] == EMPTY_VALUE_8) {
+        sprintf(buffer, "Noise period off");
+      } else {
+        sprintf(buffer, "Noise period %s", byteToHex(fx[1]));
+      }
       break;
     case fxEAU: // Auto-env setting
       if ((fx[1] & 0xf0) == 0) {
@@ -190,14 +194,14 @@ char* helpFXDescription(enum FX fxIdx) {
 void drawFXHelp(enum FX fxIdx) {
   const char* helpText = helpFXDescription(fxIdx);
   if (!helpText || !helpText[0]) return;
-  
+
   gfxSetFgColor(appSettings.colorScheme.textDefault);
-  
+
   char line[41];
   int y = 1;
   int pos = 0;
   int lineStart = 0;
-  
+
   while (helpText[pos] && y <= 5) {
     if (helpText[pos] == '\n' || pos - lineStart >= 39) {
       int len = pos - lineStart;
@@ -205,7 +209,7 @@ void drawFXHelp(enum FX fxIdx) {
       strncpy(line, &helpText[lineStart], len);
       line[len] = '\0';
       gfxPrint(1, y++, line);
-      
+
       if (helpText[pos] == '\n') {
         pos++;
       }
@@ -214,7 +218,7 @@ void drawFXHelp(enum FX fxIdx) {
       pos++;
     }
   }
-  
+
   // Print remaining text if any
   if (lineStart < pos && y <= 5) {
     int len = pos - lineStart;

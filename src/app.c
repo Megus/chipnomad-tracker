@@ -87,11 +87,6 @@ static int inputPlayback(int keys, int isDoubleTap) {
 static void appInput(int keys, int isDoubleTap) {
   int volumeChanged = 0;
 
-  if (keys == 0) {
-    // Clean untimed screen message when nothing is pressed
-    screenMessage(0, "");
-  }
-
   // Volume control
   if (keys == keyVolumeUp) {
     if (appSettings.volume < 1.0) appSettings.volume += 0.1;
@@ -229,6 +224,8 @@ void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
       if (value == keyEdit) editDoubleTapCount = appSettings.doubleTapFrames;
 
       if (pressedButtons == 0) {
+        // Clean untimed screen message when all keys are released
+        screenMessage(0, "");
         appInput(pressedButtons, 0);
       }
       break;

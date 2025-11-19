@@ -1,7 +1,7 @@
 # Common makefile settings and source files
 
 # Common source directories
-COMMON_LIBS = external/ayumi src src/chipnomad_lib src/chips src/corelib src/screens platforms/shared
+COMMON_LIBS = external/ayumi src src/chipnomad_lib src/chips src/corelib src/import src/screens platforms/shared
 
 # Base build directory
 BUILD_BASE = build

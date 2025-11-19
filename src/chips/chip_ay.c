@@ -97,11 +97,12 @@ static void detectWarnings(struct SoundChip* self, int* warningCooldowns, int co
     int noiseEnabled = ((mixer >> (i + 3)) & 1) == 0;
     int envelopeMode = (volume & 16) != 0;
     
-    // Exclude pure noise and pure envelope cases
+    // Exclude pure noise, pure envelope cases, and zero volume
     int isPureNoise = !toneEnabled && noiseEnabled && !envelopeMode;
     int isPureEnvelope = !toneEnabled && !noiseEnabled && envelopeMode;
+    int isZeroVolume = (volume & 0xf) == 0 && !envelopeMode;
     
-    usesTone[i] = !(isPureNoise || isPureEnvelope);
+    usesTone[i] = !(isPureNoise || isPureEnvelope || isZeroVolume);
   }
   
   // Check for conflicts only between tracks that use tone generation

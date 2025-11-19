@@ -108,7 +108,7 @@ void outputRegistersAY(struct PlaybackState* state, int trackIdx, int chipIdx, s
   int ayChannel = 0;
 
   uint8_t mixer = 0;
-  uint8_t noise = 0;
+  uint8_t noise = EMPTY_VALUE_8;
   uint8_t envShape = 0;
   uint16_t envPeriod = 0;
 
@@ -202,6 +202,8 @@ void outputRegistersAY(struct PlaybackState* state, int trackIdx, int chipIdx, s
     chip->setRegister(chip, 12, (envPeriod & 0xff00) >> 8);
   }
 
-  chip->setRegister(chip, 6, noise);
+  if (noise != EMPTY_VALUE_8) {
+    chip->setRegister(chip, 6, noise);
+  }
   chip->setRegister(chip, 7, mixer);
 }

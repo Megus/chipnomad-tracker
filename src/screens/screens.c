@@ -103,6 +103,11 @@ void screenMessage(int time, const char* format, ...) {
   va_start(args, format);
   vsnprintf(messageBuffer, 41, format, args);
   va_end(args);
+
+  // Clear message area immediately if setting empty message
+  if (strlen(messageBuffer) == 0) {
+    gfxClearRect(0, 19, 40, 1);
+  }
 }
 
 
