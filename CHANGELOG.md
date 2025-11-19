@@ -1,21 +1,50 @@
 # ChipNomad changelog
 
-# v0.0.2a (October 11, 2025)
+## v0.0.3a
 
-- *Platform*: PortMaster build
+- *PLATFORM*: proper macOS app bundle with the icon
+- Added support for different screen resolutions (bonus: Mac Retina display support)
+- Copy/cut/paste functionality on Song, Chain, Phrase, Table screens
+- Deep cloning chains (clones both chain and phrases in the chain)
+- Edit multiple values in selection mode on Song, Chain, Phrase, Table screens
+- Copy/paste instruments
+- Save/load instruments
+- Vortex Tracker 2 instruments (.vts) import (by [Pator](https://github.com/paator))
+- Instrument pool screen with instrument reordering functionality
+- Instrument preview on Instrument and Instrument Pool screens (A + Start)
+- Additional FX help on FX selection screen
+- New TXH effect: same as THO, but for aux table. THO now jumps in the instrument table only.
+- Special case for TIC: when TIC is on the last row in the table, it sets the column speed on table start
+- Special case for NOA: when NOA value is FF, it stops noise period output in the track/instrument. Convenient for resolving noise period conflicts
+- Improved logic for finding next empty chain/phrase - looking for item not yet referenced in the project
+- Settings screen with two functions: AY phasing conflict highlight, and Quit button
+- Lowercase character entry in all text fields
+- Create folder function in the file browser
+- Show BPM for tick rate (only for default groove with 6 ticks per phrase row)
+- 0.75MHz AY/YM clock option
+- Export to WAV and PSG (AY register dump) formats
+- *FIX*: Crash on deleting a chain under the playhead during playback
+- *FIX*: OFF in note field stopped active track FX
+- *FIX*: Playback now stops on project load and song position is reset to start
+- *FIX*: Cursor could be drawn incorrectly at some screens
+- *FIX*: Chain transpose column color could be wrong
+
+## v0.0.2a (October 11, 2025)
+
+- *PLATFORM*: PortMaster build
 - Project settings screen
 - AY/YM chip settings
 - Project save/load
 - Pitch table save/load
-- ARP and ARC effects for arpeggio (by laamaa)
-- *FIX*: Random crash on app startup because of audio callback race condition (by Alexander Kovalenko)
+- ARP and ARC effects for arpeggio (by [laamaa](https://github.com/laamaa))
+- *FIX*: Random crash on app startup because of audio callback race condition (by [Alexander Kovalenko](https://github.com/alexanderk23))
 - *FIX*: Random loss of instrument and volume values in Phrase editor
 - *FIX*: App crash when deleting a chain or a phrase under playhead during playback
 - *FIX*: Instruments of NONE type now don't output any sound
 - *FIX*: PVB started from the lowest pitch offset instead of zero
 
-# v0.0.1a (May 8, 2025)
+## v0.0.1a (May 8, 2025)
 
-- *Platform*: pre-2024 Anbernic RG35xx with GarlicOS 1, Windows, macOS
+- *PLATFORM*: pre-2024 Anbernic RG35xx with GarlicOS 1, Windows, macOS
 - Core editing functionality
 - Project auto save/load
