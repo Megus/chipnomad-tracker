@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <ayumi.h>
+#include <ayumi_filters.h>
 #include <chips.h>
 #include <stdio.h>
 #include <project.h>
@@ -80,6 +81,8 @@ void updateChipAYClock(struct SoundChip* self, int clockRate, int sampleRate) {
   struct ayumi* ay = (struct ayumi*)self->userdata;
   ay->step = (float)clockRate / (sampleRate * 8 * 8); // 8 * DECIMATE_FACTOR
 }
+
+
 
 static void detectWarnings(struct SoundChip* self, int* warningCooldowns, int cooldownValue) {
   // Get current pitch periods from chip registers (pairs 0-1, 2-3, 4-5)

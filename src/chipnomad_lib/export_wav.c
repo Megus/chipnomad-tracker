@@ -7,6 +7,8 @@
 #include <playback.h>
 #include <chips.h>
 #include <common.h>
+#include <ayumi.h>
+#include <ayumi_filters.h>
 
 // WAV implementation data
 typedef struct {
@@ -179,6 +181,10 @@ Exporter* createWAVExporter(const char* filename, struct Project* project, int s
     
     playbackInit(&data->playbackState, project);
     data->chip = createChipAY(sampleRate, project->chipSetup);
+    
+    // Use high-quality filter for export
+    ayumi_set_filter_quality((struct ayumi*)data->chip.userdata, ayumi_filter_full);
+    
     playbackStartSong(&data->playbackState, startRow, 0, 0);
 
     exporter->data = data;

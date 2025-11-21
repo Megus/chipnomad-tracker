@@ -4,6 +4,8 @@
 #ifndef AYUMI_H
 #define AYUMI_H
 
+#include "ayumi_filters.h"
+
 enum {
   TONE_CHANNELS = 3,
   DECIMATE_FACTOR = 8,
@@ -56,6 +58,7 @@ struct ayumi {
   int dc_index;
   float left;
   float right;
+  ayumi_filter_func filter_func;
 };
 
 int ayumi_configure(struct ayumi* ay, int is_ym, float clock_rate, int sr);
@@ -67,6 +70,7 @@ void ayumi_set_mixer(struct ayumi* ay, int index, int t_off, int n_off, int e_on
 void ayumi_set_volume(struct ayumi* ay, int index, int volume);
 void ayumi_set_envelope(struct ayumi* ay, int period);
 void ayumi_set_envelope_shape(struct ayumi* ay, int shape);
+void ayumi_set_filter_quality(struct ayumi* ay, ayumi_filter_func filter_func);
 void ayumi_process(struct ayumi* ay);
 void ayumi_remove_dc(struct ayumi* ay);
 
