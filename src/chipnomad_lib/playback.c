@@ -17,6 +17,7 @@ static void resetTrack(struct PlaybackState* state, int trackIdx) {
   track->frameCounter = 0;
   track->grooveIdx = 0;
   track->grooveRow = 0;
+  track->pendingGrooveIdx = 0;
   track->note.noteBase = EMPTY_VALUE_8;
   track->note.noteFinal = EMPTY_VALUE_8;
   track->note.noteOffset = 0;
@@ -132,6 +133,13 @@ void readPhraseRowDirect(struct PlaybackState* state, int trackIdx, struct Phras
   struct PlaybackTrackState* track = &state->tracks[trackIdx];
   struct Project* p = state->p;
   uint8_t note = phraseRow->note;
+
+  // Check for pending groove change
+  if (track->pendingGrooveIdx != track->grooveIdx) {
+    track->grooveIdx = track->pendingGrooveIdx;
+    track->grooveRow = 0;
+    track->frameCounter = 0;
+  }
 
   // Pre-scan FX if there's a DEL FX
   if (!skipDelCheck) {

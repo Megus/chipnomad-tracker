@@ -238,16 +238,33 @@ static void handleFX_VOL(struct PlaybackState* state, struct PlaybackTrackState*
 static void handleFX_GRV(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
   fx->fx = EMPTY_VALUE_8;
   track->grooveIdx = fx->value & (PROJECT_MAX_GROOVES - 1);
-  //track->grooveRow = 0;
+  track->pendingGrooveIdx = track->grooveIdx;
+  track->grooveRow = 0;
 }
 
 // GGR - Global groove
 static void handleFX_GGR(struct PlaybackState* state, struct PlaybackTrackState* track, int trackIdx, struct PlaybackFXState* fx, struct PlaybackTableState *tableState) {
   fx->fx = EMPTY_VALUE_8;
   uint8_t grooveIdx = fx->value & (PROJECT_MAX_GROOVES - 1);
+  // Current track changes immediately
+  track->grooveIdx = grooveIdx;
+  track->pendingGrooveIdx = grooveIdx;
+  track->grooveRow = 0;
+  track->frameCounter = 0;
+  // Handle all other tracks
   for (int c = 0; c < state->p->tracksCount; c++) {
-    state->tracks[c].grooveIdx = grooveIdx;
-    //state->tracks[c].grooveRow = 0;
+    if (c != trackIdx) {
+      if (c < trackIdx) {
+        // Previous tracks: change immediately (already processed this frame)
+        state->tracks[c].grooveIdx = grooveIdx;
+        state->tracks[c].pendingGrooveIdx = grooveIdx;
+        state->tracks[c].grooveRow = 0;
+        // Don't touch frameCounter - it was already incremented
+      } else {
+        // Later tracks: use pending groove
+        state->tracks[c].pendingGrooveIdx = grooveIdx;
+      }
+    }
   }
 }
 
@@ -437,6 +454,8 @@ void initFX(struct PlaybackState* state, int trackIdx, uint8_t* fx, struct Playb
 
   fxState->fx = fxIdx;
   fxState->value = fx[1];
+
+
 }
 
 int handleFX(struct PlaybackState* state, int trackIdx) {

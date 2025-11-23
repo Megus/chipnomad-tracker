@@ -107,6 +107,7 @@ struct PlaybackTrackState {
   // Groove
   uint8_t grooveIdx;
   int grooveRow;
+  uint8_t pendingGrooveIdx; // For GGR synchronization
 
   int frameCounter;
 
