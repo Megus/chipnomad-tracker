@@ -1,9 +1,10 @@
 # ChipNomad changelog
 
-## v0.0.3a
+## v0.0.3a (November 22, 2025)
 
 - *PLATFORM*: proper macOS app bundle with the icon
 - Added support for different screen resolutions (bonus: Mac Retina display support)
+- New font and a convenient bitmap font generator for all screen resolutions from TTF fonts
 - Copy/cut/paste functionality on Song, Chain, Phrase, Table screens
 - Deep cloning chains (clones both chain and phrases in the chain)
 - Edit multiple values in selection mode on Song, Chain, Phrase, Table screens
@@ -28,6 +29,7 @@
 - *FIX*: Playback now stops on project load and song position is reset to start
 - *FIX*: Cursor could be drawn incorrectly at some screens
 - *FIX*: Chain transpose column color could be wrong
+- *FIX*: GGR command was working incorrectly
 
 ## v0.0.2a (October 11, 2025)
 
