@@ -10,6 +10,7 @@ void pasteGroove(int grooveIdx, int startRow);
 // Song copy/paste
 void copySong(int startCol, int startRow, int endCol, int endRow, int isCut);
 void pasteSong(int startCol, int startRow);
+void shiftSongColumnUp(int col, int startRow);
 
 // Chain copy/paste
 void copyChain(int chainIdx, int startCol, int startRow, int endCol, int endRow, int isCut);

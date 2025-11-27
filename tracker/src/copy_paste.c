@@ -71,6 +71,13 @@ void pasteSong(int startCol, int startRow) {
   }
 }
 
+void shiftSongColumnUp(int col, int startRow) {
+  for (int row = startRow; row < PROJECT_MAX_LENGTH - 1; row++) {
+    project.song[row][col] = project.song[row + 1][col];
+  }
+  project.song[PROJECT_MAX_LENGTH - 1][col] = EMPTY_VALUE_16;
+}
+
 void copyChain(int chainIdx, int startCol, int startRow, int endCol, int endRow, int isCut) {
   cpBufChainRows = endRow - startRow + 1;
   cpBufChainStartCol = startCol;

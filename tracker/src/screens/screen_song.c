@@ -175,6 +175,17 @@ static int editCell(int col, int row, enum CellEditAction action) {
       }
     }
     return 1;
+  } else if (action == editClear) {
+    if (project.song[row][col] != EMPTY_VALUE_16) {
+      // Clear the value
+      project.song[row][col] = EMPTY_VALUE_16;
+      return 1;
+    } else {
+      // Value is already empty, shift column up
+      shiftSongColumnUp(col, row);
+      fullRedraw();
+      return 1;
+    }
   } else if (action == editShallowClone) {
     int current = project.song[row][col];
     if (current != EMPTY_VALUE_16) {
