@@ -2,7 +2,7 @@
 #define __AUDIOMANAGER_H__
 
 #include <common.h>
-#include <chips.h>
+#include <chipnomad_lib.h>
 
 #define AUDIO_MAX_CHIPS (1)
 

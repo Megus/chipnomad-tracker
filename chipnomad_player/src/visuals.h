@@ -6,20 +6,7 @@
 #include FT_FREETYPE_H
 #include <project.h>
 #include <playback.h>
-
-struct VisualizerConfig {
-    int windowWidth;
-    int windowHeight;
-    int fontSize;
-    const char* fontPath;
-    SDL_Color backgroundColor;
-    SDL_Color currentRowColor;
-    SDL_Color noteColor;
-    SDL_Color instrumentColor;
-    SDL_Color volumeColor;
-    SDL_Color fxColor;
-    SDL_Color dimmedColor;
-};
+#include "config.h"
 
 struct VisualState {
     SDL_Renderer* renderer;

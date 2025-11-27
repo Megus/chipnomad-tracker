@@ -1,6 +1,6 @@
 #include <pitch_table_utils.h>
 #include <corelib_file.h>
-#include <project.h>
+#include <chipnomad_lib.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>

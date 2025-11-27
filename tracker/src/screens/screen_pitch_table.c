@@ -2,7 +2,7 @@
 #include <corelib_file.h>
 #include <corelib_gfx.h>
 #include <file_browser.h>
-#include <project.h>
+#include <chipnomad_lib.h>
 #include <string.h>
 #include <pitch_table_utils.h>
 

@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <audio_manager.h>
 #include <corelib_audio.h>
-#include <chips.h>
-#include <project.h>
+
+#include <chipnomad_lib.h>
 
 static int aSampleRate;
 static int aBufferSize;

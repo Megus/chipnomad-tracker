@@ -4,9 +4,9 @@
 #include <audio_manager.h>
 #include <app.h>
 #include <screens.h>
-#include <project.h>
+#include <chipnomad_lib.h>
 #include <project_utils.h>
-#include <playback.h>
+
 
 #define TRACK_WARNING_COOLDOWN_FRAMES 5
 
@@ -123,7 +123,7 @@ void appSetup(void) {
   gfxSetBgColor(appSettings.colorScheme.background);
   gfxClear();
 
-  fillFXNames();
+  chipnomadInit();
 
   // Try to load an auto-saved project
   if (projectLoad(getAutosavePath())) {

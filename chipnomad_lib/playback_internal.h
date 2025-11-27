@@ -1,7 +1,7 @@
 #ifndef __PLAYBACK_INTERNAL_H__
 #define __PLAYBACK_INTERNAL_H__
 
-#include <playback.h>
+#include "playback.h"
 
 void handleNoteOff(struct PlaybackState* state, int trackIdx);
 void readPhraseRow(struct PlaybackState* state, int trackIdx, int skilDelCheck);

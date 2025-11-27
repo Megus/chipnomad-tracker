@@ -2,7 +2,7 @@
 #define __CHIPS_H__
 
 #include <stdint.h>
-#include <project.h>
+#include "../project.h"
 
 struct SoundChip {
   void* userdata;

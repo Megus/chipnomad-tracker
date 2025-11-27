@@ -4,13 +4,12 @@
 #include <SDL2/SDL.h>
 
 // ChipNomad library includes
-#include <project.h>
-#include <playback.h>
-#include <chips.h>
+#include <chipnomad_lib.h>
 
 // Local modules
 #include "audio.h"
 #include "visuals.h"
+#include "config.h"
 
 #define SAMPLE_RATE 44100
 
@@ -32,7 +31,7 @@ static struct PlayerState player;
 
 
 int loadTrack(const char* filename) {
-    fillFXNames();
+    chipnomadInit();
     
     if (projectLoad(filename) != 0) {
         fprintf(stderr, "Failed to load track: %s\n", filename);
@@ -97,18 +96,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     
-    // Initialize visualizer config with defaults
-    player.visualConfig.windowWidth = 1920;
-    player.visualConfig.windowHeight = 1080;
-    player.visualConfig.fontSize = 32;
-    player.visualConfig.fontPath = "fonts/Fragment_Mono/FragmentMono-Regular.ttf";
-    player.visualConfig.backgroundColor = (SDL_Color){0, 0, 0, 255};
-    player.visualConfig.currentRowColor = (SDL_Color){255, 255, 0, 255};
-    player.visualConfig.noteColor = (SDL_Color){0, 255, 0, 255};
-    player.visualConfig.instrumentColor = (SDL_Color){0, 255, 255, 255};
-    player.visualConfig.volumeColor = (SDL_Color){255, 0, 255, 255};
-    player.visualConfig.fxColor = (SDL_Color){255, 255, 255, 255};
-    player.visualConfig.dimmedColor = (SDL_Color){64, 64, 64, 255};
+    // Load visualizer config from file
+    configLoad(&player.visualConfig, "player_settings.txt");
     
     // Check display DPI to determine window size
     float ddpi;

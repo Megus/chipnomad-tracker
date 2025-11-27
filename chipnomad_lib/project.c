@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <string.h>
-#include <project.h>
-#include <corelib_file.h>
-#include <utils.h>
+#include "project.h"
+#include "corelib/corelib_file.h"
+#include "utils.h"
 
 struct Project project;
 

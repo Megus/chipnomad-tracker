@@ -1,9 +1,9 @@
 #ifndef __PLAYBACK_H__
 #define __PLAYBACK_H__
 
-#include <project.h>
-#include <chips.h>
-#include <playback_fx.h>
+#include "project.h"
+#include "chips/chips.h"
+#include "playback_fx.h"
 
 enum PlaybackMode {
   playbackModeNone, // For queue

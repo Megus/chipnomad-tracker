@@ -1,9 +1,9 @@
 #include <stdlib.h>
-#include <ayumi.h>
-#include <ayumi_filters.h>
-#include <chips.h>
+#include "../external/ayumi/ayumi.h"
+#include "../external/ayumi/ayumi_filters.h"
+#include "chips.h"
 #include <stdio.h>
-#include <project.h>
+#include "../project.h"
 
 static int init(struct SoundChip* self) {
   return 0;

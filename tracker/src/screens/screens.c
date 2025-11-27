@@ -2,7 +2,7 @@
 #include <string.h>
 #include <screens.h>
 #include <screen_settings.h>
-#include <project.h>
+#include <chipnomad_lib.h>
 #include <corelib_gfx.h>
 #include <utils.h>
 

@@ -1,9 +1,7 @@
 #ifndef AUDIO_H
 #define AUDIO_H
 
-#include <project.h>
-#include <playback.h>
-#include <chips.h>
+#include <chipnomad_lib.h>
 
 struct AudioState {
     struct Project* project;

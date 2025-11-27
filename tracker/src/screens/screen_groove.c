@@ -2,7 +2,7 @@
 #include <common.h>
 #include <corelib_gfx.h>
 #include <utils.h>
-#include <project.h>
+#include <chipnomad_lib.h>
 #include <copy_paste.h>
 
 static int groove = 0;

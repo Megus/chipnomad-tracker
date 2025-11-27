@@ -3,12 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <corelib_file.h>
-#include <playback.h>
-#include <chips.h>
+#include "corelib/corelib_file.h"
+#include "playback.h"
+#include "chips/chips.h"
 #include <common.h>
-#include <ayumi.h>
-#include <ayumi_filters.h>
+#include "external/ayumi/ayumi.h"
+#include "external/ayumi/ayumi_filters.h"
 
 // WAV implementation data
 typedef struct {

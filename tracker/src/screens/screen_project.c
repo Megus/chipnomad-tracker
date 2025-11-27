@@ -3,7 +3,7 @@
 #include <corelib_file.h>
 #include <corelib_gfx.h>
 #include <utils.h>
-#include <project.h>
+#include <chipnomad_lib.h>
 #include <project_utils.h>
 #include <version.h>
 #include <audio_manager.h>

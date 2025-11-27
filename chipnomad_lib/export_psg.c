@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <corelib_file.h>
-#include <playback.h>
-#include <chips.h>
+#include "corelib/corelib_file.h"
+#include "playback.h"
+#include "chips/chips.h"
 
 // PSG implementation data
 typedef struct {

@@ -2,7 +2,7 @@
 #include <common.h>
 #include <corelib_gfx.h>
 #include <utils.h>
-#include <project.h>
+#include <chipnomad_lib.h>
 #include <project_utils.h>
 #include <copy_paste.h>
 #include <help.h>

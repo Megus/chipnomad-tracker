@@ -2,7 +2,7 @@
 #define __EXPORT_H__
 
 #include <stdint.h>
-#include <project.h>
+#include "project.h"
 
 // Forward declaration
 struct Exporter;

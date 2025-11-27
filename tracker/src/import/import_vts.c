@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <project.h>
+#include <chipnomad_lib.h>
 #include <corelib_file.h>
 
 #define VTS_COL_TONE        0

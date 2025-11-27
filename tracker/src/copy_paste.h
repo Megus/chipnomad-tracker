@@ -1,4 +1,4 @@
-#include <project.h>
+#include <chipnomad_lib.h>
 
 // Forward declaration
 struct ScreenData;

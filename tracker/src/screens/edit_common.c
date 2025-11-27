@@ -1,5 +1,5 @@
 #include <screens.h>
-#include <project.h>
+#include <chipnomad_lib.h>
 
 enum CellEditAction convertMultiAction(enum CellEditAction action) {
   if (action == editMultiIncrease) return editIncrease;

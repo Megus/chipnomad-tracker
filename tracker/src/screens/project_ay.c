@@ -2,7 +2,7 @@
 #include <corelib_gfx.h>
 #include <string.h>
 #include <audio_manager.h>
-#include <chips.h>
+
 
 int chipClockLength = 0;
 
