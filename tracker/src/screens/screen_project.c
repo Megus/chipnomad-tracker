@@ -231,9 +231,14 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
       fileBrowserSetup("LOAD PROJECT", ".cnm", appSettings.projectPath, onProjectLoaded, onProjectCancelled);
       screenSetup(&screenFileBrowser, 0);
     } else if (col == 1) {
-      // Save project - go directly to folder browser
-      fileBrowserSetupFolderMode("SAVE PROJECT", appSettings.projectPath, appSettings.projectFilename, ".cnm", onProjectSaved, onProjectCancelled);
-      screenSetup(&screenFileBrowser, 0);
+      // Save project - check filename first
+      if (strlen(appSettings.projectFilename) == 0) {
+        screenMessage(MESSAGE_TIME, "Enter filename");
+        handled = 1;
+      } else {
+        fileBrowserSetupFolderMode("SAVE PROJECT", appSettings.projectPath, appSettings.projectFilename, ".cnm", onProjectSaved, onProjectCancelled);
+        screenSetup(&screenFileBrowser, 0);
+      }
     } else if (col == 2) {
       // New project
       projectInitAY();

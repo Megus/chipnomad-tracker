@@ -7,7 +7,6 @@
 #include "project.h"
 #include "playback.h"
 #include "chips/chips.h"
-#include "export.h"
 #include "utils.h"
 
 /**

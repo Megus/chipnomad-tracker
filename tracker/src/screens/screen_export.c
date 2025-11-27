@@ -4,7 +4,7 @@
 #include <corelib_file.h>
 #include <chipnomad_lib.h>
 #include <screens.h>
-#include <export.h>
+#include <export/export.h>
 #include <string.h>
 
 // Export state

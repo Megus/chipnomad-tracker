@@ -3,7 +3,7 @@
 #include <corelib_file.h>
 #include <common.h>
 #include <screens.h>
-#include <export.h>
+#include <export/export.h>
 #include <string.h>
 
 static int getColumnCount(int row) {

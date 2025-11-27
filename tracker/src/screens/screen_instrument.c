@@ -255,6 +255,8 @@ int instrumentCommonOnEdit(int col, int row, enum CellEditAction action) {
     // Save instrument
     if (instrumentIsEmpty(cInstrument)) {
       screenMessage(MESSAGE_TIME, "Cannot save empty instrument");
+    } else if (strlen(project.instruments[cInstrument].name) == 0) {
+      screenMessage(MESSAGE_TIME, "Enter instrument name");
     } else {
       char filename[32];
       getInstrumentFilename(filename, sizeof(filename));

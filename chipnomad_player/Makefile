@@ -10,10 +10,10 @@ INCLUDES = -Isrc -I../chipnomad_lib
 
 # Find source files
 SOURCES = $(wildcard src/*.c) \
-          $(filter-out %/export_psg.c %/export_wav.c, $(wildcard ../chipnomad_lib/*.c)) \
+          $(wildcard ../chipnomad_lib/*.c) \
           $(wildcard ../chipnomad_lib/chips/*.c) \
           $(wildcard ../chipnomad_lib/external/ayumi/*.c) \
-          ../tracker/platforms/shared/corelib_file.c
+          $(wildcard ../chipnomad_lib/corelib_file_stdio/*.c)
 
 # Generate object files (flattened to build directory)
 OBJECTS = $(addprefix $(BUILD_DIR)/, $(notdir $(SOURCES:.c=.o)))

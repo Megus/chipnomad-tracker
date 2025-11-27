@@ -7,7 +7,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#include "../../../chipnomad_lib/corelib/corelib_file.h"
+#include "../corelib/corelib_file.h"
 
 static FILE* files[CORELIB_MAX_OPEN_FILES];
 static int currentFileId = 0;
