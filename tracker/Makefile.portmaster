@@ -8,8 +8,8 @@ include Makefile.common
 # PortMaster-specific settings
 LIBS = $(COMMON_LIBS) platforms/sdl2
 OUTPUT_EXT =
-DOCKER64 = docker run --privileged --platform=linux/arm64 --rm -it --user $$(id -u):$$(id -g) -v`pwd`:/src -w/src
-DOCKER32 = docker run --privileged --platform=linux/armhf --rm -it --user $$(id -u):$$(id -g) -v`pwd`:/src -w/src
+DOCKER64 = docker run --privileged --platform=linux/arm64 --rm --user $$(id -u):$$(id -g) -v`pwd`/..:/src -w/src/tracker
+DOCKER32 = docker run --privileged --platform=linux/armhf --rm --user $$(id -u):$$(id -g) -v`pwd`/..:/src -w/src/tracker
 
 # PortMaster build settings (placeholder - to be implemented)
 XTRA_CFLAGS = -DPORTMASTER_BUILD -I${SYSROOT}/usr/include -L${SYSROOT}/usr/lib

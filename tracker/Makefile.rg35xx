@@ -8,7 +8,7 @@ include Makefile.common
 # RG35xx-specific settings
 LIBS = $(COMMON_LIBS) platforms/sdl12
 OUTPUT_EXT =
-DOCKER = docker run --platform linux/amd64 --rm -it --user $$(id -u):$$(id -g) -v`pwd`:/src -w/src
+DOCKER = docker run --platform linux/amd64 --rm --user $$(id -u):$$(id -g) -v`pwd`/..:/src -w/src/tracker
 
 XTRA_CFLAGS = -I${SYSROOT}/usr/include -L${SYSROOT}/usr/lib
 XTRA_LIBS = -lSDL

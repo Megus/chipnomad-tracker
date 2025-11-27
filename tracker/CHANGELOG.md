@@ -1,5 +1,11 @@
 # ChipNomad changelog
 
+## Not yet released
+
+- B+A on an empty cell at the Song screen now moves the whole column up (same as in LSDJ and M8)
+- Project and Instrument save functions now check for empty filename before saving
+- *FIX*: Chip settings were not initialized when loading a project
+
 ## v0.0.3a (November 22, 2025)
 
 - *PLATFORM*: proper macOS app bundle with the icon
