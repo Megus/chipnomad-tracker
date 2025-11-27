@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <ayumi.h>
 #include <audio_manager.h>
+#include <chipnomad_lib.h>
 
 #include "psg_play.h"
 
@@ -37,7 +38,9 @@ int psgReadFile(char* path) {
 }
 
 void psgFrameCallback(void *userdata) {
-  struct ayumi* ay = audioManager.chips[0].userdata;
+  struct SoundChip* chip = chipnomadGetChip(0);
+  if (!chip) return;
+  struct ayumi* ay = chip->userdata;
 
   if (frameCountdown > 0) {
     frameCountdown--;

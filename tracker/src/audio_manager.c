@@ -33,7 +33,10 @@ static void audioCallback(int16_t* buffer, int stereoSamples) {
     int samplesToRender = ((int)frameSampleCounter < samplesLeft) ? (int)frameSampleCounter : samplesLeft;
     int bufferOffset = (stereoSamples - samplesLeft) * 2;
 
-    audioManager.chips[0].render(&audioManager.chips[0], floatBuffer + bufferOffset, samplesToRender);
+    struct SoundChip* chip = chipnomadGetChip(0);
+    if (chip) {
+      chip->render(chip, floatBuffer + bufferOffset, samplesToRender);
+    }
 
     samplesLeft -= samplesToRender;
     frameSampleCounter -= (float)samplesToRender;
@@ -62,7 +65,7 @@ static int start(int sampleRate, int bufferSize, float tickRate) {
 }
 
 static void initChips(void) {
-  audioManager.chips[0] = createChipAY(aSampleRate, project.chipSetup);
+  chipnomadInitChips(aSampleRate);
 }
 
 static void setFrameCallback(FrameCallback *callback, void* userdata) {
@@ -79,7 +82,10 @@ static void resume(void) {
 }
 
 static void render(float* buffer, int stereoSamples) {
-  audioManager.chips[0].render(&audioManager.chips[0], buffer, stereoSamples);
+  struct SoundChip* chip = chipnomadGetChip(0);
+  if (chip) {
+    chip->render(chip, buffer, stereoSamples);
+  }
 }
 
 static void stop() {

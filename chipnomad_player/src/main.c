@@ -18,7 +18,6 @@ struct PlayerState {
     SDL_Renderer* renderer;
     struct Project project;
     struct PlaybackState playback;
-    struct SoundChip chip;
     int isPlaying;
     int quit;
     struct AudioState audioState;
@@ -45,11 +44,7 @@ int loadTrack(const char* filename) {
     playbackInit(&player.playback, &player.project);
     
     // Initialize chip
-    player.chip = createChipAY(SAMPLE_RATE, player.project.chipSetup);
-    if (player.chip.init(&player.chip) != 0) {
-        fprintf(stderr, "Failed to initialize sound chip\n");
-        return -1;
-    }
+    chipnomadInitChips(SAMPLE_RATE);
     
     return 0;
 }
@@ -145,7 +140,7 @@ int main(int argc, char* argv[]) {
     // Initialize audio module
     player.audioState.project = &player.project;
     player.audioState.playback = &player.playback;
-    player.audioState.chip = &player.chip;
+    player.audioState.chip = chipnomadGetChip(0);
     player.audioState.isPlaying = &player.isPlaying;
     
     if (audioInit(&player.audioState) != 0) {
@@ -176,7 +171,6 @@ int main(int argc, char* argv[]) {
     }
     
     visualsCleanup(&player.visualState);
-    player.chip.cleanup(&player.chip);
     SDL_DestroyRenderer(player.renderer);
     SDL_DestroyWindow(player.window);
     SDL_Quit();

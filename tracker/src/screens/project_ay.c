@@ -2,6 +2,7 @@
 #include <corelib_gfx.h>
 #include <string.h>
 #include <audio_manager.h>
+#include <chipnomad_lib.h>
 
 
 int chipClockLength = 0;
@@ -115,19 +116,22 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     // Chip subtype (AY-3-8910 / YM2149F)
     handled = edit8noLast(action, &project.chipSetup.ay.isYM, 1, 0, 1);
     if (handled) {
-      updateChipAYType(&audioManager.chips[0], project.chipSetup.ay.isYM);
+      struct SoundChip* chip = chipnomadGetChip(0);
+      if (chip) updateChipAYType(chip, project.chipSetup.ay.isYM);
     }
   } else if (row == SCR_PROJECT_ROWS + 1) {
     // Stereo mode (ABC, ACB, BAC)
     handled = edit8noLast(action, (uint8_t*)&project.chipSetup.ay.stereoMode, 1, 0, 2);
     if (handled) {
-      updateChipAYStereoMode(&audioManager.chips[0], project.chipSetup.ay.stereoMode, project.chipSetup.ay.stereoSeparation);
+      struct SoundChip* chip = chipnomadGetChip(0);
+      if (chip) updateChipAYStereoMode(chip, project.chipSetup.ay.stereoMode, project.chipSetup.ay.stereoSeparation);
     }
   } else if (row == SCR_PROJECT_ROWS + 2) {
     // Stereo width (0-100%)
     handled = edit8noLast(action, &project.chipSetup.ay.stereoSeparation, 10, 0, 100);
     if (handled) {
-      updateChipAYStereoMode(&audioManager.chips[0], project.chipSetup.ay.stereoMode, project.chipSetup.ay.stereoSeparation);
+      struct SoundChip* chip = chipnomadGetChip(0);
+      if (chip) updateChipAYStereoMode(chip, project.chipSetup.ay.stereoMode, project.chipSetup.ay.stereoSeparation);
     }
   } else if (row == SCR_PROJECT_ROWS + 3) {
     // Chip clock presets
@@ -137,7 +141,8 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     handled = edit8noLast(action, &newIndex, 1, 0, 4);
     if (handled) {
       project.chipSetup.ay.clock = clockPresets[newIndex];
-      updateChipAYClock(&audioManager.chips[0], project.chipSetup.ay.clock, appSettings.audioSampleRate);
+      struct SoundChip* chip = chipnomadGetChip(0);
+      if (chip) updateChipAYClock(chip, project.chipSetup.ay.clock, appSettings.audioSampleRate);
     }
   } else if (row == SCR_PROJECT_ROWS + 4) {
     // Pitch table - enter pitch table screen

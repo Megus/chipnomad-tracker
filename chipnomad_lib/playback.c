@@ -493,6 +493,10 @@ void playbackStop(struct PlaybackState* state) {
     resetTrack(state, c);
     state->tracks[c].queue.mode = playbackModeNone;
   }
+  // Reset chip states to ensure envelope shapes retrigger on next playback
+  for (int c = 0; c < PROJECT_MAX_CHIPS; c++) {
+    state->chips[c].ay.envShape = 0;
+  }
 }
 
 int playbackNextFrame(struct PlaybackState* state, struct SoundChip* chips) {

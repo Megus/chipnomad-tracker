@@ -26,6 +26,10 @@ static void onProjectLoaded(const char* path) {
   
   playbackStop(&playback);
   if (projectLoad(path) == 0) {
+    // Update tick rate and reinitialize chip with new project settings
+    audioManager.tickRate = project.tickRate;
+    audioManager.initChips();
+    
     extractFilenameWithoutExtension(path, appSettings.projectFilename, FILENAME_LENGTH + 1);
 
     // Save the directory path

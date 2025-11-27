@@ -29,7 +29,10 @@ static int trackWarningCooldown[PROJECT_MAX_TRACKS];
  * @param userdata Arbitraty user data. Not used
  */
 static void frameCallback(void* userdata) {
-  playbackNextFrame(&playback, &audioManager.chips[0]);
+  struct SoundChip* chip = chipnomadGetChip(0);
+  if (chip) {
+    playbackNextFrame(&playback, chip);
+  }
 }
 
 /**
@@ -157,8 +160,11 @@ void appDraw(void) {
   screenDraw();
 
   // Check for track warnings if enabled
-  if (appSettings.pitchConflictWarning && audioManager.chips[0].detectWarnings) {
-    audioManager.chips[0].detectWarnings(&audioManager.chips[0], trackWarningCooldown, TRACK_WARNING_COOLDOWN_FRAMES);
+  if (appSettings.pitchConflictWarning) {
+    struct SoundChip* chip = chipnomadGetChip(0);
+    if (chip && chip->detectWarnings) {
+      chip->detectWarnings(chip, trackWarningCooldown, TRACK_WARNING_COOLDOWN_FRAMES);
+    }
   }
   
   // Decrease warning cooldowns
