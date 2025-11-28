@@ -34,15 +34,14 @@ int loadTrack(const char* filename) {
     return -1;
   }
 
-  // Load project into global project variable
-  if (projectLoad(filename) != 0) {
+  // Load project
+  if (projectLoad(&player.chipnomadState->project, filename) != 0) {
     fprintf(stderr, "Failed to load track: %s\n", filename);
     chipnomadDestroy(player.chipnomadState);
     return -1;
   }
 
-  // Copy project to ChipNomadState and reinitialize playback
-  player.chipnomadState->project = project;
+  // Initialize playback with the loaded project
   playbackInit(&player.chipnomadState->playbackState, &player.chipnomadState->project);
 
   // Initialize chips

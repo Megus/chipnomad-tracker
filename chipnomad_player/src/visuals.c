@@ -141,7 +141,7 @@ void visualsRender(VisualState* visualState) {
         int col = x;
 
         // Note column (3 chars)
-        char* noteStr = noteName(phraseRow->note);
+        char* noteStr = noteName(visualState->project, phraseRow->note);
         if (strcmp(noteStr, "---") != 0) {
           renderText(visualState, noteStr, col, y, visualState->config->noteColor);
         } else {
