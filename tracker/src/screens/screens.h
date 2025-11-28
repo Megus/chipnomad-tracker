@@ -5,12 +5,12 @@
 
 #define MESSAGE_TIME (60)
 
-struct AppScreen {
+typedef struct AppScreen {
   void (*setup)(int input);
   void (*fullRedraw)(void);
   void (*draw)(void);
   void (*onInput)(int keys, int isDoubleTap);
-};
+} AppScreen;
 
 enum CellState {
   stateFocus = 1,
@@ -37,7 +37,7 @@ enum CellEditAction {
   editMultiDecreaseBig
 };
 
-struct ScreenData {
+typedef struct ScreenData {
   //int cols;
   int rows;
   int cursorRow;
@@ -56,40 +56,40 @@ struct ScreenData {
   void (*drawColHeader)(int col, int state);
   void (*drawField)(int col, int row, int state);
   int (*onEdit)(int col, int row, enum CellEditAction action);
-};
+} ScreenData;
 
-extern const struct AppScreen screenProject;
-extern const struct AppScreen screenProjectLoad;
-extern const struct AppScreen screenProjectSave;
-extern const struct AppScreen screenConfirm;
-extern const struct AppScreen screenPitchTable;
-extern const struct AppScreen screenFileBrowser;
-extern const struct AppScreen screenCreateFolder;
-extern const struct AppScreen screenSong;
-extern const struct AppScreen screenChain;
-extern const struct AppScreen screenPhrase;
-extern const struct AppScreen screenGroove;
-extern const struct AppScreen screenInstrument;
-extern const struct AppScreen screenInstrumentPool;
-extern const struct AppScreen screenTable;
-extern const struct AppScreen screenExport;
-extern const struct AppScreen screenSettings;
+extern const AppScreen screenProject;
+extern const AppScreen screenProjectLoad;
+extern const AppScreen screenProjectSave;
+extern const AppScreen screenConfirm;
+extern const AppScreen screenPitchTable;
+extern const AppScreen screenFileBrowser;
+extern const AppScreen screenCreateFolder;
+extern const AppScreen screenSong;
+extern const AppScreen screenChain;
+extern const AppScreen screenPhrase;
+extern const AppScreen screenGroove;
+extern const AppScreen screenInstrument;
+extern const AppScreen screenInstrumentPool;
+extern const AppScreen screenTable;
+extern const AppScreen screenExport;
+extern const AppScreen screenSettings;
 
-extern const struct AppScreen* currentScreen;
+extern const AppScreen* currentScreen;
 
-void screenSetup(const struct AppScreen* screen, int input);
+void screenSetup(const AppScreen* screen, int input);
 void screenDraw(void);
 void screenMessage(int time, const char* format, ...);
 
 // Spreadsheet functions
-void screenFullRedraw(struct ScreenData* screen);
-void screenDrawOverlays(struct ScreenData* screen);
-int screenInput(struct ScreenData* screen, int keys, int isDoubleTap);
+void screenFullRedraw(ScreenData* screen);
+void screenDrawOverlays(ScreenData* screen);
+int screenInput(ScreenData* screen, int keys, int isDoubleTap);
 
 // Utility functions
 void setCellColor(int state, int isEmpty, int hasContent);
-void getSelectionBounds(struct ScreenData* screen, int* startCol, int* startRow, int* endCol, int* endRow);
-int isSingleColumnSelection(struct ScreenData* screen);
+void getSelectionBounds(ScreenData* screen, int* startCol, int* startRow, int* endCol, int* endRow);
+int isSingleColumnSelection(ScreenData* screen);
 
 // Confirmation dialog
 void confirmSetup(const char* message, void (*confirmCallback)(void), void (*cancelCallback)(void));
@@ -100,8 +100,7 @@ int edit8withLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValu
 int edit8noLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep);
 int edit8noLast(enum CellEditAction action, uint8_t* value, uint8_t bigStep, uint8_t min, uint8_t max);
 int edit16withOverflow(enum CellEditAction action, uint16_t* value, uint16_t bigStep, uint16_t min, uint16_t max);
-int applyMultiEdit(struct ScreenData* screen, enum CellEditAction action, 
-                   int (*editFunc)(int col, int row, enum CellEditAction action));
+int applyMultiEdit(ScreenData* screen, enum CellEditAction action, int (*editFunc)(int col, int row, enum CellEditAction action));
 int applyPhraseRotation(int phraseIdx, int startRow, int endRow, int direction);
 int applyTableRotation(int tableIdx, int startRow, int endRow, int direction);
 int applySongMoveDown(int startCol, int startRow, int endCol, int endRow);
@@ -119,4 +118,3 @@ int fxEditInput(int keys, int isDoubleTap, uint8_t* fx, uint8_t* lastFX);
 void fxEditFullDraw(uint8_t currentFX);
 
 #endif
-

@@ -8,19 +8,14 @@
 
 typedef void FrameCallback(void* userdata);
 
-struct AudioManager {
-  float tickRate;
-
-  int (*start)(int sampleRate, int audioBufferSize, float tickRate);
-  void (*initChips)(void);
-  void (*setFrameCallback)(FrameCallback *callback, void* userdata);
-  void (*render)(float* buffer, int stereoSamples);
+typedef struct AudioManager {
+  int (*start)(int sampleRate, int audioBufferSize);
   void (*pause)(void);
   void (*resume)(void);
   void (*stop)();
-};
+} AudioManager;
 
 // Singleton AudioManager struct
-extern struct AudioManager audioManager;
+extern AudioManager audioManager;
 
 #endif

@@ -12,6 +12,6 @@ void projectCommonDrawCursor(int col, int row);
 void projectCommonDrawField(int col, int row, int state);
 int projectCommonOnEdit(int col, int row, enum CellEditAction action);
 
-extern struct ScreenData screenProjectAY;
+extern ScreenData screenProjectAY;
 
 #endif

@@ -1,5 +1,5 @@
 #include <screens.h>
-#include <corelib_file.h>
+#include <corelib/corelib_file.h>
 #include <corelib_gfx.h>
 #include <string.h>
 
@@ -92,7 +92,7 @@ static void drawRowHeader(int row, int state) {}
 static void drawColHeader(int col, int state) {}
 static void drawSelection(int col1, int row1, int col2, int row2) {}
 
-static struct ScreenData screenData = {
+static ScreenData screenData = {
   .rows = 2,
   .cursorRow = 0,
   .cursorCol = 0,
@@ -113,7 +113,7 @@ void createFolderSetup(const char* path, void (*createdCallback)(void), void (*c
   folderName[0] = 0;
   onFolderCreated = createdCallback;
   onCancelled = cancelCallback;
-  
+
   screenData.cursorRow = 0;
   screenData.cursorCol = 0;
 }
@@ -133,10 +133,10 @@ static void draw(void) {
 
 static void createFolder(void) {
   if (strlen(folderName) == 0) return;
-  
+
   char fullPath[2048];
   snprintf(fullPath, sizeof(fullPath), "%s%s%s", currentPath, PATH_SEPARATOR_STR, folderName);
-  
+
   if (fileCreateDirectory(fullPath) == 0) {
     if (onFolderCreated) {
       onFolderCreated();
@@ -159,7 +159,7 @@ static void onInput(int keys, int isDoubleTap) {
   }
 }
 
-const struct AppScreen screenCreateFolder = {
+const AppScreen screenCreateFolder = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,

@@ -24,69 +24,59 @@ static int keyRepeatCount;
 static int trackWarningCooldown[PROJECT_MAX_TRACKS];
 
 /**
- * @brief Update chip registers for the next frame
- *
- * @param userdata Arbitraty user data. Not used
- */
-static void frameCallback(void* userdata) {
-  struct SoundChip* chip = chipnomadGetChip(0);
-  if (chip) {
-    playbackNextFrame(&playback, chip);
-  }
-}
-
-/**
- * @brief Handle play/stop key commands
- *
- * @param keys Pressed keys
- * @param isDoubleTap is it a double tap?
- * @return int 0 - input not handled, 1 - input handled
- */
+* @brief Handle play/stop key commands
+*
+* @param keys Pressed keys
+* @param isDoubleTap is it a double tap?
+* @return int 0 - input not handled, 1 - input handled
+*/
 static int inputPlayback(int keys, int isDoubleTap) {
-  int isPlaying = playbackIsPlaying(&playback);
+  if (!chipnomadState) return 0;
+
+  int isPlaying = playbackIsPlaying(&chipnomadState->playbackState);
 
   // Stop phrase row and preview
-  if (playback.tracks[*pSongTrack].mode == playbackModePhraseRow && keys == 0) {
-    playbackStop(&playback);
+  if (chipnomadState->playbackState.tracks[*pSongTrack].mode == playbackModePhraseRow && keys == 0) {
+    playbackStop(&chipnomadState->playbackState);
   }
   // Play song/chain/phrase depending on the current screen
   else if (!isPlaying && keys == keyPlay) {
     // Stop any preview first
-    playbackStop(&playback);
+    playbackStop(&chipnomadState->playbackState);
     if (currentScreen == &screenSong || currentScreen == &screenProject) {
-      playbackStartSong(&playback, *pSongRow, 0, 1);
+      playbackStartSong(&chipnomadState->playbackState, *pSongRow, 0, 1);
     } else if (currentScreen == &screenChain) {
-      playbackStartChain(&playback, *pSongTrack, *pSongRow, *pChainRow, 1);
+      playbackStartChain(&chipnomadState->playbackState, *pSongTrack, *pSongRow, *pChainRow, 1);
     } else {
-      playbackStartPhrase(&playback, *pSongTrack, *pSongRow, *pChainRow, 1);
+      playbackStartPhrase(&chipnomadState->playbackState, *pSongTrack, *pSongRow, *pChainRow, 1);
     }
     return 1;
   }
   // Play song from any screen
   else if (!isPlaying && keys == (keyPlay | keyShift)) {
     // Stop any preview first
-    playbackStop(&playback);
+    playbackStop(&chipnomadState->playbackState);
     if (currentScreen == &screenSong || currentScreen == &screenProject) {
-      playbackStartSong(&playback, *pSongRow, 0, 1);
+      playbackStartSong(&chipnomadState->playbackState, *pSongRow, 0, 1);
     } else {
-      playbackStartSong(&playback, *pSongRow, *pChainRow, 1);
+      playbackStartSong(&chipnomadState->playbackState, *pSongRow, *pChainRow, 1);
     }
     return 1;
   }
   // Stop playback
   else if (isPlaying && keys == keyPlay) {
-    playbackStop(&playback);
+    playbackStop(&chipnomadState->playbackState);
     return 1;
   }
   return 0;
 }
 
 /**
- * @brief App input handler. Handles app-wide commands and then forwards the call to the current screen
- *
- * @param keys Pressed buttons
- * @param isDoubleTap is it a double tap?
- */
+* @brief App input handler. Handles app-wide commands and then forwards the call to the current screen
+*
+* @param keys Pressed buttons
+* @param isDoubleTap is it a double tap?
+*/
 static void appInput(int keys, int isDoubleTap) {
   int volumeChanged = 0;
 
@@ -114,8 +104,8 @@ static void appInput(int keys, int isDoubleTap) {
 //
 
 /**
- * @brief Initialize the application: setup audio system, load auto-saved project, show the first screen
- */
+* @brief Initialize the application: setup audio system, load auto-saved project, show the first screen
+*/
 void appSetup(void) {
   // Keyboard input reset
   pressedButtons = 0;
@@ -126,49 +116,63 @@ void appSetup(void) {
   gfxSetBgColor(appSettings.colorScheme.background);
   gfxClear();
 
-  chipnomadInit();
-
-  // Try to load an auto-saved project
-  if (projectLoad(getAutosavePath())) {
-    // Failed to load autosave, initialize empty project
-    projectInitAY();
+  // Create ChipNomad state
+  chipnomadState = chipnomadCreate();
+  if (!chipnomadState) {
+    // Handle error - for now just exit
+    return;
   }
 
+  // Try to load an auto-saved project
+  if (projectLoad(&chipnomadState->project, getAutosavePath())) {
+    // Failed to load autosave, initialize empty project
+    projectInitAY(&chipnomadState->project);
+  }
+
+  // Copy project to ChipNomadState and reinitialize playback
+  // Project is already initialized in chipnomadState
+  playbackInit(&chipnomadState->playbackState, &chipnomadState->project);
+
+  // Set mix volume from settings
+  chipnomadState->mixVolume = appSettings.mixVolume;
+
   // Initialize audio system
-  playbackInit(&playback, &project);
-  audioManager.start(appSettings.audioSampleRate, appSettings.audioBufferSize, project.tickRate);
-  audioManager.initChips();
-  audioManager.setFrameCallback(frameCallback, NULL);
+  chipnomadInitChips(chipnomadState, appSettings.audioSampleRate, NULL);
+  audioManager.start(appSettings.audioSampleRate, appSettings.audioBufferSize);
   audioManager.resume();
 
   screenSetup(&screenSong, 0);
 }
 
 /**
- * @brief Release all resources before closing the application
- */
+* @brief Release all resources before closing the application
+*/
 void appCleanup(void) {
   audioManager.stop();
+  chipnomadDestroy(chipnomadState);
+  chipnomadState = NULL;
 }
 
 /**
- * @brief Main draw function. Draws playback status
- */
+* @brief Main draw function. Draws playback status
+*/
 void appDraw(void) {
-  const struct ColorScheme cs = appSettings.colorScheme;
+  const ColorScheme cs = appSettings.colorScheme;
 
   screenDraw();
 
+  if (!chipnomadState) return;
+
   // Check for track warnings if enabled
   if (appSettings.pitchConflictWarning) {
-    struct SoundChip* chip = chipnomadGetChip(0);
-    if (chip && chip->detectWarnings) {
+    SoundChip* chip = &chipnomadState->chips[0];
+    if (chip->detectWarnings) {
       chip->detectWarnings(chip, trackWarningCooldown, TRACK_WARNING_COOLDOWN_FRAMES);
     }
   }
-  
+
   // Decrease warning cooldowns
-  for (int i = 0; i < project.tracksCount; i++) {
+  for (int i = 0; i < chipnomadState->project.tracksCount; i++) {
     if (trackWarningCooldown[i] > 0) {
       trackWarningCooldown[i]--;
     }
@@ -176,86 +180,86 @@ void appDraw(void) {
 
   // Tracks
   char digit[2] = "0";
-  for (int c = 0; c < project.tracksCount; c++) {
+  for (int c = 0; c < chipnomadState->project.tracksCount; c++) {
     gfxSetFgColor(*pSongTrack == c ? cs.textDefault : cs.textInfo);
     digit[0] = c + 49;
     gfxPrint(35, 3 + c, digit);
 
-    uint8_t note = playback.tracks[c].note.noteFinal;
-    char* noteStr = noteName(note);
+    uint8_t note = chipnomadState->playbackState.tracks[c].note.noteFinal;
+    char* noteStr = noteName(&chipnomadState->project, note);
 
     // Use warning color if track warning is active
     int useWarningColor = (trackWarningCooldown[c] > 0);
-    
-    gfxSetFgColor(useWarningColor ? cs.warning : 
-                  (noteStr[0] == '-' ? cs.textEmpty : cs.textValue));
-    gfxPrint(37, 3 + c, noteStr);
+
+    gfxSetFgColor(useWarningColor ? cs.warning :
+      (noteStr[0] == '-' ? cs.textEmpty : cs.textValue));
+      gfxPrint(37, 3 + c, noteStr);
   }
 }
 
 /**
- * @brief Main event handler
- *
- * @param event Event
- * @param value Event value
- * @param userdata Arbitraty event data
- */
+* @brief Main event handler
+*
+* @param event Event
+* @param value Event value
+* @param userdata Arbitraty event data
+*/
 void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
   static int dPadMask = keyLeft | keyRight | keyUp | keyDown;
 
   switch (event) {
-    case eventKeyDown:
-      if (value == keyEdit || value == keyOpt || value == keyShift) {
-        // Edit/Opt/Shift "override" d-pad buttons
-        pressedButtons = (pressedButtons & (~dPadMask)) | value;
-      } else {
-        pressedButtons |= value;
-      }
+  case eventKeyDown:
+    if (value == keyEdit || value == keyOpt || value == keyShift) {
+      // Edit/Opt/Shift "override" d-pad buttons
+      pressedButtons = (pressedButtons & (~dPadMask)) | value;
+    } else {
+      pressedButtons |= value;
+    }
 
-      // Double tap is only applicable to Edit button
-      int isDoubleTap = (value == keyEdit && editDoubleTapCount > 0) ? 1 : 0;
+    // Double tap is only applicable to Edit button
+    int isDoubleTap = (value == keyEdit && editDoubleTapCount > 0) ? 1 : 0;
 
-      if (value & dPadMask) {
-        // Key repeats are only applicable to d-pad
-        keyRepeatCount = appSettings.keyRepeatDelay;
-        // As we don't support multiple d-pad keys, keep only the last pressed one
-        pressedButtons = (pressedButtons & ~dPadMask) | value;
-      }
-      appInput(pressedButtons, isDoubleTap);
-      editDoubleTapCount = 0;
-      break;
-    case eventKeyUp:
-      pressedButtons &= ~value;
-      // Double tap is only applicable to Edit button
-      if (value == keyEdit) editDoubleTapCount = appSettings.doubleTapFrames;
+    if (value & dPadMask) {
+      // Key repeats are only applicable to d-pad
+      keyRepeatCount = appSettings.keyRepeatDelay;
+      // As we don't support multiple d-pad keys, keep only the last pressed one
+      pressedButtons = (pressedButtons & ~dPadMask) | value;
+    }
+    appInput(pressedButtons, isDoubleTap);
+    editDoubleTapCount = 0;
+    break;
+  case eventKeyUp:
+    pressedButtons &= ~value;
+    // Double tap is only applicable to Edit button
+    if (value == keyEdit) editDoubleTapCount = appSettings.doubleTapFrames;
 
-      if (pressedButtons == 0) {
-        // Clean untimed screen message when all keys are released
-        screenMessage(0, "");
-        appInput(pressedButtons, 0);
-      }
-      break;
-    case eventTick:
-      if (editDoubleTapCount > 0) editDoubleTapCount--;
-      if (keyRepeatCount > 0) {
-        int maskedButtons = pressedButtons & dPadMask;
-        // Only one d-pad button can be pressed for key repeats
-        if (maskedButtons == keyLeft || maskedButtons == keyRight || maskedButtons == keyUp || maskedButtons == keyDown) {
-          keyRepeatCount--;
-          if (keyRepeatCount == 0) {
-            keyRepeatCount = appSettings.keyRepeatSpeed;
-            appInput(pressedButtons, 0);
-          }
-        } else {
-          keyRepeatCount = 0;
+    if (pressedButtons == 0) {
+      // Clean untimed screen message when all keys are released
+      screenMessage(0, "");
+      appInput(pressedButtons, 0);
+    }
+    break;
+  case eventTick:
+    if (editDoubleTapCount > 0) editDoubleTapCount--;
+    if (keyRepeatCount > 0) {
+      int maskedButtons = pressedButtons & dPadMask;
+      // Only one d-pad button can be pressed for key repeats
+      if (maskedButtons == keyLeft || maskedButtons == keyRight || maskedButtons == keyUp || maskedButtons == keyDown) {
+        keyRepeatCount--;
+        if (keyRepeatCount == 0) {
+          keyRepeatCount = appSettings.keyRepeatSpeed;
+          appInput(pressedButtons, 0);
         }
+      } else {
+        keyRepeatCount = 0;
       }
-      break;
-    case eventExit:
-      // Auto-save the current project on exit
-      projectSave(getAutosavePath());
-      // Save settings on exit
-      settingsSave();
-      break;
+    }
+    break;
+  case eventExit:
+    // Auto-save the current project on exit
+    projectSave(&chipnomadState->project, getAutosavePath());
+    // Save settings on exit
+    settingsSave();
+    break;
   }
 }

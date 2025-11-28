@@ -17,7 +17,7 @@ static void drawCursor(int col, int row);
 static void drawSelection(int col1, int row1, int col2, int row2);
 static int onEdit(int col, int row, enum CellEditAction action);
 
-static struct ScreenData screen = {
+static ScreenData screen = {
   .rows = 16,
   .cursorRow = 0,
   .cursorCol = 0,
@@ -47,25 +47,25 @@ static int getColumnCount(int row) {
 }
 
 static void drawStatic(void) {
-  const struct ColorScheme cs = appSettings.colorScheme;
+  const ColorScheme cs = appSettings.colorScheme;
   gfxSetFgColor(cs.textTitles);
   gfxPrintf(0, 0, "GROOVE %02X", groove);
 }
 
 static void drawField(int col, int row, int state) {
-  uint8_t value = project.grooves[groove].speed[row];
+  uint8_t value = chipnomadState->project.grooves[groove].speed[row];
   setCellColor(state, value == EMPTY_VALUE_8, value != 0);
   gfxPrintf(3, 3 + row, byteToHexOrEmpty(value));
 }
 
 static void drawRowHeader(int row, int state) {
-  const struct ColorScheme cs = appSettings.colorScheme;
+  const ColorScheme cs = appSettings.colorScheme;
   gfxSetFgColor((state & stateFocus) ? cs.textDefault : cs.textInfo);
   gfxPrintf(1, 3 + row, "%X", row);
 }
 
 static void drawColHeader(int col, int state) {
-  const struct ColorScheme cs = appSettings.colorScheme;
+  const ColorScheme cs = appSettings.colorScheme;
   gfxSetFgColor((state & stateFocus) ? cs.textDefault : cs.textInfo);
   gfxPrint(3, 2, "T");  // T for Timing
 }
@@ -87,8 +87,8 @@ static void draw(void) {
   gfxClearRect(2, 3, 1, 16);
 
   // Show play position if this groove is currently playing
-  if (playback.tracks[*pSongTrack].grooveIdx == groove) {
-    int row = playback.tracks[*pSongTrack].grooveRow;
+  if (chipnomadState->playbackState.tracks[*pSongTrack].grooveIdx == groove) {
+    int row = chipnomadState->playbackState.tracks[*pSongTrack].grooveRow;
     if (row >= 0 && row < 16) {
       gfxSetFgColor(appSettings.colorScheme.playMarkers);
       gfxPrint(2, 3 + row, ">");
@@ -97,7 +97,7 @@ static void draw(void) {
 }
 
 static int editCell(int col, int row, enum CellEditAction action) {
-  return edit8withLimit(action, &project.grooves[groove].speed[row], &lastValue, 16, EMPTY_VALUE_8 - 1);
+  return edit8withLimit(action, &chipnomadState->project.grooves[groove].speed[row], &lastValue, 16, EMPTY_VALUE_8 - 1);
 }
 
 static int onEdit(int col, int row, enum CellEditAction action) {
@@ -165,7 +165,7 @@ static void onInput(int keys, int isDoubleTap) {
   screenInput(&screen, keys, isDoubleTap);
 }
 
-const struct AppScreen screenGroove = {
+const AppScreen screenGroove = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,

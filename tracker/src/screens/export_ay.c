@@ -1,6 +1,6 @@
 #include <screen_export.h>
 #include <corelib_gfx.h>
-#include <corelib_file.h>
+#include <corelib/corelib_file.h>
 #include <common.h>
 #include <screens.h>
 #include <export/export.h>
@@ -44,11 +44,11 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   if (row == SCR_EXPORT_ROWS) {
     // PSG Export
     if (currentExporter) return 1; // Already exporting
-    
+
     char exportPath[1024];
     generateExportPath(exportPath, sizeof(exportPath), "psg");
 
-    currentExporter = createPSGExporter(exportPath, &project, 0);
+    currentExporter = createPSGExporter(exportPath, &chipnomadState->project, 0);
     if (currentExporter) {
       screenMessage(MESSAGE_TIME, "Starting export...");
     } else {
@@ -64,7 +64,7 @@ static void drawRowHeader(int row, int state) {}
 static void drawColHeader(int col, int state) {}
 static void drawSelection(int col1, int row1, int col2, int row2) {}
 
-struct ScreenData screenExportAY = {
+ScreenData screenExportAY = {
   .rows = 4,
   .cursorRow = 0,
   .cursorCol = 0,

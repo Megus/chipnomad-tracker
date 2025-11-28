@@ -13,7 +13,7 @@ static void settingsDrawColHeader(int col, int state);
 static void settingsDrawField(int col, int row, int state);
 static int settingsOnEdit(int col, int row, enum CellEditAction action);
 
-static struct ScreenData screenSettingsData = {
+static ScreenData screenSettingsData = {
   .rows = 2,
   .cursorRow = 0,
   .cursorCol = 0,
@@ -42,7 +42,7 @@ int settingsColumnCount(int row) {
 }
 
 void settingsDrawStatic(void) {
-  const struct ColorScheme cs = appSettings.colorScheme;
+  const ColorScheme cs = appSettings.colorScheme;
 
   gfxSetFgColor(cs.textTitles);
   gfxPrint(0, 0, "SETTINGS");
@@ -100,7 +100,7 @@ static void onInput(int keys, int isDoubleTap) {
   screenInput(&screenSettingsData, keys, isDoubleTap);
 }
 
-const struct AppScreen screenSettings = {
+const AppScreen screenSettings = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,

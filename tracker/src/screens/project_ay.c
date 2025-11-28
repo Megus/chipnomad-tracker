@@ -3,6 +3,7 @@
 #include <string.h>
 #include <audio_manager.h>
 #include <chipnomad_lib.h>
+#include <common.h>
 
 
 int chipClockLength = 0;
@@ -57,7 +58,7 @@ static void drawCursor(int col, int row) {
   if (row < SCR_PROJECT_ROWS) return projectCommonDrawCursor(col, row);
   if (row == SCR_PROJECT_ROWS) {
     // Chip type
-    gfxCursor(13, 10, project.chipSetup.ay.isYM ? 7 : 9);
+    gfxCursor(13, 10, chipnomadState->project.chipSetup.ay.isYM ? 7 : 9);
   } else if (row == SCR_PROJECT_ROWS + 1) {
     // Panning scheme
     gfxCursor(13, 11, 3);
@@ -69,7 +70,7 @@ static void drawCursor(int col, int row) {
     gfxCursor(13, 13, chipClockLength);
   } else if (row == SCR_PROJECT_ROWS + 4) {
     // Pitch table
-    gfxCursor(13, 14, strlen(project.pitchTable.name));
+    gfxCursor(13, 14, strlen(chipnomadState->project.pitchTable.name));
   }
 }
 
@@ -80,22 +81,22 @@ static void drawField(int col, int row, int state) {
 
   if (row == SCR_PROJECT_ROWS) {
     gfxClearRect(13, 10, 9, 1);
-    gfxPrint(13, 10, project.chipSetup.ay.isYM ? "YM2149F" : "AY-3-8910");
+    gfxPrint(13, 10, chipnomadState->project.chipSetup.ay.isYM ? "YM2149F" : "AY-3-8910");
   } else if (row == SCR_PROJECT_ROWS + 1) {
     // Panning scheme
     gfxClearRect(13, 11, 5, 1);
-    gfxPrint(13, 11, stereoModes[project.chipSetup.ay.stereoMode]);
+    gfxPrint(13, 11, stereoModes[chipnomadState->project.chipSetup.ay.stereoMode]);
   } else if (row == SCR_PROJECT_ROWS + 2) {
     // Stereo width
-    gfxPrintf(13, 12, "%03d%%", project.chipSetup.ay.stereoSeparation);
+    gfxPrintf(13, 12, "%03d%%", chipnomadState->project.chipSetup.ay.stereoSeparation);
   } else if (row == SCR_PROJECT_ROWS + 3) {
-    int presetIndex = getClockPresetIndex(project.chipSetup.ay.clock);
+    int presetIndex = getClockPresetIndex(chipnomadState->project.chipSetup.ay.clock);
     char clockText[20];
 
     if (presetIndex >= 0) {
       strcpy(clockText, clockNames[presetIndex]);
     } else {
-      snprintf(clockText, sizeof(clockText), "%d Hz", project.chipSetup.ay.clock);
+      snprintf(clockText, sizeof(clockText), "%d Hz", chipnomadState->project.chipSetup.ay.clock);
     }
 
     chipClockLength = strlen(clockText);
@@ -103,7 +104,7 @@ static void drawField(int col, int row, int state) {
     gfxPrint(13, 13, clockText);
   } else if (row == SCR_PROJECT_ROWS + 4) {
     gfxClearRect(13, 14, PROJECT_PITCH_TABLE_TITLE_LENGTH, 1);
-    gfxPrint(13, 14, project.pitchTable.name);
+    gfxPrint(13, 14, chipnomadState->project.pitchTable.name);
   }
 }
 
@@ -114,35 +115,35 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 
   if (row == SCR_PROJECT_ROWS) {
     // Chip subtype (AY-3-8910 / YM2149F)
-    handled = edit8noLast(action, &project.chipSetup.ay.isYM, 1, 0, 1);
-    if (handled) {
-      struct SoundChip* chip = chipnomadGetChip(0);
-      if (chip) updateChipAYType(chip, project.chipSetup.ay.isYM);
+    handled = edit8noLast(action, &chipnomadState->project.chipSetup.ay.isYM, 1, 0, 1);
+    if (handled && chipnomadState) {
+      SoundChip* chip = &chipnomadState->chips[0];
+      updateChipAYType(chip, chipnomadState->project.chipSetup.ay.isYM);
     }
   } else if (row == SCR_PROJECT_ROWS + 1) {
     // Stereo mode (ABC, ACB, BAC)
-    handled = edit8noLast(action, (uint8_t*)&project.chipSetup.ay.stereoMode, 1, 0, 2);
-    if (handled) {
-      struct SoundChip* chip = chipnomadGetChip(0);
-      if (chip) updateChipAYStereoMode(chip, project.chipSetup.ay.stereoMode, project.chipSetup.ay.stereoSeparation);
+    handled = edit8noLast(action, (uint8_t*)&chipnomadState->project.chipSetup.ay.stereoMode, 1, 0, 2);
+    if (handled && chipnomadState) {
+      SoundChip* chip = &chipnomadState->chips[0];
+      updateChipAYStereoMode(chip, chipnomadState->project.chipSetup.ay.stereoMode, chipnomadState->project.chipSetup.ay.stereoSeparation);
     }
   } else if (row == SCR_PROJECT_ROWS + 2) {
     // Stereo width (0-100%)
-    handled = edit8noLast(action, &project.chipSetup.ay.stereoSeparation, 10, 0, 100);
-    if (handled) {
-      struct SoundChip* chip = chipnomadGetChip(0);
-      if (chip) updateChipAYStereoMode(chip, project.chipSetup.ay.stereoMode, project.chipSetup.ay.stereoSeparation);
+    handled = edit8noLast(action, &chipnomadState->project.chipSetup.ay.stereoSeparation, 10, 0, 100);
+    if (handled && chipnomadState) {
+      SoundChip* chip = &chipnomadState->chips[0];
+      updateChipAYStereoMode(chip, chipnomadState->project.chipSetup.ay.stereoMode, chipnomadState->project.chipSetup.ay.stereoSeparation);
     }
   } else if (row == SCR_PROJECT_ROWS + 3) {
     // Chip clock presets
-    int presetIndex = getClockPresetIndex(project.chipSetup.ay.clock);
+    int presetIndex = getClockPresetIndex(chipnomadState->project.chipSetup.ay.clock);
     if (presetIndex < 0) presetIndex = 0; // Default to first preset if not found
     uint8_t newIndex = presetIndex;
     handled = edit8noLast(action, &newIndex, 1, 0, 4);
-    if (handled) {
-      project.chipSetup.ay.clock = clockPresets[newIndex];
-      struct SoundChip* chip = chipnomadGetChip(0);
-      if (chip) updateChipAYClock(chip, project.chipSetup.ay.clock, appSettings.audioSampleRate);
+    if (handled && chipnomadState) {
+      chipnomadState->project.chipSetup.ay.clock = clockPresets[newIndex];
+      SoundChip* chip = &chipnomadState->chips[0];
+      updateChipAYClock(chip, chipnomadState->project.chipSetup.ay.clock, appSettings.audioSampleRate);
     }
   } else if (row == SCR_PROJECT_ROWS + 4) {
     // Pitch table - enter pitch table screen
@@ -153,7 +154,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   return handled;
 }
 
-struct ScreenData screenProjectAY = {
+ScreenData screenProjectAY = {
   .rows = 12,
   .cursorRow = 0,
   .cursorCol = 0,

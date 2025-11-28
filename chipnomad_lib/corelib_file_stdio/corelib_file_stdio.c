@@ -74,48 +74,48 @@ int fileSeek(int fileId, long offset, int whence) {
   return fseek(files[fileId], offset, whence);
 }
 
-struct FileEntry* fileListDirectory(const char* path, const char* extension, int* entryCount) {
+FileEntry* fileListDirectory(const char* path, const char* extension, int* entryCount) {
   DIR* dir = opendir(path);
   if (!dir) {
     *entryCount = 0;
     return NULL;
   }
-  
+
   struct dirent* entry;
   int capacity = 100;
   int count = 0;
-  struct FileEntry* entries = malloc(capacity * sizeof(struct FileEntry));
-  
+  FileEntry* entries = malloc(capacity * sizeof(FileEntry));
+
   if (!entries) {
     closedir(dir);
     *entryCount = 0;
     return NULL;
   }
-  
+
   while ((entry = readdir(dir))) {
     // Skip hidden files and current directory
     if (entry->d_name[0] == '.') {
       // Allow ".." for parent directory
       if (strcmp(entry->d_name, "..") != 0) continue;
     }
-    
+
     char fullPath[2048];
     snprintf(fullPath, sizeof(fullPath), "%s%s%s", path, PATH_SEPARATOR_STR, entry->d_name);
-    
+
     struct stat statBuf;
     if (stat(fullPath, &statBuf) != 0) continue;
-    
+
     int isDir = S_ISDIR(statBuf.st_mode);
-    
+
     if (!isDir && extension && extension[0] != '\0') {
       char* dot = strrchr(entry->d_name, '.');
       if (!dot) continue;
-      
+
       int match = 0;
       const char* pos = extension;
       while (pos) {
-        if (strcasecmp(pos, dot) == 0 || 
-            (strncasecmp(pos, dot, strlen(dot)) == 0 && pos[strlen(dot)] == ',')) {
+        if (strcasecmp(pos, dot) == 0 ||
+        (strncasecmp(pos, dot, strlen(dot)) == 0 && pos[strlen(dot)] == ',')) {
           match = 1;
           break;
         }
@@ -124,11 +124,11 @@ struct FileEntry* fileListDirectory(const char* path, const char* extension, int
       }
       if (!match) continue;
     }
-    
+
     // Resize array if needed
     if (count >= capacity) {
       capacity *= 2;
-      struct FileEntry* newEntries = realloc(entries, capacity * sizeof(struct FileEntry));
+      FileEntry* newEntries = realloc(entries, capacity * sizeof(FileEntry));
       if (!newEntries) {
         free(entries);
         closedir(dir);
@@ -137,13 +137,13 @@ struct FileEntry* fileListDirectory(const char* path, const char* extension, int
       }
       entries = newEntries;
     }
-    
+
     strncpy(entries[count].name, entry->d_name, 255);
     entries[count].name[255] = 0;
     entries[count].isDirectory = isDir;
     count++;
   }
-  
+
   closedir(dir);
   *entryCount = count;
   return entries;
@@ -163,9 +163,9 @@ int fileDelete(const char* path) {
 }
 
 int fileCreateDirectory(const char* path) {
-#ifdef _WIN32
+  #ifdef _WIN32
   return mkdir(path) == 0 ? 0 : -1;
-#else
+  #else
   return mkdir(path, 0755) == 0 ? 0 : -1;
-#endif
+  #endif
 }

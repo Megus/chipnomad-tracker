@@ -11,7 +11,7 @@
 #define FILENAME_LENGTH (24)
 #define PATH_LENGTH (4096)
 
-struct ColorScheme {
+typedef struct ColorScheme {
   int background;
   int textEmpty;
   int textInfo;
@@ -22,9 +22,9 @@ struct ColorScheme {
   int cursor;
   int selection;
   int warning;
-};
+} ColorScheme;
 
-struct AppSettings {
+typedef struct AppSettings {
   int screenWidth;
   int screenHeight;
   int audioSampleRate;
@@ -35,19 +35,19 @@ struct AppSettings {
   float volume;
   float mixVolume;
   int pitchConflictWarning;
-  struct ColorScheme colorScheme;
+  ColorScheme colorScheme;
   char projectFilename[FILENAME_LENGTH + 1];
   char projectPath[PATH_LENGTH + 1];
   char pitchTablePath[PATH_LENGTH + 1];
   char instrumentPath[PATH_LENGTH + 1];
-};
+} AppSettings;
 
-extern struct AppSettings appSettings;
+extern AppSettings appSettings;
 extern int* pSongRow;
 extern int* pSongTrack;
 extern int* pChainRow;
 
-extern struct PlaybackState playback;
+extern ChipNomadState* chipnomadState;
 
 // Settings functions
 int settingsSave(void);

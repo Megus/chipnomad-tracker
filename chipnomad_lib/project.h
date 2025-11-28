@@ -61,15 +61,15 @@ enum FX {
   fxTotalCount
 };
 
-struct FXName {
+typedef struct FXName {
   enum FX fx;
   char name[4];
-};
+} FXName;
 
-extern struct FXName fxNames[256]; // All names
-extern struct FXName fxNamesCommon[]; // Common FX names
+extern FXName fxNames[256]; // All names
+extern FXName fxNamesCommon[]; // Common FX names
 extern int fxCommonCount;
-extern struct FXName fxNamesAY[]; // AY FX names
+extern FXName fxNamesAY[]; // AY FX names
 extern int fxAYCount;
 
 // Chips
@@ -85,29 +85,29 @@ enum StereoModeAY {
   ayStereoBAC,
 };
 
-struct ChipSetupAY {
+typedef struct ChipSetupAY {
   int clock;
   uint8_t isYM;
   enum StereoModeAY stereoMode;
   uint8_t stereoSeparation;
-};
+} ChipSetupAY;
 
-union ChipSetup {
-  struct ChipSetupAY ay;
-};
+typedef union ChipSetup {
+  ChipSetupAY ay;
+} ChipSetup;
 
 // Tables
 
-struct TableRow {
+typedef struct TableRow {
   uint8_t pitchFlag;
   uint8_t pitchOffset;
   uint8_t volume;
   uint8_t fx[4][2];
-};
+} TableRow;
 
-struct Table {
-  struct TableRow rows[16];
-};
+typedef struct Table {
+  TableRow rows[16];
+} Table;
 
 // Instruments
 
@@ -116,117 +116,114 @@ enum InstrumentType {
   instAY = 1,
 };
 
-struct InstrumentAY {
+typedef struct InstrumentAY {
   uint8_t veA;
   uint8_t veD;
   uint8_t veS;
   uint8_t veR;
   uint8_t autoEnvN; // 0 - no auto-env
   uint8_t autoEnvD;
-};
+} InstrumentAY;
 
-union InstrumentChipData {
-  struct InstrumentAY ay;
-};
+typedef union InstrumentChipData {
+  InstrumentAY ay;
+} InstrumentChipData;
 
-struct Instrument {
+typedef struct Instrument {
   uint8_t type; // enum InstrumentType
   char name[PROJECT_INSTRUMENT_NAME_LENGTH + 1];
   uint8_t tableSpeed;
   uint8_t transposeEnabled;
-  union InstrumentChipData chip;
-};
+  InstrumentChipData chip;
+} Instrument;
 
 // Grooves
 
-struct Groove {
+typedef struct Groove {
   uint8_t speed[16];
-};
+} Groove;
 
 // Phrases
 
-struct PhraseRow {
+typedef struct PhraseRow {
   uint8_t note;
   uint8_t instrument;
   uint8_t volume;
   uint8_t fx[3][2];
-};
+} PhraseRow;
 
-struct Phrase {
-  struct PhraseRow rows[16];
-};
+typedef struct Phrase {
+  PhraseRow rows[16];
+} Phrase;
 
 // Chains
 
-struct ChainRow {
+typedef struct ChainRow {
   uint16_t phrase;
   uint8_t transpose;
-};
+} ChainRow;
 
-struct Chain {
-  struct ChainRow rows[16];
-};
+typedef struct Chain {
+  ChainRow rows[16];
+} Chain;
 
 // Project
 
-struct PitchTable {
+typedef struct PitchTable {
   char name[PROJECT_PITCH_TABLE_TITLE_LENGTH + 1];
   uint16_t octaveSize;
   uint16_t length;
   uint16_t values[PROJECT_MAX_PITCHES];
   char noteNames[PROJECT_MAX_PITCHES][4];
-};
+} PitchTable;
 
-struct Project {
+typedef struct Project {
   char title[PROJECT_TITLE_LENGTH + 1];
   char author[PROJECT_TITLE_LENGTH + 1];
 
   float tickRate;
   enum ChipType chipType;
-  union ChipSetup chipSetup;
+  ChipSetup chipSetup;
   int chipsCount;
 
   int tracksCount;
 
-  struct PitchTable pitchTable;
+  PitchTable pitchTable;
 
   uint16_t song[PROJECT_MAX_LENGTH][PROJECT_MAX_TRACKS];
-  struct Chain chains[PROJECT_MAX_CHAINS];
-  struct Phrase phrases[PROJECT_MAX_PHRASES];
-  struct Groove grooves[PROJECT_MAX_GROOVES];
-  struct Instrument instruments[PROJECT_MAX_INSTRUMENTS];
-  struct Table tables[PROJECT_MAX_TABLES];
-};
-
-// Current project
-extern struct Project project;
+  Chain chains[PROJECT_MAX_CHAINS];
+  Phrase phrases[PROJECT_MAX_PHRASES];
+  Groove grooves[PROJECT_MAX_GROOVES];
+  Instrument instruments[PROJECT_MAX_INSTRUMENTS];
+  Table tables[PROJECT_MAX_TABLES];
+} Project;
 
 extern char projectFileError[41];
 
 // Fill FX names (call this first before loading any projects)
 void fillFXNames();
 // Initialize an empty project
-void projectInit(struct Project* p);
+void projectInit(Project* p);
 // Load project from a file
-int projectLoad(const char* path);
+int projectLoad(Project* p, const char* path);
 // Save project to a file
-int projectSave(const char* path);
+int projectSave(Project* p, const char* path);
 // Save instrument to a file
-int instrumentSave(const char* path, int instrumentIdx);
+int instrumentSave(Project* p, const char* path, int instrumentIdx);
 // Load instrument from a file
-int instrumentLoad(const char* path, int instrumentIdx);
+int instrumentLoad(Project* p, const char* path, int instrumentIdx);
 
 // Is chain empty?
-int8_t chainIsEmpty(int chain);
+int8_t chainIsEmpty(Project* p, int chain);
 // Is phrase empty?
-int8_t phraseIsEmpty(int phrase);
+int8_t phraseIsEmpty(Project* p, int phrase);
 // Is instrument empty?
-int8_t instrumentIsEmpty(int instrument);
+int8_t instrumentIsEmpty(Project* p, int instrument);
 // Is table empty?
-int8_t tableIsEmpty(int table);
+int8_t tableIsEmpty(Project* p, int table);
 // Is groove empty?
-int8_t grooveIsEmpty(int groove);
+int8_t grooveIsEmpty(Project* p, int groove);
 // Note name in phrase
-char* noteName(uint8_t note);
+char* noteName(Project* p, uint8_t note);
 
 #endif

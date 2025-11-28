@@ -1,5 +1,5 @@
 #include <screens.h>
-#include <corelib_file.h>
+#include <corelib/corelib_file.h>
 #include <corelib_gfx.h>
 #include <file_browser.h>
 #include <chipnomad_lib.h>
@@ -11,8 +11,8 @@ static char* editingString = NULL;
 static int editingStringLength = 0;
 
 static void onLoadSelected(const char* path) {
-  if (pitchTableLoadCSV(path) == 0) {
-    extractFilenameWithoutExtension(path, project.pitchTable.name, PROJECT_PITCH_TABLE_TITLE_LENGTH + 1);
+  if (pitchTableLoadCSV(&chipnomadState->project, path) == 0) {
+    extractFilenameWithoutExtension(path, chipnomadState->project.pitchTable.name, PROJECT_PITCH_TABLE_TITLE_LENGTH + 1);
 
     // Save the directory path
     char* lastSeparator = strrchr(path, PATH_SEPARATOR);
@@ -26,7 +26,7 @@ static void onLoadSelected(const char* path) {
 }
 
 static void onSaveSelected(const char* folderPath) {
-  pitchTableSaveCSV(folderPath, project.pitchTable.name);
+  pitchTableSaveCSV(&chipnomadState->project, folderPath, chipnomadState->project.pitchTable.name);
 
   // Save the directory path
   strncpy(appSettings.pitchTablePath, folderPath, PATH_LENGTH);
@@ -69,7 +69,7 @@ static void drawField(int col, int row, int state) {
 
   if (row == 0) {
     gfxClearRect(7, 2, PROJECT_PITCH_TABLE_TITLE_LENGTH, 1);
-    gfxPrintf(7, 2, "%s", project.pitchTable.name);
+    gfxPrintf(7, 2, "%s", chipnomadState->project.pitchTable.name);
   } else if (row == 1) {
     gfxPrint(0, 4, "Load from CSV");
   } else if (row == 2) {
@@ -84,10 +84,10 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 
   if (row == 0) {
     // Name editing
-    int res = editCharacter(action, project.pitchTable.name, col, PROJECT_PITCH_TABLE_TITLE_LENGTH);
+    int res = editCharacter(action, chipnomadState->project.pitchTable.name, col, PROJECT_PITCH_TABLE_TITLE_LENGTH);
     if (res == 1) {
       isCharEdit = 1;
-      editingString = project.pitchTable.name;
+      editingString = chipnomadState->project.pitchTable.name;
       editingStringLength = PROJECT_PITCH_TABLE_TITLE_LENGTH;
     } else if (res > 1) {
       handled = 1;
@@ -98,11 +98,11 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     screenSetup(&screenFileBrowser, 0);
   } else if (row == 2) {
     // Save to CSV
-    fileBrowserSetupFolderMode("SAVE PITCH TABLE", appSettings.pitchTablePath, project.pitchTable.name, ".csv", onSaveSelected, onCancelled);
+    fileBrowserSetupFolderMode("SAVE PITCH TABLE", appSettings.pitchTablePath, chipnomadState->project.pitchTable.name, ".csv", onSaveSelected, onCancelled);
     screenSetup(&screenFileBrowser, 0);
   } else if (row == 3) {
     // Generate for current clock
-    calculatePitchTableAY(&project);
+    calculatePitchTableAY(&chipnomadState->project);
     drawField(0, 0, 0); // Still needed to redraw the pitch table name
     handled = 1;
   }
@@ -114,7 +114,7 @@ static void drawRowHeader(int row, int state) {}
 static void drawColHeader(int col, int state) {}
 static void drawSelection(int col1, int row1, int col2, int row2) {}
 
-static struct ScreenData screenPitchTableData = {
+static ScreenData screenPitchTableData = {
   .rows = 4,
   .cursorRow = 0,
   .cursorCol = 0,
@@ -166,7 +166,7 @@ static void onInput(int keys, int isDoubleTap) {
   }
 }
 
-const struct AppScreen screenPitchTable = {
+const AppScreen screenPitchTable = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,

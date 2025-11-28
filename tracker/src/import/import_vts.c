@@ -3,7 +3,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <chipnomad_lib.h>
-#include <corelib_file.h>
+#include <corelib/corelib_file.h>
+#include <common.h>
 
 #define VTS_COL_TONE        0
 #define VTS_COL_NOISE       1
@@ -65,7 +66,7 @@ static int parseVTSOffset(const char* str) {
   return sign * value;
 }
 
-static void initTableRow(struct TableRow* row) {
+static void initTableRow(TableRow* row) {
   row->pitchFlag = 0;
   row->pitchOffset = 0;
   row->volume = EMPTY_VALUE_8;
@@ -85,7 +86,7 @@ static inline int clampToInt8(int value) {
   return value;
 }
 
-static void setPitEffect(struct TableRow* row, int pitValue) {
+static void setPitEffect(TableRow* row, int pitValue) {
   row->fx[FX_SLOT_PITCH][0] = fxPIT;
   row->fx[FX_SLOT_PITCH][1] = (uint8_t)pitValue;
 }
@@ -93,22 +94,22 @@ static void setPitEffect(struct TableRow* row, int pitValue) {
 static int findReferenceNote() {
   // Find Ref note in the pitch table
   // This will be used as anchor for absolute pitch mode
-  for (int i = 0; i < project.pitchTable.length; i++) {
-    if (strcmp(project.pitchTable.noteNames[i], VTS_REFERENCE_NOTE) == 0) {
+  for (int i = 0; i < chipnomadState->project.pitchTable.length; i++) {
+    if (strcmp(chipnomadState->project.pitchTable.noteNames[i], VTS_REFERENCE_NOTE) == 0) {
       return i;
     }
   }
-  return project.pitchTable.length / 2;
+  return chipnomadState->project.pitchTable.length / 2;
 }
 
 /*static int getReferenceNotePeriod(int referenceNoteIdx) {
-  if (referenceNoteIdx >= 0 && referenceNoteIdx < project.pitchTable.length) {
-    return project.pitchTable.values[referenceNoteIdx];
+  if (referenceNoteIdx >= 0 && referenceNoteIdx < chipnomadState->project.pitchTable.length) {
+    return chipnomadState->project.pitchTable.values[referenceNoteIdx];
   }
   return 1000;
 }*/
 
-static void parseVTSLine(const char* line, struct TableRow* row) {
+static void parseVTSLine(const char* line, TableRow* row) {
   initTableRow(row);
 
   size_t len = strlen(line);
@@ -134,7 +135,7 @@ static void parseVTSLine(const char* line, struct TableRow* row) {
   }
 
   if (len >= VTS_COL_NOISE_OFFSET + 4 &&
-      (line[VTS_COL_NOISE_OFFSET] == '+' || line[VTS_COL_NOISE_OFFSET] == '-')) {
+    (line[VTS_COL_NOISE_OFFSET] == '+' || line[VTS_COL_NOISE_OFFSET] == '-')) {
     int noiseOffset = parseVTSOffset(&line[VTS_COL_NOISE_OFFSET]);
     if (noiseOffset != 0) {
       row->fx[FX_SLOT_NOISE][0] = fxNOA;
@@ -149,14 +150,14 @@ static void parseVTSLine(const char* line, struct TableRow* row) {
   }
 
   int mixerMode = (hasTone ? AYM_TONE_BIT : 0) |
-                  (hasNoise ? AYM_NOISE_BIT : 0) |
-                  (hasEnv ? AYM_ENVELOPE_BIT : 0);
+  (hasNoise ? AYM_NOISE_BIT : 0) |
+  (hasEnv ? AYM_ENVELOPE_BIT : 0);
 
   row->fx[FX_SLOT_MIXER][0] = fxAYM;
   row->fx[FX_SLOT_MIXER][1] = mixerMode;
 }
 
-static void initAYInstrument(struct Instrument* inst) {
+static void initAYInstrument(Instrument* inst) {
   inst->type = instAY;
   inst->tableSpeed = 1;
   inst->transposeEnabled = 1;
@@ -209,8 +210,8 @@ int instrumentLoadVTS(const char* path, int instrumentIdx) {
     return 1;
   }
 
-  struct Instrument* inst = &project.instruments[instrumentIdx];
-  struct Table* table = &project.tables[instrumentIdx];
+  Instrument* inst = &chipnomadState->project.instruments[instrumentIdx];
+  Table* table = &chipnomadState->project.tables[instrumentIdx];
 
   initAYInstrument(inst);
 
@@ -237,8 +238,7 @@ int instrumentLoadVTS(const char* path, int instrumentIdx) {
       loopRow = rowCount;
     }
 
-    if (lineLen >= VTS_COL_PITCH + 5 &&
-        (lpstr[VTS_COL_PITCH] == '+' || lpstr[VTS_COL_PITCH] == '-')) {
+    if (lineLen >= VTS_COL_PITCH + 5 && (lpstr[VTS_COL_PITCH] == '+' || lpstr[VTS_COL_PITCH] == '-')) {
       vtsOffsets[rowCount] = parseVTSOffset(&lpstr[VTS_COL_PITCH]);
     }
 
@@ -247,9 +247,9 @@ int instrumentLoadVTS(const char* path, int instrumentIdx) {
   }
 
   /* Convert VTS pitch offsets to ChipNomad pitch commands
-     Strategy:
-     - Below threshold: Use PIT command (relative pitch adjustment, 128 range)
-     - Above threshold: Use absolute note (C-4 reference) + or - PIT for fine-tuning
+  Strategy:
+  - Below threshold: Use PIT command (relative pitch adjustment, 128 range)
+  - Above threshold: Use absolute note (C-4 reference) + or - PIT for fine-tuning
 
   Note: VTS offsets are cumulative/absolute (relative to 0), but we convert to deltas*/
 
@@ -275,12 +275,12 @@ int instrumentLoadVTS(const char* path, int instrumentIdx) {
       int absOffset = abs(currentVTSOffset);
 
       // Walk pitch table to find how many whole semitones fit in the absolute VTS offset
-      while (currentNote >= 0 && currentNote < project.pitchTable.length - 1) {
+      while (currentNote >= 0 && currentNote < chipnomadState->project.pitchTable.length - 1) {
         int nextNote = currentNote + direction;
-        if (nextNote < 0 || nextNote >= project.pitchTable.length) break;
+        if (nextNote < 0 || nextNote >= chipnomadState->project.pitchTable.length) break;
 
-        int stepSize = abs(project.pitchTable.values[currentNote] -
-                          project.pitchTable.values[nextNote]);
+        int stepSize = abs(chipnomadState->project.pitchTable.values[currentNote] -
+          chipnomadState->project.pitchTable.values[nextNote]);
 
         if (accumulatedPeriod + stepSize > absOffset) break;
 
@@ -297,12 +297,12 @@ int instrumentLoadVTS(const char* path, int instrumentIdx) {
       int prevDirection = (prevOffset > 0) ? -1 : 1;
       int absPrevOffset = abs(prevOffset);
 
-      while (prevNote >= 0 && prevNote < project.pitchTable.length - 1) {
+      while (prevNote >= 0 && prevNote < chipnomadState->project.pitchTable.length - 1) {
         int nextNote = prevNote + prevDirection;
-        if (nextNote < 0 || nextNote >= project.pitchTable.length) break;
+        if (nextNote < 0 || nextNote >= chipnomadState->project.pitchTable.length) break;
 
-        int stepSize = abs(project.pitchTable.values[prevNote] -
-                          project.pitchTable.values[nextNote]);
+        int stepSize = abs(chipnomadState->project.pitchTable.values[prevNote] -
+          chipnomadState->project.pitchTable.values[nextNote]);
 
         if (prevAccumulated + stepSize > absPrevOffset) break;
 

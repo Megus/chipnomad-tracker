@@ -8,18 +8,18 @@
 #include <playback.h>
 #include "config.h"
 
-struct VisualState {
-    SDL_Renderer* renderer;
-    struct Project* project;
-    struct PlaybackState* playback;
-    int* isPlaying;
-    FT_Library ftLibrary;
-    FT_Face ftFace;
-    struct VisualizerConfig* config;
-};
+typedef struct VisualState {
+  SDL_Renderer* renderer;
+  Project* project;
+  PlaybackState* playback;
+  int* isPlaying;
+  FT_Library ftLibrary;
+  FT_Face ftFace;
+  VisualizerConfig* config;
+} VisualState;
 
-int visualsInit(struct VisualState* visualState);
-void visualsRender(struct VisualState* visualState);
-void visualsCleanup(struct VisualState* visualState);
+int visualsInit(VisualState* visualState);
+void visualsRender(VisualState* visualState);
+void visualsCleanup(VisualState* visualState);
 
 #endif

@@ -65,7 +65,7 @@ static void onInput(int keys, int isDoubleTap) {
   }
 }
 
-const struct AppScreen screenConfirm = {
+const AppScreen screenConfirm = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,

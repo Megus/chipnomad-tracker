@@ -111,8 +111,7 @@ static void (* const Envelopes[][2])(struct ayumi*) = {
 };
 
 static void reset_segment(struct ayumi* ay) {
-  if (Envelopes[ay->envelope_shape][ay->envelope_segment] == slide_down
-    || Envelopes[ay->envelope_shape][ay->envelope_segment] == hold_top) {
+  if (Envelopes[ay->envelope_shape][ay->envelope_segment] == slide_down || Envelopes[ay->envelope_shape][ay->envelope_segment] == hold_top) {
     ay->envelope = 31;
     return;
   }
@@ -206,8 +205,6 @@ void ayumi_set_envelope_shape(struct ayumi* ay, int shape) {
 void ayumi_set_filter_quality(struct ayumi* ay, ayumi_filter_func filter_func) {
   ay->filter_func = filter_func;
 }
-
-
 
 void ayumi_process(struct ayumi* ay) {
   int i;

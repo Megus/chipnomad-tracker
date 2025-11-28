@@ -3,15 +3,12 @@
 
 #include <chipnomad_lib.h>
 
-struct AudioState {
-    struct Project* project;
-    struct PlaybackState* playback;
-    struct SoundChip* chip;
-    int* isPlaying;
-    float frameSampleCounter;
-};
+typedef struct AudioState {
+  ChipNomadState* chipnomadState;
+  int* isPlaying;
+} AudioState;
 
-int audioInit(struct AudioState* audioState);
-void audioStart(struct AudioState* audioState);
+int audioInit(AudioState* audioState);
+void audioStart(AudioState* audioState);
 
 #endif

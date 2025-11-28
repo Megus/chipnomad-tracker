@@ -1,5 +1,5 @@
 #include <screens.h>
-#include <corelib_file.h>
+#include <corelib/corelib_file.h>
 #include <corelib_gfx.h>
 #include <screen_create_folder.h>
 #include <string.h>
@@ -7,7 +7,7 @@
 
 #define VISIBLE_ENTRIES 16
 
-static struct FileEntry* entries = NULL;
+static FileEntry* entries = NULL;
 static int entryCount = 0;
 static int selectedIndex = 0;
 static int topIndex = 0;
@@ -45,8 +45,8 @@ static void onCreateFolderCancelled(void) {
 }
 
 static int compareEntries(const void* a, const void* b) {
-  const struct FileEntry* entryA = (const struct FileEntry*)a;
-  const struct FileEntry* entryB = (const struct FileEntry*)b;
+  const FileEntry* entryA = (const FileEntry*)a;
+  const FileEntry* entryB = (const FileEntry*)b;
 
   // Directories first
   if (entryA->isDirectory && !entryB->isDirectory) return -1;
@@ -64,7 +64,7 @@ static void fileBrowserRefreshWithSelection(const char* selectName) {
 
   entries = fileListDirectory(currentPath, fileExtension, &entryCount);
   if (entries && entryCount > 0) {
-    qsort(entries, entryCount, sizeof(struct FileEntry), compareEntries);
+    qsort(entries, entryCount, sizeof(FileEntry), compareEntries);
   }
 
   selectedIndex = 0;
@@ -145,11 +145,11 @@ void fileBrowserDraw(void) {
   }
 
   int totalItems = entryCount + (isFolderMode ? 2 : 0);
-  
+
   for (int i = 0; i < VISIBLE_ENTRIES && (topIndex + i) < totalItems; i++) {
     int itemIndex = topIndex + i;
     int y = 3 + i;
-    
+
     // Draw cursor
     if (itemIndex == selectedIndex) {
       gfxSetFgColor(appSettings.colorScheme.textValue);
@@ -158,12 +158,12 @@ void fileBrowserDraw(void) {
       gfxSetFgColor(appSettings.colorScheme.textDefault);
       gfxPrint(0, y, " ");
     }
-    
+
     if (isFolderMode && itemIndex == 0) {
       // Draw "Save to" option
       static char saveText[40];
       static char folderName[256];
-      
+
       char* lastSep = strrchr(currentPath, PATH_SEPARATOR);
       if (lastSep) {
         strncpy(folderName, lastSep + 1, 255);
@@ -175,21 +175,21 @@ void fileBrowserDraw(void) {
         strncpy(folderName, currentPath, 255);
         folderName[255] = 0;
       }
-      
+
       int nameLen = strlen(folderName);
       if (nameLen <= 25) {
         snprintf(saveText, sizeof(saveText), "Save to [%s]", folderName);
       } else {
         snprintf(saveText, sizeof(saveText), "Save to [...%.19s]", folderName + nameLen - 19);
       }
-      
+
       if (itemIndex == selectedIndex) {
         gfxSetFgColor(appSettings.colorScheme.textValue);
       } else {
         gfxSetFgColor(appSettings.colorScheme.textDefault);
       }
       gfxPrint(2, y, saveText);
-      
+
     } else if (isFolderMode && itemIndex == 1) {
       // Draw "Create Folder" option
       if (itemIndex == selectedIndex) {
@@ -198,11 +198,11 @@ void fileBrowserDraw(void) {
         gfxSetFgColor(appSettings.colorScheme.textDefault);
       }
       gfxPrint(2, y, "Create Folder");
-      
+
     } else {
       // Draw file entry
       int entryIdx = isFolderMode ? itemIndex - 2 : itemIndex;
-      
+
       if (isFolderMode) {
         if (entries[entryIdx].isDirectory) {
           gfxSetFgColor(appSettings.colorScheme.textDefault);
@@ -212,7 +212,7 @@ void fileBrowserDraw(void) {
       } else {
         gfxSetFgColor(appSettings.colorScheme.textDefault);
       }
-      
+
       char displayName[35];
       if (entries[entryIdx].isDirectory) {
         snprintf(displayName, sizeof(displayName), "[%.31s]", entries[entryIdx].name);
@@ -227,7 +227,7 @@ void fileBrowserDraw(void) {
 int fileBrowserInput(int keys, int isDoubleTap) {
   int maxIndex = entryCount - 1;
   if (isFolderMode) maxIndex += 2; // Add 2 for "Save to" and "Create Folder" options
-  
+
   if (keys == keyUp && selectedIndex > 0) {
     selectedIndex--;
     if (selectedIndex < topIndex) {
@@ -262,7 +262,7 @@ int fileBrowserInput(int keys, int isDoubleTap) {
       if (onFileSelected) {
         // Construct full path for overwrite check
         snprintf(pendingSavePath, sizeof(pendingSavePath), "%s%s%s%s", currentPath, PATH_SEPARATOR_STR, saveFilename, saveExtension);
-        
+
         // Check if file exists
         int fileId = fileOpen(pendingSavePath, 0);
         if (fileId != -1) {
@@ -277,14 +277,14 @@ int fileBrowserInput(int keys, int isDoubleTap) {
         return 0;
       }
     }
-    
+
     // Handle "Create Folder" option in folder mode
     if (isFolderMode && selectedIndex == 1) {
       createFolderSetup(currentPath, onFolderCreated, onCreateFolderCancelled);
       screenSetup(&screenCreateFolder, 0);
       return 0;
     }
-    
+
     int entryIdx = isFolderMode ? selectedIndex - 2 : selectedIndex;
     if (entryIdx >= 0 && entries[entryIdx].isDirectory) {
       // Enter directory

@@ -77,30 +77,15 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(enum MainLoopEvent event, i
 
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT || (event.type == SDL_KEYDOWN && (
-          (event.key.keysym.sym == BTN_POWER) ||
-          (event.key.keysym.sym == BTN_EXIT) ||
-          (menu && event.key.keysym.sym == BTN_X)))) {
+        (event.key.keysym.sym == BTN_POWER) ||
+        (event.key.keysym.sym == BTN_EXIT) ||
+        (menu && event.key.keysym.sym == BTN_X)))) {
         onEvent(eventExit, 0, NULL);
         return;
       } else if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
         if (event.key.keysym.sym == BTN_MENU) {
           menu = event.type == SDL_KEYDOWN;
         } else {
-          // Debug output for key codes
-          /*if (event.type == SDL_KEYDOWN) {
-            fprintf(stderr, "Key %d\n", event.key.keysym.sym);
-            gfxPrintf(30, 0, "%d ", event.key.keysym.sym);
-          } else {
-            gfxPrint(30, 0, "          ");
-            gfxClearRect(20, 0, 10, 10);
-          }
-          if (event.type == SDL_KEYDOWN) {
-            gfxPrint(27, 0, "D ");
-          } else if (event.type == SDL_KEYUP) {
-            gfxPrint(27, 0, " U");
-          } else {
-            gfxPrint(27, 0, "??");
-          }*/
           enum Key key = decodeKey(event.key.keysym.sym);
           if (key != -1 ) onEvent(event.type == SDL_KEYDOWN ? eventKeyDown : eventKeyUp, key, NULL);
         }

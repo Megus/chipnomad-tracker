@@ -6,8 +6,8 @@
 // AY-specific logic
 //
 
-void resetTrackAY(struct PlaybackState* state, int trackIdx) {
-  struct PlaybackTrackState* track = &state->tracks[trackIdx];
+void resetTrackAY(PlaybackState* state, int trackIdx) {
+  PlaybackTrackState* track = &state->tracks[trackIdx];
 
   track->note.chip.ay.mixer = 0; // All disabled
   track->note.chip.ay.noiseBase = EMPTY_VALUE_8;
@@ -17,9 +17,9 @@ void resetTrackAY(struct PlaybackState* state, int trackIdx) {
   track->note.chip.ay.envOffsetAcc = 0;
 }
 
-void setupInstrumentAY(struct PlaybackState* state, int trackIdx) {
-  struct PlaybackTrackState* track = &state->tracks[trackIdx];
-  struct Project* p = state->p;
+void setupInstrumentAY(PlaybackState* state, int trackIdx) {
+  PlaybackTrackState* track = &state->tracks[trackIdx];
+  Project* p = state->p;
 
   track->note.chip.ay.adsrCounter = 0;
   track->note.chip.ay.envAutoN = p->instruments[track->note.instrument].chip.ay.autoEnvN;
@@ -34,8 +34,8 @@ void setupInstrumentAY(struct PlaybackState* state, int trackIdx) {
   track->note.chip.ay.adsrTo = 15;
 }
 
-void noteOffInstrumentAY(struct PlaybackState* state, int trackIdx) {
-  struct PlaybackTrackState* track = &state->tracks[trackIdx];
+void noteOffInstrumentAY(PlaybackState* state, int trackIdx) {
+  PlaybackTrackState* track = &state->tracks[trackIdx];
 
   if (track->note.instrument == EMPTY_VALUE_8 || track->note.chip.ay.adsrStep == 3) return;
 
@@ -46,9 +46,9 @@ void noteOffInstrumentAY(struct PlaybackState* state, int trackIdx) {
   track->note.chip.ay.adsrCounter = 0;
 }
 
-void handleInstrumentAY(struct PlaybackState* state, int trackIdx) {
-  struct PlaybackTrackState* track = &state->tracks[trackIdx];
-  struct Project* p = state->p;
+void handleInstrumentAY(PlaybackState* state, int trackIdx) {
+  PlaybackTrackState* track = &state->tracks[trackIdx];
+  Project* p = state->p;
 
   if (track->note.noteBase == EMPTY_VALUE_8 || track->note.instrument == EMPTY_VALUE_8) {
     track->note.chip.ay.adsrVolume = 0;
@@ -103,8 +103,8 @@ void handleInstrumentAY(struct PlaybackState* state, int trackIdx) {
   track->note.chip.ay.adsrVolume = adsrVolume;
 }
 
-void outputRegistersAY(struct PlaybackState* state, int trackIdx, int chipIdx, struct SoundChip* chip) {
-  struct Project* p = state->p;
+void outputRegistersAY(PlaybackState* state, int trackIdx, int chipIdx, SoundChip* chip) {
+  Project* p = state->p;
   int ayChannel = 0;
 
   uint8_t mixer = 0;
@@ -113,7 +113,7 @@ void outputRegistersAY(struct PlaybackState* state, int trackIdx, int chipIdx, s
   uint16_t envPeriod = 0;
 
   for (int t = trackIdx; t < trackIdx + 3; t++) {
-    struct PlaybackTrackState* track = &state->tracks[t];
+    PlaybackTrackState* track = &state->tracks[t];
 
     if (track->note.noteFinal == EMPTY_VALUE_8 || p->instruments[track->note.instrument].type == instNone) {
       // Silence channel

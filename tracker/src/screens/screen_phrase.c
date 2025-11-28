@@ -8,7 +8,7 @@
 #include <help.h>
 
 static int phraseIdx = 0;
-static struct PhraseRow *phraseRows = NULL;
+static PhraseRow *phraseRows = NULL;
 static int isFxEdit = 0;
 
 static uint8_t lastNote = 48;
@@ -27,7 +27,7 @@ static int onEdit(int col, int row, enum CellEditAction action);
 
 static int columnX[] = {3, 7, 10, 13, 16, 19, 22, 25, 28, 31};
 
-static struct ScreenData screen = {
+static ScreenData screen = {
   .rows = 16,
   .cursorRow = 0,
   .cursorCol = 0,
@@ -48,8 +48,8 @@ static struct ScreenData screen = {
 };
 
 static void setup(int input) {
-  phraseIdx = project.chains[project.song[*pSongRow][*pSongTrack]].rows[*pChainRow].phrase;
-  phraseRows = project.phrases[phraseIdx].rows;
+  phraseIdx = chipnomadState->project.chains[chipnomadState->project.song[*pSongRow][*pSongTrack]].rows[*pChainRow].phrase;
+  phraseRows = chipnomadState->project.phrases[phraseIdx].rows;
   screen.selectMode = 0;
   isFxEdit = 0;
 }
@@ -79,7 +79,7 @@ static void drawField(int col, int row, int state) {
     // Note
     uint8_t value = phraseRows[row].note;
     setCellColor(state, value == EMPTY_VALUE_8, 1);
-    gfxPrint(x, y, noteName(value));
+    gfxPrint(x, y, noteName(&chipnomadState->project, value));
   } else if (col == 1 || col == 2) {
     // Instrument and volume
     uint8_t value = (col == 1) ? phraseRows[row].instrument : phraseRows[row].volume;
@@ -99,13 +99,13 @@ static void drawField(int col, int row, int state) {
 }
 
 static void drawRowHeader(int row, int state) {
-  const struct ColorScheme cs = appSettings.colorScheme;
+  const ColorScheme cs = appSettings.colorScheme;
   gfxSetFgColor((state & stateFocus) ? cs.textDefault : ((row & 3) == 0 ? cs.textValue : cs.textInfo));
   gfxPrintf(1, 3 + row, "%X", row);
 }
 
 static void drawColHeader(int col, int state) {
-  const struct ColorScheme cs = appSettings.colorScheme;
+  const ColorScheme cs = appSettings.colorScheme;
   gfxSetFgColor((state & stateFocus) ? cs.textDefault : cs.textInfo);
 
   switch (col) {
@@ -150,7 +150,6 @@ static void drawSelection(int col1, int row1, int col2, int row2) {
   gfxRect(x, y, w, h);
 }
 
-
 static void draw(void) {
   if (isFxEdit) return;
 
@@ -159,7 +158,7 @@ static void draw(void) {
   gfxPrint(0, 3 + *pChainRow, "<");
 
   gfxClearRect(2, 3, 1, 16);
-  struct PlaybackTrackState* track = &playback.tracks[*pSongTrack];
+  PlaybackTrackState* track = &chipnomadState->playbackState.tracks[*pSongTrack];
   if (track->mode != playbackModeStopped && track->mode != playbackModePhraseRow && track->songRow != EMPTY_VALUE_16) {
     // Chain row
     if (*pSongRow == track->songRow) {
@@ -168,7 +167,7 @@ static void draw(void) {
     }
 
     // Phrase row
-    int playingPhrase = project.chains[project.song[track->songRow][*pSongTrack]].rows[track->chainRow].phrase;
+    int playingPhrase = chipnomadState->project.chains[chipnomadState->project.song[track->songRow][*pSongTrack]].rows[track->chainRow].phrase;
     if (playingPhrase == phraseIdx) {
       int row = track->phraseRow;
       if (row >= 0 && row < 16) {
@@ -198,7 +197,7 @@ static int editCell(int col, int row, enum CellEditAction action) {
       handled = 1;
     } else if (action == editClear) {
       // Clear note
-      handled = edit8withLimit(action, &phraseRows[row].note, &lastNote, project.pitchTable.octaveSize, project.pitchTable.length - 1);
+      handled = edit8withLimit(action, &phraseRows[row].note, &lastNote, chipnomadState->project.pitchTable.octaveSize, chipnomadState->project.pitchTable.length - 1);
       edit8withLimit(action, &phraseRows[row].instrument, &lastInstrument, 16, PROJECT_MAX_INSTRUMENTS - 1);
       edit8withLimit(action, &phraseRows[row].volume, &lastVolume, 16, maxVolume);
     } else if (action == editTap && phraseRows[row].note == EMPTY_VALUE_8) {
@@ -207,7 +206,7 @@ static int editCell(int col, int row, enum CellEditAction action) {
       phraseRows[row].volume = lastVolume;
       handled = 1;
     } else if (phraseRows[row].note != NOTE_OFF) {
-      handled = edit8withLimit(action, &phraseRows[row].note, &lastNote, project.pitchTable.octaveSize, project.pitchTable.length - 1);
+      handled = edit8withLimit(action, &phraseRows[row].note, &lastNote, chipnomadState->project.pitchTable.octaveSize, chipnomadState->project.pitchTable.length - 1);
       if (handled) {
         lastInstrument = phraseRows[row].instrument;
         lastVolume = phraseRows[row].volume;
@@ -220,7 +219,7 @@ static int editCell(int col, int row, enum CellEditAction action) {
   } else if (col == 1) {
     // Instrument
     if (action == editDoubleTap) {
-      uint8_t nextInstrument = findEmptyInstrument(0);
+      uint8_t nextInstrument = findEmptyInstrument(&chipnomadState->project, 0);
       if (nextInstrument != EMPTY_VALUE_8) {
         phraseRows[row].instrument = nextInstrument;
         handled = 1;
@@ -230,7 +229,7 @@ static int editCell(int col, int row, enum CellEditAction action) {
     }
     uint8_t instrument = phraseRows[row].instrument;
     if (handled && instrument != EMPTY_VALUE_8) {
-      screenMessage(0, "%s: %s", byteToHex(instrument), instrumentName(instrument));
+      screenMessage(0, "%s: %s", byteToHex(instrument), instrumentName(&chipnomadState->project, instrument));
     }
   } else if (col == 2) {
     // Volume
@@ -254,8 +253,8 @@ static int editCell(int col, int row, enum CellEditAction action) {
     }
   }
 
-  if (handled && (!playbackIsPlaying(&playback) || playback.tracks[*pSongTrack].mode == playbackModePhraseRow)) {
-    playbackStartPhraseRow(&playback, *pSongTrack, &phraseRows[screen.cursorRow]);
+  if (handled && (!playbackIsPlaying(&chipnomadState->playbackState) || chipnomadState->playbackState.tracks[*pSongTrack].mode == playbackModePhraseRow)) {
+    playbackStartPhraseRow(&chipnomadState->playbackState, *pSongTrack, &phraseRows[screen.cursorRow]);
   }
 
   return handled;
@@ -326,7 +325,6 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   }
 }
 
-
 static int inputScreenNavigation(int keys, int isDoubleTap) {
   if (keys == (keyRight | keyShift)) {
     // To Instrument/Phrase screen
@@ -370,13 +368,13 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
     }
     screenSetup(&screenGroove, groove);
     return 1;
-} else if (keys == (keyLeft | keyOpt)) {
+  } else if (keys == (keyLeft | keyOpt)) {
     // Previous track
     if (*pSongTrack == 0) return 1;
-    uint16_t chain = project.song[*pSongRow][*pSongTrack - 1];
-    if (chain != EMPTY_VALUE_16 && !chainIsEmpty(chain)) {
+    uint16_t chain = chipnomadState->project.song[*pSongRow][*pSongTrack - 1];
+    if (chain != EMPTY_VALUE_16 && !chainIsEmpty(&chipnomadState->project, chain)) {
       *pSongTrack -= 1;
-      while (project.chains[chain].rows[*pChainRow].phrase == EMPTY_VALUE_16) {
+      while (chipnomadState->project.chains[chain].rows[*pChainRow].phrase == EMPTY_VALUE_16) {
         *pChainRow -= 1;
         if (*pChainRow == 0) break;
       }
@@ -386,11 +384,11 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
     return 1;
   } else if (keys == (keyRight | keyOpt)) {
     // Next track
-    if (*pSongTrack == project.tracksCount - 1) return 1;
-    uint16_t chain = project.song[*pSongRow][*pSongTrack + 1];
-    if (chain != EMPTY_VALUE_16 && !chainIsEmpty(chain)) {
+    if (*pSongTrack == chipnomadState->project.tracksCount - 1) return 1;
+    uint16_t chain = chipnomadState->project.song[*pSongRow][*pSongTrack + 1];
+    if (chain != EMPTY_VALUE_16 && !chainIsEmpty(&chipnomadState->project, chain)) {
       *pSongTrack += 1;
-      while (project.chains[chain].rows[*pChainRow].phrase == EMPTY_VALUE_16) {
+      while (chipnomadState->project.chains[chain].rows[*pChainRow].phrase == EMPTY_VALUE_16) {
         *pChainRow -= 1;
         if (*pChainRow == 0) break;
       }
@@ -401,22 +399,22 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
   } else if ((keys == (keyUp | keyOpt)) || (keys == keyUp && screen.cursorRow == 0)) {
     // Previous phrase in the chain
     if (*pChainRow == 0) return 1;
-    if (project.chains[project.song[*pSongRow][*pSongTrack]].rows[*pChainRow - 1].phrase != EMPTY_VALUE_16) {
+    if (chipnomadState->project.chains[chipnomadState->project.song[*pSongRow][*pSongTrack]].rows[*pChainRow - 1].phrase != EMPTY_VALUE_16) {
       *pChainRow -= 1;
       if (keys == keyUp) screen.cursorRow = 15;
       setup(-1);
-      playbackQueuePhrase(&playback, *pSongTrack, *pSongRow, *pChainRow);
+      playbackQueuePhrase(&chipnomadState->playbackState, *pSongTrack, *pSongRow, *pChainRow);
       fullRedraw();
     }
     return 1;
   } else if (keys == (keyDown | keyOpt) || (keys == keyDown && screen.cursorRow == 15)) {
     // Next phrase in the chain
     if (*pChainRow == 15) return 1;
-    if (project.chains[project.song[*pSongRow][*pSongTrack]].rows[*pChainRow + 1].phrase != EMPTY_VALUE_16) {
+    if (chipnomadState->project.chains[chipnomadState->project.song[*pSongRow][*pSongTrack]].rows[*pChainRow + 1].phrase != EMPTY_VALUE_16) {
       *pChainRow += 1;
       if (keys == keyDown) screen.cursorRow = 0;
       setup(-1);
-      playbackQueuePhrase(&playback, *pSongTrack, *pSongRow, *pChainRow);
+      playbackQueuePhrase(&chipnomadState->playbackState, *pSongTrack, *pSongRow, *pChainRow);
       fullRedraw();
     }
     return 1;
@@ -453,7 +451,7 @@ static void onInput(int keys, int isDoubleTap) {
   screenInput(&screen, keys, isDoubleTap);
 }
 
-const struct AppScreen screenPhrase = {
+const AppScreen screenPhrase = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,

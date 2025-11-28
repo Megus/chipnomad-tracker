@@ -20,7 +20,7 @@ static void drawCursor(int col, int row);
 static void drawSelection(int col1, int row1, int col2, int row2);
 static int onEdit(int col, int row, enum CellEditAction action);
 
-static struct ScreenData screen = {
+static ScreenData screen = {
   .rows = 16,
   .cursorRow = 0,
   .cursorCol = 0,
@@ -42,7 +42,7 @@ static struct ScreenData screen = {
 
 static void setup(int input) {
   pChainRow = &screen.cursorRow;
-  chain = project.song[*pSongRow][*pSongTrack];
+  chain = chipnomadState->project.song[*pSongRow][*pSongTrack];
   screen.selectMode = 0;
 }
 
@@ -61,8 +61,8 @@ static void drawStatic(void) {
 }
 
 static void drawField(int col, int row, int state) {
-  uint16_t phrase = project.chains[chain].rows[row].phrase;
-  int hasContent = phrase != EMPTY_VALUE_16 && phraseHasNotes(phrase);
+  uint16_t phrase = chipnomadState->project.chains[chain].rows[row].phrase;
+  int hasContent = phrase != EMPTY_VALUE_16 && phraseHasNotes(&chipnomadState->project, phrase);
 
   if (col == 0) {
     // Phrase
@@ -75,23 +75,23 @@ static void drawField(int col, int row, int state) {
     // Also draw transpose to keep colors synchronized (only if not in selection mode)
     if (screen.selectMode == 0) {
       setCellColor(0, 0, hasContent);
-      gfxPrint(7, 3 + row, byteToHex(project.chains[chain].rows[row].transpose));
+      gfxPrint(7, 3 + row, byteToHex(chipnomadState->project.chains[chain].rows[row].transpose));
     }
   } else {
     // Transpose
     setCellColor(state, 0, hasContent);
-    gfxPrint(7, 3 + row, byteToHex(project.chains[chain].rows[row].transpose));
+    gfxPrint(7, 3 + row, byteToHex(chipnomadState->project.chains[chain].rows[row].transpose));
   }
 }
 
 static void drawRowHeader(int row, int state) {
-  const struct ColorScheme cs = appSettings.colorScheme;
+  const ColorScheme cs = appSettings.colorScheme;
   gfxSetFgColor((state & stateFocus) ? cs.textDefault : cs.textInfo);
   gfxPrintf(1, 3 + row, "%X", row);
 }
 
 static void drawColHeader(int col, int state) {
-  const struct ColorScheme cs = appSettings.colorScheme;
+  const ColorScheme cs = appSettings.colorScheme;
   gfxSetFgColor((state & stateFocus) ? cs.textDefault : cs.textInfo);
 
   if (col == 0) {
@@ -127,8 +127,8 @@ static void fullRedraw(void) {
 
 static void draw(void) {
   gfxClearRect(2, 3, 1, 16);
-  if (playback.tracks[*pSongTrack].songRow == *pSongRow) {
-    int chainRow = playback.tracks[*pSongTrack].chainRow;
+  if (chipnomadState && chipnomadState->playbackState.tracks[*pSongTrack].songRow == *pSongRow) {
+    int chainRow = chipnomadState->playbackState.tracks[*pSongTrack].chainRow;
     if (chainRow >= 0 && chainRow < 16) {
       gfxSetFgColor(appSettings.colorScheme.playMarkers);
       gfxPrint(2, 3 + chainRow, ">");
@@ -144,11 +144,11 @@ static void draw(void) {
 static int editCell(int col, int row, enum CellEditAction action) {
   if (col == 0) {
     if (action == editDoubleTap) {
-      uint16_t current = project.chains[chain].rows[row].phrase;
+      uint16_t current = chipnomadState->project.chains[chain].rows[row].phrase;
       if (current != EMPTY_VALUE_16) {
-        int nextEmpty = findEmptyPhrase(current + 1);
+        int nextEmpty = findEmptyPhrase(&chipnomadState->project, current + 1);
         if (nextEmpty != EMPTY_VALUE_16) {
-          project.chains[chain].rows[row].phrase = nextEmpty;
+          chipnomadState->project.chains[chain].rows[row].phrase = nextEmpty;
           lastPhraseValue = nextEmpty;
         } else {
           screenMessage(MESSAGE_TIME, "No empty phrases");
@@ -156,20 +156,20 @@ static int editCell(int col, int row, enum CellEditAction action) {
       }
       return 1;
     } else if (action == editShallowClone || action == editDeepClone) {
-      uint16_t current = project.chains[chain].rows[row].phrase;
+      uint16_t current = chipnomadState->project.chains[chain].rows[row].phrase;
       if (current != EMPTY_VALUE_16) {
         int cloned = clonePhraseToNext(current);
         if (cloned != EMPTY_VALUE_16) {
-          project.chains[chain].rows[row].phrase = cloned;
+          chipnomadState->project.chains[chain].rows[row].phrase = cloned;
           lastPhraseValue = cloned;
           return 1;
         }
       }
       return 0;
     }
-    return edit16withLimit(action, &project.chains[chain].rows[row].phrase, &lastPhraseValue, 16, PROJECT_MAX_PHRASES - 1);
+    return edit16withLimit(action, &chipnomadState->project.chains[chain].rows[row].phrase, &lastPhraseValue, 16, PROJECT_MAX_PHRASES - 1);
   } else {
-    return edit8noLimit(action, &project.chains[chain].rows[row].transpose, &lastTransposeValue, project.pitchTable.octaveSize);
+    return edit8noLimit(action, &chipnomadState->project.chains[chain].rows[row].transpose, &lastTransposeValue, chipnomadState->project.pitchTable.octaveSize);
   }
 }
 
@@ -220,7 +220,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 static int inputScreenNavigation(int keys, int isDoubleTap) {
   if (keys == (keyRight | keyShift)) {
     // To Phrase screen
-    int phrase = project.chains[chain].rows[screen.cursorRow].phrase;
+    int phrase = chipnomadState->project.chains[chain].rows[screen.cursorRow].phrase;
     if (phrase == EMPTY_VALUE_16) {
       screenMessage(0, "Enter a phrase");
     } else {
@@ -234,7 +234,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
   } else if (keys == (keyLeft | keyOpt)) {
     // Previous track
     if (*pSongTrack == 0) return 1;
-    if (project.song[*pSongRow][*pSongTrack - 1] != EMPTY_VALUE_16) {
+    if (chipnomadState->project.song[*pSongRow][*pSongTrack - 1] != EMPTY_VALUE_16) {
       *pSongTrack -= 1;
       setup(-1);
       fullRedraw();
@@ -242,8 +242,8 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
     return 1;
   } else if (keys == (keyRight | keyOpt)) {
     // Next track
-    if (*pSongTrack == project.tracksCount - 1) return 1;
-    if (project.song[*pSongRow][*pSongTrack + 1] != EMPTY_VALUE_16) {
+    if (*pSongTrack == chipnomadState->project.tracksCount - 1) return 1;
+    if (chipnomadState->project.song[*pSongRow][*pSongTrack + 1] != EMPTY_VALUE_16) {
       *pSongTrack += 1;
       setup(-1);
       fullRedraw();
@@ -252,7 +252,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
   } else if (keys == (keyUp | keyOpt)) {
     // Previous song row
     if (*pSongRow == 0) return 1;
-    if (project.song[*pSongRow - 1][*pSongTrack] != EMPTY_VALUE_16) {
+    if (chipnomadState->project.song[*pSongRow - 1][*pSongTrack] != EMPTY_VALUE_16) {
       *pSongRow -= 1;
       setup(-1);
       fullRedraw();
@@ -261,7 +261,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
   } else if (keys == (keyDown | keyOpt)) {
     // Next song row
     if (*pSongRow == PROJECT_MAX_LENGTH - 1) return 1;
-    if (project.song[*pSongRow + 1][*pSongTrack] != EMPTY_VALUE_16) {
+    if (chipnomadState->project.song[*pSongRow + 1][*pSongTrack] != EMPTY_VALUE_16) {
       *pSongRow += 1;
       setup(-1);
       fullRedraw();
@@ -275,7 +275,7 @@ static void onInput(int keys, int isDoubleTap) {
   screenInput(&screen, keys, isDoubleTap);
 }
 
-const struct AppScreen screenChain = {
+const AppScreen screenChain = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,

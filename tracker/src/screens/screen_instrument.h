@@ -13,8 +13,6 @@ int instrumentCommonOnEdit(int col, int row, enum CellEditAction action);
 
 void initAYInstrument(int instrument);
 
-extern struct ScreenData screenInstrumentAY;
-
-
+extern ScreenData screenInstrumentAY;
 
 #endif

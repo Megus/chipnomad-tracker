@@ -11,8 +11,6 @@
 static int cursorRow = 0;
 static int topRow = 0;
 
-
-
 static void setup(int input) {
   if (input != -1) {
     cursorRow = input;
@@ -25,7 +23,7 @@ static void setup(int input) {
 }
 
 static void fullRedraw(void) {
-  const struct ColorScheme cs = appSettings.colorScheme;
+  const ColorScheme cs = appSettings.colorScheme;
 
   gfxSetFgColor(cs.textTitles);
   gfxPrintf(0, 0, "INSTRUMENT POOL");
@@ -43,7 +41,7 @@ static void fullRedraw(void) {
     // Set color based on cursor position and instrument state
     if (i == cursorRow) {
       gfxSetFgColor(cs.textValue);
-    } else if (instrumentIsEmpty(i)) {
+    } else if (instrumentIsEmpty(&chipnomadState->project, i)) {
       gfxSetFgColor(cs.textEmpty);
     } else {
       gfxSetFgColor(cs.textDefault);
@@ -58,18 +56,16 @@ static void fullRedraw(void) {
     gfxPrintf(1, y, "%02X", i);
 
     // Draw instrument name
-    if (!instrumentIsEmpty(i)) {
-      gfxPrintf(4, y, "%-15s", project.instruments[i].name);
+    if (!instrumentIsEmpty(&chipnomadState->project, i)) {
+      gfxPrintf(4, y, "%-15s", chipnomadState->project.instruments[i].name);
     } else {
       gfxPrint(4, y, "               ");
     }
 
     // Draw instrument type
     gfxClearRect(20, y, 14, 1);
-    gfxPrint(20, y, instrumentTypeName(project.instruments[i].type));
+    gfxPrint(20, y, instrumentTypeName(chipnomadState->project.instruments[i].type));
   }
-
-
 }
 
 static void draw(void) {
@@ -77,8 +73,8 @@ static void draw(void) {
   gfxClearRect(3, 3, 1, 16);
 
   // Draw playback markers for currently playing instruments
-  for (int track = 0; track < project.tracksCount; track++) {
-    struct PlaybackTrackState* trackState = &playback.tracks[track];
+  for (int track = 0; track < chipnomadState->project.tracksCount; track++) {
+    PlaybackTrackState* trackState = &chipnomadState->playbackState.tracks[track];
     if (trackState->mode != playbackModeStopped && trackState->note.instrument < PROJECT_MAX_INSTRUMENTS) {
       int instrument = trackState->note.instrument;
       if (instrument >= topRow && instrument < topRow + 16) {
@@ -148,7 +144,6 @@ static void onInput(int keys, int isDoubleTap) {
     // To Instrument screen
     screenSetup(&screenInstrument, cursorRow);
     return;
-
   } else if (keys == (keyLeft | keyShift)) {
     // To Phrase screen
     screenSetup(&screenPhrase, -1);
@@ -160,8 +155,8 @@ static void onInput(int keys, int isDoubleTap) {
   } else if (keys == (keyEdit | keyUp)) {
     // Move instrument up
     if (cursorRow > 0) {
-      playbackStop(&playback);
-      instrumentSwap(cursorRow, cursorRow - 1);
+      playbackStop(&chipnomadState->playbackState);
+      instrumentSwap(&chipnomadState->project, cursorRow, cursorRow - 1);
       cursorRow--;
       if (cursorRow < topRow) {
         topRow--;
@@ -172,8 +167,8 @@ static void onInput(int keys, int isDoubleTap) {
   } else if (keys == (keyEdit | keyDown)) {
     // Move instrument down
     if (cursorRow < PROJECT_MAX_INSTRUMENTS - 1) {
-      playbackStop(&playback);
-      instrumentSwap(cursorRow, cursorRow + 1);
+      playbackStop(&chipnomadState->playbackState);
+      instrumentSwap(&chipnomadState->project, cursorRow, cursorRow + 1);
       cursorRow++;
       if (cursorRow >= topRow + 16) {
         topRow++;
@@ -183,9 +178,9 @@ static void onInput(int keys, int isDoubleTap) {
     return;
   } else if (keys == (keyEdit | keyPlay)) {
     // Preview instrument
-    if (!instrumentIsEmpty(cursorRow) && !playbackIsPlaying(&playback)) {
-      uint8_t note = instrumentFirstNote(cursorRow);
-      playbackPreviewNote(&playback, *pSongTrack, note, cursorRow);
+    if (!instrumentIsEmpty(&chipnomadState->project, cursorRow) && !playbackIsPlaying(&chipnomadState->playbackState)) {
+      uint8_t note = instrumentFirstNote(&chipnomadState->project, cursorRow);
+      playbackPreviewNote(&chipnomadState->playbackState, *pSongTrack, note, cursorRow);
     }
     return;
   } else if (keys == (keyShift | keyOpt)) {
@@ -202,13 +197,13 @@ static void onInput(int keys, int isDoubleTap) {
 
   // Stop preview when keys are released
   if (keys == 0) {
-    playbackStopPreview(&playback, *pSongTrack);
+    playbackStopPreview(&chipnomadState->playbackState, *pSongTrack);
     editPressed = 0;
   }
 
   // Stop preview when cursor moves
   if (oldCursorRow != cursorRow) {
-    playbackStopPreview(&playback, *pSongTrack);
+    playbackStopPreview(&chipnomadState->playbackState, *pSongTrack);
     editPressed = 0;
   }
 
@@ -217,20 +212,20 @@ static void onInput(int keys, int isDoubleTap) {
     // Clear old cursor line
     int oldY = 3 + (oldCursorRow - oldTopRow);
     if (oldCursorRow >= oldTopRow && oldCursorRow < oldTopRow + 16) {
-      if (instrumentIsEmpty(oldCursorRow)) {
+      if (instrumentIsEmpty(&chipnomadState->project, oldCursorRow)) {
         gfxSetFgColor(appSettings.colorScheme.textEmpty);
       } else {
         gfxSetFgColor(appSettings.colorScheme.textDefault);
       }
       gfxPrint(0, oldY, " ");
       gfxPrintf(1, oldY, "%02X", oldCursorRow);
-      if (!instrumentIsEmpty(oldCursorRow)) {
-        gfxPrintf(4, oldY, "%-15s", project.instruments[oldCursorRow].name);
+      if (!instrumentIsEmpty(&chipnomadState->project, oldCursorRow)) {
+        gfxPrintf(4, oldY, "%-15s", chipnomadState->project.instruments[oldCursorRow].name);
       } else {
         gfxPrint(4, oldY, "               ");
       }
       gfxClearRect(20, oldY, 14, 1);
-      gfxPrint(20, oldY, instrumentTypeName(project.instruments[oldCursorRow].type));
+      gfxPrint(20, oldY, instrumentTypeName(chipnomadState->project.instruments[oldCursorRow].type));
     }
 
     // Draw new cursor line
@@ -238,17 +233,17 @@ static void onInput(int keys, int isDoubleTap) {
     gfxSetFgColor(appSettings.colorScheme.textValue);
     gfxPrint(0, newY, ">");
     gfxPrintf(1, newY, "%02X", cursorRow);
-    if (!instrumentIsEmpty(cursorRow)) {
-      gfxPrintf(4, newY, "%-15s", project.instruments[cursorRow].name);
+    if (!instrumentIsEmpty(&chipnomadState->project, cursorRow)) {
+      gfxPrintf(4, newY, "%-15s", chipnomadState->project.instruments[cursorRow].name);
     } else {
       gfxPrint(4, newY, "               ");
     }
     gfxClearRect(20, newY, 14, 1);
-    gfxPrint(20, newY, instrumentTypeName(project.instruments[cursorRow].type));
+    gfxPrint(20, newY, instrumentTypeName(chipnomadState->project.instruments[cursorRow].type));
   }
 }
 
-const struct AppScreen screenInstrumentPool = {
+const AppScreen screenInstrumentPool = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,

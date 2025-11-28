@@ -10,20 +10,50 @@
 #include "utils.h"
 
 /**
- * Initialize the ChipNomad library
- * Call this once before using any other library functions
- */
-void chipnomadInit(void);
+* Chip factory function type
+* Returns a SoundChip struct for the given chip index
+*/
+typedef SoundChip (*ChipFactory)(int chipIndex, int sampleRate, ChipSetup setup);
 
 /**
- * Initialize chips with current project settings
- * Can be called multiple times to reinitialize with new settings
- */
-void chipnomadInitChips(int sampleRate);
+* ChipNomad state encapsulating all library state
+*/
+typedef struct ChipNomadState {
+  Project project;
+  PlaybackState playbackState;
+  SoundChip chips[PROJECT_MAX_CHIPS];
+  int sampleRate;
+  float frameSampleCounter;
+  float mixVolume;
+} ChipNomadState;
 
 /**
- * Get chip by index
- */
-struct SoundChip* chipnomadGetChip(int index);
+* Create and initialize ChipNomad state
+* @return Pointer to initialized state, or NULL on failure
+*/
+ChipNomadState* chipnomadCreate(void);
+
+/**
+* Destroy ChipNomad state and cleanup resources
+* @param state State to destroy
+*/
+void chipnomadDestroy(ChipNomadState* state);
+
+/**
+* Initialize chips with project settings
+* @param state ChipNomad state
+* @param sampleRate Audio sample rate
+* @param factory Chip factory function, or NULL to use default implementations
+*/
+void chipnomadInitChips(ChipNomadState* state, int sampleRate, ChipFactory factory);
+
+/**
+* Render audio with automatic tick rate handling
+* @param state ChipNomad state
+* @param buffer Interleaved stereo float buffer (left, right, left, right...)
+* @param samples Number of stereo sample pairs to render
+* @return Number of samples actually rendered (may be less if playback stops)
+*/
+int chipnomadRender(ChipNomadState* state, float* buffer, int samples);
 
 #endif

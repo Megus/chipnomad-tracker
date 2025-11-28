@@ -78,21 +78,15 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(enum MainLoopEvent event, i
 
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT || (event.type == SDL_KEYDOWN && (
-          (event.key.keysym.sym == BTN_POWER) ||
-          (event.key.keysym.sym == BTN_EXIT) ||
-          (menu && event.key.keysym.sym == BTN_X)))) {
+        (event.key.keysym.sym == BTN_POWER) ||
+        (event.key.keysym.sym == BTN_EXIT) ||
+        (menu && event.key.keysym.sym == BTN_X)))) {
         onEvent(eventExit, 0, NULL);
         return;
       } else if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
         if (event.key.keysym.sym == BTN_MENU) {
           menu = event.type == SDL_KEYDOWN;
         } else {
-          // Debug output for key codes
-          /*if (event.type == SDL_KEYDOWN) {
-            gfxPrintf(35, 0, "%d", event.key.keysym.sym);
-          } else {
-            gfxPrint(35, 0, "     ");
-          }*/
           enum Key key = decodeKey(event.key.keysym.sym);
           if (key != -1) onEvent(event.type == SDL_KEYDOWN ? eventKeyDown : eventKeyUp, key, NULL);
         }

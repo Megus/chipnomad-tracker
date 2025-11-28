@@ -7,7 +7,7 @@
 #include <help.h>
 
 static int tableIdx = 0;
-static struct TableRow *tableRows = NULL;
+static TableRow *tableRows = NULL;
 static int backToPhrase = 0;
 static uint8_t lastPitchValue = 0;
 static uint8_t lastVolume = 15;
@@ -25,7 +25,7 @@ static int onEdit(int col, int row, enum CellEditAction action);
 
 static int columnX[] = {3, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34};
 
-static struct ScreenData screen = {
+static ScreenData screen = {
   .rows = 16,
   .cursorRow = 0,
   .cursorCol = 0,
@@ -48,7 +48,7 @@ static struct ScreenData screen = {
 static void setup(int input) {
   isFxEdit = 0;
   tableIdx = input & 0xff;
-  tableRows = project.tables[tableIdx].rows;
+  tableRows = chipnomadState->project.tables[tableIdx].rows;
   backToPhrase = (input & 0x1000) != 0;
   screen.selectMode = 0;
 }
@@ -95,13 +95,13 @@ static void drawField(int col, int row, int state) {
   }
 }
 static void drawRowHeader(int row, int state) {
-  const struct ColorScheme cs = appSettings.colorScheme;
+  const ColorScheme cs = appSettings.colorScheme;
   gfxSetFgColor((state & stateFocus) ? cs.textDefault : cs.textInfo);
   gfxPrintf(1, 3 + row, "%X", row);
 }
 
 static void drawColHeader(int col, int state) {
-  const struct ColorScheme cs = appSettings.colorScheme;
+  const ColorScheme cs = appSettings.colorScheme;
   gfxSetFgColor((state & stateFocus) ? cs.textDefault : cs.textInfo);
   switch (col) {
     case 0:
@@ -154,8 +154,6 @@ static void drawSelection(int col1, int row1, int col2, int row2) {
   gfxRect(x, y, w, h);
 }
 
-
-
 static void fullRedraw(void) {
   screenFullRedraw(&screen);
 }
@@ -169,7 +167,7 @@ static void draw(void) {
   gfxClearRect(21, 3, 1, 16);
   gfxClearRect(27, 3, 1, 16);
 
-  struct PlaybackTrackState* track = &playback.tracks[*pSongTrack];
+  PlaybackTrackState* track = &chipnomadState->playbackState.tracks[*pSongTrack];
   struct PlaybackTableState* pTable = NULL;
   if (track->mode != playbackModeStopped) {
     int instrumentTableIdx = track->note.instrumentTable.tableIdx;
@@ -210,10 +208,10 @@ static int editCell(int col, int row, enum CellEditAction action) {
     }
   } else if (col == 1) {
     // Pitch offset
-    handled = edit8noLimit(action, &tableRows[row].pitchOffset, &lastPitchValue, project.pitchTable.octaveSize);
+    handled = edit8noLimit(action, &tableRows[row].pitchOffset, &lastPitchValue, chipnomadState->project.pitchTable.octaveSize);
     if (handled) {
       if (tableRows[row].pitchFlag == 1) {
-        screenMessage(0, "Note %s", noteName(tableRows[row].pitchOffset));
+        screenMessage(0, "Note %s", noteName(&chipnomadState->project, tableRows[row].pitchOffset));
       } else {
         screenMessage(0, "Pitch offset %hhd", tableRows[row].pitchOffset);
       }
@@ -363,7 +361,7 @@ static void onInput(int keys, int isDoubleTap) {
   screenInput(&screen, keys, isDoubleTap);
 }
 
-const struct AppScreen screenTable = {
+const AppScreen screenTable = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,

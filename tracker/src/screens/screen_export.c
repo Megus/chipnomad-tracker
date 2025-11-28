@@ -1,7 +1,7 @@
 #include <screen_export.h>
 #include <common.h>
 #include <corelib_gfx.h>
-#include <corelib_file.h>
+#include <corelib/corelib_file.h>
 #include <chipnomad_lib.h>
 #include <screens.h>
 #include <export/export.h>
@@ -19,7 +19,7 @@ static int bitDepths[] = {16, 24, 32};
 static int currentSampleRateIndex = 0;
 static int currentBitDepthIndex = 0;
 
-static struct ScreenData screenExportCommon = {
+static ScreenData screenExportCommon = {
   .rows = 3,
   .cursorRow = 0,
   .cursorCol = 0,
@@ -34,9 +34,9 @@ static struct ScreenData screenExportCommon = {
   .onEdit = exportCommonOnEdit,
 };
 
-static struct ScreenData* exportScreen(void) {
-  struct ScreenData* data = &screenExportCommon;
-  if (project.chipType == chipAY) {
+static ScreenData* exportScreen(void) {
+  ScreenData* data = &screenExportCommon;
+  if (chipnomadState->project.chipType == chipAY) {
     data = &screenExportAY;
   }
   return data;
@@ -48,7 +48,7 @@ static void setup(int input) {
 }
 
 static void fullRedraw(void) {
-  struct ScreenData* screen = exportScreen();
+  ScreenData* screen = exportScreen();
   screenFullRedraw(screen);
 }
 
@@ -83,11 +83,11 @@ static void onInput(int keys, int isDoubleTap) {
     return;
   }
 
-  struct ScreenData* screen = exportScreen();
+  ScreenData* screen = exportScreen();
   screenInput(screen, keys, isDoubleTap);
 }
 
-const struct AppScreen screenExport = {
+const AppScreen screenExport = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
@@ -111,7 +111,7 @@ int exportCommonColumnCount(int row) {
 }
 
 void exportCommonDrawStatic(void) {
-  const struct ColorScheme cs = appSettings.colorScheme;
+  const ColorScheme cs = appSettings.colorScheme;
 
   gfxSetFgColor(cs.textTitles);
   gfxPrint(0, 0, "EXPORT");
@@ -159,7 +159,7 @@ static int fileExists(const char* path) {
 void generateExportPath(char* outputPath, int maxLen, const char* extension) {
   char basePath[512];
   snprintf(basePath, sizeof(basePath), "%s%s%s.%s",
-           appSettings.projectPath, PATH_SEPARATOR_STR, appSettings.projectFilename, extension);
+  appSettings.projectPath, PATH_SEPARATOR_STR, appSettings.projectFilename, extension);
 
   if (!fileExists(basePath)) {
     strncpy(outputPath, basePath, maxLen - 1);
@@ -169,7 +169,7 @@ void generateExportPath(char* outputPath, int maxLen, const char* extension) {
 
   for (int i = 1; i <= 999; i++) {
     snprintf(outputPath, maxLen, "%s%s%s_%03d.%s",
-             appSettings.projectPath, PATH_SEPARATOR_STR, appSettings.projectFilename, i, extension);
+      appSettings.projectPath, PATH_SEPARATOR_STR, appSettings.projectFilename, i, extension);
     if (!fileExists(outputPath)) {
       return;
     }
@@ -186,11 +186,11 @@ int exportCommonOnEdit(int col, int row, enum CellEditAction action) {
   if (row == 0) {
     // WAV Export
     if (currentExporter) return 1; // Already exporting
-    
+
     char exportPath[1024];
     generateExportPath(exportPath, sizeof(exportPath), "wav");
 
-    currentExporter = createWAVExporter(exportPath, &project, 0, sampleRates[currentSampleRateIndex], bitDepths[currentBitDepthIndex]);
+    currentExporter = createWAVExporter(exportPath, &chipnomadState->project, 0, sampleRates[currentSampleRateIndex], bitDepths[currentBitDepthIndex]);
     if (currentExporter) {
       screenMessage(MESSAGE_TIME, "Starting export...");
     } else {

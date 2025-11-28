@@ -21,7 +21,7 @@ static void drawCursor(int col, int row);
 static void drawSelection(int col1, int row1, int col2, int row2);
 static int onEdit(int col, int row, enum CellEditAction action);
 
-static struct ScreenData screen = {
+static ScreenData screen = {
   .rows = PROJECT_MAX_LENGTH,
   .cursorRow = 0,
   .cursorCol = 0,
@@ -60,7 +60,7 @@ void setup(int input) {
 //
 
 static int getColumnCount(int row) {
-  return project.tracksCount;
+  return chipnomadState->project.tracksCount;
 }
 
 static void drawStatic(void) {
@@ -71,13 +71,13 @@ static void drawStatic(void) {
 static void drawField(int col, int row, int state) {
   if (row < screen.topRow || row >= (screen.topRow + 16)) return; // Don't draw outside of the viewing area
 
-  int chain = project.song[row][col];
-  setCellColor(state, chain == EMPTY_VALUE_16, chain != EMPTY_VALUE_16 && chainHasNotes(chain));
+  int chain = chipnomadState->project.song[row][col];
+  setCellColor(state, chain == EMPTY_VALUE_16, chain != EMPTY_VALUE_16 && chainHasNotes(&chipnomadState->project, chain));
   gfxPrint(3 + col * 3, 3 + row - screen.topRow, chain == EMPTY_VALUE_16 ? "--" : byteToHex(chain));
 }
 
 static void drawRowHeader(int row, int state) {
-  const struct ColorScheme cs = appSettings.colorScheme;
+  const ColorScheme cs = appSettings.colorScheme;
 
   gfxSetFgColor((state & stateFocus) ? cs.textDefault : cs.textInfo);
   gfxPrint(0, 3 + row - screen.topRow, byteToHex(row));
@@ -85,7 +85,7 @@ static void drawRowHeader(int row, int state) {
 
 static void drawColHeader(int col, int state) {
   static char digit[2] = "0";
-  const struct ColorScheme cs = appSettings.colorScheme;
+  const ColorScheme cs = appSettings.colorScheme;
 
   gfxSetFgColor((state & stateFocus) ? cs.textDefault : cs.textInfo);
   digit[0] = col + 49;
@@ -115,10 +115,10 @@ static void fullRedraw(void) {
 }
 
 static void draw(void) {
-  for (int c = 0; c < project.tracksCount; c++) {
+  for (int c = 0; c < chipnomadState->project.tracksCount; c++) {
     gfxClearRect(2 + c * 3, 3, 1, 16);
-    if (playback.tracks[c].songRow != EMPTY_VALUE_16) {
-      int row = playback.tracks[c].songRow - screen.topRow;
+    if (chipnomadState->playbackState.tracks[c].songRow != EMPTY_VALUE_16) {
+      int row = chipnomadState->playbackState.tracks[c].songRow - screen.topRow;
       if (row >= 0 && row < 16) {
         gfxSetFgColor(appSettings.colorScheme.playMarkers);
         gfxPrint(2 + c * 3, 3 + row, ">");
@@ -137,7 +137,7 @@ static void draw(void) {
 static int inputScreenNavigation(int keys, int isDoubleTap) {
   // Go to Chain screen
   if (keys == (keyRight | keyShift)) {
-    int chain = project.song[screen.cursorRow][screen.cursorCol];
+    int chain = chipnomadState->project.song[screen.cursorRow][screen.cursorCol];
 
     if (chain == EMPTY_VALUE_16) {
       screenMessage(0, "Enter a chain");
@@ -164,11 +164,11 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
 
 static int editCell(int col, int row, enum CellEditAction action) {
   if (action == editDoubleTap) {
-    int current = project.song[row][col];
+    int current = chipnomadState->project.song[row][col];
     if (current != EMPTY_VALUE_16) {
-      int nextEmpty = findEmptyChain(current + 1);
+      int nextEmpty = findEmptyChain(&chipnomadState->project, current + 1);
       if (nextEmpty != EMPTY_VALUE_16) {
-        project.song[row][col] = nextEmpty;
+        chipnomadState->project.song[row][col] = nextEmpty;
         lastChainValue = nextEmpty;
       } else {
         screenMessage(MESSAGE_TIME, "No free chains");
@@ -176,9 +176,9 @@ static int editCell(int col, int row, enum CellEditAction action) {
     }
     return 1;
   } else if (action == editClear) {
-    if (project.song[row][col] != EMPTY_VALUE_16) {
+    if (chipnomadState->project.song[row][col] != EMPTY_VALUE_16) {
       // Clear the value
-      project.song[row][col] = EMPTY_VALUE_16;
+      chipnomadState->project.song[row][col] = EMPTY_VALUE_16;
       return 1;
     } else {
       // Value is already empty, shift column up
@@ -187,29 +187,29 @@ static int editCell(int col, int row, enum CellEditAction action) {
       return 1;
     }
   } else if (action == editShallowClone) {
-    int current = project.song[row][col];
+    int current = chipnomadState->project.song[row][col];
     if (current != EMPTY_VALUE_16) {
       int cloned = cloneChainToNext(current);
       if (cloned != EMPTY_VALUE_16) {
-        project.song[row][col] = cloned;
+        chipnomadState->project.song[row][col] = cloned;
         lastChainValue = cloned;
         return 1;
       }
     }
     return 0;
   } else if (action == editDeepClone) {
-    int current = project.song[row][col];
+    int current = chipnomadState->project.song[row][col];
     if (current != EMPTY_VALUE_16) {
       int cloned = deepCloneChainToNext(current);
       if (cloned != EMPTY_VALUE_16) {
-        project.song[row][col] = cloned;
+        chipnomadState->project.song[row][col] = cloned;
         lastChainValue = cloned;
         return 1;
       }
     }
     return 0;
   }
-  return edit16withLimit(action, &project.song[row][col], &lastChainValue, 16, PROJECT_MAX_CHAINS - 1);
+  return edit16withLimit(action, &chipnomadState->project.song[row][col], &lastChainValue, 16, PROJECT_MAX_CHAINS - 1);
 }
 
 static int onEdit(int col, int row, enum CellEditAction action) {
@@ -217,10 +217,10 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     return switchSongSelectionMode(&screen);
   } else if (action == editMultiIncreaseBig || action == editMultiDecreaseBig) {
     if (screen.selectMode != 1) return 0;
-    
+
     int startCol, startRow, endCol, endRow;
     getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
-    
+
     int success = 0;
     if (action == editMultiDecreaseBig) {
       success = applySongMoveDown(startCol, startRow, endCol, endRow);
@@ -243,7 +243,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
         }
       }
     }
-    
+
     if (success) {
       fullRedraw();
     }
@@ -294,7 +294,7 @@ static void onInput(int keys, int isDoubleTap) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const struct AppScreen screenSong = {
+const AppScreen screenSong = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,

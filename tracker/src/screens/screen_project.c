@@ -1,6 +1,6 @@
 #include <screen_project.h>
 #include <common.h>
-#include <corelib_file.h>
+#include <corelib/corelib_file.h>
 #include <corelib_gfx.h>
 #include <utils.h>
 #include <chipnomad_lib.h>
@@ -23,24 +23,25 @@ static void onProjectLoaded(const char* path) {
     screenSetup(&screenProject, 0);
     return;
   }
-  
-  playbackStop(&playback);
-  if (projectLoad(path) == 0) {
-    // Update tick rate and reinitialize chip with new project settings
-    audioManager.tickRate = project.tickRate;
-    audioManager.initChips();
-    
-    extractFilenameWithoutExtension(path, appSettings.projectFilename, FILENAME_LENGTH + 1);
 
-    // Save the directory path
-    char* lastSeparator = strrchr(path, PATH_SEPARATOR);
-    if (lastSeparator) {
-      int pathLen = lastSeparator - path;
-      if (pathLen > 0 && pathLen < PATH_LENGTH) {
-        strncpy(appSettings.projectPath, path, pathLen);
-        appSettings.projectPath[pathLen] = 0;
-      }
+  // Store the directory path from the selected file
+  char* lastSeparator = strrchr(path, PATH_SEPARATOR);
+  if (lastSeparator) {
+    int pathLen = lastSeparator - path;
+    if (pathLen > 0 && pathLen < PATH_LENGTH) {
+      strncpy(appSettings.projectPath, path, pathLen);
+      appSettings.projectPath[pathLen] = '\0';
     }
+  } else {
+    appSettings.projectPath[0] = '\0';
+  }
+
+  playbackStop(&chipnomadState->playbackState);
+  if (projectLoad(&chipnomadState->project, path) == 0) {
+    chipnomadInitChips(chipnomadState, appSettings.audioSampleRate, NULL);
+
+    // Store filename without extension
+    extractFilenameWithoutExtension(path, appSettings.projectFilename, FILENAME_LENGTH + 1);
 
     // Jump to the song beginning
     if (pSongRow) *pSongRow = 0;
@@ -48,6 +49,7 @@ static void onProjectLoaded(const char* path) {
     if (pChainRow) *pChainRow = 0;
     songScreenInput = 0x1234;
   }
+
   screenSetup(&screenProject, 0);
 }
 
@@ -55,7 +57,7 @@ static void onProjectSaved(const char* folderPath) {
   char fullPath[2048];
   snprintf(fullPath, sizeof(fullPath), "%s%s%s.cnm", folderPath, PATH_SEPARATOR_STR, appSettings.projectFilename);
 
-  if (projectSave(fullPath) == 0) {
+  if (projectSave(&chipnomadState->project, fullPath) == 0) {
     // Save the directory path
     strncpy(appSettings.projectPath, folderPath, PATH_LENGTH);
     appSettings.projectPath[PATH_LENGTH] = 0;
@@ -70,7 +72,7 @@ static void onProjectCancelled(void) {
 static void drawRowHeader(int row, int state);
 static void drawColHeader(int col, int state);
 
-static struct ScreenData screenProjectCommon = {
+static ScreenData screenProjectCommon = {
   .rows = 7,
   .cursorRow = 0,
   .cursorCol = 0,
@@ -84,9 +86,9 @@ static struct ScreenData screenProjectCommon = {
   .onEdit = projectCommonOnEdit,
 };
 
-static struct ScreenData* projectScreen(void) {
-  struct ScreenData* data = &screenProjectCommon;
-  if (project.chipType == chipAY) {
+static ScreenData* projectScreen(void) {
+  ScreenData* data = &screenProjectCommon;
+  if (chipnomadState->project.chipType == chipAY) {
     data = &screenProjectAY;
   }
   data->drawRowHeader = drawRowHeader;
@@ -99,12 +101,12 @@ static void setup(int input) {
   isCharEdit = 0;
   editingString = NULL;
   editingStringLength = 0;
-  tickRateI = (int)project.tickRate;
-  tickRateF = (uint16_t)((project.tickRate - (float)tickRateI) * 1000.f);
+  tickRateI = (int)chipnomadState->project.tickRate;
+  tickRateF = (uint16_t)((chipnomadState->project.tickRate - (float)tickRateI) * 1000.f);
 }
 
 static void fullRedraw(void) {
-  struct ScreenData* screen = projectScreen();
+  ScreenData* screen = projectScreen();
   screenFullRedraw(screen);
 }
 
@@ -133,7 +135,7 @@ int projectCommonColumnCount(int row) {
 }
 
 void projectCommonDrawStatic(void) {
-  const struct ColorScheme cs = appSettings.colorScheme;
+  const ColorScheme cs = appSettings.colorScheme;
 
   gfxSetFgColor(cs.textTitles);
   gfxPrint(0, 0, "PROJECT");
@@ -201,11 +203,11 @@ void projectCommonDrawField(int col, int row, int state) {
   } else if (row == 2) {
     // Title
     gfxClearRect(7, 4, PROJECT_TITLE_LENGTH, 1);
-    gfxPrintf(7, 4, "%s", project.title);
+    gfxPrintf(7, 4, "%s", chipnomadState->project.title);
   } else if (row == 3) {
     // Author
     gfxClearRect(7, 5, PROJECT_TITLE_LENGTH, 1);
-    gfxPrintf(7, 5, "%s", project.author);
+    gfxPrintf(7, 5, "%s", chipnomadState->project.author);
   } else if (row == 4) {
     // Tick rate and BPM
     gfxClearRect(13, 7, 27, 1);
@@ -217,7 +219,7 @@ void projectCommonDrawField(int col, int row, int state) {
     gfxPrint(13, 8, "AY/YM");
   } else if (row == 6) {
     // Chips count
-    gfxPrintf(13, 9, "%d", project.chipsCount);
+    gfxPrintf(13, 9, "%d", chipnomadState->project.chipsCount);
   }
 }
 
@@ -241,7 +243,7 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
       }
     } else if (col == 2) {
       // New project
-      projectInitAY();
+      projectInitAY(&chipnomadState->project);
       appSettings.projectFilename[0] = 0; // Clear filename
       fullRedraw();
       handled = 1;
@@ -262,20 +264,20 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
     }
   } else if (row == 2) {
     // Title
-    int res = editCharacter(action, project.title, col, PROJECT_TITLE_LENGTH);
+    int res = editCharacter(action, chipnomadState->project.title, col, PROJECT_TITLE_LENGTH);
     if (res == 1) {
       isCharEdit = 1;
-      editingString = project.title;
+      editingString = chipnomadState->project.title;
       editingStringLength = PROJECT_TITLE_LENGTH;
     } else if (res > 1) {
       handled = 1;
     }
   } else if (row == 3) {
     // Author
-    int res = editCharacter(action, project.author, col, PROJECT_TITLE_LENGTH);
+    int res = editCharacter(action, chipnomadState->project.author, col, PROJECT_TITLE_LENGTH);
     if (res == 1) {
       isCharEdit = 1;
-      editingString = project.author;
+      editingString = chipnomadState->project.author;
       editingStringLength = PROJECT_TITLE_LENGTH;
     } else if (res > 1) {
       handled = 1;
@@ -297,12 +299,9 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
 
     if (handled) {
       // Update project tick rate from the two components
-      project.tickRate = (float)tickRateI + (float)tickRateF / 1000.0f;
-      // Update audio manager tick rate for immediate playback speed change
-      audioManager.tickRate = project.tickRate;
+      chipnomadState->project.tickRate = (float)tickRateI + (float)tickRateF / 1000.0f;
     }
   }
-
 
   return handled;
 }
@@ -324,7 +323,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
 
 static void onInput(int keys, int isDoubleTap) {
   if (isCharEdit) {
-    struct ScreenData* screen = projectScreen();
+    ScreenData* screen = projectScreen();
     char result = charEditInput(keys, isDoubleTap, editingString, screen->cursorCol, editingStringLength);
 
     if (result) {
@@ -337,12 +336,12 @@ static void onInput(int keys, int isDoubleTap) {
   } else {
     if (inputScreenNavigation(keys, isDoubleTap)) return;
 
-    struct ScreenData* screen = projectScreen();
+    ScreenData* screen = projectScreen();
     if (screenInput(screen, keys, isDoubleTap)) return;
   }
 }
 
-const struct AppScreen screenProject = {
+const AppScreen screenProject = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,

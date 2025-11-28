@@ -33,13 +33,13 @@ int fileDelete(const char* path);
 int fileCreateDirectory(const char* path);
 
 // File browser functions
-struct FileEntry {
+typedef struct FileEntry {
   char name[256];
   int isDirectory;
-};
+} FileEntry;
 
 // Returns allocated array of entries, NULL on error. Caller must free.
-struct FileEntry* fileListDirectory(const char* path, const char* extension, int* entryCount);
+FileEntry* fileListDirectory(const char* path, const char* extension, int* entryCount);
 // Get current working directory
 int fileGetCurrentDirectory(char* buffer, int bufferSize);
 // Check if directory exists

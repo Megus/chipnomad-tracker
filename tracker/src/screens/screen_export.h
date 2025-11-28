@@ -19,6 +19,6 @@ void exportCommonDrawField(int col, int row, int state);
 int exportCommonOnEdit(int col, int row, enum CellEditAction action);
 void generateExportPath(char* outputPath, int maxLen, const char* extension);
 
-extern struct ScreenData screenExportAY;
+extern ScreenData screenExportAY;
 
 #endif

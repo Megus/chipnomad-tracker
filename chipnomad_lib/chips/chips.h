@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include "../project.h"
 
-struct SoundChip {
+typedef struct SoundChip {
   void* userdata;
   uint8_t regs[256];  // Space for 256 chip registers
 
@@ -13,11 +13,11 @@ struct SoundChip {
   void (*render)(struct SoundChip* self, float* buffer, int samples);
   void (*detectWarnings)(struct SoundChip* self, int* warningCooldowns, int cooldownValue);
   int (*cleanup)(struct SoundChip* self);
-};
+} SoundChip;
 
-struct SoundChip createChipAY(int sampleRate, union ChipSetup setup);
-void updateChipAYType(struct SoundChip* chip, uint8_t isYM);
-void updateChipAYStereoMode(struct SoundChip* chip, enum StereoModeAY stereoMode, uint8_t separation);
-void updateChipAYClock(struct SoundChip* chip, int clockRate, int sampleRate);
+SoundChip createChipAY(int sampleRate, ChipSetup setup);
+void updateChipAYType(SoundChip* chip, uint8_t isYM);
+void updateChipAYStereoMode(SoundChip* chip, enum StereoModeAY stereoMode, uint8_t separation);
+void updateChipAYClock(SoundChip* chip, int clockRate, int sampleRate);
 
 #endif

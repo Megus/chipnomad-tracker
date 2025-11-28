@@ -1,5 +1,5 @@
 #include <common.h>
-#include <corelib_file.h>
+#include <corelib/corelib_file.h>
 #include <string.h>
 
 #ifdef MACOS_BUILD
@@ -15,7 +15,7 @@
 
 #define SETTINGS_FILENAME "settings.txt"
 
-struct AppSettings appSettings = {
+AppSettings appSettings = {
   .screenWidth = 0, // 0 to auto-detect resolution
   .screenHeight = 0, // 0 to auto-detect resolution
   .audioSampleRate = 44100,
@@ -47,7 +47,7 @@ struct AppSettings appSettings = {
 int* pSongRow;
 int* pSongTrack;
 int* pChainRow;
-struct PlaybackState playback;
+ChipNomadState* chipnomadState;
 
 #ifdef MACOS_BUILD
 static char userDataPath[PATH_LENGTH] = "";
@@ -72,13 +72,13 @@ static void getFullPath(const char* filename, char* fullPath, int maxLength) {
 #endif
 
 int settingsSave(void) {
-#ifdef MACOS_BUILD
+  #ifdef MACOS_BUILD
   char fullPath[PATH_LENGTH];
   getFullPath(SETTINGS_FILENAME, fullPath, PATH_LENGTH);
   int fileId = fileOpen(fullPath, 1);
-#else
+  #else
   int fileId = fileOpen(SETTINGS_FILENAME, 1);
-#endif
+  #endif
   if (fileId == -1) return 1;
 
   filePrintf(fileId, "screenWidth: %d\n", appSettings.screenWidth);
@@ -111,13 +111,13 @@ int settingsSave(void) {
 }
 
 int settingsLoad(void) {
-#ifdef MACOS_BUILD
+  #ifdef MACOS_BUILD
   char fullPath[PATH_LENGTH];
   getFullPath(SETTINGS_FILENAME, fullPath, PATH_LENGTH);
   int fileId = fileOpen(fullPath, 0);
-#else
+  #else
   int fileId = fileOpen(SETTINGS_FILENAME, 0);
-#endif
+  #endif
   if (fileId == -1) return 1;
 
   char* line;
@@ -182,13 +182,13 @@ int settingsLoad(void) {
 }
 
 const char* getAutosavePath(void) {
-#ifdef MACOS_BUILD
+  #ifdef MACOS_BUILD
   static char autosavePath[PATH_LENGTH];
   getFullPath(AUTOSAVE_FILENAME, autosavePath, PATH_LENGTH);
   return autosavePath;
-#else
+  #else
   return AUTOSAVE_FILENAME;
-#endif
+  #endif
 }
 
 void extractFilenameWithoutExtension(const char* path, char* output, int maxLength) {
@@ -210,4 +210,3 @@ void extractFilenameWithoutExtension(const char* path, char* output, int maxLeng
     *dot = 0;
   }
 }
-

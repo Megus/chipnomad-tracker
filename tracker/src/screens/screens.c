@@ -6,7 +6,7 @@
 #include <corelib_gfx.h>
 #include <utils.h>
 
-const struct AppScreen* currentScreen = NULL;
+const AppScreen* currentScreen = NULL;
 
 static int messageTimer = -1;
 static char messageBuffer[42] = "";
@@ -14,7 +14,7 @@ static char messageBuffer[42] = "";
 void drawScreenMap() {
   const static int smY = 15;
 
-  const struct ColorScheme cs = appSettings.colorScheme;
+  const ColorScheme cs = appSettings.colorScheme;
   gfxSetBgColor(cs.background);
   gfxSetFgColor(cs.textInfo);
   gfxClearRect(35, smY, 5, 4);
@@ -30,7 +30,7 @@ void drawScreenMap() {
   } else if (currentScreen == &screenInstrument || currentScreen == &screenInstrumentPool) {
     gfxPrint(38, smY + 2, "P");
   }
-  
+
   // Show Settings below Song
   if (currentScreen == &screenSong) {
     gfxPrint(35, smY + 2, "S");
@@ -59,8 +59,8 @@ void drawScreenMap() {
   }
 }
 
-void screenSetup(const struct AppScreen* screen, int input) {
-  projectSave(getAutosavePath()); // Temporary measure against random crashes
+void screenSetup(const AppScreen* screen, int input) {
+  projectSave(&chipnomadState->project, getAutosavePath()); // Temporary measure against random crashes
 
   currentScreen = screen;
   currentScreen->setup(input);
@@ -116,7 +116,7 @@ void screenMessage(int time, const char* format, ...) {
 // Spreadsheet screen functions
 //
 
-static void screenDrawSelection(struct ScreenData* screen, int drawOrErase, int col1, int row1, int col2, int row2) {
+static void screenDrawSelection(ScreenData* screen, int drawOrErase, int col1, int row1, int col2, int row2) {
   if (drawOrErase) {
     gfxSetFgColor(appSettings.colorScheme.selection);
   } else {
@@ -126,7 +126,7 @@ static void screenDrawSelection(struct ScreenData* screen, int drawOrErase, int 
   screen->drawSelection(col1, row1, col2, row2);
 }
 
-static void validateCursorBounds(struct ScreenData* screen) {
+static void validateCursorBounds(ScreenData* screen) {
   // Validate row bounds
   if (screen->cursorRow >= screen->rows) {
     screen->cursorRow = screen->rows - 1;
@@ -134,7 +134,7 @@ static void validateCursorBounds(struct ScreenData* screen) {
   if (screen->cursorRow < 0) {
     screen->cursorRow = 0;
   }
-  
+
   // Validate column bounds for current row
   int maxCol = screen->getColumnCount(screen->cursorRow) - 1;
   if (screen->cursorCol > maxCol) {
@@ -145,7 +145,7 @@ static void validateCursorBounds(struct ScreenData* screen) {
   }
 }
 
-void screenFullRedraw(struct ScreenData* screen) {
+void screenFullRedraw(ScreenData* screen) {
   validateCursorBounds(screen);
   gfxClearRect(0, 0, 40, 20);
 
@@ -192,7 +192,7 @@ void screenFullRedraw(struct ScreenData* screen) {
   }
 }
 
-void screenDrawOverlays(struct ScreenData* screen) {
+void screenDrawOverlays(ScreenData* screen) {
   if (screen->selectMode == 1) {
     int selCol1, selRow1, selCol2, selRow2;
     getSelectionBounds(screen, &selCol1, &selRow1, &selCol2, &selRow2);
@@ -202,7 +202,7 @@ void screenDrawOverlays(struct ScreenData* screen) {
 
 
 // Cursor navigation within a spreadhseet-like page
-static void inputCursorCommon(struct ScreenData* screen, int keys, int* handled, int* redrawn) {
+static void inputCursorCommon(ScreenData* screen, int keys, int* handled, int* redrawn) {
   if (keys == keyLeft) {
     if (screen->cursorCol > 0) screen->cursorCol--;
     *handled = 1;
@@ -232,7 +232,7 @@ static void inputCursorCommon(struct ScreenData* screen, int keys, int* handled,
   }
 }
 
-static int inputNormalMode(struct ScreenData* screen, int keys, int isDoubleTap) {
+static int inputNormalMode(ScreenData* screen, int keys, int isDoubleTap) {
   int oldCursorCol = screen->cursorCol;
   int oldCursorRow = screen->cursorRow;
   int handled = 0;
@@ -325,14 +325,14 @@ static int inputNormalMode(struct ScreenData* screen, int keys, int isDoubleTap)
 static int optPressed = 0;
 static int shallowClonePressed = 0;
 
-static void moveCursorToSelectionStart(struct ScreenData* screen) {
+static void moveCursorToSelectionStart(ScreenData* screen) {
   int startCol, startRow, endCol, endRow;
   getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
   screen->cursorCol = startCol;
   screen->cursorRow = startRow;
 }
 
-static void redrawSelection(struct ScreenData* screen) {
+static void redrawSelection(ScreenData* screen) {
   int startCol, startRow, endCol, endRow;
   getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
   for (int r = startRow; r <= endRow; r++) {
@@ -342,7 +342,7 @@ static void redrawSelection(struct ScreenData* screen) {
   }
 }
 
-static int inputSelectMode(struct ScreenData* screen, int keys, int isDoubleTap) {
+static int inputSelectMode(ScreenData* screen, int keys, int isDoubleTap) {
   int oldCursorCol = screen->cursorCol;
   int oldCursorRow = screen->cursorRow;
   int handled = 0;
@@ -465,7 +465,7 @@ static int inputSelectMode(struct ScreenData* screen, int keys, int isDoubleTap)
   return handled;
 }
 
-int screenInput(struct ScreenData* screen, int keys, int isDoubleTap) {
+int screenInput(ScreenData* screen, int keys, int isDoubleTap) {
   return (screen->selectMode == 1) ? inputSelectMode(screen, keys, isDoubleTap) : inputNormalMode(screen, keys, isDoubleTap);
 }
 
@@ -476,7 +476,7 @@ int screenInput(struct ScreenData* screen, int keys, int isDoubleTap) {
 //
 
 void setCellColor(int state, int isEmpty, int hasContent) {
-  const struct ColorScheme cs = appSettings.colorScheme;
+  const ColorScheme cs = appSettings.colorScheme;
 
   if (state & stateSelected) {
     if (isEmpty) {
@@ -495,14 +495,14 @@ void setCellColor(int state, int isEmpty, int hasContent) {
   }
 }
 
-void getSelectionBounds(struct ScreenData* screen, int* startCol, int* startRow, int* endCol, int* endRow) {
+void getSelectionBounds(ScreenData* screen, int* startCol, int* startRow, int* endCol, int* endRow) {
   *startCol = min(screen->selectStartCol, screen->cursorCol);
   *endCol = max(screen->selectStartCol, screen->cursorCol);
   *startRow = min(screen->selectStartRow, screen->cursorRow);
   *endRow = max(screen->selectStartRow, screen->cursorRow);
 }
 
-int isSingleColumnSelection(struct ScreenData* screen) {
+int isSingleColumnSelection(ScreenData* screen) {
   int startCol, startRow, endCol, endRow;
   getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
   return startCol == endCol;

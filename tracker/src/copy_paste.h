@@ -1,7 +1,5 @@
 #include <chipnomad_lib.h>
-
-// Forward declaration
-struct ScreenData;
+#include "screens/screens.h"
 
 // Groove copy/paste
 void copyGroove(int grooveIdx, int startRow, int endRow, int isCut);
@@ -39,8 +37,8 @@ int deepCloneChainToNext(int srcIdx);
 int cloneInstrumentsInPhrase(int phraseIdx, int startRow, int endRow);
 
 // Selection mode switching
-int switchPhraseSelectionMode(struct ScreenData* screen);
-int switchTableSelectionMode(struct ScreenData* screen);
-int switchChainSelectionMode(struct ScreenData* screen);
-int switchGrooveSelectionMode(struct ScreenData* screen);
-int switchSongSelectionMode(struct ScreenData* screen);
+int switchPhraseSelectionMode(ScreenData* screen);
+int switchTableSelectionMode(ScreenData* screen);
+int switchChainSelectionMode(ScreenData* screen);
+int switchGrooveSelectionMode(ScreenData* screen);
+int switchSongSelectionMode(ScreenData* screen);

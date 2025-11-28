@@ -3,6 +3,6 @@
 
 #include <screens.h>
 
-extern const struct AppScreen screenSettings;
+extern const AppScreen screenSettings;
 
 #endif

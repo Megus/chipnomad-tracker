@@ -26,9 +26,9 @@ const char* byteToHex(uint8_t byte) {
 
 const char* byteToHexOrEmpty(uint8_t byte) {
   if (byte == EMPTY_VALUE_8) {
-    return "--";
+  return "--";
   } else {
-    return hexBytes[byte];
+  return hexBytes[byte];
   }
 }
 
@@ -39,7 +39,7 @@ uint8_t hash(uint8_t* str) {
   int c;
 
   while ((c = *str++))
-    hash = ((hash << 5) + hash) + c; // Variant: XOR c instead of PLUS c
+  hash = ((hash << 5) + hash) + c; // Variant: XOR c instead of PLUS c
 
   return (uint8_t)(hash & 0xff);
 }

@@ -228,7 +228,7 @@ void charEditFullDraw(char startChar) {
         prevCol = currentCol;
         break;
       }
-      
+
       pos = strchr(keyboardRowsLower[row], startChar);
       if (pos != NULL) {
         isUppercase = 0;

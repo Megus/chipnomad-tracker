@@ -15,15 +15,15 @@ enum PlaybackMode {
   playbackModeLoop,
 };
 
-struct PlaybackTableState {
+typedef struct PlaybackTableState {
   uint8_t tableIdx;
   uint8_t rows[4];
   uint8_t counters[4];
   uint8_t speed[4];
-  struct PlaybackFXState fx[4];
-};
+  PlaybackFXState fx[4];
+} PlaybackTableState;
 
-struct PlaybackAYNoteState {
+typedef struct PlaybackAYNoteState {
   uint8_t mixer; // bit 0 - Tone, bit 1 - Noise, bit 2 - Envelope
   uint8_t adsrStep;
   uint8_t adsrCounter;
@@ -38,13 +38,13 @@ struct PlaybackAYNoteState {
   int16_t envOffsetAcc;
   uint8_t noiseBase;
   int8_t noiseOffsetAcc;
-};
+} PlaybackAYNoteState;
 
-union PlaybackChipNoteState {
-  struct PlaybackAYNoteState ay;
-};
+typedef struct PlaybackChipNoteState {
+  PlaybackAYNoteState ay;
+} PlaybackChipNoteState;
 
-struct PlaybackNoteState {
+typedef struct PlaybackNoteState {
   uint8_t noteBase;
   uint8_t instrument;
   uint8_t volume;
@@ -59,20 +59,20 @@ struct PlaybackNoteState {
   uint8_t volume3; // Aux table volume
   int8_t volumeOffsetAcc; // Accumulated over time
 
-  struct PlaybackTableState instrumentTable;
-  struct PlaybackTableState auxTable;
-  struct PlaybackFXState fx[3];
+  PlaybackTableState instrumentTable;
+  PlaybackTableState auxTable;
+  PlaybackFXState fx[3];
 
-  union PlaybackChipNoteState chip;
-};
+  PlaybackChipNoteState chip;
+} PlaybackNoteState;
 
-struct PlaybackTrackQueue {
+typedef struct PlaybackTrackQueue {
   enum PlaybackMode mode;
   int songRow;
   int chainRow;
   int phraseRow;
   int loop;
-};
+} PlaybackTrackQueue;
 
 enum PlaybackArpType {
   arpTypeUp,
@@ -94,8 +94,8 @@ enum PlaybackArpType {
   arpTypeMax,
 };
 
-struct PlaybackTrackState {
-  struct PlaybackTrackQueue queue;
+typedef struct PlaybackTrackState {
+  PlaybackTrackQueue queue;
 
   enum PlaybackMode mode;
   // Position in the song
@@ -115,25 +115,25 @@ struct PlaybackTrackState {
   enum PlaybackArpType arpType;
 
   // Currently playing note
-  struct PlaybackNoteState note;
+  PlaybackNoteState note;
 
   // Cached phrase row data
-  struct PhraseRow currentPhraseRow;
-};
+  PhraseRow currentPhraseRow;
+} PlaybackTrackState;
 
-struct PlaybackAYChipState {
+typedef struct PlaybackAYChipState {
   uint8_t envShape;
-};
+} PlaybackAYChipState;
 
-union PlaybackChipState {
-  struct PlaybackAYChipState ay;
-};
+typedef struct PlaybackChipState {
+  PlaybackAYChipState ay;
+} PlaybackChipState;
 
-struct PlaybackState {
-  struct Project* p;
-  struct PlaybackTrackState tracks[PROJECT_MAX_TRACKS];
-  union PlaybackChipState chips[PROJECT_MAX_CHIPS];
-};
+typedef struct PlaybackState {
+  Project* p;
+  PlaybackTrackState tracks[PROJECT_MAX_TRACKS];
+  PlaybackChipState chips[PROJECT_MAX_CHIPS];
+} PlaybackState;
 
 
 /**
@@ -142,7 +142,7 @@ struct PlaybackState {
  * @param state Pointer to the playback state to initialize
  * @param project Pointer to the project data to use for playback
  */
-void playbackInit(struct PlaybackState* state, struct Project* project);
+void playbackInit(PlaybackState* state, Project* project);
 
 /**
  * Checks if any track is currently playing
@@ -150,7 +150,7 @@ void playbackInit(struct PlaybackState* state, struct Project* project);
  * @param state Pointer to the playback state
  * @return 1 if any track is playing, 0 if all tracks are stopped
  */
-int playbackIsPlaying(struct PlaybackState* state);
+int playbackIsPlaying(PlaybackState* state);
 
 /**
  * Starts song playback from the specified position
@@ -160,7 +160,7 @@ int playbackIsPlaying(struct PlaybackState* state);
  * @param chainRow Starting row position in the chain
  * @param loop Whether to loop when reaching the end
  */
-void playbackStartSong(struct PlaybackState* state, int songRow, int chainRow, int loop);
+void playbackStartSong(PlaybackState* state, int songRow, int chainRow, int loop);
 
 /**
  * Starts chain playback for a specific track
@@ -171,7 +171,7 @@ void playbackStartSong(struct PlaybackState* state, int songRow, int chainRow, i
  * @param chainRow Starting row position in the chain
  * @param loop Whether to loop when reaching the end
  */
-void playbackStartChain(struct PlaybackState* state, int trackIdx, int songRow, int chainRow, int loop);
+void playbackStartChain(PlaybackState* state, int trackIdx, int songRow, int chainRow, int loop);
 
 /**
  * Starts phrase playback for a specific track
@@ -182,7 +182,7 @@ void playbackStartChain(struct PlaybackState* state, int trackIdx, int songRow, 
  * @param chainRow Row position in the chain containing the phrase
  * @param loop Whether to loop when reaching the end
  */
-void playbackStartPhrase(struct PlaybackState* state, int trackIdx, int songRow, int chainRow, int loop);
+void playbackStartPhrase(PlaybackState* state, int trackIdx, int songRow, int chainRow, int loop);
 
 /**
  * Starts playback of a phrase row
@@ -191,7 +191,7 @@ void playbackStartPhrase(struct PlaybackState* state, int trackIdx, int songRow,
  * @param trackIdx Index of the track to play
  * @param phraseRow Phrase row data to play
  */
-void playbackStartPhraseRow(struct PlaybackState* state, int trackIdx, struct PhraseRow* phraseRow);
+void playbackStartPhraseRow(PlaybackState* state, int trackIdx, PhraseRow* phraseRow);
 
 /**
  * Queues a phrase for playback on a specific track
@@ -202,14 +202,14 @@ void playbackStartPhraseRow(struct PlaybackState* state, int trackIdx, struct Ph
  * @param songRow Row position in the song containing the phrase
  * @param chainRow Row position in the chain containing the phrase
  */
-void playbackQueuePhrase(struct PlaybackState* state, int trackIdx, int songRow, int chainRow);
+void playbackQueuePhrase(PlaybackState* state, int trackIdx, int songRow, int chainRow);
 
 /**
  * Stops playback on all tracks
  *
  * @param state Pointer to the playback state
  */
-void playbackStop(struct PlaybackState* state);
+void playbackStop(PlaybackState* state);
 
 /**
  * Plays a single note with an instrument for preview
@@ -219,7 +219,7 @@ void playbackStop(struct PlaybackState* state);
  * @param note Note value to play
  * @param instrument Instrument to use
  */
-void playbackPreviewNote(struct PlaybackState* state, int trackIdx, uint8_t note, uint8_t instrument);
+void playbackPreviewNote(PlaybackState* state, int trackIdx, uint8_t note, uint8_t instrument);
 
 
 
@@ -229,7 +229,7 @@ void playbackPreviewNote(struct PlaybackState* state, int trackIdx, uint8_t note
  * @param state Pointer to the playback state
  * @param trackIdx Index of the track to stop preview on
  */
-void playbackStopPreview(struct PlaybackState* state, int trackIdx);
+void playbackStopPreview(PlaybackState* state, int trackIdx);
 
 /**
  * Advances playback by one frame
@@ -238,9 +238,6 @@ void playbackStopPreview(struct PlaybackState* state, int trackIdx);
  * @param chips Array of sound chips to output to
  * @return 1 if all tracks have finished playing, 0 if any track is still active
  */
-int playbackNextFrame(struct PlaybackState* state, struct SoundChip* chips);
-
-
-
+int playbackNextFrame(PlaybackState* state, SoundChip* chips);
 
 #endif

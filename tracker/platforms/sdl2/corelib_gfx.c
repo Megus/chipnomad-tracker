@@ -115,22 +115,22 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
 
   // Detect screen resolution if not provided or zero
   if (screenWidth == NULL || screenHeight == NULL || *screenWidth == 0 || *screenHeight == 0) {
-#ifdef DESKTOP_BUILD
-    // Default to 640x480 on desktop platforms
-    screenW = 640;
-    screenH = 480;
-#else
-    // For other platforms, try to get display mode
-    SDL_DisplayMode dm;
-    if (SDL_GetDesktopDisplayMode(0, &dm) == 0) {
-      screenW = dm.w;
-      screenH = dm.h;
-    } else {
-      // Fallback to 640x480 if detection fails
+    #ifdef DESKTOP_BUILD
+      // Default to 640x480 on desktop platforms
       screenW = 640;
       screenH = 480;
-    }
-#endif
+    #else
+      // For other platforms, try to get display mode
+      SDL_DisplayMode dm;
+      if (SDL_GetDesktopDisplayMode(0, &dm) == 0) {
+        screenW = dm.w;
+        screenH = dm.h;
+      } else {
+        // Fallback to 640x480 if detection fails
+        screenW = 640;
+        screenH = 480;
+      }
+    #endif
     // Update the pointers if they're not NULL
     if (screenWidth != NULL) *screenWidth = screenW;
     if (screenHeight != NULL) *screenHeight = screenH;
@@ -144,169 +144,169 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
     screenW, screenH,
     SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI);
 
-  if (!window) {
-    fprintf(stderr, "SDL2 Create Window Error: %s\n", SDL_GetError());
-    SDL_Quit();
-    return 1;
-  }
-
-  renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
-
-  // Check for high-DPI display and get actual drawable size
-  int drawableW, drawableH;
-  SDL_GL_GetDrawableSize(window, &drawableW, &drawableH);
-  if (drawableW != screenW || drawableH != screenH) {
-    // High-DPI display detected, use drawable size for font selection
-    screenW = drawableW;
-    screenH = drawableH;
-  }
-
-  selectFont();
-
-  // Center the text window
-  int textWindowW = TEXT_COLS * fontPixelW;
-  int textWindowH = TEXT_ROWS * fontH;
-  offsetX = (screenW - textWindowW) / 2;
-  offsetY = (screenH - textWindowH) / 2;
-
-  createFontTexture();
-  isDirty = 1;
-
-  return 0;
-}
-
-void gfxCleanup(void) {
-  if (fontTexture) SDL_DestroyTexture(fontTexture);
-  SDL_DestroyRenderer(renderer);
-  SDL_DestroyWindow(window);
-}
-
-void gfxSetFgColor(int rgb) {
-  fgColor = rgb;
-}
-
-void gfxSetBgColor(int rgb) {
-  bgColor = rgb;
-}
-
-void gfxSetCursorColor(int rgb) {
-  cursorColor = rgb;
-}
-
-static void setColor(int rgb) {
-  SDL_SetRenderDrawColor(renderer, (rgb & 0xff0000) >> 16, (rgb & 0xff00) >> 8, rgb & 0xff, 255);
-}
-
-void gfxClear(void) {
-  setColor(bgColor);
-  SDL_RenderClear(renderer);
-  isDirty = 1;
-}
-
-void gfxPoint(int x, int y, uint32_t color) {
-  setColor(color);
-  SDL_RenderDrawPoint(renderer, x, y);
-  isDirty = 1;
-}
-
-void gfxClearRect(int x, int y, int w, int h) {
-  SDL_Rect rect = { CHAR_X(x), CHAR_Y(y), w * fontPixelW, h * fontH };
-  setColor(bgColor);
-  SDL_RenderFillRect(renderer, &rect);
-  isDirty = 1;
-}
-
-void gfxPrint(int x, int y, const char* text) {
-  if (text == NULL) return;
-
-  int cx = CHAR_X(x);
-  int cy = CHAR_Y(y);
-  int len = (int)strlen(text);
-
-  // Draw background rectangles first
-  setColor(bgColor);
-  for (int i = 0; i < len; i++) {
-    if (text[i] == '\r' && text[i + 1] == '\n') {
-      i++;
-      cx = CHAR_X(x);
-      cy += fontH;
-      continue;
+    if (!window) {
+      fprintf(stderr, "SDL2 Create Window Error: %s\n", SDL_GetError());
+      SDL_Quit();
+      return 1;
     }
-    SDL_Rect bgRect = {cx, cy, fontPixelW, fontH};
-    SDL_RenderFillRect(renderer, &bgRect);
-    cx += fontPixelW;
-    if (cx >= offsetX + TEXT_COLS * fontPixelW) {
-      cx = CHAR_X(x);
-      cy += fontH;
+
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+
+    // Check for high-DPI display and get actual drawable size
+    int drawableW, drawableH;
+    SDL_GL_GetDrawableSize(window, &drawableW, &drawableH);
+    if (drawableW != screenW || drawableH != screenH) {
+      // High-DPI display detected, use drawable size for font selection
+      screenW = drawableW;
+      screenH = drawableH;
     }
+
+    selectFont();
+
+    // Center the text window
+    int textWindowW = TEXT_COLS * fontPixelW;
+    int textWindowH = TEXT_ROWS * fontH;
+    offsetX = (screenW - textWindowW) / 2;
+    offsetY = (screenH - textWindowH) / 2;
+
+    createFontTexture();
+    isDirty = 1;
+
+    return 0;
   }
 
-  // Draw characters
-  cx = CHAR_X(x);
-  cy = CHAR_Y(y);
-  SDL_SetTextureColorMod(fontTexture, (fgColor >> 16) & 0xFF, (fgColor >> 8) & 0xFF, fgColor & 0xFF);
+  void gfxCleanup(void) {
+    if (fontTexture) SDL_DestroyTexture(fontTexture);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+  }
 
-  for (int i = 0; i < len; i++) {
-    uint8_t C = text[i];
-    if (C == '\r' && text[i + 1] == '\n') {
-      i++;
-      cx = CHAR_X(x);
-      cy += fontH;
-      if (cy >= offsetY + TEXT_ROWS * fontH) {
-        cy = CHAR_Y(y);
+  void gfxSetFgColor(int rgb) {
+    fgColor = rgb;
+  }
+
+  void gfxSetBgColor(int rgb) {
+    bgColor = rgb;
+  }
+
+  void gfxSetCursorColor(int rgb) {
+    cursorColor = rgb;
+  }
+
+  static void setColor(int rgb) {
+    SDL_SetRenderDrawColor(renderer, (rgb & 0xff0000) >> 16, (rgb & 0xff00) >> 8, rgb & 0xff, 255);
+  }
+
+  void gfxClear(void) {
+    setColor(bgColor);
+    SDL_RenderClear(renderer);
+    isDirty = 1;
+  }
+
+  void gfxPoint(int x, int y, uint32_t color) {
+    setColor(color);
+    SDL_RenderDrawPoint(renderer, x, y);
+    isDirty = 1;
+  }
+
+  void gfxClearRect(int x, int y, int w, int h) {
+    SDL_Rect rect = { CHAR_X(x), CHAR_Y(y), w * fontPixelW, h * fontH };
+    setColor(bgColor);
+    SDL_RenderFillRect(renderer, &rect);
+    isDirty = 1;
+  }
+
+  void gfxPrint(int x, int y, const char* text) {
+    if (text == NULL) return;
+
+    int cx = CHAR_X(x);
+    int cy = CHAR_Y(y);
+    int len = (int)strlen(text);
+
+    // Draw background rectangles first
+    setColor(bgColor);
+    for (int i = 0; i < len; i++) {
+      if (text[i] == '\r' && text[i + 1] == '\n') {
+        i++;
+        cx = CHAR_X(x);
+        cy += fontH;
+        continue;
       }
-      continue;
+      SDL_Rect bgRect = {cx, cy, fontPixelW, fontH};
+      SDL_RenderFillRect(renderer, &bgRect);
+      cx += fontPixelW;
+      if (cx >= offsetX + TEXT_COLS * fontPixelW) {
+        cx = CHAR_X(x);
+        cy += fontH;
+      }
     }
 
-    if (C >= 32 && C <= 126) {
-      SDL_Rect dstRect = {cx, cy, fontPixelW, fontH};
-      SDL_RenderCopy(renderer, fontTexture, &charRects[C - 32], &dstRect);
-    }
+    // Draw characters
+    cx = CHAR_X(x);
+    cy = CHAR_Y(y);
+    SDL_SetTextureColorMod(fontTexture, (fgColor >> 16) & 0xFF, (fgColor >> 8) & 0xFF, fgColor & 0xFF);
 
-    cx += fontPixelW;
-    if (cx >= offsetX + TEXT_COLS * fontPixelW) {
-      cx = CHAR_X(x);
-      cy += fontH;
+    for (int i = 0; i < len; i++) {
+      uint8_t C = text[i];
+      if (C == '\r' && text[i + 1] == '\n') {
+        i++;
+        cx = CHAR_X(x);
+        cy += fontH;
+        if (cy >= offsetY + TEXT_ROWS * fontH) {
+          cy = CHAR_Y(y);
+        }
+        continue;
+      }
+
+      if (C >= 32 && C <= 126) {
+        SDL_Rect dstRect = {cx, cy, fontPixelW, fontH};
+        SDL_RenderCopy(renderer, fontTexture, &charRects[C - 32], &dstRect);
+      }
+
+      cx += fontPixelW;
+      if (cx >= offsetX + TEXT_COLS * fontPixelW) {
+        cx = CHAR_X(x);
+        cy += fontH;
+      }
     }
+    isDirty = 1;
   }
-  isDirty = 1;
-}
 
-void gfxPrintf(int x, int y, const char* format, ...) {
-  va_list args;
-  va_start(args, format);
-  vsnprintf(printBuffer, 256, format, args);
-  va_end(args);
-  gfxPrint(x, y, printBuffer);
-}
-
-void gfxCursor(int x, int y, int w) {
-  SDL_Rect rect = { CHAR_X(x), CHAR_Y(y) + fontH - 1, w * fontPixelW, 1 };
-  setColor(cursorColor);
-  SDL_RenderFillRect(renderer, &rect);
-  isDirty = 1;
-}
-
-void gfxRect(int x, int y, int w, int h) {
-  int cx = CHAR_X(x);
-  int cy = CHAR_Y(y);
-  int cw = w * fontPixelW;
-  int ch = h * fontH;
-  setColor(fgColor);
-
-  SDL_Rect rects[4] = {
-    {cx, cy, cw, 1},           // top
-    {cx, cy + ch - 1, cw, 1}, // bottom
-    {cx, cy, 1, ch},          // left
-    {cx + cw - 1, cy, 1, ch}  // right
-  };
-  SDL_RenderFillRects(renderer, rects, 4);
-  isDirty = 1;
-}
-
-void gfxUpdateScreen(void) {
-  if (isDirty) {
-    SDL_RenderPresent(renderer);
+  void gfxPrintf(int x, int y, const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    vsnprintf(printBuffer, 256, format, args);
+    va_end(args);
+    gfxPrint(x, y, printBuffer);
   }
-  isDirty = 0;
-}
+
+  void gfxCursor(int x, int y, int w) {
+    SDL_Rect rect = { CHAR_X(x), CHAR_Y(y) + fontH - 1, w * fontPixelW, 1 };
+    setColor(cursorColor);
+    SDL_RenderFillRect(renderer, &rect);
+    isDirty = 1;
+  }
+
+  void gfxRect(int x, int y, int w, int h) {
+    int cx = CHAR_X(x);
+    int cy = CHAR_Y(y);
+    int cw = w * fontPixelW;
+    int ch = h * fontH;
+    setColor(fgColor);
+
+    SDL_Rect rects[4] = {
+      {cx, cy, cw, 1},           // top
+      {cx, cy + ch - 1, cw, 1}, // bottom
+      {cx, cy, 1, ch},          // left
+      {cx + cw - 1, cy, 1, ch}  // right
+    };
+    SDL_RenderFillRects(renderer, rects, 4);
+    isDirty = 1;
+  }
+
+  void gfxUpdateScreen(void) {
+    if (isDirty) {
+      SDL_RenderPresent(renderer);
+    }
+    isDirty = 0;
+  }

@@ -17,7 +17,7 @@ static void onInput(int keys, int isDoubleTap) {
   }
 }
 
-const struct AppScreen screenFileBrowser = {
+const AppScreen screenFileBrowser = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,

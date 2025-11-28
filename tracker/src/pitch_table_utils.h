@@ -5,14 +5,13 @@
 
 // Load pitch table from CSV file
 // Returns 0 on success, 1 on error
-int pitchTableLoadCSV(const char* path);
+int pitchTableLoadCSV(Project* p, const char* path);
 
 // Save pitch table to CSV file in specified folder
 // Returns 0 on success, 1 on error
-int pitchTableSaveCSV(const char* folderPath, const char* filename);
+int pitchTableSaveCSV(Project* p, const char* folderPath, const char* filename);
 
 // Calculate 12TET pitch table for AY chip
-void calculatePitchTableAY(struct Project* p);
-
+void calculatePitchTableAY(Project* p);
 
 #endif

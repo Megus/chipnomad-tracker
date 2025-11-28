@@ -60,7 +60,7 @@ char* helpFXHint(uint8_t* fx, int isTable) {
       break;
     case fxTBL: // Set instrument table
       sprintf(buffer, "Instrument table %s", byteToHex(fx[1]));
-    break;
+      break;
     case fxTBX: // Set aux table
       sprintf(buffer, "Aux table %s", byteToHex(fx[1]));
       break;
@@ -129,9 +129,9 @@ char* helpFXHint(uint8_t* fx, int isTable) {
       break;
     case fxENT: // Envelope note
       note = fx[1];
-      if (note >= project.pitchTable.length - project.pitchTable.octaveSize * 4)
-        note = project.pitchTable.length - 1 - project.pitchTable.octaveSize * 4;
-      sprintf(buffer, "Envelope note %s", noteName(note));
+      if (note >= chipnomadState->project.pitchTable.length - chipnomadState->project.pitchTable.octaveSize * 4)
+        note = chipnomadState->project.pitchTable.length - 1 - chipnomadState->project.pitchTable.octaveSize * 4;
+      sprintf(buffer, "Envelope note %s", noteName(&chipnomadState->project, note));
       break;
     case fxEPT: // Envelope period offset
       sprintf(buffer, "Envelope offset by %hhd", fx[1]);

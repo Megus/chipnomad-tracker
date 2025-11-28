@@ -62,7 +62,7 @@ int editFXValue(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX, int is
   uint8_t bigStep = 16;
   if (fx[0] == fxENT) {
     // AY Envelope note
-    bigStep = project.pitchTable.octaveSize;
+    bigStep = chipnomadState->project.pitchTable.octaveSize;
   }
 
   int handled = edit8noLimit(action, &fx[1], &lastFX[1], bigStep);
@@ -174,7 +174,7 @@ int fxEditInput(int keys, int isDoubleTap, uint8_t* fx, uint8_t* lastFX) {
       }
     }
     drawFX(currentGroup, currentIdx, stateFocus);
-    
+
     // Update help text for newly selected FX
     gfxClearRect(0, 1, 40, 5);
     drawFXHelp(getGroup(currentGroup)[currentIdx].fx);

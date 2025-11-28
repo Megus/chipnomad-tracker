@@ -4,25 +4,23 @@
 #include "corelib/corelib_file.h"
 #include "utils.h"
 
-struct Project project;
-
-struct FXName fxNames[256];
+FXName fxNames[256];
 
 // FX Names (in the order as they appear in FX select screen)
-struct FXName fxNamesCommon[] = {
+FXName fxNamesCommon[] = {
   {fxARP, "ARP"}, {fxARC, "ARC"}, {fxPVB, "PVB"}, {fxPBN, "PBN"}, {fxPSL, "PSL"}, {fxPIT, "PIT"},
   {fxVOL, "VOL"}, {fxRET, "RET"}, {fxDEL, "DEL"}, {fxOFF, "OFF"}, {fxKIL, "KIL"},
   {fxTIC, "TIC"}, {fxTBL, "TBL"}, {fxTBX, "TBX"}, {fxTHO, "THO"}, {fxTXH, "TXH"},
   {fxGRV, "GRV"}, {fxGGR, "GGR"}, {fxHOP, "HOP"},
 };
-int fxCommonCount = sizeof(fxNamesCommon) / sizeof(struct FXName);
+int fxCommonCount = sizeof(fxNamesCommon) / sizeof(FXName);
 
-struct FXName fxNamesAY[] = {
+FXName fxNamesAY[] = {
   {fxAYM, "AYM"}, {fxERT, "ERT"}, {fxNOI, "NOI"}, {fxNOA, "NOA"},
   {fxEAU, "EAU"}, {fxEVB, "EVB"}, {fxEBN, "EBN"}, {fxESL, "ESL"},
   {fxENT, "ENT"}, {fxEPT, "EPT"}, {fxEPL, "EPL"}, {fxEPH, "EPH"},
 };
-int fxAYCount = sizeof(fxNamesAY) / sizeof(struct FXName);
+int fxAYCount = sizeof(fxNamesAY) / sizeof(FXName);
 
 // Fill FX names
 void fillFXNames() {
@@ -43,7 +41,7 @@ void fillFXNames() {
 }
 
 // Initialize project
-void projectInit(struct Project* p) {
+void projectInit(Project* p) {
   // Title
   strcpy(p->title, "");
   strcpy(p->author, "");
@@ -149,7 +147,7 @@ static uint8_t scanByteOrEmpty(char* str) {
   }
 }
 
-static uint8_t scanNote(char* str, struct Project* p) {
+static uint8_t scanNote(char* str, Project* p) {
   // Silly linear search through pitch table. To replace with a simple hash
   static char buf[4];
   buf[0] = str[0];
@@ -167,7 +165,7 @@ static uint8_t scanNote(char* str, struct Project* p) {
   return EMPTY_VALUE_8;
 }
 
-static uint8_t scanFX(char* str, struct Project* p) {
+static uint8_t scanFX(char* str, Project* p) {
   // Silly linear search through the list of FX. To replace with a simple hash
   static char buf[4];
   buf[0] = str[0];
@@ -192,7 +190,7 @@ static uint8_t scanFX(char* str, struct Project* p) {
 
 #define READ_STRING readString(fileId); if (lpstr == NULL) return 1;
 
-static int projectLoadPitchTable(int fileId, struct Project* p) {
+static int projectLoadPitchTable(int fileId, Project* p) {
   char buf[128];
 
   READ_STRING; if (strcmp(lpstr, "## Pitch table")) return 1;
@@ -222,7 +220,7 @@ static int projectLoadPitchTable(int fileId, struct Project* p) {
   return 0;
 }
 
-static int projectLoadSong(int fileId, struct Project* p) {
+static int projectLoadSong(int fileId, Project* p) {
   char buf[3];
   if (strcmp(lpstr, "## Song")) return 1;
 
@@ -247,7 +245,7 @@ static int projectLoadSong(int fileId, struct Project* p) {
   return 0;
 }
 
-static int projectLoadChains(int fileId, struct Project* p) {
+static int projectLoadChains(int fileId, Project* p) {
   int idx;
 
   if (strcmp(lpstr, "## Chains")) return 1;
@@ -273,7 +271,7 @@ static int projectLoadChains(int fileId, struct Project* p) {
   return 0;
 }
 
-static int projectLoadGrooves(int fileId, struct Project* p) {
+static int projectLoadGrooves(int fileId, Project* p) {
   int idx;
 
   if (strcmp(lpstr, "## Grooves")) return 1;
@@ -293,7 +291,7 @@ static int projectLoadGrooves(int fileId, struct Project* p) {
   return 0;
 }
 
-static int projectLoadPhrases(int fileId, struct Project* p) {
+static int projectLoadPhrases(int fileId, Project* p) {
   int idx;
 
   if (strcmp(lpstr, "## Phrases")) return 1;
@@ -327,7 +325,7 @@ static int projectLoadPhrases(int fileId, struct Project* p) {
   return 0;
 }
 
-static int loadInstrument(int fileId, struct Instrument* instrument, struct Project* p) {
+static int loadInstrument(int fileId, Instrument* instrument, Project* p) {
   // Read name
   READ_STRING;
   if (!strncmp(lpstr, "- Name:", 7)) {
@@ -352,18 +350,18 @@ static int loadInstrument(int fileId, struct Instrument* instrument, struct Proj
     // Read volume envelope
     READ_STRING;
     if (sscanf(lpstr, "- Volume envelope: %hhu,%hhu,%hhu,%hhu",
-        &instrument->chip.ay.veA, &instrument->chip.ay.veD,
-        &instrument->chip.ay.veS, &instrument->chip.ay.veR) != 4) return 1;
+      &instrument->chip.ay.veA, &instrument->chip.ay.veD,
+      &instrument->chip.ay.veS, &instrument->chip.ay.veR) != 4) return 1;
 
     // Read auto envelope
     READ_STRING;
     if (sscanf(lpstr, "- Auto envelope: %hhu,%hhu",
-        &instrument->chip.ay.autoEnvN, &instrument->chip.ay.autoEnvD) != 2) return 1;
+      &instrument->chip.ay.autoEnvN, &instrument->chip.ay.autoEnvD) != 2) return 1;
   }
   return 0;
 }
 
-static int projectLoadInstruments(int fileId, struct Project* p) {
+static int projectLoadInstruments(int fileId, Project* p) {
   int idx;
 
   if (strcmp(lpstr, "## Instruments")) return 1;
@@ -378,7 +376,7 @@ static int projectLoadInstruments(int fileId, struct Project* p) {
   return 0;
 }
 
-static int loadTable(int fileId, struct Table* table, struct Project* p) {
+static int loadTable(int fileId, Table* table, Project* p) {
   for (int d = 0; d < 16; d++) {
     READ_STRING;
     if (strlen(lpstr) < 35) return 1;  // Minimum length check
@@ -411,7 +409,7 @@ static int loadTable(int fileId, struct Table* table, struct Project* p) {
   return 0;
 }
 
-static int projectLoadTables(int fileId, struct Project* p) {
+static int projectLoadTables(int fileId, Project* p) {
   int idx;
 
   if (strcmp(lpstr, "## Tables")) return 1;
@@ -426,9 +424,9 @@ static int projectLoadTables(int fileId, struct Project* p) {
   return 0;
 }
 
-static int projectLoadInternal(int fileId) {
+static int projectLoadInternal(int fileId, Project* project) {
   char buf[128];
-  struct Project p;
+  Project p;
 
   projectInit(&p);
 
@@ -464,40 +462,40 @@ static int projectLoadInternal(int fileId) {
   if (!found) return 1;
 
   switch (p.chipType) {
-    case chipAY:
-      READ_STRING; if (sscanf(lpstr, "- *AY8910* Clock: %d", &p.chipSetup.ay.clock) != 1) return 1;
-      int tempIsYM;
-      READ_STRING; if (sscanf(lpstr, "- *AY8910* AY/YM: %d", &tempIsYM) != 1) return 1;
-      p.chipSetup.ay.isYM = (uint8_t)tempIsYM;
-      // TODO: Remove old pan logic for the first public release
-      READ_STRING;
-      if (strncmp(lpstr, "- *AY8910* PanA:", 15) == 0) {
-        // Old pan storage
-        READ_STRING; // Skip B
-        READ_STRING; // Skip C
-        // Default to ABC
+  case chipAY:
+    READ_STRING; if (sscanf(lpstr, "- *AY8910* Clock: %d", &p.chipSetup.ay.clock) != 1) return 1;
+    int tempIsYM;
+    READ_STRING; if (sscanf(lpstr, "- *AY8910* AY/YM: %d", &tempIsYM) != 1) return 1;
+    p.chipSetup.ay.isYM = (uint8_t)tempIsYM;
+    // TODO: Remove old pan logic for the first public release
+    READ_STRING;
+    if (strncmp(lpstr, "- *AY8910* PanA:", 15) == 0) {
+      // Old pan storage
+      READ_STRING; // Skip B
+      READ_STRING; // Skip C
+      // Default to ABC
+      p.chipSetup.ay.stereoMode = ayStereoABC;
+      p.chipSetup.ay.stereoSeparation = 50;
+    } else if (strncmp(lpstr, "- *AY8910* Stereo:", 18) == 0) {
+      // New pan storage
+      if (sscanf(lpstr, "- *AY8910* Stereo: %s", buf) != 1) return 1;
+      if (strcmp(buf, "ABC") == 0) {
         p.chipSetup.ay.stereoMode = ayStereoABC;
-        p.chipSetup.ay.stereoSeparation = 50;
-      } else if (strncmp(lpstr, "- *AY8910* Stereo:", 18) == 0) {
-        // New pan storage
-        if (sscanf(lpstr, "- *AY8910* Stereo: %s", buf) != 1) return 1;
-        if (strcmp(buf, "ABC") == 0) {
-          p.chipSetup.ay.stereoMode = ayStereoABC;
-        } else if (strcmp(buf, "ACB") == 0) {
-          p.chipSetup.ay.stereoMode = ayStereoACB;
-        } else if (strcmp(buf, "BAC") == 0) {
-          p.chipSetup.ay.stereoMode = ayStereoBAC;
-        } else {
-          return 1;
-        }
-        READ_STRING; if (sscanf(lpstr, "- *AY8910* Stereo separation: %hhu", &p.chipSetup.ay.stereoSeparation) != 1) return 1;
+      } else if (strcmp(buf, "ACB") == 0) {
+        p.chipSetup.ay.stereoMode = ayStereoACB;
+      } else if (strcmp(buf, "BAC") == 0) {
+        p.chipSetup.ay.stereoMode = ayStereoBAC;
       } else {
-        // Error, pan information should be here
         return 1;
       }
-      break;
-    default:
-      break;
+      READ_STRING; if (sscanf(lpstr, "- *AY8910* Stereo separation: %hhu", &p.chipSetup.ay.stereoSeparation) != 1) return 1;
+    } else {
+      // Error, pan information should be here
+      return 1;
+    }
+    break;
+  default:
+    break;
   }
 
   p.tracksCount = p.chipsCount * 3; // Hardcoded for AY for now
@@ -512,14 +510,13 @@ static int projectLoadInternal(int fileId) {
   if (projectLoadInstruments(fileId, &p)) return 1;
   if (projectLoadTables(fileId, &p)) return 1;
 
-  // Copy loaded project to the current project
-  memcpy(&project, &p, sizeof(p));
+  // Copy loaded project to the target project
+  memcpy(project, &p, sizeof(Project));
 
   return 0;
 }
 
-int projectLoad(const char* path) {
-
+int projectLoad(Project* p, const char* path) {
   projectFileError[0] = 0;
 
   int fileId = fileOpen(path, 0);
@@ -528,7 +525,7 @@ int projectLoad(const char* path) {
     return 1;
   }
 
-  int result = projectLoadInternal(fileId);
+  int result = projectLoadInternal(fileId, p);
   fileClose(fileId);
   return result;
 }
@@ -536,12 +533,12 @@ int projectLoad(const char* path) {
 /////////////////////////////////////////////////////////////////////////////
 // Save
 
-static int projectSavePitchTable(int fileId) {
+static int projectSavePitchTable(int fileId, Project* project) {
   filePrintf(fileId, "\n## Pitch table\n\n");
-  filePrintf(fileId, "- Title: %s\n\n```\n", project.pitchTable.name);
+  filePrintf(fileId, "- Title: %s\n\n```\n", project->pitchTable.name);
 
-  for (int c = 0; c < project.pitchTable.length; c++) {
-    filePrintf(fileId, "%s %d\n", project.pitchTable.noteNames[c], project.pitchTable.values[c]);
+  for (int c = 0; c < project->pitchTable.length; c++) {
+    filePrintf(fileId, "%s %d\n", project->pitchTable.noteNames[c], project->pitchTable.values[c]);
   }
 
   filePrintf(fileId, "```\n");
@@ -549,15 +546,15 @@ static int projectSavePitchTable(int fileId) {
   return 0;
 }
 
-static int projectSaveSong(int fileId) {
+static int projectSaveSong(int fileId, Project* project) {
   filePrintf(fileId, "\n## Song\n\n```\n");
 
   // Find the last row with values
   int songLength = PROJECT_MAX_LENGTH;
   for (songLength = PROJECT_MAX_LENGTH - 1; songLength >= 0; songLength--) {
     int isEmpty = 1;
-    for (int c = 0; c < project.tracksCount; c++) {
-      if (project.song[songLength][c] != EMPTY_VALUE_16) {
+    for (int c = 0; c < project->tracksCount; c++) {
+      if (project->song[songLength][c] != EMPTY_VALUE_16) {
         isEmpty = 0;
         break;
       }
@@ -569,8 +566,8 @@ static int projectSaveSong(int fileId) {
   songLength++;
 
   for (int c = 0; c < songLength; c++) {
-    for (int d = 0; d < project.tracksCount; d++) {
-      int chain = project.song[c][d];
+    for (int d = 0; d < project->tracksCount; d++) {
+      int chain = project->song[c][d];
       if (chain == EMPTY_VALUE_16) {
         filePrintf(fileId, "-- ");
       } else {
@@ -585,18 +582,18 @@ static int projectSaveSong(int fileId) {
   return 0;
 }
 
-static int projectSaveChains(int fileId) {
+static int projectSaveChains(int fileId, Project* project) {
   filePrintf(fileId, "\n## Chains\n");
 
   for (int c = 0; c < PROJECT_MAX_CHAINS; c++) {
-    if (!chainIsEmpty(c)) {
+    if (!chainIsEmpty(project, c)) {
       filePrintf(fileId, "\n### Chain %X\n\n```\n", c);
       for (int d = 0; d < 16; d++) {
-        int phrase = project.chains[c].rows[d].phrase;
+        int phrase = project->chains[c].rows[d].phrase;
         if (phrase == EMPTY_VALUE_16) {
-          filePrintf(fileId, "--- %s\n", byteToHex(project.chains[c].rows[d].transpose));
+          filePrintf(fileId, "--- %s\n", byteToHex(project->chains[c].rows[d].transpose));
         } else {
-          filePrintf(fileId, "%03X %s\n", project.chains[c].rows[d].phrase, byteToHex(project.chains[c].rows[d].transpose));
+          filePrintf(fileId, "%03X %s\n", project->chains[c].rows[d].phrase, byteToHex(project->chains[c].rows[d].transpose));
         }
       }
       filePrintf(fileId, "```\n");
@@ -606,40 +603,39 @@ static int projectSaveChains(int fileId) {
   return 0;
 }
 
-static int projectSaveGrooves(int fileId) {
+static int projectSaveGrooves(int fileId, Project* project) {
   filePrintf(fileId, "\n## Grooves\n");
 
   for (int c = 0; c < PROJECT_MAX_GROOVES; c++) {
-    if (!grooveIsEmpty(c)) {
+    if (!grooveIsEmpty(project, c)) {
       filePrintf(fileId, "\n### Groove %X\n\n```\n", c);
       for (int d = 0; d < 16; d++) {
-        filePrintf(fileId, "%s\n", byteToHexOrEmpty(project.grooves[c].speed[d]));
+        filePrintf(fileId, "%s\n", byteToHexOrEmpty(project->grooves[c].speed[d]));
       }
       filePrintf(fileId, "```\n");
     }
   }
 
   return 0;
-
 }
 
-static int projectSavePhrases(int fileId) {
+static int projectSavePhrases(int fileId, Project* project) {
   filePrintf(fileId, "\n## Phrases\n\n");
 
   for (int c = 0; c < PROJECT_MAX_PHRASES; c++) {
-    if (!phraseIsEmpty(c)) {
+    if (!phraseIsEmpty(project, c)) {
       filePrintf(fileId, "### Phrase %X\n\n```\n", c);
       for (int d = 0; d < 16; d++) {
         filePrintf(fileId, "%s %s %s %s %s %s %s %s %s\n",
-          noteName(project.phrases[c].rows[d].note),
-          byteToHexOrEmpty(project.phrases[c].rows[d].instrument),
-          byteToHexOrEmpty(project.phrases[c].rows[d].volume),
-          fxNames[project.phrases[c].rows[d].fx[0][0]].name,
-          byteToHex(project.phrases[c].rows[d].fx[0][1]),
-          fxNames[project.phrases[c].rows[d].fx[1][0]].name,
-          byteToHex(project.phrases[c].rows[d].fx[1][1]),
-          fxNames[project.phrases[c].rows[d].fx[2][0]].name,
-          byteToHex(project.phrases[c].rows[d].fx[2][1])
+          noteName(project, project->phrases[c].rows[d].note),
+          byteToHexOrEmpty(project->phrases[c].rows[d].instrument),
+          byteToHexOrEmpty(project->phrases[c].rows[d].volume),
+          fxNames[project->phrases[c].rows[d].fx[0][0]].name,
+          byteToHex(project->phrases[c].rows[d].fx[0][1]),
+          fxNames[project->phrases[c].rows[d].fx[1][0]].name,
+          byteToHex(project->phrases[c].rows[d].fx[1][1]),
+          fxNames[project->phrases[c].rows[d].fx[2][0]].name,
+          byteToHex(project->phrases[c].rows[d].fx[2][1])
         );
       }
       filePrintf(fileId, "```\n");
@@ -649,7 +645,7 @@ static int projectSavePhrases(int fileId) {
   return 0;
 }
 
-static int saveInstrument(int fileId, int idx, struct Instrument* instrument) {
+static int saveInstrument(int fileId, int idx, Instrument* instrument) {
   filePrintf(fileId, "\n### Instrument %X\n\n", idx);
   filePrintf(fileId, "- Name: %s\n", instrument->name);
   filePrintf(fileId, "- Type: %hhd\n", instrument->type);
@@ -666,7 +662,7 @@ static int saveInstrument(int fileId, int idx, struct Instrument* instrument) {
   return 0;
 }
 
-static int saveTable(int fileId, int idx, struct Table* table) {
+static int saveTable(int fileId, int idx, Table* table) {
   filePrintf(fileId, "\n### Table %X\n\n```\n", idx);
   for (int d = 0; d < 16; d++) {
     filePrintf(fileId, "%c %s %s %s %s %s %s %s %s %s %s\n",
@@ -682,102 +678,98 @@ static int saveTable(int fileId, int idx, struct Table* table) {
   return 0;
 }
 
-static int projectSaveInstruments(int fileId) {
+static int projectSaveInstruments(int fileId, Project* project) {
   filePrintf(fileId, "\n## Instruments\n");
   for (int c = 0; c < PROJECT_MAX_INSTRUMENTS; c++) {
-    if (!instrumentIsEmpty(c)) {
-      saveInstrument(fileId, c, &project.instruments[c]);
+    if (!instrumentIsEmpty(project, c)) {
+      saveInstrument(fileId, c, &project->instruments[c]);
     }
   }
   return 0;
 }
 
-static int projectSaveTables(int fileId) {
+static int projectSaveTables(int fileId, Project* project) {
   filePrintf(fileId, "\n## Tables\n");
   for (int c = 0; c < PROJECT_MAX_TABLES; c++) {
-    if (!tableIsEmpty(c)) {
-      saveTable(fileId, c, &project.tables[c]);
+    if (!tableIsEmpty(project, c)) {
+      saveTable(fileId, c, &project->tables[c]);
     }
   }
   return 0;
 }
 
-
-static int projectSaveInternal(int fileId) {
+static int projectSaveInternal(int fileId, Project* project) {
   filePrintf(fileId, "# ChipNomad Tracker Module 1.0\n\n");
 
-  filePrintf(fileId, "- Title: %s\n", project.title);
-  filePrintf(fileId, "- Author: %s\n", project.author);
+  filePrintf(fileId, "- Title: %s\n", project->title);
+  filePrintf(fileId, "- Author: %s\n", project->author);
 
-  filePrintf(fileId, "- Frame rate: %f\n", project.tickRate);
-  filePrintf(fileId, "- Chips count: %d\n", project.chipsCount);
-  filePrintf(fileId, "- Chip type: %s\n", chipNames[project.chipType]);
+  filePrintf(fileId, "- Frame rate: %f\n", project->tickRate);
+  filePrintf(fileId, "- Chips count: %d\n", project->chipsCount);
+  filePrintf(fileId, "- Chip type: %s\n", chipNames[project->chipType]);
 
-  switch (project.chipType) {
-    case chipAY:
-      filePrintf(fileId, "- *AY8910* Clock: %d\n", project.chipSetup.ay.clock);
-      filePrintf(fileId, "- *AY8910* AY/YM: %d\n", project.chipSetup.ay.isYM);
-      switch (project.chipSetup.ay.stereoMode) {
-        case ayStereoABC:
-          filePrintf(fileId, "- *AY8910* Stereo: ABC\n");
-          break;
-        case ayStereoACB:
-          filePrintf(fileId, "- *AY8910* Stereo: ACB\n");
-          break;
-        case ayStereoBAC:
-          filePrintf(fileId, "- *AY8910* Stereo: BAC\n");
-          break;
-      }
-      filePrintf(fileId, "- *AY8910* Stereo separation: %d\n", project.chipSetup.ay.stereoSeparation);
+  switch (project->chipType) {
+  case chipAY:
+    filePrintf(fileId, "- *AY8910* Clock: %d\n", project->chipSetup.ay.clock);
+    filePrintf(fileId, "- *AY8910* AY/YM: %d\n", project->chipSetup.ay.isYM);
+    switch (project->chipSetup.ay.stereoMode) {
+    case ayStereoABC:
+      filePrintf(fileId, "- *AY8910* Stereo: ABC\n");
       break;
-    default:
+    case ayStereoACB:
+      filePrintf(fileId, "- *AY8910* Stereo: ACB\n");
       break;
-  }
+    case ayStereoBAC:
+      filePrintf(fileId, "- *AY8910* Stereo: BAC\n");
+      break;
+    }
+    filePrintf(fileId, "- *AY8910* Stereo separation: %d\n", project->chipSetup.ay.stereoSeparation);
+    break;
+  default:
+    break;
+}
 
-  projectSavePitchTable(fileId);
-  projectSaveSong(fileId);
-  projectSaveChains(fileId);
-  projectSaveGrooves(fileId);
-  projectSavePhrases(fileId);
-  projectSaveInstruments(fileId);
-  projectSaveTables(fileId);
+  projectSavePitchTable(fileId, project);
+  projectSaveSong(fileId, project);
+  projectSaveChains(fileId, project);
+  projectSaveGrooves(fileId, project);
+  projectSavePhrases(fileId, project);
+  projectSaveInstruments(fileId, project);
+  projectSaveTables(fileId, project);
   filePrintf(fileId, "EOF\n");
   return 0;
 }
 
-int projectSave(const char* path) {
+int projectSave(Project* p, const char* path) {
   projectFileError[0] = 0;
 
   int fileId = fileOpen(path, 1);
   if (fileId == -1) return 1;
 
-  int result = projectSaveInternal(fileId);
+  int result = projectSaveInternal(fileId, p);
   fileClose(fileId);
   return result;
 }
 
-
-
 // Convenience functions
 
 // Is chain empty?
-int8_t chainIsEmpty(int chain) {
+int8_t chainIsEmpty(Project* project, int chain) {
   for (int c = 0; c < 16; c++) {
-    if (project.chains[chain].rows[c].phrase != EMPTY_VALUE_16) return 0;
+    if (project->chains[chain].rows[c].phrase != EMPTY_VALUE_16) return 0;
   }
-
   return 1;
 }
 
 // Is phrase empty?
-int8_t phraseIsEmpty(int phrase) {
+int8_t phraseIsEmpty(Project* project, int phrase) {
   for (int c = 0; c < 16; c++) {
-    if (project.phrases[phrase].rows[c].note != EMPTY_VALUE_8) return 0;
-    if (project.phrases[phrase].rows[c].instrument != EMPTY_VALUE_8) return 0;
-    if (project.phrases[phrase].rows[c].volume != EMPTY_VALUE_8) return 0;
+    if (project->phrases[phrase].rows[c].note != EMPTY_VALUE_8) return 0;
+    if (project->phrases[phrase].rows[c].instrument != EMPTY_VALUE_8) return 0;
+    if (project->phrases[phrase].rows[c].volume != EMPTY_VALUE_8) return 0;
     for (int d = 0; d < 3; d++) {
-      if (project.phrases[phrase].rows[c].fx[d][0] != EMPTY_VALUE_8) return 0;
-      if (project.phrases[phrase].rows[c].fx[d][1] != 0) return 0;
+      if (project->phrases[phrase].rows[c].fx[d][0] != EMPTY_VALUE_8) return 0;
+      if (project->phrases[phrase].rows[c].fx[d][1] != 0) return 0;
     }
   }
 
@@ -785,19 +777,19 @@ int8_t phraseIsEmpty(int phrase) {
 }
 
 // Is instrument empty?
-int8_t instrumentIsEmpty(int instrument) {
-  return project.instruments[instrument].type == instNone;
+int8_t instrumentIsEmpty(Project* project, int instrument) {
+  return project->instruments[instrument].type == instNone;
 }
 
 // Is table empty?
-int8_t tableIsEmpty(int table) {
+int8_t tableIsEmpty(Project* project, int table) {
   for (int c = 0; c < 16; c++) {
-    if (project.tables[table].rows[c].pitchFlag != 0) return 0;
-    if (project.tables[table].rows[c].pitchOffset != 0) return 0;
-    if (project.tables[table].rows[c].volume != EMPTY_VALUE_8) return 0;
+    if (project->tables[table].rows[c].pitchFlag != 0) return 0;
+    if (project->tables[table].rows[c].pitchOffset != 0) return 0;
+    if (project->tables[table].rows[c].volume != EMPTY_VALUE_8) return 0;
     for (int d = 0; d < 4; d++) {
-      if (project.tables[table].rows[c].fx[d][0] != EMPTY_VALUE_8) return 0;
-      if (project.tables[table].rows[c].fx[d][1] != 0) return 0;
+      if (project->tables[table].rows[c].fx[d][0] != EMPTY_VALUE_8) return 0;
+      if (project->tables[table].rows[c].fx[d][1] != 0) return 0;
     }
   }
 
@@ -805,26 +797,26 @@ int8_t tableIsEmpty(int table) {
 }
 
 // Is groove empty?
-int8_t grooveIsEmpty(int groove) {
+int8_t grooveIsEmpty(Project* project, int groove) {
   for (int c = 0; c < 16; c++) {
-    if (project.grooves[groove].speed[c] != EMPTY_VALUE_8) return 0;
+    if (project->grooves[groove].speed[c] != EMPTY_VALUE_8) return 0;
   }
   return 1;
 }
 
 // Note name in phrase
-char* noteName(uint8_t note) {
+char* noteName(Project* project, uint8_t note) {
   if (note == NOTE_OFF) {
     return "OFF";
-  } else if (note < project.pitchTable.length) {
-    return project.pitchTable.noteNames[note];
+  } else if (note < project->pitchTable.length) {
+    return project->pitchTable.noteNames[note];
   } else {
     return "---";
   }
 }
 
 // Save instrument to file
-int instrumentSave(const char* path, int instrumentIdx) {
+int instrumentSave(Project* project, const char* path, int instrumentIdx) {
   projectFileError[0] = 0;
 
   int fileId = fileOpen(path, 1);
@@ -834,28 +826,28 @@ int instrumentSave(const char* path, int instrumentIdx) {
   }
 
   filePrintf(fileId, "# ChipNomad Instrument\n\n");
-  saveInstrument(fileId, 0, &project.instruments[instrumentIdx]);
-  saveTable(fileId, 0, &project.tables[instrumentIdx]);
+  saveInstrument(fileId, 0, &project->instruments[instrumentIdx]);
+  saveTable(fileId, 0, &project->tables[instrumentIdx]);
 
   fileClose(fileId);
   return 0;
 }
 
-static int instrumentLoadInternal(int fileId, int instrumentIdx) {
+static int instrumentLoadInternal(int fileId, Project* project, int instrumentIdx) {
   READ_STRING; if (strcmp(lpstr, "# ChipNomad Instrument")) return 1;
   READ_STRING; if (strncmp(lpstr, "### Instrument", 14)) return 1;
 
-  if (loadInstrument(fileId, &project.instruments[instrumentIdx], &project)) return 1;
+  if (loadInstrument(fileId, &project->instruments[instrumentIdx], project)) return 1;
 
   READ_STRING; if (strncmp(lpstr, "### Table", 9)) return 1;
 
-  if (loadTable(fileId, &project.tables[instrumentIdx], &project)) return 1;
+  if (loadTable(fileId, &project->tables[instrumentIdx], project)) return 1;
 
   return 0;
 }
 
 // Load instrument from file
-int instrumentLoad(const char* path, int instrumentIdx) {
+int instrumentLoad(Project* project, const char* path, int instrumentIdx) {
   projectFileError[0] = 0;
 
   int fileId = fileOpen(path, 0);
@@ -864,8 +856,7 @@ int instrumentLoad(const char* path, int instrumentIdx) {
     return 1;
   }
 
-  int result = instrumentLoadInternal(fileId, instrumentIdx);
+  int result = instrumentLoadInternal(fileId, project, instrumentIdx);
   fileClose(fileId);
   return result;
 }
-
