@@ -7,9 +7,6 @@
 #include <chipnomad_lib.h>
 #include <project_utils.h>
 
-
-#define TRACK_WARNING_COOLDOWN_FRAMES 5
-
 // Input handling vars:
 
 /** Currently pressed buttons */
@@ -18,8 +15,6 @@ static int pressedButtons;
 static int editDoubleTapCount;
 /** Frame counter for key repeats */
 static int keyRepeatCount;
-
-
 
 /**
 * @brief Handle play/stop key commands
@@ -166,8 +161,6 @@ void appDraw(void) {
   screenDraw();
 
   if (!chipnomadState) return;
-
-
 
   // Tracks
   char digit[2] = "0";

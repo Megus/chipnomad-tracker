@@ -117,22 +117,25 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     // Chip subtype (AY-3-8910 / YM2149F)
     handled = edit8noLast(action, &chipnomadState->project.chipSetup.ay.isYM, 1, 0, 1);
     if (handled && chipnomadState) {
-      SoundChip* chip = &chipnomadState->chips[0];
-      updateChipAYType(chip, chipnomadState->project.chipSetup.ay.isYM);
+      for (int i = 0; i < chipnomadState->project.chipsCount; i++) {
+        updateChipAYType(&chipnomadState->chips[i], chipnomadState->project.chipSetup.ay.isYM);
+      }
     }
   } else if (row == SCR_PROJECT_ROWS + 1) {
     // Stereo mode (ABC, ACB, BAC)
     handled = edit8noLast(action, (uint8_t*)&chipnomadState->project.chipSetup.ay.stereoMode, 1, 0, 2);
     if (handled && chipnomadState) {
-      SoundChip* chip = &chipnomadState->chips[0];
-      updateChipAYStereoMode(chip, chipnomadState->project.chipSetup.ay.stereoMode, chipnomadState->project.chipSetup.ay.stereoSeparation);
+      for (int i = 0; i < chipnomadState->project.chipsCount; i++) {
+        updateChipAYStereoMode(&chipnomadState->chips[i], chipnomadState->project.chipSetup.ay.stereoMode, chipnomadState->project.chipSetup.ay.stereoSeparation);
+      }
     }
   } else if (row == SCR_PROJECT_ROWS + 2) {
     // Stereo width (0-100%)
     handled = edit8noLast(action, &chipnomadState->project.chipSetup.ay.stereoSeparation, 10, 0, 100);
     if (handled && chipnomadState) {
-      SoundChip* chip = &chipnomadState->chips[0];
-      updateChipAYStereoMode(chip, chipnomadState->project.chipSetup.ay.stereoMode, chipnomadState->project.chipSetup.ay.stereoSeparation);
+      for (int i = 0; i < chipnomadState->project.chipsCount; i++) {
+        updateChipAYStereoMode(&chipnomadState->chips[i], chipnomadState->project.chipSetup.ay.stereoMode, chipnomadState->project.chipSetup.ay.stereoSeparation);
+      }
     }
   } else if (row == SCR_PROJECT_ROWS + 3) {
     // Chip clock presets
@@ -142,8 +145,9 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     handled = edit8noLast(action, &newIndex, 1, 0, 4);
     if (handled && chipnomadState) {
       chipnomadState->project.chipSetup.ay.clock = clockPresets[newIndex];
-      SoundChip* chip = &chipnomadState->chips[0];
-      updateChipAYClock(chip, chipnomadState->project.chipSetup.ay.clock, appSettings.audioSampleRate);
+      for (int i = 0; i < chipnomadState->project.chipsCount; i++) {
+        updateChipAYClock(&chipnomadState->chips[i], chipnomadState->project.chipSetup.ay.clock, appSettings.audioSampleRate);
+      }
     }
   } else if (row == SCR_PROJECT_ROWS + 4) {
     // Pitch table - enter pitch table screen
