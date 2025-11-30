@@ -1,7 +1,7 @@
 #ifndef __APP_H__
 #define __APP_H__
 
-#include <common.h>
+#include "common.h"
 
 void appSetup(void);
 void appCleanup(void);

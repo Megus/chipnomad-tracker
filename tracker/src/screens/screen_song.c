@@ -1,12 +1,12 @@
-#include <screens.h>
-#include <screen_settings.h>
-#include <common.h>
-#include <corelib_gfx.h>
-#include <utils.h>
-#include <chipnomad_lib.h>
-#include <project_utils.h>
+#include "screens.h"
+#include "screen_settings.h"
+#include "common.h"
+#include "corelib_gfx.h"
+#include "utils.h"
+#include "chipnomad_lib.h"
+#include "project_utils.h"
 
-#include <copy_paste.h>
+#include "copy_paste.h"
 #include <string.h>
 
 // Screen state variables

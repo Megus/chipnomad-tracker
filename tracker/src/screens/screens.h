@@ -1,7 +1,7 @@
 #ifndef __SCREENS_H__
 #define __SCREENS_H__
 
-#include <common.h>
+#include "common.h"
 
 #define MESSAGE_TIME (60)
 

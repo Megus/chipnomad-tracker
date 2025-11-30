@@ -1,10 +1,10 @@
-#include <screens.h>
-#include <corelib/corelib_file.h>
-#include <corelib_gfx.h>
-#include <file_browser.h>
-#include <chipnomad_lib.h>
+#include "screens.h"
+#include "corelib/corelib_file.h"
+#include "corelib_gfx.h"
+#include "file_browser.h"
+#include "chipnomad_lib.h"
 #include <string.h>
-#include <pitch_table_utils.h>
+#include "pitch_table_utils.h"
 
 static int isCharEdit = 0;
 static char* editingString = NULL;

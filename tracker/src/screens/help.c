@@ -1,10 +1,10 @@
-#include <help.h>
+#include "help.h"
 #include <string.h>
 #include <stdio.h>
-#include <utils.h>
-#include <chipnomad_lib.h>
-#include <corelib_gfx.h>
-#include <common.h>
+#include "utils.h"
+#include "chipnomad_lib.h"
+#include "corelib_gfx.h"
+#include "common.h"
 
 char* helpFXHint(uint8_t* fx, int isTable) {
   static char buffer[41]; // Max length of a hint string

@@ -1,5 +1,5 @@
-#include <project_utils.h>
-#include <pitch_table_utils.h>
+#include "project_utils.h"
+#include "pitch_table_utils.h"
 #include <string.h>
 
 void projectInitAY(Project* project) {

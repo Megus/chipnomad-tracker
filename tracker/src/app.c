@@ -1,11 +1,11 @@
 #include <string.h>
-#include <corelib_gfx.h>
-#include <common.h>
-#include <audio_manager.h>
-#include <app.h>
-#include <screens.h>
-#include <chipnomad_lib.h>
-#include <project_utils.h>
+#include "corelib_gfx.h"
+#include "common.h"
+#include "audio_manager.h"
+#include "app.h"
+#include "screens.h"
+#include "chipnomad_lib.h"
+#include "project_utils.h"
 
 // Input handling vars:
 

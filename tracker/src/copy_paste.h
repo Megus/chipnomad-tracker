@@ -1,4 +1,4 @@
-#include <chipnomad_lib.h>
+#include "chipnomad_lib.h"
 #include "screens/screens.h"
 
 // Groove copy/paste

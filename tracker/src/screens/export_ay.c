@@ -1,9 +1,9 @@
-#include <screen_export.h>
-#include <corelib_gfx.h>
-#include <corelib/corelib_file.h>
-#include <common.h>
-#include <screens.h>
-#include <export/export.h>
+#include "screen_export.h"
+#include "corelib_gfx.h"
+#include "corelib/corelib_file.h"
+#include "common.h"
+#include "screens.h"
+#include "export/export.h"
 #include <string.h>
 
 static int getColumnCount(int row) {

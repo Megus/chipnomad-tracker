@@ -1,8 +1,8 @@
-#include <corelib_mainloop.h>
+#include "corelib_mainloop.h"
 #include <stdint.h>
 #include <SDL/SDL.h>
 
-#include <corelib_gfx.h>
+#include "corelib_gfx.h"
 
 #define FPS 60
 

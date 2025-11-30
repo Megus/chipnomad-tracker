@@ -1,6 +1,6 @@
 #include <SDL/SDL.h>
 #include <stdint.h>
-#include <version.h>
+#include "version.h"
 #include "corelib_gfx.h"
 
 #define WINDOW_WIDTH (640)
