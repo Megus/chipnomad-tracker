@@ -11,6 +11,7 @@ typedef struct SoundChip {
   int (*init)(struct SoundChip* self);
   void (*setRegister)(struct SoundChip* self, uint16_t reg, uint8_t value);
   void (*render)(struct SoundChip* self, float* buffer, int samples);
+  void (*setQuality)(struct SoundChip* self, int quality);
   int (*cleanup)(struct SoundChip* self);
 } SoundChip;
 

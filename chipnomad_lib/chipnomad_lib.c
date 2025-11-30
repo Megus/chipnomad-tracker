@@ -188,3 +188,11 @@ static void detectAYPitchConflicts(ChipNomadState* state) {
     }
   }
 }
+
+void chipnomadSetQuality(ChipNomadState* state, chipnomad_quality_t quality) {
+  for (int i = 0; i < PROJECT_MAX_CHIPS; i++) {
+    if (state->chips[i].setQuality) {
+      state->chips[i].setQuality(&state->chips[i], quality);
+    }
+  }
+}

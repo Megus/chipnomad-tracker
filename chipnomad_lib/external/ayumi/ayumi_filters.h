@@ -6,10 +6,12 @@
 
 typedef float (*ayumi_filter_func)(float* x);
 
-// Fast filter for real-time playback (reduced quality)
-float ayumi_filter_fast(float* x);
+// Filter functions
+float ayumi_filter_low(float* x);
+float ayumi_filter_medium(float* x);
+float ayumi_filter_high(float* x);
+float ayumi_filter_best(float* x);
 
-// Full quality filter for export (original quality)
-float ayumi_filter_full(float* x);
+
 
 #endif

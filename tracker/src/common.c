@@ -26,6 +26,7 @@ AppSettings appSettings = {
   .keyRepeatSpeed = 2,
   .volume = DEFAULT_VOLUME,
   .mixVolume = 20000.0f / 32767.0f,
+  .quality = CHIPNOMAD_QUALITY_MEDIUM,
   .pitchConflictWarning = 0,
   .colorScheme = {
     .background = 0x000f1a,
@@ -91,6 +92,7 @@ int settingsSave(void) {
   filePrintf(fileId, "keyRepeatSpeed: %d\n", appSettings.keyRepeatSpeed);
   filePrintf(fileId, "volume: %f\n", appSettings.volume);
   filePrintf(fileId, "mixVolume: %f\n", appSettings.mixVolume);
+  filePrintf(fileId, "quality: %d\n", appSettings.quality);
   filePrintf(fileId, "pitchConflictWarning: %d\n", appSettings.pitchConflictWarning);
   filePrintf(fileId, "colorBackground: 0x%06x\n", appSettings.colorScheme.background);
   filePrintf(fileId, "colorTextEmpty: 0x%06x\n", appSettings.colorScheme.textEmpty);
@@ -141,6 +143,8 @@ int settingsLoad(void) {
       sscanf(line + 8, "%f", &appSettings.volume);
     } else if (strncmp(line, "mixVolume: ", 11) == 0) {
       sscanf(line + 11, "%f", &appSettings.mixVolume);
+    } else if (strncmp(line, "quality: ", 9) == 0) {
+      sscanf(line + 9, "%d", &appSettings.quality);
     } else if (strncmp(line, "pitchConflictWarning: ", 22) == 0) {
       sscanf(line + 22, "%d", &appSettings.pitchConflictWarning);
     } else if (strncmp(line, "colorBackground: ", 17) == 0) {

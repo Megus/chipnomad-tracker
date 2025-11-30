@@ -45,20 +45,22 @@ static int inputPlayback(int keys, int isDoubleTap) {
       playbackStartSong(&chipnomadState->playbackState, *pSongRow, 0, 1);
     } else if (currentScreen == &screenChain) {
       playbackStartChain(&chipnomadState->playbackState, *pSongTrack, *pSongRow, *pChainRow, 1);
-    } else {
+    } else if (currentScreen == &screenPhrase || currentScreen == &screenTable || currentScreen == &screenInstrument) {
       playbackStartPhrase(&chipnomadState->playbackState, *pSongTrack, *pSongRow, *pChainRow, 1);
     }
+    // Other screens don't support playback
     return 1;
   }
-  // Play song from any screen
+  // Play song from music screens
   else if (!isPlaying && keys == (keyPlay | keyShift)) {
     // Stop any preview first
     playbackStop(&chipnomadState->playbackState);
     if (currentScreen == &screenSong || currentScreen == &screenProject) {
       playbackStartSong(&chipnomadState->playbackState, *pSongRow, 0, 1);
-    } else {
+    } else if (currentScreen == &screenChain || currentScreen == &screenPhrase || currentScreen == &screenTable || currentScreen == &screenInstrument) {
       playbackStartSong(&chipnomadState->playbackState, *pSongRow, *pChainRow, 1);
     }
+    // Other screens don't support playback
     return 1;
   }
   // Stop playback
@@ -136,6 +138,10 @@ void appSetup(void) {
 
   // Initialize audio system
   chipnomadInitChips(chipnomadState, appSettings.audioSampleRate, NULL);
+
+  // Set quality from settings
+  chipnomadSetQuality(chipnomadState, appSettings.quality);
+
   audioManager.start(appSettings.audioSampleRate, appSettings.audioBufferSize);
   audioManager.resume();
 
@@ -168,7 +174,7 @@ void appDraw(void) {
   for (int c = 0; c < chipnomadState->project.tracksCount; c++) {
     // Use warning color for track numbers if audio overload is active
     int useOverloadColor = (chipnomadState->audioOverload > 0);
-    gfxSetFgColor(useOverloadColor ? cs.warning : 
+    gfxSetFgColor(useOverloadColor ? cs.warning :
       (*pSongTrack == c ? cs.textDefault : cs.textInfo));
     digit[0] = c + 49;
     gfxPrint(35, 3 + c, digit);

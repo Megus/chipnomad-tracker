@@ -3,6 +3,7 @@
 #include "chips.h"
 #include "../external/ayumi/ayumi.h"
 #include "../external/ayumi/ayumi_filters.h"
+#include "../chipnomad_lib.h"
 
 static int init(SoundChip* self) {
   return 0;
@@ -83,6 +84,32 @@ void updateChipAYClock(SoundChip* self, int clockRate, int sampleRate) {
 
 
 
+static void setQuality(SoundChip* self, int quality) {
+  struct ayumi* ay = (struct ayumi*)self->userdata;
+  
+  // Map chip-agnostic quality to Ayumi filter functions
+  ayumi_filter_func filter_func;
+  switch (quality) {
+    case CHIPNOMAD_QUALITY_LOW:
+      filter_func = ayumi_filter_low;
+      break;
+    case CHIPNOMAD_QUALITY_MEDIUM:
+      filter_func = ayumi_filter_medium;
+      break;
+    case CHIPNOMAD_QUALITY_HIGH:
+      filter_func = ayumi_filter_high;
+      break;
+    case CHIPNOMAD_QUALITY_BEST:
+      filter_func = ayumi_filter_best;
+      break;
+    default:
+      filter_func = ayumi_filter_medium;
+      break;
+  }
+  
+  ayumi_set_filter_quality(ay, filter_func);
+}
+
 static int cleanup(SoundChip* self) {
   free(self->userdata);
   return 0;
@@ -99,6 +126,7 @@ SoundChip createChipAY(int sampleRate, ChipSetup setup) {
     .init = init,
     .render = render,
     .setRegister = setRegister,
+    .setQuality = setQuality,
     .cleanup = cleanup,
   };
 

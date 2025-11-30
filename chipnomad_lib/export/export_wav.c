@@ -8,8 +8,7 @@
 #include "chips/chips.h"
 #include "chipnomad_lib.h"
 
-#include "external/ayumi/ayumi.h"
-#include "external/ayumi/ayumi_filters.h"
+
 
 // WAV implementation data
 typedef struct {
@@ -174,11 +173,8 @@ Exporter* createWAVExporter(const char* filename, Project* project, int startRow
   // Initialize chips
   chipnomadInitChips(exporter->chipnomadState, sampleRate, NULL);
 
-  // Use high-quality filter for export
-  SoundChip* chip = &exporter->chipnomadState->chips[0];
-  if (chip->userdata) {
-    ayumi_set_filter_quality((struct ayumi*)chip->userdata, ayumi_filter_full);
-  }
+  // Use best quality for export
+  chipnomadSetQuality(exporter->chipnomadState, CHIPNOMAD_QUALITY_BEST);
 
   playbackStartSong(&exporter->chipnomadState->playbackState, startRow, 0, 0);
 

@@ -9,7 +9,35 @@ enum {
   DECIMATE_FACTOR = 8
 };
 
-float ayumi_filter_fast(float* x) {
+// Low filter - ~9 components
+float ayumi_filter_low(float* x) {
+  float y = 0.079072012081405949 * (x[92] + x[100]) +
+            0.097675998716952317 * (x[93] + x[99]) +
+            0.11236045936950932 * (x[94] + x[98]) +
+            0.12176343577287731 * (x[95] + x[97]) +
+            0.125 * x[96];
+  memcpy(&x[FIR_SIZE - DECIMATE_FACTOR], x, DECIMATE_FACTOR * sizeof(float));
+  return y;
+}
+
+// Medium filter - ~19 components
+float ayumi_filter_medium(float* x) {
+  float y = 0.036978919264451952 * (x[90] + x[102]) +
+            0.05823318062093958 * (x[91] + x[101]) +
+            0.079072012081405949 * (x[92] + x[100]) +
+            0.097675998716952317 * (x[93] + x[99]) +
+            0.11236045936950932 * (x[94] + x[98]) +
+            0.12176343577287731 * (x[95] + x[97]) +
+            0.125 * x[96] +
+            0.017065133989980476 * (x[89] + x[103]) +
+            -0.013104323383225543 * (x[87] + x[105]) +
+            -0.021627310017882196 * (x[86] + x[106]);
+  memcpy(&x[FIR_SIZE - DECIMATE_FACTOR], x, DECIMATE_FACTOR * sizeof(float));
+  return y;
+}
+
+// High filter - ~47 components
+float ayumi_filter_high(float* x) {
   float y = -0.0010178225878206125 * (x[49] + x[143]) +
   -0.0020037400552054292 * (x[50] + x[142]) +
   -0.0027874356824117317 * (x[51] + x[141]) +
@@ -57,7 +85,8 @@ float ayumi_filter_fast(float* x) {
   return y;
 }
 
-float ayumi_filter_full(float* x) {
+// Best filter - full quality (96 components)
+float ayumi_filter_best(float* x) {
   float y = -0.0000046183113992051936 * (x[1] + x[191]) +
   -0.00001117761640887225 * (x[2] + x[190]) +
   -0.000018610264502005432 * (x[3] + x[189]) +
@@ -146,3 +175,4 @@ float ayumi_filter_full(float* x) {
   memcpy(&x[FIR_SIZE - DECIMATE_FACTOR], x, DECIMATE_FACTOR * sizeof(float));
   return y;
 }
+

@@ -148,7 +148,7 @@ int ayumi_configure(struct ayumi* ay, int is_ym, float clock_rate, int sr) {
   ay->step = clock_rate / (sr * 8 * DECIMATE_FACTOR);
   ay->dac_table = is_ym ? YM_dac_table : AY_dac_table;
   ay->noise = 1;
-  ay->filter_func = ayumi_filter_fast; // Default to fast filter
+  ay->filter_func = ayumi_filter_medium; // Default to medium filter
   ayumi_set_envelope(ay, 1);
   for (i = 0; i < TONE_CHANNELS; i += 1) {
     ayumi_set_tone(ay, i, 1);

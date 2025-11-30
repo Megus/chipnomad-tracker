@@ -34,6 +34,7 @@ typedef struct AppSettings {
   int keyRepeatSpeed;
   float volume;
   float mixVolume;
+  int quality;
   int pitchConflictWarning;
   ColorScheme colorScheme;
   char projectFilename[FILENAME_LENGTH + 1];

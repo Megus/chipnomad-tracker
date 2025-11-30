@@ -14,7 +14,7 @@ static void settingsDrawField(int col, int row, int state);
 static int settingsOnEdit(int col, int row, enum CellEditAction action);
 
 static ScreenData screenSettingsData = {
-  .rows = 3,
+  .rows = 4,
   .cursorRow = 0,
   .cursorCol = 0,
   .selectMode = -1,
@@ -54,6 +54,8 @@ void settingsDrawCursor(int col, int row) {
   } else if (row == 1 && col == 0) {
     gfxCursor(23, 3, 4); // Under mix volume percentage
   } else if (row == 2 && col == 0) {
+    gfxCursor(23, 4, 6); // Under quality value
+  } else if (row == 3 && col == 0) {
     gfxCursor(0, 17, 14); // "Quit ChipNomad"
   }
 }
@@ -77,6 +79,12 @@ void settingsDrawField(int col, int row, int state) {
     int mixVolumePercent = (int)(appSettings.mixVolume * 100.0f + 0.5f);
     gfxPrintf(23, 3, "%03d%%", mixVolumePercent);
   } else if (row == 2 && col == 0) {
+    gfxSetFgColor(appSettings.colorScheme.textDefault);
+    gfxPrint(0, 4, "Quality");
+    gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    const char* qualityNames[] = {"LOW   ", "MEDIUM", "HIGH  ", "BEST  "};
+    gfxPrint(23, 4, qualityNames[appSettings.quality]);
+  } else if (row == 3 && col == 0) {
     gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     gfxPrint(0, 17, "Quit ChipNomad");
   }
@@ -99,7 +107,15 @@ int settingsOnEdit(int col, int row, enum CellEditAction action) {
       }
     }
     return handled;
-  } else if (row == 2 && col == 0 && action == editTap) {
+  } else if (row == 2 && col == 0) {
+    // Quality (0-3)
+    static uint8_t lastValue = 0;
+    int handled = edit8withLimit(action, (uint8_t*)&appSettings.quality, &lastValue, 1, 3);
+    if (handled && chipnomadState) {
+      chipnomadSetQuality(chipnomadState, appSettings.quality);
+    }
+    return handled;
+  } else if (row == 3 && col == 0 && action == editTap) {
     // Trigger exit event
     mainLoopTriggerQuit();
     return 1;
