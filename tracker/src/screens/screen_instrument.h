@@ -1,7 +1,7 @@
 #ifndef __SCREEN_INSTRUMENT_H__
 #define __SCREEN_INSTRUMENT_H__
 
-#include <screens.h>
+#include "screens.h"
 
 extern int cInstrument;
 

@@ -1,10 +1,10 @@
-#include <screen_export.h>
-#include <common.h>
-#include <corelib_gfx.h>
-#include <corelib/corelib_file.h>
-#include <chipnomad_lib.h>
-#include <screens.h>
-#include <export/export.h>
+#include "screen_export.h"
+#include "common.h"
+#include "corelib_gfx.h"
+#include "corelib/corelib_file.h"
+#include "chipnomad_lib.h"
+#include "screens.h"
+#include "export/export.h"
 #include <string.h>
 
 // Export state

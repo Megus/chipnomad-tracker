@@ -1,10 +1,10 @@
-#include <screens.h>
-#include <common.h>
-#include <corelib_gfx.h>
-#include <utils.h>
-#include <chipnomad_lib.h>
-#include <copy_paste.h>
-#include <help.h>
+#include "screens.h"
+#include "common.h"
+#include "corelib_gfx.h"
+#include "utils.h"
+#include "chipnomad_lib.h"
+#include "copy_paste.h"
+#include "help.h"
 
 static int tableIdx = 0;
 static TableRow *tableRows = NULL;

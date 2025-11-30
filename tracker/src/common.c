@@ -1,6 +1,6 @@
-#include <common.h>
-#include <corelib/corelib_file.h>
-#include <corelib_gfx.h>
+#include "common.h"
+#include "corelib/corelib_file.h"
+#include "corelib_gfx.h"
 #include <string.h>
 
 #ifdef MACOS_BUILD

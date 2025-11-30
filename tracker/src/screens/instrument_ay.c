@@ -1,6 +1,6 @@
-#include <screen_instrument.h>
-#include <corelib_gfx.h>
-#include <utils.h>
+#include "screen_instrument.h"
+#include "corelib_gfx.h"
+#include "utils.h"
 
 void initAYInstrument(int instrument) {
   chipnomadState->project.instruments[instrument].type = instAY;

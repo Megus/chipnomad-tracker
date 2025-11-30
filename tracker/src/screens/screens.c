@@ -1,10 +1,10 @@
 #include <stdarg.h>
 #include <string.h>
-#include <screens.h>
-#include <screen_settings.h>
-#include <chipnomad_lib.h>
-#include <corelib_gfx.h>
-#include <utils.h>
+#include "screens.h"
+#include "screen_settings.h"
+#include "chipnomad_lib.h"
+#include "corelib_gfx.h"
+#include "utils.h"
 
 const AppScreen* currentScreen = NULL;
 

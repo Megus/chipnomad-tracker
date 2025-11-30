@@ -1,6 +1,6 @@
 #include <SDL2/SDL.h>
 #include <stdint.h>
-#include <version.h>
+#include "version.h"
 #include "corelib_gfx.h"
 #include <stdio.h>
 #include <string.h>

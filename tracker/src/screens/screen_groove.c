@@ -1,9 +1,9 @@
-#include <screens.h>
-#include <common.h>
-#include <corelib_gfx.h>
-#include <utils.h>
-#include <chipnomad_lib.h>
-#include <copy_paste.h>
+#include "screens.h"
+#include "common.h"
+#include "corelib_gfx.h"
+#include "utils.h"
+#include "chipnomad_lib.h"
+#include "copy_paste.h"
 
 static int groove = 0;
 static uint8_t lastValue = 0;

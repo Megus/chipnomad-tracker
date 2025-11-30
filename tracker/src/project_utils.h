@@ -1,4 +1,4 @@
-#include <chipnomad_lib.h>
+#include "chipnomad_lib.h"
 
 void projectInitAY(Project* p);
 // Does chain have notes?

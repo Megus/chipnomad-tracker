@@ -1,13 +1,13 @@
-#include <screen_project.h>
-#include <common.h>
-#include <corelib/corelib_file.h>
-#include <corelib_gfx.h>
-#include <utils.h>
-#include <chipnomad_lib.h>
-#include <project_utils.h>
-#include <version.h>
-#include <audio_manager.h>
-#include <file_browser.h>
+#include "screen_project.h"
+#include "common.h"
+#include "corelib/corelib_file.h"
+#include "corelib_gfx.h"
+#include "utils.h"
+#include "chipnomad_lib.h"
+#include "project_utils.h"
+#include "version.h"
+#include "audio_manager.h"
+#include "file_browser.h"
 #include <string.h>
 
 static int isCharEdit = 0;
