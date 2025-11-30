@@ -112,7 +112,7 @@ void outputRegistersAY(PlaybackState* state, int trackIdx, int chipIdx, SoundChi
   uint8_t envShape = 0;
   uint16_t envPeriod = 0;
 
-  for (int t = trackIdx; t < trackIdx + 3; t++) {
+  for (int t = trackIdx; t < trackIdx + projectGetChipTracks(p, chipIdx); t++) {
     PlaybackTrackState* track = &state->tracks[t];
 
     if (track->note.noteFinal == EMPTY_VALUE_8 || p->instruments[track->note.instrument].type == instNone) {

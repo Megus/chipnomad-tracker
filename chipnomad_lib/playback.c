@@ -560,8 +560,10 @@ int playbackNextFrame(PlaybackState* state, SoundChip* chips) {
     }
   }
 
-  // TODO: Multichip setup
-  outputRegistersAY(state, 0, 0, chips);
+  // Output registers for all chips
+  for (int chipIdx = 0; chipIdx < p->chipsCount; chipIdx++) {
+    outputRegistersAY(state, chipIdx * projectGetChipTracks(p, chipIdx), chipIdx, &chips[chipIdx]);
+  }
 
   return !hasActiveTracks;
 }

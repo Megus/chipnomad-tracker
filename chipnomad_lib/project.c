@@ -498,7 +498,7 @@ static int projectLoadInternal(int fileId, Project* project) {
     break;
   }
 
-  p.tracksCount = p.chipsCount * 3; // Hardcoded for AY for now
+  p.tracksCount = projectGetTotalTracks(&p);
 
   sprintf(projectFileError, "Pitch table");
 
@@ -859,4 +859,19 @@ int instrumentLoad(Project* project, const char* path, int instrumentIdx) {
   int result = instrumentLoadInternal(fileId, project, instrumentIdx);
   fileClose(fileId);
   return result;
+}
+
+// Get number of tracks for a chip at index
+int projectGetChipTracks(Project* p, int chipIndex) {
+  // Hardcoded for AY chips (3 channels) for now
+  return 3;
+}
+
+// Get total number of tracks for the project
+int projectGetTotalTracks(Project* p) {
+  int totalTracks = 0;
+  for (int i = 0; i < p->chipsCount; i++) {
+    totalTracks += projectGetChipTracks(p, i);
+  }
+  return totalTracks;
 }

@@ -14,7 +14,7 @@ static void settingsDrawField(int col, int row, int state);
 static int settingsOnEdit(int col, int row, enum CellEditAction action);
 
 static ScreenData screenSettingsData = {
-  .rows = 2,
+  .rows = 3,
   .cursorRow = 0,
   .cursorCol = 0,
   .selectMode = -1,
@@ -52,6 +52,8 @@ void settingsDrawCursor(int col, int row) {
   if (row == 0 && col == 0) {
     gfxCursor(23, 2, 3); // Under ON/OFF value
   } else if (row == 1 && col == 0) {
+    gfxCursor(23, 3, 4); // Under mix volume percentage
+  } else if (row == 2 && col == 0) {
     gfxCursor(0, 17, 14); // "Quit ChipNomad"
   }
 }
@@ -69,6 +71,12 @@ void settingsDrawField(int col, int row, int state) {
     gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     gfxPrint(23, 2, appSettings.pitchConflictWarning ? "ON " : "OFF");
   } else if (row == 1 && col == 0) {
+    gfxSetFgColor(appSettings.colorScheme.textDefault);
+    gfxPrint(0, 3, "Mix volume");
+    gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    int mixVolumePercent = (int)(appSettings.mixVolume * 100.0f + 0.5f);
+    gfxPrintf(23, 3, "%03d%%", mixVolumePercent);
+  } else if (row == 2 && col == 0) {
     gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     gfxPrint(0, 17, "Quit ChipNomad");
   }
@@ -79,7 +87,19 @@ int settingsOnEdit(int col, int row, enum CellEditAction action) {
     // Pitch conflict warning (0/1)
     static uint8_t lastValue = 0;
     return edit8withLimit(action, (uint8_t*)&appSettings.pitchConflictWarning, &lastValue, 1, 1);
-  } else if (row == 1 && col == 0 && action == editTap) {
+  } else if (row == 1 && col == 0) {
+    // Mix volume (1-100%)
+    int mixVolumePercent = (int)(appSettings.mixVolume * 100.0f + 0.5f);
+    uint8_t mixVolumePercentU8 = (uint8_t)mixVolumePercent;
+    int handled = edit8noLast(action, &mixVolumePercentU8, 10, 1, 100);
+    if (handled) {
+      appSettings.mixVolume = (float)mixVolumePercentU8 / 100.0f;
+      if (chipnomadState) {
+        chipnomadState->mixVolume = appSettings.mixVolume;
+      }
+    }
+    return handled;
+  } else if (row == 2 && col == 0 && action == editTap) {
     // Trigger exit event
     mainLoopTriggerQuit();
     return 1;

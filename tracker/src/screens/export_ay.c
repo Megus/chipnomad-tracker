@@ -46,11 +46,18 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     if (currentExporter) return 1; // Already exporting
 
     char exportPath[1024];
-    generateExportPath(exportPath, sizeof(exportPath), "psg");
+    generatePSGExportPath(exportPath, sizeof(exportPath));
+    strcat(exportPath, ".psg");
 
     currentExporter = createPSGExporter(exportPath, &chipnomadState->project, 0);
     if (currentExporter) {
-      screenMessage(MESSAGE_TIME, "Starting export...");
+      // Set mix volume from app settings
+      currentExporter->chipnomadState->mixVolume = appSettings.mixVolume;
+      if (chipnomadState->project.chipsCount > 1) {
+        screenMessage(MESSAGE_TIME, "Starting export (%d files)...", chipnomadState->project.chipsCount);
+      } else {
+        screenMessage(MESSAGE_TIME, "Starting export...");
+      }
     } else {
       screenMessage(MESSAGE_TIME, "Export failed to start");
     }

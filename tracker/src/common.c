@@ -1,5 +1,6 @@
 #include <common.h>
 #include <corelib/corelib_file.h>
+#include <corelib_gfx.h>
 #include <string.h>
 
 #ifdef MACOS_BUILD
@@ -209,4 +210,9 @@ void extractFilenameWithoutExtension(const char* path, char* output, int maxLeng
   if (dot) {
     *dot = 0;
   }
+}
+
+void clearNotePreview(void) {
+  // Clear the note preview area for all possible tracks (right side of screen)
+  gfxClearRect(35, 3, 5, PROJECT_MAX_TRACKS);
 }

@@ -19,9 +19,7 @@ static int editDoubleTapCount;
 /** Frame counter for key repeats */
 static int keyRepeatCount;
 
-// Track warning vars:
-/** Cooldown counters for each track */
-static int trackWarningCooldown[PROJECT_MAX_TRACKS];
+
 
 /**
 * @brief Handle play/stop key commands
@@ -163,25 +161,15 @@ void appDraw(void) {
 
   if (!chipnomadState) return;
 
-  // Check for track warnings if enabled
-  if (appSettings.pitchConflictWarning) {
-    SoundChip* chip = &chipnomadState->chips[0];
-    if (chip->detectWarnings) {
-      chip->detectWarnings(chip, trackWarningCooldown, TRACK_WARNING_COOLDOWN_FRAMES);
-    }
-  }
 
-  // Decrease warning cooldowns
-  for (int i = 0; i < chipnomadState->project.tracksCount; i++) {
-    if (trackWarningCooldown[i] > 0) {
-      trackWarningCooldown[i]--;
-    }
-  }
 
   // Tracks
   char digit[2] = "0";
   for (int c = 0; c < chipnomadState->project.tracksCount; c++) {
-    gfxSetFgColor(*pSongTrack == c ? cs.textDefault : cs.textInfo);
+    // Use warning color for track numbers if audio overload is active
+    int useOverloadColor = (chipnomadState->audioOverload > 0);
+    gfxSetFgColor(useOverloadColor ? cs.warning : 
+      (*pSongTrack == c ? cs.textDefault : cs.textInfo));
     digit[0] = c + 49;
     gfxPrint(35, 3 + c, digit);
 
@@ -189,7 +177,7 @@ void appDraw(void) {
     char* noteStr = noteName(&chipnomadState->project, note);
 
     // Use warning color if track warning is active
-    int useWarningColor = (trackWarningCooldown[c] > 0);
+    int useWarningColor = (appSettings.pitchConflictWarning && chipnomadState->trackWarnings[c] > 0);
 
     gfxSetFgColor(useWarningColor ? cs.warning :
       (noteStr[0] == '-' ? cs.textEmpty : cs.textValue));

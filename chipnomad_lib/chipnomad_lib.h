@@ -9,6 +9,9 @@
 #include "chips/chips.h"
 #include "utils.h"
 
+#define AUDIO_OVERLOAD_COOLDOWN_FRAMES 20
+#define PITCH_CONFLICT_COOLDOWN_FRAMES 5
+
 /**
 * Chip factory function type
 * Returns a SoundChip struct for the given chip index
@@ -25,6 +28,10 @@ typedef struct ChipNomadState {
   int sampleRate;
   float frameSampleCounter;
   float mixVolume;
+  int audioOverload;
+  int trackWarnings[PROJECT_MAX_TRACKS];
+  float* mixBuffer;
+  int mixBufferSize;
 } ChipNomadState;
 
 /**
@@ -55,5 +62,7 @@ void chipnomadInitChips(ChipNomadState* state, int sampleRate, ChipFactory facto
 * @return Number of samples actually rendered (may be less if playback stops)
 */
 int chipnomadRender(ChipNomadState* state, float* buffer, int samples);
+
+
 
 #endif

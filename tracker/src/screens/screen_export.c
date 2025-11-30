@@ -156,6 +156,19 @@ static int fileExists(const char* path) {
   return 0;
 }
 
+static int psgFilesExist(const char* basePath, int numChips) {
+  for (int i = 0; i < numChips; i++) {
+    char filename[1024];
+    if (numChips > 1) {
+      snprintf(filename, sizeof(filename), "%s-%d.psg", basePath, i + 1);
+    } else {
+      snprintf(filename, sizeof(filename), "%s.psg", basePath);
+    }
+    if (fileExists(filename)) return 1;
+  }
+  return 0;
+}
+
 void generateExportPath(char* outputPath, int maxLen, const char* extension) {
   char basePath[512];
   snprintf(basePath, sizeof(basePath), "%s%s%s.%s",
@@ -180,6 +193,30 @@ void generateExportPath(char* outputPath, int maxLen, const char* extension) {
   outputPath[maxLen - 1] = 0;
 }
 
+void generatePSGExportPath(char* outputPath, int maxLen) {
+  char basePath[512];
+  snprintf(basePath, sizeof(basePath), "%s%s%s",
+    appSettings.projectPath, PATH_SEPARATOR_STR, appSettings.projectFilename);
+
+  if (!psgFilesExist(basePath, chipnomadState->project.chipsCount)) {
+    strncpy(outputPath, basePath, maxLen - 1);
+    outputPath[maxLen - 1] = 0;
+    return;
+  }
+
+  for (int i = 1; i <= 999; i++) {
+    snprintf(outputPath, maxLen, "%s%s%s_%03d",
+      appSettings.projectPath, PATH_SEPARATOR_STR, appSettings.projectFilename, i);
+    if (!psgFilesExist(outputPath, chipnomadState->project.chipsCount)) {
+      return;
+    }
+  }
+
+  // Fallback
+  snprintf(outputPath, maxLen, "%s%s%s",
+    appSettings.projectPath, PATH_SEPARATOR_STR, appSettings.projectFilename);
+}
+
 int exportCommonOnEdit(int col, int row, enum CellEditAction action) {
   int handled = 0;
 
@@ -192,6 +229,8 @@ int exportCommonOnEdit(int col, int row, enum CellEditAction action) {
 
     currentExporter = createWAVExporter(exportPath, &chipnomadState->project, 0, sampleRates[currentSampleRateIndex], bitDepths[currentBitDepthIndex]);
     if (currentExporter) {
+      // Set mix volume from app settings
+      currentExporter->chipnomadState->mixVolume = appSettings.mixVolume;
       screenMessage(MESSAGE_TIME, "Starting export...");
     } else {
       screenMessage(MESSAGE_TIME, "Export failed to start");

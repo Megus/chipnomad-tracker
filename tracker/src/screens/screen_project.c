@@ -301,6 +301,19 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
       // Update project tick rate from the two components
       chipnomadState->project.tickRate = (float)tickRateI + (float)tickRateF / 1000.0f;
     }
+  } else if (row == 6) {
+    // Chips count (1-3 for AY chips)
+    handled = edit8noLast(action, (uint8_t*)&chipnomadState->project.chipsCount, 1, 1, 3);
+    if (handled) {
+      // Stop playback when chips count changes
+      playbackStop(&chipnomadState->playbackState);
+      // Clear note preview area
+      clearNotePreview();
+      // Update tracks count when chips count changes
+      chipnomadState->project.tracksCount = projectGetTotalTracks(&chipnomadState->project);
+      // Reinitialize chips with new count
+      chipnomadInitChips(chipnomadState, appSettings.audioSampleRate, NULL);
+    }
   }
 
   return handled;

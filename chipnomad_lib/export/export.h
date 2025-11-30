@@ -3,10 +3,12 @@
 
 #include <stdint.h>
 #include "project.h"
+#include "chipnomad_lib.h"
 
 // Exporter interface (OOP-like with function pointers)
 typedef struct Exporter {
   void* data; // Private implementation data
+  ChipNomadState* chipnomadState; // Exposed ChipNomad state for configuration
   int (*next)(struct Exporter* self); // Returns seconds rendered, -1 if done
   int (*finish)(struct Exporter* self);
   void (*cancel)(struct Exporter* self);

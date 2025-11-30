@@ -81,40 +81,7 @@ void updateChipAYClock(SoundChip* self, int clockRate, int sampleRate) {
   ay->step = (float)clockRate / (sampleRate * 8 * 8); // 8 * DECIMATE_FACTOR
 }
 
-static void detectWarnings(SoundChip* self, int* warningCooldowns, int cooldownValue) {
-  // Get current pitch periods from chip registers (pairs 0-1, 2-3, 4-5)
-  uint16_t pitchPeriods[3];
-  for (int i = 0; i < 3; i++) {
-    pitchPeriods[i] = self->regs[i * 2] | (self->regs[i * 2 + 1] << 8);
-  }
 
-  // Check which tracks are actually using tone generation
-  int usesTone[3];
-  uint8_t mixer = self->regs[7];
-  for (int i = 0; i < 3; i++) {
-    uint8_t volume = self->regs[8 + i];
-    int toneEnabled = ((mixer >> i) & 1) == 0;
-    int noiseEnabled = ((mixer >> (i + 3)) & 1) == 0;
-    int envelopeMode = (volume & 16) != 0;
-
-    // Exclude pure noise, pure envelope cases, and zero volume
-    int isPureNoise = !toneEnabled && noiseEnabled && !envelopeMode;
-    int isPureEnvelope = !toneEnabled && !noiseEnabled && envelopeMode;
-    int isZeroVolume = (volume & 0xf) == 0 && !envelopeMode;
-
-    usesTone[i] = !(isPureNoise || isPureEnvelope || isZeroVolume);
-  }
-
-  // Check for conflicts only between tracks that use tone generation
-  for (int i = 0; i < 3; i++) {
-    for (int j = i + 1; j < 3; j++) {
-      if (usesTone[i] && usesTone[j] && pitchPeriods[i] != 0 && pitchPeriods[i] == pitchPeriods[j]) {
-        warningCooldowns[i] = cooldownValue;
-        warningCooldowns[j] = cooldownValue;
-      }
-    }
-  }
-}
 
 static int cleanup(SoundChip* self) {
   free(self->userdata);
@@ -132,7 +99,6 @@ SoundChip createChipAY(int sampleRate, ChipSetup setup) {
     .init = init,
     .render = render,
     .setRegister = setRegister,
-    .detectWarnings = detectWarnings,
     .cleanup = cleanup,
   };
 

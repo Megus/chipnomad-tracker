@@ -15,7 +15,7 @@ void projectInitAY(Project* project) {
     .stereoSeparation = 50,
   };
 
-  project->tracksCount = project->chipsCount * 3; // AY/YM has 3 channels
+  project->tracksCount = projectGetTotalTracks(project);
 
   calculatePitchTableAY(project);
 }

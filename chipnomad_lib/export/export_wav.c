@@ -18,7 +18,6 @@ typedef struct {
   int channels;
   int bitDepth;
   int totalSamples;
-  ChipNomadState* chipnomadState;
   int allTracksStopped;
   int renderedSeconds;
   char filename[1024];
@@ -93,7 +92,7 @@ static int wavNext(Exporter* self) {
   if (data->allTracksStopped) return -1;
 
   float buffer[data->sampleRate * 2];
-  int samplesRendered = chipnomadRender(data->chipnomadState, buffer, data->sampleRate);
+  int samplesRendered = chipnomadRender(self->chipnomadState, buffer, data->sampleRate);
 
   if (samplesRendered > 0) {
     wavExportWrite(data, buffer, samplesRendered);
@@ -114,7 +113,7 @@ static int wavFinish(Exporter* self) {
   fileSeek(data->fileId, 0, 0);
   writeWAVHeader(data->fileId, data->sampleRate, data->channels, data->bitDepth, dataSize);
 
-  chipnomadDestroy(data->chipnomadState);
+  chipnomadDestroy(self->chipnomadState);
   fileClose(data->fileId);
   free(data);
   free(self);
@@ -124,7 +123,7 @@ static int wavFinish(Exporter* self) {
 static void wavCancel(Exporter* self) {
   WAVExporterData* data = (WAVExporterData*)self->data;
 
-  chipnomadDestroy(data->chipnomadState);
+  chipnomadDestroy(self->chipnomadState);
   fileClose(data->fileId);
   fileDelete(data->filename);
   free(data);
@@ -160,8 +159,8 @@ Exporter* createWAVExporter(const char* filename, Project* project, int startRow
   writeWAVHeader(data->fileId, sampleRate, 2, bitDepth, 0);
 
   // Create ChipNomad state and initialize
-  data->chipnomadState = chipnomadCreate();
-  if (!data->chipnomadState) {
+  exporter->chipnomadState = chipnomadCreate();
+  if (!exporter->chipnomadState) {
     fileClose(data->fileId);
     free(data);
     free(exporter);
@@ -169,19 +168,19 @@ Exporter* createWAVExporter(const char* filename, Project* project, int startRow
   }
 
   // Copy project data and reinitialize playback
-  data->chipnomadState->project = *project;
-  playbackInit(&data->chipnomadState->playbackState, &data->chipnomadState->project);
+  exporter->chipnomadState->project = *project;
+  playbackInit(&exporter->chipnomadState->playbackState, &exporter->chipnomadState->project);
 
   // Initialize chips
-  chipnomadInitChips(data->chipnomadState, sampleRate, NULL);
+  chipnomadInitChips(exporter->chipnomadState, sampleRate, NULL);
 
   // Use high-quality filter for export
-  SoundChip* chip = &data->chipnomadState->chips[0];
+  SoundChip* chip = &exporter->chipnomadState->chips[0];
   if (chip->userdata) {
     ayumi_set_filter_quality((struct ayumi*)chip->userdata, ayumi_filter_full);
   }
 
-  playbackStartSong(&data->chipnomadState->playbackState, startRow, 0, 0);
+  playbackStartSong(&exporter->chipnomadState->playbackState, startRow, 0, 0);
 
   exporter->data = data;
   exporter->next = wavNext;
