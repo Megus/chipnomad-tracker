@@ -1,9 +1,9 @@
-#include <screen_project.h>
-#include <corelib_gfx.h>
+#include "screen_project.h"
+#include "corelib_gfx.h"
 #include <string.h>
-#include <audio_manager.h>
-#include <chipnomad_lib.h>
-#include <common.h>
+#include "audio_manager.h"
+#include "chipnomad_lib.h"
+#include "common.h"
 
 
 int chipClockLength = 0;

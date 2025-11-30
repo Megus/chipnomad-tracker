@@ -1,7 +1,7 @@
 #ifndef AUDIO_H
 #define AUDIO_H
 
-#include <chipnomad_lib.h>
+#include "chipnomad_lib.h"
 
 typedef struct AudioState {
   ChipNomadState* chipnomadState;

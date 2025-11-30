@@ -1,6 +1,6 @@
-#include <screens.h>
-#include <corelib_gfx.h>
-#include <help.h>
+#include "screens.h"
+#include "corelib_gfx.h"
+#include "help.h"
 
 #define FX_COLS 8
 

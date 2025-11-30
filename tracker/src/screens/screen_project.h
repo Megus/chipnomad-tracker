@@ -1,7 +1,7 @@
 #ifndef __SCREEN_PROJECT_H__
 #define __SCREEN_PROJECT_H__
 
-#include <screens.h>
+#include "screens.h"
 
 // Common rows on the project screen
 #define SCR_PROJECT_ROWS (7)

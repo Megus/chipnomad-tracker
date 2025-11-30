@@ -1,6 +1,6 @@
-#include <copy_paste.h>
-#include <screens.h>
-#include <project_utils.h>
+#include "copy_paste.h"
+#include "screens.h"
+#include "project_utils.h"
 #include <string.h>
 
 uint16_t cpBufSong[PROJECT_MAX_LENGTH][PROJECT_MAX_TRACKS];

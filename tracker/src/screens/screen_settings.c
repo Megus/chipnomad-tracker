@@ -1,8 +1,8 @@
-#include <screen_settings.h>
-#include <common.h>
-#include <corelib_gfx.h>
-#include <corelib_mainloop.h>
-#include <screens.h>
+#include "screen_settings.h"
+#include "common.h"
+#include "corelib_gfx.h"
+#include "corelib_mainloop.h"
+#include "screens.h"
 
 // Forward declarations
 static int settingsColumnCount(int row);

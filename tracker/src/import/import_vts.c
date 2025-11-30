@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <chipnomad_lib.h>
-#include <corelib/corelib_file.h>
-#include <common.h>
+#include "chipnomad_lib.h"
+#include "corelib/corelib_file.h"
+#include "common.h"
 
 #define VTS_COL_TONE        0
 #define VTS_COL_NOISE       1
