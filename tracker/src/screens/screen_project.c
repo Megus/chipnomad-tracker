@@ -8,7 +8,9 @@
 #include <version.h>
 #include <audio_manager.h>
 #include <file_browser.h>
+#include <import/import_vt2.h>
 #include <string.h>
+#include <strings.h>
 
 static int isCharEdit = 0;
 static char* editingString = NULL;
@@ -37,7 +39,28 @@ static void onProjectLoaded(const char* path) {
   }
 
   playbackStop(&chipnomadState->playbackState);
-  if (projectLoad(&chipnomadState->project, path) == 0) {
+  
+  // Check file extension to determine loader
+  const char* ext = strrchr(path, '.');
+  int loadResult = -1;
+  
+  if (ext != NULL) {
+    if (strcasecmp(ext, ".vt2") == 0) {
+      // Load VT2 file
+      loadResult = projectLoadVT2(path);
+    } else if (strcasecmp(ext, ".cnm") == 0) {
+      // Load ChipNomad native format
+      loadResult = projectLoad(&chipnomadState->project, path);
+    } else {
+      // Try native format by default
+      loadResult = projectLoad(&chipnomadState->project, path);
+    }
+  } else {
+    // No extension, try native format
+    loadResult = projectLoad(&chipnomadState->project, path);
+  }
+  
+  if (loadResult == 0) {
     chipnomadInitChips(chipnomadState, appSettings.audioSampleRate, NULL);
 
     // Store filename without extension
@@ -230,7 +253,7 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
     // Load/Save/New/Export
     if (col == 0) {
       // Load project - go directly to file browser
-      fileBrowserSetup("LOAD PROJECT", ".cnm", appSettings.projectPath, onProjectLoaded, onProjectCancelled);
+      fileBrowserSetup("LOAD PROJECT", ".cnm,.vt2", appSettings.projectPath, onProjectLoaded, onProjectCancelled);
       screenSetup(&screenFileBrowser, 0);
     } else if (col == 1) {
       // Save project - check filename first

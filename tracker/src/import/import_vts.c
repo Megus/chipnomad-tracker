@@ -102,12 +102,68 @@ static int findReferenceNote() {
   return chipnomadState->project.pitchTable.length / 2;
 }
 
-/*static int getReferenceNotePeriod(int referenceNoteIdx) {
-  if (referenceNoteIdx >= 0 && referenceNoteIdx < chipnomadState->project.pitchTable.length) {
-    return chipnomadState->project.pitchTable.values[referenceNoteIdx];
+// Common function to calculate semitones from VTS offset
+static int calculateSemitonesFromOffset(int offset, int referenceNoteIdx, int* outAccumulatedPeriod) {
+  int semitones = 0;
+  int accumulatedPeriod = 0;
+  int currentNote = referenceNoteIdx;
+  int direction = (offset > 0) ? -1 : 1;
+  int absOffset = abs(offset);
+  
+  while (currentNote >= 0 && currentNote < chipnomadState->project.pitchTable.length - 1) {
+    int nextNote = currentNote + direction;
+    if (nextNote < 0 || nextNote >= chipnomadState->project.pitchTable.length) break;
+    
+    int stepSize = abs(chipnomadState->project.pitchTable.values[currentNote] -
+      chipnomadState->project.pitchTable.values[nextNote]);
+    
+    if (accumulatedPeriod + stepSize > absOffset) break;
+    
+    accumulatedPeriod += stepSize;
+    semitones++;
+    currentNote = nextNote;
   }
-  return 1000;
-}*/
+  
+  semitones *= direction;
+  
+  if (outAccumulatedPeriod != NULL) {
+    *outAccumulatedPeriod = direction * accumulatedPeriod;
+  }
+  
+  return semitones;
+}
+
+// Convert VTS pitch offsets to ChipNomad pitch commands for a table
+static void convertVTSPitchOffsets(Table* table, int* vtsOffsets, int rowCount, int referenceNoteIdx) {
+  for (int i = 0; i < rowCount; i++) {
+    int currentVTSOffset = vtsOffsets[i];
+    int prevOffset = (i > 0) ? vtsOffsets[i-1] : 0;
+    int delta = currentVTSOffset - prevOffset;
+
+    if (abs(currentVTSOffset) < VTS_PITCH_THRESHOLD) {
+      if (delta != 0) {
+        int pitValue = clampToInt8(-delta);
+        setPitEffect(&table->rows[i], pitValue);
+      }
+    } else {
+      int currentAccumulated = 0;
+      int semitones = calculateSemitonesFromOffset(currentVTSOffset, referenceNoteIdx, &currentAccumulated);
+      
+      int prevAccumulated = 0;
+      calculateSemitonesFromOffset(prevOffset, referenceNoteIdx, &prevAccumulated);
+      
+      table->rows[i].pitchOffset = (int8_t)clampToInt8(semitones);
+      
+      int semitoneDelta = currentAccumulated - prevAccumulated;
+      int pitDelta = delta - semitoneDelta;
+      
+      if (pitDelta != 0) {
+        int pitValue = clampToInt8(-pitDelta);
+        setPitEffect(&table->rows[i], pitValue);
+      }
+    }
+  }
+}
 
 static void parseVTSLine(const char* line, TableRow* row) {
   initTableRow(row);
@@ -246,84 +302,9 @@ int instrumentLoadVTS(const char* path, int instrumentIdx) {
     rowCount++;
   }
 
-  /* Convert VTS pitch offsets to ChipNomad pitch commands
-  Strategy:
-  - Below threshold: Use PIT command (relative pitch adjustment, 128 range)
-  - Above threshold: Use absolute note (C-4 reference) + or - PIT for fine-tuning
-
-  Note: VTS offsets are cumulative/absolute (relative to 0), but we convert to deltas*/
-
+  // Convert VTS pitch offsets using common function
   int referenceNoteIdx = findReferenceNote();
-  //int referencePeriod = getReferenceNotePeriod(referenceNoteIdx);
-
-  for (int i = 0; i < rowCount; i++) {
-    int currentVTSOffset = vtsOffsets[i];
-    int prevOffset = (i > 0) ? vtsOffsets[i-1] : 0;
-    int delta = currentVTSOffset - prevOffset;
-
-    if (abs(currentVTSOffset) < VTS_PITCH_THRESHOLD) {
-      if (delta != 0) {
-        int pitValue = clampToInt8(-delta);
-        setPitEffect(&table->rows[i], pitValue);
-      }
-    } else {
-
-      int semitones = 0;
-      int accumulatedPeriod = 0;
-      int currentNote = referenceNoteIdx;
-      int direction = (currentVTSOffset > 0) ? -1 : 1;
-      int absOffset = abs(currentVTSOffset);
-
-      // Walk pitch table to find how many whole semitones fit in the absolute VTS offset
-      while (currentNote >= 0 && currentNote < chipnomadState->project.pitchTable.length - 1) {
-        int nextNote = currentNote + direction;
-        if (nextNote < 0 || nextNote >= chipnomadState->project.pitchTable.length) break;
-
-        int stepSize = abs(chipnomadState->project.pitchTable.values[currentNote] -
-          chipnomadState->project.pitchTable.values[nextNote]);
-
-        if (accumulatedPeriod + stepSize > absOffset) break;
-
-        accumulatedPeriod += stepSize;
-        semitones++;
-        currentNote = nextNote;
-      }
-
-      semitones *= direction;
-
-      //int prevSemitones = 0;
-      int prevAccumulated = 0;
-      int prevNote = referenceNoteIdx;
-      int prevDirection = (prevOffset > 0) ? -1 : 1;
-      int absPrevOffset = abs(prevOffset);
-
-      while (prevNote >= 0 && prevNote < chipnomadState->project.pitchTable.length - 1) {
-        int nextNote = prevNote + prevDirection;
-        if (nextNote < 0 || nextNote >= chipnomadState->project.pitchTable.length) break;
-
-        int stepSize = abs(chipnomadState->project.pitchTable.values[prevNote] -
-          chipnomadState->project.pitchTable.values[nextNote]);
-
-        if (prevAccumulated + stepSize > absPrevOffset) break;
-
-        prevAccumulated += stepSize;
-        //prevSemitones++;
-        prevNote = nextNote;
-      }
-
-      //prevSemitones *= prevDirection;
-
-      table->rows[i].pitchOffset = (int8_t)clampToInt8(semitones);
-
-      int semitoneDelta = (direction * accumulatedPeriod) - (prevDirection * prevAccumulated);
-      int pitDelta = delta - semitoneDelta;
-
-      if (pitDelta != 0) {
-        int pitValue = clampToInt8(-pitDelta);
-        setPitEffect(&table->rows[i], pitValue);
-      }
-    }
-  }
+  convertVTSPitchOffsets(table, vtsOffsets, rowCount, referenceNoteIdx);
 
   if (loopRow >= 0 && rowCount < TABLE_ROW_COUNT) {
     initTableRow(&table->rows[rowCount]);
@@ -340,3 +321,65 @@ int instrumentLoadVTS(const char* path, int instrumentIdx) {
   return 0;
 }
 
+// Import VTS instrument from memory buffer (used by VT2 importer)
+int instrumentLoadVTSFromMemory(char** lines, int lineCount, int instrumentIdx, const char* instrumentName) {
+  if (instrumentIdx < 0 || instrumentIdx >= PROJECT_MAX_INSTRUMENTS) {
+    return 1;
+  }
+
+  Instrument* inst = &chipnomadState->project.instruments[instrumentIdx];
+  Table* table = &chipnomadState->project.tables[instrumentIdx];
+
+  initAYInstrument(inst);
+
+  // Set instrument name
+  if (instrumentName != NULL) {
+    strncpy(inst->name, instrumentName, PROJECT_INSTRUMENT_NAME_LENGTH);
+    inst->name[PROJECT_INSTRUMENT_NAME_LENGTH] = '\0';
+  } else {
+    snprintf(inst->name, PROJECT_INSTRUMENT_NAME_LENGTH + 1, "Sample%02d", instrumentIdx + 1);
+  }
+
+  int rowCount = 0;
+  int loopRow = -1;
+  int vtsOffsets[TABLE_ROW_COUNT] = {0};
+
+  // Parse VTS lines
+  for (int i = 0; i < lineCount && rowCount < TABLE_ROW_COUNT; i++) {
+    const char* lpstr = lines[i];
+    if (lpstr == NULL) break;
+
+    size_t lineLen = strlen(lpstr);
+    if (lineLen < 3) continue;
+
+    // Check for loop marker
+    if (findLoopMarker(lpstr)) {
+      loopRow = rowCount;
+    }
+
+    // Parse pitch offset if present
+    if (lineLen >= VTS_COL_PITCH + 5 && (lpstr[VTS_COL_PITCH] == '+' || lpstr[VTS_COL_PITCH] == '-')) {
+      vtsOffsets[rowCount] = parseVTSOffset(&lpstr[VTS_COL_PITCH]);
+    }
+
+    parseVTSLine(lpstr, &table->rows[rowCount]);
+    rowCount++;
+  }
+
+  // Convert VTS pitch offsets using common function
+  int referenceNoteIdx = findReferenceNote();
+  convertVTSPitchOffsets(table, vtsOffsets, rowCount, referenceNoteIdx);
+
+  if (loopRow >= 0 && rowCount < TABLE_ROW_COUNT) {
+    initTableRow(&table->rows[rowCount]);
+    table->rows[rowCount].fx[FX_SLOT_CONTROL][0] = fxTHO;
+    table->rows[rowCount].fx[FX_SLOT_CONTROL][1] = loopRow;
+    rowCount++;
+  }
+
+  for (int i = rowCount; i < TABLE_ROW_COUNT; i++) {
+    initTableRow(&table->rows[i]);
+  }
+
+  return 0;
+}
