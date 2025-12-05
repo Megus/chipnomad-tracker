@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>{{ block "title" . }}
+      {{ .Site.Title }}
+    {{ end }}</title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="/favicon-96x96.png">
+    <link href="https://fonts.googleapis.com/css?family=PT+Sans+Caption:700|PT+Sans&display=swap" rel="stylesheet">
+    {{ $options := dict "transpiler" "libsass" "targetPath" "css/style.css" }}
+    {{ with resources.Get "sass/main.scss" | toCSS $options | minify | fingerprint }}
+    <link rel="stylesheet" href="{{ .RelPermalink }}" integrity="{{ .Data.Integrity }}" crossorigin="anonymous">
+    {{ end }}
+    {{ template "_internal/opengraph.html" . }}
+    {{ template "_internal/twitter_cards.html" . }}
+  </head>
+  <body>
+    {{ partial "site-header.html" . }}
+    {{ block "main" . }}
+    {{ end }}
+    {{ block "footer" . }}
+    {{ end }}
+    {{ partial "site-footer.html" . }}
+  </body>
+</html>

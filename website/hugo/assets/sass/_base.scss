@@ -1,0 +1,259 @@
+/**
+ * Reset some basic elements
+ */
+body, h1, h2, h3, h4, h5, h6,
+p, blockquote, pre, hr,
+dl, dd, ol, ul, figure {
+  margin: 0;
+  padding: 0;
+}
+
+
+
+/**
+ * Basic styling
+ */
+body {
+  font: $base-font-weight #{$base-font-size}/#{$base-line-height} $base-font-family;
+  color: $text-color;
+  background-color: $background-color;
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-feature-settings: "kern" 1;
+    -moz-font-feature-settings: "kern" 1;
+      -o-font-feature-settings: "kern" 1;
+          font-feature-settings: "kern" 1;
+  font-kerning: normal;
+  display: flex;
+  min-height: 100vh;
+  font-weight: 400;
+  width: 100%;
+  flex-direction: column;
+}
+
+/**
+* Set `margin-bottom` to maintain vertical rhythm
+*/
+h1, h2, h3, h4, h5, h6,
+p, blockquote, pre,
+ul, ol, dl, figure,
+%vertical-rhythm {
+  margin-bottom: $spacing-unit / 2;
+}
+
+/**
+* `main` element
+*/
+main {
+  display: block; /* Default value of `display` of `main` element is 'inline' in IE 11. */
+}
+
+/**
+* Images
+*/
+img {
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+
+
+/**
+* Figures
+*/
+figure > img {
+  display: block;
+}
+
+figcaption {
+  font-size: $small-font-size;
+}
+
+
+
+/**
+* Lists
+*/
+ul, ol {
+  margin-left: $spacing-unit;
+  padding-bottom: $spacing-unit / 2;
+}
+
+li {
+  > ul,
+  > ol {
+    margin-bottom: 0;
+  }
+}
+
+
+
+/**
+* Headings
+*/
+h1, h2, h3, h4, h5, h6 {
+  font-family: $header-font-family;
+  color: $grey-color-light;
+  margin-top: $spacing-unit;
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+
+
+/**
+* Links
+*/
+a {
+  color: $text-color;
+  text-decoration: underline;
+
+  color: $grey-color-light;
+
+  &:visited {
+    color: $grey-color;
+  }
+
+  &:hover {
+    color: $grey-color-light;
+    text-decoration: underline;
+  }
+
+  .social-media-list &:hover {
+    text-decoration: none;
+
+    .username {
+      text-decoration: underline;
+    }
+  }
+}
+
+
+/**
+* Blockquotes
+*/
+blockquote {
+  color: $grey-color;
+  border-left: 4px solid $grey-color-light;
+  padding-left: $spacing-unit / 2;
+  margin-top: $spacing-unit;
+  margin-bottom: $spacing-unit;
+  @include relative-font-size(1.125);
+  letter-spacing: -1px;
+  font-style: italic;
+
+  > :last-child {
+    margin-bottom: 0;
+  }
+}
+
+
+
+pre {
+  padding: 8px 12px;
+  overflow-x: auto;
+
+  > code {
+    @include relative-font-size(0.75);
+    padding-right: 0;
+    padding-left: 0;
+  }
+}
+
+
+
+/**
+* Wrapper
+*/
+.wrapper {
+  max-width: -webkit-calc(#{$content-width} - (#{$spacing-unit} * 2));
+  max-width:         calc(#{$content-width} - (#{$spacing-unit} * 2));
+  margin-right: auto;
+  margin-left: auto;
+  padding-right: $spacing-unit;
+  padding-left: $spacing-unit;
+  @extend %clearfix;
+
+  @include media-query($on-laptop) {
+    max-width: -webkit-calc(#{$content-width} - (#{$spacing-unit}));
+    max-width:         calc(#{$content-width} - (#{$spacing-unit}));
+    padding-right: $spacing-unit / 2;
+    padding-left: $spacing-unit / 2;
+  }
+}
+
+.darken {
+  background-color: rgba(0,0,0,0.2);
+}
+
+
+/**
+* Clearfix
+*/
+%clearfix:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+
+
+/**
+* Icons
+*/
+.social-icon {
+   width: 40px;
+   height: 40px;
+   display: inline-block;
+   margin-right: 16px;
+   margin-bottom: $spacing-unit / 2;
+   color: #{$grey-color};
+   vertical-align: text-top;
+   border-radius:50%;
+   transition: box-shadow 0.2s;
+}
+
+.social-icon:hover {
+  box-shadow: 0 0 10px $brand-color;
+}
+
+@include media-query($on-palm) {
+  .social-icon {
+    width: 30px;
+    height: 30px;
+    margin-right: 8px;
+  }
+}
+
+/**
+* Iframes
+*/
+iframe {
+  width: 100%;
+  height: 400px;
+  border: 0px;
+}
+
+@include media-query($on-palm) {
+  iframe {
+    height: 200px;
+  }
+}
+
+/**
+* HR
+*/
+hr {
+  text-align: center;
+  border: 0;
+  margin-top: $spacing-unit;
+  margin-bottom: $spacing-unit;
+}
+
+hr::before {
+  content: "...";
+  letter-spacing: 1em;
+}
+
+.drop-shadow {
+  filter: drop-shadow(0px 4px 2px $brand-color);
+}

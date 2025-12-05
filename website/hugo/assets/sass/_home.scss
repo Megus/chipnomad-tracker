@@ -1,0 +1,111 @@
+/**
+ * Home page
+ */
+.home {
+  max-width: -webkit-calc(#{$home-width} - (#{$spacing-unit}));
+  max-width:         calc(#{$home-width} - (#{$spacing-unit}));
+  margin-right: auto;
+  margin-left: auto;
+  @extend %clearfix;
+
+  h3 {
+    margin-top: 0px;
+  }
+}
+
+.headline {
+  margin-top: $spacing-unit;
+  color: $grey-color;
+  text-align: center;
+  text-shadow: 0 0 16px $brand-color;
+}
+
+.announcement {
+  margin-top: $spacing-unit;
+  color: $grey-color-light;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.announcement-image {
+  width: 200px;
+  text-align: center;
+}
+
+.announcement-body {
+  @include relative-font-size(1.25);
+  margin-left: $spacing-unit / 2;
+  margin-right: $spacing-unit / 2;
+}
+
+@include media-query($on-palm) {
+  .announcement-body {
+    @include relative-font-size(1.125);
+  }
+}
+
+.home-social-links {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.home-social-links a {
+  position: relative;
+  box-shadow: 0 2 16px rgba(0,0,0, 0.8);
+  border-radius: 40px;
+  margin-bottom: $spacing-unit / 2;
+  padding: $spacing-unit / 3;
+  text-decoration: none;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background-color: lighten($background-color, 8%);
+  color: $grey-color-light;
+  width: 300px;
+  overflow: hidden;
+  transition: background-color 0.2s;
+}
+
+.home-social-bg {
+  transform: translateZ(0);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  filter: blur(20px);
+  opacity: 0.3;
+}
+
+.home-social-links a:hover {
+  background-color: lighten($background-color, 12%);
+}
+
+@include media-query($on-palm) {
+  .home-social-links a {
+    width: 75%;
+  }
+}
+
+.home-social-links img {
+  width: 40px;
+  height: 40px;
+  display: inline-block;
+  margin-right: $spacing-unit;
+  color: #{$grey-color};
+  vertical-align: text-top;
+  border-radius:50%;
+}
+
+.home-social-links span {
+  flex-grow: 1;
+  text-align: center;
+  margin-left: -50px;
+}
