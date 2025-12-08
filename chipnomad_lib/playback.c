@@ -215,7 +215,7 @@ void readPhraseRow(PlaybackState* state, int trackIdx, int skipDelCheck) {
   }
 }
 
-static void nextFrame(PlaybackState* state, int trackIdx) {
+static void nextFrame(PlaybackState* state, int trackIdx, int chipIdx) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
   Project* p = state->p;
 
@@ -231,7 +231,7 @@ static void nextFrame(PlaybackState* state, int trackIdx) {
   track->note.chip.ay.envOffset = 0;
 
   // FX
-  handleFX(state, trackIdx);
+  handleFX(state, trackIdx, chipIdx);
 
   // Instrument
   enum InstrumentType instType = (track->note.instrument != EMPTY_VALUE_8) ? p->instruments[track->note.instrument].type : instNone;
@@ -500,7 +500,17 @@ int playbackNextFrame(PlaybackState* state, SoundChip* chips) {
   Project* p = state->p;
   int hasActiveTracks = 0;
 
+  int chipIdx = 0;
+  int chipTracksCount = projectGetChipTracks(p, chipIdx);
+  int nextChipTrackIdx = chipTracksCount;
+
   for (int trackIdx = 0; trackIdx < state->p->tracksCount; trackIdx++) {
+    if (trackIdx >= nextChipTrackIdx) {
+      chipIdx++;
+      chipTracksCount = projectGetChipTracks(p, chipIdx);
+      nextChipTrackIdx += chipTracksCount;
+    }
+
     PlaybackTrackState* track = &state->tracks[trackIdx];
 
     // Check queued play event for stopped track or when a track is in phrase row playback mode
@@ -550,7 +560,7 @@ int playbackNextFrame(PlaybackState* state, SoundChip* chips) {
       }
     }
 
-    nextFrame(state, trackIdx);
+    nextFrame(state, trackIdx, chipIdx);
 
     // Check if the track is still playing something
     if (track->songRow == EMPTY_VALUE_16) {
