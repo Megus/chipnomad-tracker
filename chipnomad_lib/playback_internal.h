@@ -10,7 +10,7 @@ void tableInit(PlaybackState* state, int trackIdx, struct PlaybackTableState* ta
 void tableReadFX(PlaybackState* state, int trackIdx, struct PlaybackTableState* table, int fxIdx, int forceRead);
 void initFX(PlaybackState* state, int trackIdx, uint8_t* fx, PlaybackFXState *fxState, int forceCleanState);
 int handleFX(PlaybackState* state, int trackIdx, int chipIdx);
-int vibratoCommonLogic(PlaybackFXState *fxState);
+int vibratoCommonLogic(PlaybackFXState *fxState, int scale);
 
 // Chip-specific functions
 
@@ -21,5 +21,8 @@ void handleInstrumentAY(PlaybackState* state, int trackIdx);
 void outputRegistersAY(PlaybackState* state, int trackIdx, int chipIdx, SoundChip* chip);
 void resetTrackAY(PlaybackState* state, int trackIdx);
 int handleFX_AY(PlaybackState* state, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState);
+
+// Convert frequency to AY period with optimal accuracy
+int frequencyToAYPeriod(float frequency, int clockHz);
 
 #endif

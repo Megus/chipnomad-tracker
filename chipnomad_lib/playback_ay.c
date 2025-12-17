@@ -1,5 +1,8 @@
 #include "playback.h"
+#include "playback_internal.h"
+#include "utils.h"
 #include <stdio.h>
+#include <math.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -119,10 +122,21 @@ void outputRegistersAY(PlaybackState* state, int trackIdx, int chipIdx, SoundChi
       // Silence channel
       chip->setRegister(chip, 8 + ayChannel, 0);
     } else {
-      int16_t period = p->pitchTable.values[track->note.noteFinal] - track->note.pitchOffset - track->note.pitchOffsetAcc;
-      // TODO: Design decision: allow period overflow or not. Can it be a setting?
-      //if (period < 0) period = 0;
-      //if (period > 4095) period = 4095;
+      int16_t period;
+      if (p->linearPitch) {
+        // Linear pitch mode: convert cents to frequency, then to period
+        int cents = p->pitchTable.values[track->note.noteFinal] + track->note.pitchOffset + track->note.pitchOffsetAcc;
+        float frequency = centsToFrequency(cents);
+        period = frequencyToAYPeriod(frequency, p->chipSetup.ay.clock);
+        // Apply period offset (with different sign for convenience)
+        period -= track->note.periodOffsetAcc;
+      } else {
+        // Traditional period mode
+        period = p->pitchTable.values[track->note.noteFinal] - track->note.pitchOffset - track->note.pitchOffsetAcc + track->note.periodOffsetAcc;
+      }
+      // Clamp period to valid AY range
+      if (period < 1) period = 1;
+      if (period > 4095) period = 4095;
       chip->setRegister(chip, ayChannel * 2, period & 0xff);
       chip->setRegister(chip, ayChannel * 2 + 1, (period & 0xf00) >> 8);
 
@@ -206,4 +220,20 @@ void outputRegistersAY(PlaybackState* state, int trackIdx, int chipIdx, SoundChi
     chip->setRegister(chip, 6, noise);
   }
   chip->setRegister(chip, 7, mixer);
+}
+
+// Convert frequency to AY period with optimal accuracy
+int frequencyToAYPeriod(float frequency, int clockHz) {
+  if (frequency <= 0.0f) return 4095; // Avoid division by zero
+
+  float periodf = (float)clockHz / (16.0f * frequency);
+
+  float freqL = (float)clockHz / (16.0f * floorf(periodf));
+  float freqH = (float)clockHz / (16.0f * ceilf(periodf));
+
+  int period = (fabsf(freqL - frequency) < fabsf(freqH - frequency)) ? floorf(periodf) : ceilf(periodf);
+  if (period > 4095) period = 4095; // AY only has 12 bits for period
+  if (period < 1) period = 1; // Avoid zero period
+
+  return period;
 }

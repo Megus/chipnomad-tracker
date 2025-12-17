@@ -14,4 +14,10 @@ int pitchTableSaveCSV(Project* p, const char* folderPath, const char* filename);
 // Calculate 12TET pitch table for AY chip
 void calculatePitchTableAY(Project* p);
 
+// Calculate 12TET linear pitch table (values in cents, C-4 = 60)
+void calculateLinearPitchTable12TET(Project* p);
+
+// Reinitialize pitch table based on linear pitch setting
+void reinitializePitchTable(Project* p);
+
 #endif

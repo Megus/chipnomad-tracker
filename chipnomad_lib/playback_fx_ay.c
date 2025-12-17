@@ -1,5 +1,6 @@
 #include "playback.h"
 #include "playback_internal.h"
+#include "utils.h"
 #include <stdio.h>
 
 // AYM - AY Mixer
@@ -50,7 +51,16 @@ static void handleFX_ENT(PlaybackState* state, PlaybackTrackState* track, int tr
   fx->fx = EMPTY_VALUE_8;
   int note = fx->value + p->pitchTable.octaveSize * 4;
   if (note >= p->pitchTable.length) note = p->pitchTable.length - 1;
-  track->note.chip.ay.envBase = p->pitchTable.values[note];
+
+  if (p->linearPitch) {
+    // Linear pitch mode: convert cents to frequency, then to period
+    int cents = p->pitchTable.values[note];
+    float frequency = centsToFrequency(cents);
+    track->note.chip.ay.envBase = frequencyToAYPeriod(frequency, p->chipSetup.ay.clock);
+  } else {
+    // Traditional period mode
+    track->note.chip.ay.envBase = p->pitchTable.values[note];
+  }
 }
 
 // EPT - Envelope period offset
@@ -94,7 +104,7 @@ static void handleFX_EBN(PlaybackState* state, PlaybackTrackState* track, int tr
 
 // EVB - Envelope vibrato
 static void handleFX_EVB(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  track->note.chip.ay.envOffset += vibratoCommonLogic(fx);
+  track->note.chip.ay.envOffset += vibratoCommonLogic(fx, 1);
 }
 
 // ESL - Pitch slide (portamento

@@ -32,13 +32,22 @@ char* helpFXHint(uint8_t* fx, int isTable) {
       sprintf(buffer, "Pitch vibrato, speed %hhu, depth %hhu", (fx[1] & 0xf0) >> 4, (fx[1] & 0xf));
       break;
     case fxPBN: // Pitch bend
-      sprintf(buffer, "Pitch bend %hhd per step", fx[1]);
+      if (chipnomadState->project.linearPitch) {
+        // Linear pitch mode: show in semitones (value * 25 cents / 100 cents per semitone)
+        float semitones = (int8_t)fx[1] * 0.25f;
+        sprintf(buffer, "Pitch bend %+.2f semitones per step", semitones);
+      } else {
+        sprintf(buffer, "Pitch bend %hhd per step", fx[1]);
+      }
       break;
     case fxPSL: // Pitch slide (portamento)
       sprintf(buffer, "Pitch slide for %hhd tics", fx[1]);
       break;
     case fxPIT: // Pitch offset
       sprintf(buffer, "Pitch offset by %hhd", fx[1]);
+      break;
+    case fxPRD: // Period offset
+      sprintf(buffer, "Period offset by %hhd", fx[1]);
       break;
     case fxVOL: // Volume (relative)
       sprintf(buffer, "Volume offset by %hhd", fx[1]);
@@ -157,6 +166,7 @@ static const char* fxHelpText[] = {
   [fxPBN] = "Pitch Bend\nSlides pitch by amount\nper step continuously",
   [fxPSL] = "Pitch Slide\nSlides to target pitch\nover specified tics",
   [fxPIT] = "Pitch Offset\nAdds fixed offset\nto note pitch",
+  [fxPRD] = "Period Offset\nAdds fixed offset\nto chip period",
   [fxVOL] = "Volume Offset\nAdds/subtracts from\ncurrent volume",
   [fxRET] = "Retrigger\nRetriggers note every\nN tics",
   [fxDEL] = "Delay\nDelays note start\nby N tics",

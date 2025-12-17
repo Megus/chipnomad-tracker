@@ -4,6 +4,9 @@
 
 - B+A on an empty cell at the Song screen now moves the whole column up (same as in LSDJ and M8)
 - Project and Instrument save functions now check for empty filename before saving
+- Support for 2x and 3x AY/YM chips
+- AY/YM emulator filter quality setting (lower quality - lower CPU load)
+- Linear pitch option (pitch tables are defined in cents)
 - *FIX*: Chip settings were not initialized when loading a project
 
 ## v0.0.3a (November 22, 2025)

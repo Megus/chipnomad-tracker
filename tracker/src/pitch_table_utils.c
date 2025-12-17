@@ -1,6 +1,7 @@
 #include "pitch_table_utils.h"
 #include "corelib/corelib_file.h"
 #include "chipnomad_lib.h"
+#include "playback_internal.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,7 +13,8 @@ int pitchTableLoadCSV(Project* project, const char* path) {
 
   char* line;
   int noteIndex = 0;
-  int noteCol = -1, periodCol = -1;
+  int noteCol = -1, valueCol = -1;
+  const char* expectedValueColumn = project->linearPitch ? "Cents" : "Period";
 
   // Read header line and find column positions
   line = fileReadString(fileId);
@@ -21,21 +23,21 @@ int pitchTableLoadCSV(Project* project, const char* path) {
     return 1;
   }
 
-  // Parse header to find Note and Period columns
+  // Parse header to find Note and value columns
   char* token = strtok(line, ",");
   int col = 0;
   while (token) {
     if (strcmp(token, "Note") == 0) {
       noteCol = col;
-    } else if (strcmp(token, "Period") == 0) {
-      periodCol = col;
+    } else if (strcmp(token, expectedValueColumn) == 0) {
+      valueCol = col;
     }
     token = strtok(NULL, ",");
     col++;
   }
 
   // Check if both required columns were found
-  if (noteCol == -1 || periodCol == -1) {
+  if (noteCol == -1 || valueCol == -1) {
     fileClose(fileId);
     return 1;
   }
@@ -43,8 +45,8 @@ int pitchTableLoadCSV(Project* project, const char* path) {
   // Read data lines
   while ((line = fileReadString(fileId)) != NULL && noteIndex < PROJECT_MAX_PITCHES) {
     char noteName[4] = "";
-    int period = 0;
-    int foundNote = 0, foundPeriod = 0;
+    int value = 0;
+    int foundNote = 0, foundValue = 0;
 
     // Parse CSV line
     token = strtok(line, ",");
@@ -54,19 +56,19 @@ int pitchTableLoadCSV(Project* project, const char* path) {
         strncpy(noteName, token, 3);
         noteName[3] = 0;
         foundNote = 1;
-      } else if (col == periodCol) {
-        period = atoi(token);
-        foundPeriod = 1;
+      } else if (col == valueCol) {
+        value = atoi(token);
+        foundValue = 1;
       }
       token = strtok(NULL, ",");
       col++;
     }
 
     // Add entry if both values were found
-    if (foundNote && foundPeriod && strlen(noteName) > 0) {
+    if (foundNote && foundValue && strlen(noteName) > 0) {
       strncpy(project->pitchTable.noteNames[noteIndex], noteName, 3);
       project->pitchTable.noteNames[noteIndex][3] = 0;
-      project->pitchTable.values[noteIndex] = period;
+      project->pitchTable.values[noteIndex] = value;
       noteIndex++;
     }
   }
@@ -99,8 +101,9 @@ int pitchTableSaveCSV(Project* project, const char* folderPath, const char* file
   int fileId = fileOpen(fullPath, 1);
   if (fileId == -1) return 1;
 
-  // Write header
-  filePrintf(fileId, "Note,Period\n");
+  // Write header with appropriate column name
+  const char* valueColumn = project->linearPitch ? "Cents" : "Period";
+  filePrintf(fileId, "Note,%s\n", valueColumn);
 
   // Write data
   for (int i = 0; i < project->pitchTable.length; i++) {
@@ -117,9 +120,7 @@ void calculatePitchTableAY(Project* p) {
 
   float clock = (float)(p->chipSetup.ay.clock);
   int octaves = 9;
-  float cfreq = 16.35159783; // C-0 frequency for A4 = 440Hz. It's too low for 1.75MHz AY, but we'll keep it
-  float freq = cfreq;
-  float semitone = powf(2., 1. / 12.);
+  int startMidiNote = 12; // Start from C-0 (MIDI 12)
 
   sprintf(p->pitchTable.name, "12TET %dHz", p->chipSetup.ay.clock);
   p->pitchTable.length = octaves * 12;
@@ -129,22 +130,45 @@ void calculatePitchTableAY(Project* p) {
     for (int c = 0; c < 12; c++) {
       noteStrings[c][2] = 48 + o;
 
-      float periodf = clock / 16. / freq;
-
-      float freqL = clock / 16. / floorf(periodf);
-      float freqH = clock / 16. / ceilf(periodf);
-
-      int period = (fabsf(freqL - freq) < fabsf(freqH - freq)) ? floorf(periodf) : ceilf(periodf);
-      if (period > 4095) period = 4095; // AY only has 12 bits for period
+      int midiNote = startMidiNote + o * 12 + c;
+      float freq = centsToFrequency(midiNote * 100);
+      int period = frequencyToAYPeriod(freq, (int)clock);
 
       p->pitchTable.values[o * 12 + c] = period;
       strcpy(p->pitchTable.noteNames[o * 12 + c], noteStrings[c]);
-
-      freq *= semitone;
     }
-
-    // Reset frequency calculation on each octave to minimize rounding errors
-    cfreq *= 2.;
-    freq = cfreq;
   }
 }
+
+// Create 12TET linear pitch table (values in cents)
+void calculateLinearPitchTable12TET(Project* p) {
+  static char noteStrings[12][4] = { "C-0", "C#0", "D-0", "D#0", "E-0", "F-0", "F#0", "G-0", "G#0", "A-0", "A#0", "B-0" };
+  
+  strcpy(p->pitchTable.name, "12TET Linear");
+  int octaves = 9;
+  p->pitchTable.length = octaves * 12;
+  p->pitchTable.octaveSize = 12;
+  
+  int startMidiNote = 12; // Start from C-0 (MIDI 12)
+  
+  for (int o = 0; o < octaves; o++) {
+    for (int c = 0; c < 12; c++) {
+      noteStrings[c][2] = 48 + o; // ASCII '0' + octave number
+      
+      int midiNote = startMidiNote + o * 12 + c;
+      p->pitchTable.values[o * 12 + c] = midiNote * 100; // Value in cents
+      strcpy(p->pitchTable.noteNames[o * 12 + c], noteStrings[c]);
+    }
+  }
+}
+
+// Reinitialize pitch table based on linear pitch setting
+void reinitializePitchTable(Project* p) {
+  if (p->linearPitch) {
+    calculateLinearPitchTable12TET(p);
+  } else {
+    calculatePitchTableAY(p);
+  }
+}
+
+

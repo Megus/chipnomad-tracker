@@ -10,9 +10,9 @@ static int iabs(int v) {
   return (v < 0) ? -v : v;
 }
 
-int vibratoCommonLogic(PlaybackFXState *fx) {
+int vibratoCommonLogic(PlaybackFXState *fx, int scale) {
   int period = 32 - ((fx->value & 0xf0) >> 3);
-  int depth = fx->value & 0xf;
+  int depth = (fx->value & 0xf) * scale;
   int x = (fx->data.count_fx.counter + period / 4) % period;
   int value = depth - (4 * depth * iabs(x - period / 2)) / period;
   fx->data.count_fx.counter++;
@@ -122,6 +122,10 @@ static void handleFX_PBN(PlaybackState* state, PlaybackTrackState* track, int tr
     }
     if (speed == 0) speed = 1;
     int value = (int8_t)(fx->value) << 8; // Use 24.8 fixed point math
+    if (state->p->linearPitch) {
+      // Linear pitch mode: multiply by 25 for cents
+      value *= 25;
+    }
     fx->data.pbn.value = value / speed;
     fx->data.pbn.lowByte = 0;
   }
@@ -149,6 +153,12 @@ static void handleFX_ARC(struct PlaybackState *state, PlaybackTrackState *track,
 // PIT - Pitch offset
 static void handleFX_PIT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
   track->note.pitchOffsetAcc += (int8_t)fx->value;
+  fx->fx = EMPTY_VALUE_8;
+}
+
+// PRD - Period offset
+static void handleFX_PRD(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
+  track->note.periodOffsetAcc += (int8_t)fx->value;
   fx->fx = EMPTY_VALUE_8;
 }
 
@@ -328,7 +338,8 @@ static void handleFX_RET(PlaybackState* state, PlaybackTrackState* track, int tr
 
 // PVB - Pitch vibrato
 static void handleFX_PVB(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  track->note.pitchOffset += vibratoCommonLogic(fx);
+  int scale = state->p->linearPitch ? 10 : 1;
+  track->note.pitchOffset += vibratoCommonLogic(fx, scale);
 }
 
 // PSL - Pitch slide (portamento
@@ -341,7 +352,7 @@ static void handleFX_PSL(PlaybackState* state, PlaybackTrackState* track, int tr
   }
   int distance = fx->data.psl.endPeriod - fx->data.psl.startPeriod;
   int offset = (distance * fx->data.psl.counter) / fx->value;
-  track->note.pitchOffset += distance - offset;
+  track->note.pitchOffset += state->p->linearPitch ? offset - distance : distance - offset;
 
   fx->data.psl.counter++;
 }
@@ -394,6 +405,7 @@ static int handleFXInternal(PlaybackState* state, int trackIdx, int chipIdx, str
   else if (fx->fx == fxARC) handleFX_ARC(state, track, trackIdx, chipIdx, fx, tableState);
   else if (fx->fx == fxPBN) handleFX_PBN(state, track, trackIdx, chipIdx, fx, tableState);
   else if (fx->fx == fxPIT) handleFX_PIT(state, track, trackIdx, chipIdx, fx, tableState);
+  else if (fx->fx == fxPRD) handleFX_PRD(state, track, trackIdx, chipIdx, fx, tableState);
   else if (fx->fx == fxTIC) handleFX_TIC(state, track, trackIdx, chipIdx, fx, tableState);
   else if (fx->fx == fxVOL) handleFX_VOL(state, track, trackIdx, chipIdx, fx, tableState);
   else if (fx->fx == fxGRV) handleFX_GRV(state, track, trackIdx, chipIdx, fx, tableState);
