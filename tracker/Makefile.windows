@@ -45,10 +45,10 @@ windows-deploy:
 	@echo "Building Windows cross-compilation Docker image..."
 	@docker build -f Dockerfile.windows -t chipnomad-windows-builder . || (echo "Error: Failed to build Docker image" && exit 1)
 	@docker run --rm -v "$$(pwd)/..:/workspace" -w /workspace/tracker chipnomad-windows-builder make -f Makefile.windows .windows-docker
-	@mkdir -p releases
+	@mkdir -p ../../releases
 	@cp -r packaging/common/* $(BUILD)/
 	@cp packaging/windows/README.txt $(BUILD)/
 	$(eval VERSION := $(shell grep 'appVersion.*=' src/version.c | cut -d'"' -f2))
 	@cd $(BUILD) && zip -r ChipNomad-$$(date +%Y-%m-%d)-$(VERSION)-Windows.zip chipnomad.exe SDL2.dll pitch-tables projects instruments README.txt
-	@mv $(BUILD)/ChipNomad-*-Windows.zip releases/
-	@echo "Windows package created in releases/"
+	@mv $(BUILD)/ChipNomad-*-Windows.zip ../../releases/
+	@echo "Windows package created in ../../releases/"

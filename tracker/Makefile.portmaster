@@ -39,7 +39,7 @@ PortMaster32:
 .PHONY: PortMaster-deploy
 PortMaster-deploy: PortMaster PortMaster32
 	@echo "Creating PortMaster deployment package..."
-	@mkdir -p releases
+	@mkdir -p ../../releases
 	@rm -rf /tmp/chipnomad-pm-package
 	@mkdir -p /tmp/chipnomad-pm-package/chipnomad
 	@cp $(BUILD)/chipnomad.aarch64 /tmp/chipnomad-pm-package/chipnomad/
@@ -50,6 +50,6 @@ PortMaster-deploy: PortMaster PortMaster32
 	@sed -i '' "s/BUILD_DATE_PLACEHOLDER/$$(date +%Y%m%dT%H%M%S)/g" /tmp/chipnomad-pm-package/gameinfo.xml
 	$(eval VERSION := $(shell grep 'appVersion.*=' src/version.c | cut -d'"' -f2))
 	@cd /tmp/chipnomad-pm-package && zip -r ChipNomad-$$(date +%Y-%m-%d)-$(VERSION)-PortMaster.zip .
-	@mv /tmp/chipnomad-pm-package/ChipNomad-*-PortMaster.zip releases/
+	@mv /tmp/chipnomad-pm-package/ChipNomad-*-PortMaster.zip ../../releases/
 	@rm -rf /tmp/chipnomad-pm-package
-	@echo "PortMaster package created in releases/"
+	@echo "PortMaster package created in ../../releases/"

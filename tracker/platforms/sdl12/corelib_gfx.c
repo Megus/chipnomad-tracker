@@ -16,6 +16,9 @@ SDL_Surface *sdlScreen;
 static uint32_t fgColor = 0;
 static uint32_t bgColor = 0;
 static uint32_t cursorColor = 0;
+static int fgR = 255, fgG = 255, fgB = 255;
+static int bgR = 0, bgG = 0, bgB = 0;
+static int cursorR = 255, cursorG = 255, cursorB = 255;
 static uint8_t* font = NULL;
 static char printBuffer[PRINT_BUFFER_SIZE];
 static int fontH;
@@ -51,11 +54,10 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
   fontW = 2; // In bytes
   fontH = 24;
 
-  // Create character surfaces
+  // Create 8-bit character surfaces
   for (int ch = 0; ch < 95; ch++) {
-    charSurfaces[ch] = SDL_CreateRGBSurface(SDL_SWSURFACE, fontW * 8, fontH, 32, 0, 0, 0, 0);
-    SDL_FillRect(charSurfaces[ch], NULL, SDL_MapRGB(charSurfaces[ch]->format, 0, 0, 0));
-    SDL_SetColorKey(charSurfaces[ch], SDL_SRCCOLORKEY, SDL_MapRGB(charSurfaces[ch]->format, 0, 0, 0));
+    charSurfaces[ch] = SDL_CreateRGBSurface(SDL_SWSURFACE, fontW * 8, fontH, 8, 0, 0, 0, 0);
+    SDL_SetColorKey(charSurfaces[ch], SDL_SRCCOLORKEY, 0); // Index 0 = transparent
 
     for (int l = 0; l < fontH; l++) {
       for (int c = 0; c < fontW; c++) {
@@ -63,9 +65,7 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
         uint8_t mask = 0x80;
 
         for (int b = 0; b < 8; b++) {
-          if (fontByte & mask) {
-            ((Uint32 *)charSurfaces[ch]->pixels)[l * charSurfaces[ch]->w + (c * 8 + b)] = SDL_MapRGB(charSurfaces[ch]->format, 255, 255, 255);
-          }
+          ((Uint8 *)charSurfaces[ch]->pixels)[l * charSurfaces[ch]->w + (c * 8 + b)] = (fontByte & mask) ? 1 : 0;
           mask >>= 1;
         }
       }
@@ -85,15 +85,24 @@ void gfxCleanup(void) {
 }
 
 void gfxSetFgColor(int rgb) {
-  fgColor = SDL_MapRGB(sdlScreen->format, (rgb & 0xff0000) >> 16, (rgb & 0xff00) >> 8, rgb & 0xff);
+  fgR = (rgb & 0xff0000) >> 16;
+  fgG = (rgb & 0xff00) >> 8;
+  fgB = rgb & 0xff;
+  fgColor = SDL_MapRGB(sdlScreen->format, fgR, fgG, fgB);
 }
 
 void gfxSetBgColor(int rgb) {
-  bgColor = SDL_MapRGB(sdlScreen->format, (rgb & 0xff0000) >> 16, (rgb & 0xff00) >> 8, rgb & 0xff);
+  bgR = (rgb & 0xff0000) >> 16;
+  bgG = (rgb & 0xff00) >> 8;
+  bgB = rgb & 0xff;
+  bgColor = SDL_MapRGB(sdlScreen->format, bgR, bgG, bgB);
 }
 
 void gfxSetCursorColor(int rgb) {
-  cursorColor = SDL_MapRGB(sdlScreen->format, (rgb & 0xff0000) >> 16, (rgb & 0xff00) >> 8, rgb & 0xff);
+  cursorR = (rgb & 0xff0000) >> 16;
+  cursorG = (rgb & 0xff00) >> 8;
+  cursorB = rgb & 0xff;
+  cursorColor = SDL_MapRGB(sdlScreen->format, cursorR, cursorG, cursorB);
 }
 
 void gfxClear(void) {
@@ -153,13 +162,14 @@ void gfxPrint(int x, int y, const char* text) {
     }
 
     if (C >= 32 && C <= 126) {
-      // Create colored version of character
-      SDL_Surface* coloredChar = SDL_DisplayFormat(charSurfaces[C - 32]);
-      SDL_SetColors(coloredChar, &(SDL_Color){(fgColor >> 16) & 0xFF, (fgColor >> 8) & 0xFF, fgColor & 0xFF}, 255, 1);
+      SDL_Color colors[2] = {
+        {0, 0, 0, 0},  // Index 0: transparent
+        {fgR, fgG, fgB, 255}  // Index 1: foreground
+      };
+      SDL_SetColors(charSurfaces[C - 32], colors, 0, 2);
 
       SDL_Rect dstRect = {cx, cy, fontW * 8, fontH};
-      SDL_BlitSurface(coloredChar, NULL, sdlScreen, &dstRect);
-      SDL_FreeSurface(coloredChar);
+      SDL_BlitSurface(charSurfaces[C - 32], NULL, sdlScreen, &dstRect);
     }
 
     cx += fontW * 8;

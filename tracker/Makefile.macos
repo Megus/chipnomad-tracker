@@ -40,8 +40,8 @@ macOS-app-bundle: macOS
 .PHONY: macOS-deploy
 macOS-deploy: macOS-app-bundle
 	@echo "Creating macOS deployment package..."
-	@mkdir -p releases
+	@mkdir -p ../../releases
 	$(eval VERSION := $(shell grep 'appVersion.*=' src/version.c | cut -d'"' -f2))
 	@cd $(BUILD) && zip -r $(APP)-$$(date +%Y-%m-%d)-$(VERSION)-macOS.zip $(APP_BUNDLE) pitch-tables projects instruments
-	@mv $(BUILD)/$(APP)-*-macOS.zip releases/
-	@echo "macOS package created in releases/"
+	@mv $(BUILD)/$(APP)-*-macOS.zip ../../releases/
+	@echo "macOS package created in ../../releases/"
