@@ -228,14 +228,27 @@ int fileBrowserInput(int keys, int isDoubleTap) {
   int maxIndex = entryCount - 1;
   if (isFolderMode) maxIndex += 2; // Add 2 for "Save to" and "Create Folder" options
 
-  if (keys == keyUp && selectedIndex > 0) {
-    selectedIndex--;
+  if (keys == keyUp) {
+    if (selectedIndex > 0) {
+      selectedIndex--;
+    } else {
+      // Loop to bottom
+      selectedIndex = maxIndex;
+    }
     if (selectedIndex < topIndex) {
       topIndex = selectedIndex;
+    } else if (selectedIndex >= topIndex + VISIBLE_ENTRIES) {
+      topIndex = selectedIndex - VISIBLE_ENTRIES + 1;
     }
     return 1;
-  } else if (keys == keyDown && selectedIndex < maxIndex) {
-    selectedIndex++;
+  } else if (keys == keyDown) {
+    if (selectedIndex < maxIndex) {
+      selectedIndex++;
+    } else {
+      // Loop to top
+      selectedIndex = 0;
+      topIndex = 0;
+    }
     if (selectedIndex >= topIndex + VISIBLE_ENTRIES) {
       topIndex = selectedIndex - VISIBLE_ENTRIES + 1;
     }
