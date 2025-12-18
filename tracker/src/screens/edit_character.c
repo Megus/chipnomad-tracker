@@ -209,7 +209,7 @@ void updateCursorPosition() {
 * @param startChar Initial character to select
 */
 void charEditFullDraw(char startChar) {
-  gfxClearRect(0, 0, 40, 20);
+  gfxClearRect(0, 0, 35, 20);
 
   // Clear the screen
   gfxSetBgColor(appSettings.colorScheme.background);

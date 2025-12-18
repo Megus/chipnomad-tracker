@@ -8,6 +8,8 @@
 - AY/YM emulator filter quality setting (lower quality - lower CPU load)
 - Linear pitch option (pitch tables are defined in cents)
 - *FIX*: Chip settings were not initialized when loading a project
+- *FIX*: UI was monochrome in RG35xx build
+- *FIX*: All saved values are correctly reset on loading or creating a new project
 
 ## v0.0.3a (November 22, 2025)
 

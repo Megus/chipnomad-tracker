@@ -42,3 +42,6 @@ int switchTableSelectionMode(ScreenData* screen);
 int switchChainSelectionMode(ScreenData* screen);
 int switchGrooveSelectionMode(ScreenData* screen);
 int switchSongSelectionMode(ScreenData* screen);
+
+// Copy buffer management
+void resetCopyBuffers(void);

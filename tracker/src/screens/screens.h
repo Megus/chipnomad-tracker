@@ -6,6 +6,7 @@
 #define MESSAGE_TIME (60)
 
 typedef struct AppScreen {
+  void (*init)(void);
   void (*setup)(int input);
   void (*fullRedraw)(void);
   void (*draw)(void);
@@ -80,6 +81,7 @@ extern const AppScreen* currentScreen;
 void screenSetup(const AppScreen* screen, int input);
 void screenDraw(void);
 void screenMessage(int time, const char* format, ...);
+void screensInitAll(void);
 
 // Spreadsheet functions
 void screenFullRedraw(ScreenData* screen);

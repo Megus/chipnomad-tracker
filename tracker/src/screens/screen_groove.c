@@ -37,6 +37,18 @@ static ScreenData screen = {
   .onEdit = onEdit,
 };
 
+static void init(void) {
+  lastValue = 0;
+  screen.cursorRow = 0;
+  screen.cursorCol = 0;
+  screen.topRow = 0;
+  screen.selectMode = 0;
+  screen.selectStartRow = 0;
+  screen.selectStartCol = 0;
+  screen.selectAnchorRow = 0;
+  screen.selectAnchorCol = 0;
+}
+
 static void setup(int input) {
   groove = input;
   screen.selectMode = 0;
@@ -169,5 +181,6 @@ const AppScreen screenGroove = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
-  .onInput = onInput
+  .onInput = onInput,
+  .init = init
 };

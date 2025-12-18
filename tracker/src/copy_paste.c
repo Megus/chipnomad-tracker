@@ -25,6 +25,16 @@ static int cpBufTableStartCol;
 static int cpBufTableEndCol;
 static int cpBufInstrumentValid = 0;
 
+void resetCopyBuffers(void) {
+  cpBufGrooveLength = 0;
+  cpBufSongRows = 0;
+  cpBufSongCols = 0;
+  cpBufChainRows = 0;
+  cpBufPhraseRows = 0;
+  cpBufTableRows = 0;
+  cpBufInstrumentValid = 0;
+}
+
 void copyGroove(int grooveIdx, int startRow, int endRow, int isCut) {
   cpBufGrooveLength = endRow - startRow + 1;
   for (int row = startRow; row <= endRow; row++) {

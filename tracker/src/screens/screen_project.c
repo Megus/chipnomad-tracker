@@ -17,7 +17,7 @@ static int editingStringLength = 0;
 static int tickRateI = 0;
 static uint16_t tickRateF = 0;
 
-static int songScreenInput = 0;
+
 
 static void onProjectLoaded(const char* path) {
   if (!path) {
@@ -44,11 +44,8 @@ static void onProjectLoaded(const char* path) {
     // Store filename without extension
     extractFilenameWithoutExtension(path, appSettings.projectFilename, FILENAME_LENGTH + 1);
 
-    // Jump to the song beginning
-    if (pSongRow) *pSongRow = 0;
-    if (pSongTrack) *pSongTrack = 0;
-    if (pChainRow) *pChainRow = 0;
-    songScreenInput = 0x1234;
+    // Reset all screen states (including song position)
+    screensInitAll();
   }
 
   screenSetup(&screenProject, 0);
@@ -255,6 +252,7 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
       // New project
       projectInitAY(&chipnomadState->project);
       appSettings.projectFilename[0] = 0; // Clear filename
+      screensInitAll(); // Reset all screen states
       fullRedraw();
       handled = 1;
     } else if (col == 3) {
@@ -344,8 +342,7 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {
   if (keys == (keyDown | keyShift)) {
-    screenSetup(&screenSong, songScreenInput);
-    songScreenInput = 0;
+    screenSetup(&screenSong, 0);
     return 1;
   }
   return 0;

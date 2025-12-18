@@ -124,6 +124,9 @@ void appSetup(void) {
     projectInitAY(&chipnomadState->project);
   }
 
+  // Initialize all screen states and pointers
+  screensInitAll();
+
   // Copy project to ChipNomadState and reinitialize playback
   // Project is already initialized in chipnomadState
   playbackInit(&chipnomadState->playbackState, &chipnomadState->project);

@@ -5,6 +5,7 @@
 #include "chipnomad_lib.h"
 #include "corelib_gfx.h"
 #include "utils.h"
+#include "copy_paste.h"
 
 const AppScreen* currentScreen = NULL;
 
@@ -108,6 +109,16 @@ void screenMessage(int time, const char* format, ...) {
   if (strlen(messageBuffer) == 0) {
     gfxClearRect(0, 19, 40, 1);
   }
+}
+
+void screensInitAll(void) {
+  screenSong.init();
+  screenChain.init();
+  screenPhrase.init();
+  screenTable.init();
+  screenInstrument.init();
+  screenGroove.init();
+  resetCopyBuffers();
 }
 
 

@@ -40,8 +40,21 @@ static ScreenData screen = {
   .onEdit = onEdit,
 };
 
-static void setup(int input) {
+static void init(void) {
+  lastPhraseValue = 0;
+  lastTransposeValue = 0;
+  screen.cursorRow = 0;
+  screen.cursorCol = 0;
+  screen.topRow = 0;
+  screen.selectMode = 0;
+  screen.selectStartRow = 0;
+  screen.selectStartCol = 0;
+  screen.selectAnchorRow = 0;
+  screen.selectAnchorCol = 0;
   pChainRow = &screen.cursorRow;
+}
+
+static void setup(int input) {
   chain = chipnomadState->project.song[*pSongRow][*pSongTrack];
   screen.selectMode = 0;
 }
@@ -279,5 +292,6 @@ const AppScreen screenChain = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
-  .onInput = onInput
+  .onInput = onInput,
+  .init = init
 };

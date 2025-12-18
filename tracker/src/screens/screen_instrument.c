@@ -130,6 +130,12 @@ static ScreenData* instrumentScreen(void) {
   return data;
 }
 
+static void init(void) {
+  isCharEdit = 0;
+  screenInstrumentNone.cursorRow = 0;
+  screenInstrumentNone.cursorCol = 0;
+}
+
 static void setup(int input) {
   isCharEdit = 0;
   if (input != -1) {
@@ -376,5 +382,6 @@ const AppScreen screenInstrument = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
-  .onInput = onInput
+  .onInput = onInput,
+  .init = init
 };

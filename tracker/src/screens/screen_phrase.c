@@ -47,6 +47,23 @@ static ScreenData screen = {
   .onEdit = onEdit,
 };
 
+static void init(void) {
+  lastNote = 48;
+  lastInstrument = 0;
+  lastVolume = 15;
+  lastFX[0] = 0;
+  lastFX[1] = 0;
+  screen.cursorRow = 0;
+  screen.cursorCol = 0;
+  screen.topRow = 0;
+  screen.selectMode = 0;
+  screen.selectStartRow = 0;
+  screen.selectStartCol = 0;
+  screen.selectAnchorRow = 0;
+  screen.selectAnchorCol = 0;
+  isFxEdit = 0;
+}
+
 static void setup(int input) {
   phraseIdx = chipnomadState->project.chains[chipnomadState->project.song[*pSongRow][*pSongTrack]].rows[*pChainRow].phrase;
   phraseRows = chipnomadState->project.phrases[phraseIdx].rows;
@@ -455,5 +472,6 @@ const AppScreen screenPhrase = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
-  .onInput = onInput
+  .onInput = onInput,
+  .init = init
 };
