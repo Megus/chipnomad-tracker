@@ -134,32 +134,41 @@ static int calculateSemitonesFromOffset(int offset, int referenceNoteIdx, int* o
 }
 
 // Convert VTS pitch offsets to ChipNomad pitch commands for a table
-static void convertVTSPitchOffsets(Table* table, int* vtsOffsets, int rowCount, int referenceNoteIdx) {
+static void convertVTSPitchOffsets(Table* table, int* vtsOffsets, int* vtsOffsetTypes, int rowCount, int referenceNoteIdx) {
   for (int i = 0; i < rowCount; i++) {
     int currentVTSOffset = vtsOffsets[i];
     int prevOffset = (i > 0) ? vtsOffsets[i-1] : 0;
     int delta = currentVTSOffset - prevOffset;
 
-    if (abs(currentVTSOffset) < VTS_PITCH_THRESHOLD) {
+    if (vtsOffsetTypes[i] == 1) {
+      // Accumulating PIT offset (^pitch) - use PIT directly
       if (delta != 0) {
         int pitValue = clampToInt8(-delta);
         setPitEffect(&table->rows[i], pitValue);
       }
     } else {
-      int currentAccumulated = 0;
-      int semitones = calculateSemitonesFromOffset(currentVTSOffset, referenceNoteIdx, &currentAccumulated);
-      
-      int prevAccumulated = 0;
-      calculateSemitonesFromOffset(prevOffset, referenceNoteIdx, &prevAccumulated);
-      
-      table->rows[i].pitchOffset = (int8_t)clampToInt8(semitones);
-      
-      int semitoneDelta = currentAccumulated - prevAccumulated;
-      int pitDelta = delta - semitoneDelta;
-      
-      if (pitDelta != 0) {
-        int pitValue = clampToInt8(-pitDelta);
-        setPitEffect(&table->rows[i], pitValue);
+      // Regular semitone offset (+pitch) - convert to semitones + PIT
+      if (abs(currentVTSOffset) < VTS_PITCH_THRESHOLD) {
+        if (delta != 0) {
+          int pitValue = clampToInt8(-delta);
+          setPitEffect(&table->rows[i], pitValue);
+        }
+      } else {
+        int currentAccumulated = 0;
+        int semitones = calculateSemitonesFromOffset(currentVTSOffset, referenceNoteIdx, &currentAccumulated);
+
+        int prevAccumulated = 0;
+        calculateSemitonesFromOffset(prevOffset, referenceNoteIdx, &prevAccumulated);
+
+        table->rows[i].pitchOffset = (int8_t)clampToInt8(semitones);
+
+        int semitoneDelta = currentAccumulated - prevAccumulated;
+        int pitDelta = delta - semitoneDelta;
+
+        if (pitDelta != 0) {
+          int pitValue = clampToInt8(-pitDelta);
+          setPitEffect(&table->rows[i], pitValue);
+        }
       }
     }
   }
@@ -282,6 +291,7 @@ int instrumentLoadVTS(const char* path, int instrumentIdx) {
   int rowCount = 0;
   int loopRow = -1;
   int vtsOffsets[TABLE_ROW_COUNT] = {0};
+  int vtsOffsetTypes[TABLE_ROW_COUNT] = {0}; // 0 = semitone, 1 = accumulating PIT
 
   while (rowCount < TABLE_ROW_COUNT) {
     lpstr = fileReadString(fileId);
@@ -294,8 +304,15 @@ int instrumentLoadVTS(const char* path, int instrumentIdx) {
       loopRow = rowCount;
     }
 
-    if (lineLen >= VTS_COL_PITCH + 5 && (lpstr[VTS_COL_PITCH] == '+' || lpstr[VTS_COL_PITCH] == '-')) {
-      vtsOffsets[rowCount] = parseVTSOffset(&lpstr[VTS_COL_PITCH]);
+    if (lineLen >= VTS_COL_PITCH + 5) {
+      char pitchChar = lpstr[VTS_COL_PITCH];
+      if (pitchChar == '+' || pitchChar == '-') {
+        vtsOffsets[rowCount] = parseVTSOffset(&lpstr[VTS_COL_PITCH]);
+        vtsOffsetTypes[rowCount] = 0; // semitone offset
+      } else if (pitchChar == '^') {
+        vtsOffsets[rowCount] = parseVTSOffset(&lpstr[VTS_COL_PITCH]);
+        vtsOffsetTypes[rowCount] = 1; // accumulating PIT offset
+      }
     }
 
     parseVTSLine(lpstr, &table->rows[rowCount]);
@@ -304,7 +321,7 @@ int instrumentLoadVTS(const char* path, int instrumentIdx) {
 
   // Convert VTS pitch offsets using common function
   int referenceNoteIdx = findReferenceNote();
-  convertVTSPitchOffsets(table, vtsOffsets, rowCount, referenceNoteIdx);
+  convertVTSPitchOffsets(table, vtsOffsets, vtsOffsetTypes, rowCount, referenceNoteIdx);
 
   if (loopRow >= 0 && rowCount < TABLE_ROW_COUNT) {
     initTableRow(&table->rows[rowCount]);
@@ -343,6 +360,7 @@ int instrumentLoadVTSFromMemory(char** lines, int lineCount, int instrumentIdx, 
   int rowCount = 0;
   int loopRow = -1;
   int vtsOffsets[TABLE_ROW_COUNT] = {0};
+  int vtsOffsetTypes[TABLE_ROW_COUNT] = {0}; // 0 = semitone, 1 = accumulating PIT
 
   // Parse VTS lines
   for (int i = 0; i < lineCount && rowCount < TABLE_ROW_COUNT; i++) {
@@ -358,8 +376,15 @@ int instrumentLoadVTSFromMemory(char** lines, int lineCount, int instrumentIdx, 
     }
 
     // Parse pitch offset if present
-    if (lineLen >= VTS_COL_PITCH + 5 && (lpstr[VTS_COL_PITCH] == '+' || lpstr[VTS_COL_PITCH] == '-')) {
-      vtsOffsets[rowCount] = parseVTSOffset(&lpstr[VTS_COL_PITCH]);
+    if (lineLen >= VTS_COL_PITCH + 5) {
+      char pitchChar = lpstr[VTS_COL_PITCH];
+      if (pitchChar == '+' || pitchChar == '-') {
+        vtsOffsets[rowCount] = parseVTSOffset(&lpstr[VTS_COL_PITCH]);
+        vtsOffsetTypes[rowCount] = 0; // semitone offset
+      } else if (pitchChar == '^') {
+        vtsOffsets[rowCount] = parseVTSOffset(&lpstr[VTS_COL_PITCH]);
+        vtsOffsetTypes[rowCount] = 1; // accumulating PIT offset
+      }
     }
 
     parseVTSLine(lpstr, &table->rows[rowCount]);
@@ -368,7 +393,7 @@ int instrumentLoadVTSFromMemory(char** lines, int lineCount, int instrumentIdx, 
 
   // Convert VTS pitch offsets using common function
   int referenceNoteIdx = findReferenceNote();
-  convertVTSPitchOffsets(table, vtsOffsets, rowCount, referenceNoteIdx);
+  convertVTSPitchOffsets(table, vtsOffsets, vtsOffsetTypes, rowCount, referenceNoteIdx);
 
   if (loopRow >= 0 && rowCount < TABLE_ROW_COUNT) {
     initTableRow(&table->rows[rowCount]);
