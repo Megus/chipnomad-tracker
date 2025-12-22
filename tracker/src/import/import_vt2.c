@@ -9,6 +9,7 @@
 #include "import_vt2.h"
 #include "import_vts.h"
 #include "pt3_tables.h"
+#include "import_common.h"
 
 #define VT2_MAX_PATTERNS 256
 #define VT2_MAX_ORNAMENTS 32
@@ -28,22 +29,7 @@ typedef struct InstrumentCloneMap {
   int8_t clonedInstrumentIdx[VT2_MAX_SAMPLES][16];
 } InstrumentCloneMap;
 
-typedef struct {
-  Project* project;
-  int ornamentBaseIdx;
-  InstrumentCloneMap* cloneMap;
-  uint8_t currentInstrument[VT2_CHANNELS];
-  uint8_t currentOrnament[VT2_CHANNELS];
-  int needsInstrumentAfterOff[VT2_CHANNELS];
-  int isFirstPattern;
-  int startSpeedGroove;
-  int* lastUsedGroove;
-  int* realLastGroove;
-  int patIdx;
-} PatternConversionContext;
-
 static int importVT2Samples(const char* path, Project* project, int sampleCount);
-static void initEmptyPhraseRow(PhraseRow* row);
 static void trimLineEndings(char* line);
 static void createMultiPhraseChain(Project* project, int chainIdx, const int* phraseIndices, int phraseCount);
 static int getOrCreateSkipGroove(Project* project, uint8_t baseSpeed, int rowsToSkip);
@@ -96,24 +82,18 @@ typedef struct VT2Module {
 } VT2Module;
 
 static int parseHex(char c) {
-  if (c >= '0' && c <= '9') return c - '0';
-  if (c >= 'A' && c <= 'F') return c - 'A' + 10;
-  if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-  return 0;
+  return parseHexChar(c);
 }
 
 static int parseBase26(char c) {
-  if (c >= '0' && c <= '9') return c - '0';
-  if (c >= 'A' && c <= 'Z') return c - 'A' + 10;
-  if (c >= 'a' && c <= 'z') return c - 'a' + 10;
-  return 0;
+  return parseBase26Char(c);
 }
 
 static int getCurrentSpeed(Project* project, int* realLastGroove) {
-  int currentSpeed = 3; // default
+  int currentSpeed = DEFAULT_SPEED;
   if (*realLastGroove >= 0 && *realLastGroove < PROJECT_MAX_GROOVES) {
     currentSpeed = project->grooves[*realLastGroove].speed[0];
-    if (currentSpeed == EMPTY_VALUE_8) currentSpeed = 3;
+    if (currentSpeed == EMPTY_VALUE_8) currentSpeed = DEFAULT_SPEED;
   }
   return currentSpeed;
 }
@@ -157,15 +137,6 @@ static void trimLineEndings(char* line) {
   }
 }
 
-static void initEmptyPhraseRow(PhraseRow* row) {
-  row->note = EMPTY_VALUE_8;
-  row->instrument = EMPTY_VALUE_8;
-  row->volume = EMPTY_VALUE_8;
-  for (int fx = 0; fx < 3; fx++) {
-    row->fx[fx][0] = EMPTY_VALUE_8;
-    row->fx[fx][1] = 0;
-  }
-}
 
 static void createMultiPhraseChain(Project* project, int chainIdx, const int* phraseIndices, int phraseCount) {
   Chain* chain = &project->chains[chainIdx];
@@ -182,7 +153,7 @@ static void createMultiPhraseChain(Project* project, int chainIdx, const int* ph
 }
 
 static void setFxCommand(PhraseRow* phraseRow, int* fxSlot, uint8_t command, uint8_t param) {
-  if (*fxSlot < 3) {
+  if (*fxSlot < MAX_FX_SLOTS) {
     phraseRow->fx[*fxSlot][0] = command;
     phraseRow->fx[*fxSlot][1] = param;
     (*fxSlot)++;
@@ -190,15 +161,13 @@ static void setFxCommand(PhraseRow* phraseRow, int* fxSlot, uint8_t command, uin
 }
 
 static void setGgrCommand(PhraseRow* phraseRow, int* fxSlot, int grooveIdx) {
-  int replaced = 0;
-  for (int fx = 0; fx < 3; fx++) {
+  for (int fx = 0; fx < MAX_FX_SLOTS; fx++) {
     if (phraseRow->fx[fx][0] == fxGGR) {
       phraseRow->fx[fx][1] = (uint8_t)grooveIdx;
-      replaced = 1;
-      break;
+      return;
     }
   }
-  if (!replaced && *fxSlot < 3) {
+  if (*fxSlot < MAX_FX_SLOTS) {
     phraseRow->fx[*fxSlot][0] = fxGGR;
     phraseRow->fx[*fxSlot][1] = (uint8_t)grooveIdx;
     (*fxSlot)++;
@@ -206,25 +175,154 @@ static void setGgrCommand(PhraseRow* phraseRow, int* fxSlot, int grooveIdx) {
 }
 
 static void setEnvelopePeriodCommands(PhraseRow* phraseRow, int* fxSlot, uint16_t envelopePeriod) {
-  if (*fxSlot < 3) {
-    phraseRow->fx[*fxSlot][0] = fxEPL;
-    phraseRow->fx[*fxSlot][1] = envelopePeriod & 0xFF;
-    (*fxSlot)++;
+  if (*fxSlot >= MAX_FX_SLOTS) return;
+  
+  phraseRow->fx[*fxSlot][0] = fxEPL;
+  phraseRow->fx[*fxSlot][1] = envelopePeriod & 0xFF;
+  (*fxSlot)++;
 
-    uint8_t highByte = (envelopePeriod >> 8) & 0xFF;
-    if (highByte > 0 && *fxSlot < 3) {
-      phraseRow->fx[*fxSlot][0] = fxEPH;
-      phraseRow->fx[*fxSlot][1] = highByte;
-      (*fxSlot)++;
-    }
+  uint8_t highByte = (envelopePeriod >> 8) & 0xFF;
+  if (highByte > 0 && *fxSlot < MAX_FX_SLOTS) {
+    phraseRow->fx[*fxSlot][0] = fxEPH;
+    phraseRow->fx[*fxSlot][1] = highByte;
+    (*fxSlot)++;
   }
 }
+
+static int getOrCreateGroove(Project* project, uint8_t speed);
 
 static void getPhraseIndicesForPattern(int phraseNum, const int* phraseIndices, int* phraseA, int* phraseB, int* phraseC) {
   int baseIdx = phraseNum * VT2_CHANNELS;
   *phraseA = phraseIndices[baseIdx + 0];
   *phraseB = phraseIndices[baseIdx + 1];
   *phraseC = phraseIndices[baseIdx + 2];
+}
+
+static void updateChannelState(const VT2ChannelData* chData, uint8_t* currentInstrument, 
+                               uint8_t* currentOrnament, uint8_t* currentVolume, 
+                               int* needsInstrumentAfterOff) {
+  if (chData->instrument != 0xFF && chData->instrument > 0) {
+    *currentInstrument = chData->instrument;
+  }
+  
+  if (chData->ornament != 0xFF) {
+    *currentOrnament = chData->ornament;
+  } else if (chData->envelopeType == 0xF) {
+    *currentOrnament = 0;
+  }
+  
+  if (chData->volume != 0xFF) {
+    *currentVolume = chData->volume;
+  }
+  
+  if (chData->hasNote && chData->note == NOTE_OFF) {
+    *needsInstrumentAfterOff = 1;
+  }
+}
+
+static int getFinalInstrument(int baseInstrument, int envType, const InstrumentCloneMap* cloneMap) {
+  if (!cloneMap) return baseInstrument;
+  
+  int clonedIdx = cloneMap->clonedInstrumentIdx[baseInstrument + 1][envType];
+  return (clonedIdx >= 0) ? clonedIdx : baseInstrument;
+}
+
+static void processVT2Commands(Project* project, PhraseRow* phraseRow, int* fxSlot,
+                               const VT2ChannelData* chData, int* lastUsedGroove, 
+                               int* realLastGroove, int startSpeedGroove,
+                               int isFirstPattern, int phraseNum, int row) {
+  for (int cmdIdx = 0; cmdIdx < chData->commandCount && cmdIdx < 4; cmdIdx++) {
+    uint8_t cmd = chData->commands[cmdIdx][0];
+    uint8_t param = chData->commands[cmdIdx][1];
+
+    if (cmd == 0xB && param > 0) {
+      int grooveIdx = getOrCreateGroove(project, param);
+      if (grooveIdx >= 0) {
+        setGgrCommand(phraseRow, fxSlot, grooveIdx);
+        *lastUsedGroove = grooveIdx;
+        *realLastGroove = grooveIdx;
+      }
+    } else if ((cmd == 1 || cmd == 2 || cmd == 3) && param > 0) {
+      int delay = (param >> 8) & 0xFF;
+      int parameter = param & 0xFF;
+      int currentSpeed = getCurrentSpeed(project, realLastGroove);
+      int effectiveSpeed = (delay > 0) ? parameter / delay : parameter;
+      int slideValue = effectiveSpeed * currentSpeed;
+
+      if (cmd == 1) {
+        int8_t signedValue = (int8_t)(-slideValue & 0xFF);
+        setFxCommand(phraseRow, fxSlot, fxPBN, (uint8_t)signedValue);
+      } else if (cmd == 2) {
+        setFxCommand(phraseRow, fxSlot, fxPBN, (uint8_t)(slideValue & 0x7F));
+      } else if (cmd == 3) {
+        setFxCommand(phraseRow, fxSlot, fxPSL, (uint8_t)parameter);
+      }
+    }
+  }
+  
+  if (isFirstPattern && phraseNum == 0 && row == 0 && *lastUsedGroove < 0 && startSpeedGroove >= 0) {
+    setFxCommand(phraseRow, fxSlot, fxGGR, (uint8_t)startSpeedGroove);
+    *lastUsedGroove = startSpeedGroove;
+    *realLastGroove = startSpeedGroove;
+  }
+}
+
+static void processChannelRow(Project* project, PhraseRow* phraseRow, 
+                              const VT2ChannelData* chData, const VT2PatternRow* vt2Row,
+                              uint8_t* currentInstrument, uint8_t* currentOrnament, 
+                              uint8_t* currentVolume, int* needsInstrumentAfterOff,
+                              int ornamentBaseIdx, const InstrumentCloneMap* cloneMap,
+                              int isFirstPattern, int phraseNum, int row,
+                              int* lastUsedGroove, int* realLastGroove, int startSpeedGroove) {
+  initEmptyPhraseRow(phraseRow);
+  
+  phraseRow->note = chData->hasNote ? chData->note : EMPTY_VALUE_8;
+  
+  updateChannelState(chData, currentInstrument, currentOrnament, currentVolume, needsInstrumentAfterOff);
+  
+  if (chData->hasNote && chData->note != NOTE_OFF) {
+    if (*currentInstrument == 0) {
+      *currentInstrument = 1;
+    }
+    
+    int baseInstrument = *currentInstrument - 1;
+    int envType = (chData->envelopeType != 0xFF) ? chData->envelopeType : 0xF;
+    int finalInstrument = getFinalInstrument(baseInstrument, envType, cloneMap);
+    
+    phraseRow->instrument = finalInstrument;
+    phraseRow->volume = (*currentVolume == 0xFF) ? DEFAULT_VOLUME : *currentVolume;
+    *needsInstrumentAfterOff = 0;
+  } else {
+    phraseRow->instrument = EMPTY_VALUE_8;
+    phraseRow->volume = EMPTY_VALUE_8;
+  }
+  
+  int fxSlot = 0;
+  
+  if (chData->hasNote && *currentOrnament > 0) {
+    int ornTableIdx = ornamentBaseIdx + *currentOrnament - 1;
+    if (ornTableIdx < PROJECT_MAX_TABLES) {
+      setFxCommand(phraseRow, &fxSlot, fxTBX, (uint8_t)ornTableIdx);
+    }
+  }
+  
+  if (vt2Row->envelopePeriod != 0xFFFF) {
+    setEnvelopePeriodCommands(phraseRow, &fxSlot, vt2Row->envelopePeriod);
+  }
+
+  if (row == 0 && !(isFirstPattern && phraseNum == 0)) {
+    int grooveToSet = (*realLastGroove >= 0) ? *realLastGroove : 0;
+    setGgrCommand(phraseRow, &fxSlot, grooveToSet);
+  }
+
+  processVT2Commands(project, phraseRow, &fxSlot, chData, lastUsedGroove, 
+                     realLastGroove, startSpeedGroove, isFirstPattern, phraseNum, row);
+  
+  while (fxSlot < MAX_FX_SLOTS) {
+    phraseRow->fx[fxSlot][0] = EMPTY_VALUE_8;
+    phraseRow->fx[fxSlot][1] = 0;
+    fxSlot++;
+  }
 }
 
 
@@ -240,17 +338,17 @@ static void setupPitchTableFromVT2(Project* project, int noteTableIndex) {
   strncpy(project->pitchTable.name, PT3TableNames[noteTableIndex], PROJECT_PITCH_TABLE_TITLE_LENGTH);
   project->pitchTable.name[PROJECT_PITCH_TABLE_TITLE_LENGTH] = '\0';
 
-  project->pitchTable.octaveSize = 12;
-  project->pitchTable.length = 96;
+  project->pitchTable.octaveSize = OCTAVE_SIZE;
+  project->pitchTable.length = PT3_TABLE_NOTES;
 
-  for (int i = 0; i < 96; i++) {
+  for (int i = 0; i < PT3_TABLE_NOTES; i++) {
     project->pitchTable.values[i] = table[i] * 2;
   }
 
-  const char* noteNames[12] = {"C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-"};
-  for (int octave = 0; octave < 8; octave++) {
-    for (int note = 0; note < 12; note++) {
-      int index = octave * 12 + note;
+  const char* noteNames[NOTES_PER_OCTAVE] = {"C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-"};
+  for (int octave = 0; octave < PT3_TABLE_OCTAVES; octave++) {
+    for (int note = 0; note < NOTES_PER_OCTAVE; note++) {
+      int index = octave * NOTES_PER_OCTAVE + note;
       if (index < PROJECT_MAX_PITCHES) {
         snprintf(project->pitchTable.noteNames[index], 4, "%s%d", noteNames[note], octave);
       }
@@ -626,26 +724,15 @@ static int getOrCreateSkipGroove(Project* project, uint8_t baseSpeed, int rowsTo
   return -1;
 }
 
-// VT2 ornaments -> ChipNomad aux tables with semitone offsets + THO loop
 static void convertOrnamentToTable(const VT2Ornament* orn, Table* table, int ornIdx) {
-  for (int i = 0; i < 16; i++) {
-    table->rows[i].pitchFlag = 0;
-    table->rows[i].pitchOffset = 0;
-    table->rows[i].volume = EMPTY_VALUE_8;
-    for (int j = 0; j < 4; j++) {
-      table->rows[i].fx[j][0] = EMPTY_VALUE_8;
-      table->rows[i].fx[j][1] = 0;
-    }
-  }
+  initEmptyTable(table);
   
   if (orn->length == 0) return;
   
   int rowCount = (orn->length < 15) ? orn->length : 15;
   
   for (int i = 0; i < rowCount; i++) {
-    table->rows[i].pitchFlag = 0;
     table->rows[i].pitchOffset = orn->offsets[i];
-    table->rows[i].volume = EMPTY_VALUE_8;
   }
   
   if (rowCount < 16) {
@@ -659,6 +746,7 @@ static int convertPatternToPhrases(const VT2Pattern* pattern, Project* project,
                                      int ornamentBaseIdx, InstrumentCloneMap* cloneMap,
                                      uint8_t currentInstrument[VT2_CHANNELS],
                                      uint8_t currentOrnament[VT2_CHANNELS],
+                                     uint8_t currentVolume[VT2_CHANNELS],
                                      int needsInstrumentAfterOff[VT2_CHANNELS],
                                      int isFirstPattern, int startSpeedGroove,
                                      int* lastUsedGroove, int* realLastGroove, int patIdx) {
@@ -689,145 +777,18 @@ static int convertPatternToPhrases(const VT2Pattern* pattern, Project* project,
       &project->phrases[phraseC]
     };
     
-    int needsInstrumentSet[VT2_CHANNELS] = {0, 0, 0};
-    if (phraseNum > 0) {
-      for (int ch = 0; ch < VT2_CHANNELS; ch++) {
-        if (currentInstrument[ch] > 0 || needsInstrumentAfterOff[ch]) {
-          needsInstrumentSet[ch] = 1;
-        }
-      }
-    }
-    
     for (int row = 0; row < rowsInPhrase; row++) {
       const VT2PatternRow* vt2Row = &pattern->rows[startRow + row];
 
       for (int ch = 0; ch < VT2_CHANNELS; ch++) {
         PhraseRow* phraseRow = &phrases[ch]->rows[row];
         const VT2ChannelData* chData = &vt2Row->channels[ch];
-
-        if (row < rowsInPhrase) {
-          initEmptyPhraseRow(phraseRow);
-        }
-
         
-        if (chData->hasNote) {
-          phraseRow->note = chData->note;
-        } else {
-          phraseRow->note = EMPTY_VALUE_8;
-        }
-        
-        if (chData->instrument != 0xFF && chData->instrument > 0) {
-          currentInstrument[ch] = chData->instrument;
-        }
-        
-        if (chData->ornament != 0xFF) {
-          currentOrnament[ch] = chData->ornament;
-        } else if (chData->envelopeType == 0xF) {
-          currentOrnament[ch] = 0;
-        }
-        
-        if (chData->hasNote && chData->note == NOTE_OFF) {
-          needsInstrumentAfterOff[ch] = 1;
-        }
-        
-        if (chData->hasNote && chData->note != NOTE_OFF) {
-          if (currentInstrument[ch] == 0) {
-            currentInstrument[ch] = 1;
-          }
-          
-          int baseInstrument = currentInstrument[ch] - 1;
-          int finalInstrument = baseInstrument;
-          
-          int envType = (chData->envelopeType != 0xFF) ? chData->envelopeType : 0xF;
-          
-          if (cloneMap) {
-            int clonedIdx = cloneMap->clonedInstrumentIdx[currentInstrument[ch]][envType];
-            if (clonedIdx >= 0) {
-              finalInstrument = clonedIdx;
-            }
-          }
-          
-          phraseRow->instrument = finalInstrument;
-          needsInstrumentSet[ch] = 0;
-          needsInstrumentAfterOff[ch] = 0;
-        } else {
-          phraseRow->instrument = EMPTY_VALUE_8;
-        }
-        
-        if (chData->volume != 0xFF) {
-          phraseRow->volume = chData->volume;
-        } else {
-          phraseRow->volume = EMPTY_VALUE_8;
-        }
-        
-        int fxSlot = 0;
-        
-        if (chData->hasNote && currentOrnament[ch] > 0) {
-          int ornTableIdx = ornamentBaseIdx + currentOrnament[ch] - 1;
-          if (ornTableIdx < PROJECT_MAX_TABLES) {
-            setFxCommand(phraseRow, &fxSlot, fxTBX, (uint8_t)ornTableIdx);
-          }
-        }
-        
-        
-        if (vt2Row->envelopePeriod != 0xFFFF) {
-          setEnvelopePeriodCommands(phraseRow, &fxSlot, vt2Row->envelopePeriod);
-        }
-
-        // First row of each phrase (except first phrase of first pattern) should start with the real last used groove
-        // This ensures we reset from skip grooves. B commands will override this if present.
-        if (row == 0 && !(isFirstPattern && phraseNum == 0)) {
-          int grooveToSet = (*realLastGroove >= 0) ? *realLastGroove : 0;
-          setGgrCommand(phraseRow, &fxSlot, grooveToSet);
-        }
-
-        for (int cmdIdx = 0; cmdIdx < chData->commandCount && cmdIdx < 4; cmdIdx++) {
-          uint8_t cmd = chData->commands[cmdIdx][0];
-          uint8_t param = chData->commands[cmdIdx][1];
-
-          if (cmd == 0xB && param > 0) {
-            int grooveIdx = getOrCreateGroove(project, param);
-            if (grooveIdx >= 0) {
-              setGgrCommand(phraseRow, &fxSlot, grooveIdx);
-              *lastUsedGroove = grooveIdx;
-              *realLastGroove = grooveIdx;
-            }
-          } else if ((cmd == 1 || cmd == 2 || cmd == 3) && param > 0) {
-            int delay = (param >> 8) & 0xFF;
-            int parameter = param & 0xFF;
-
-            int currentSpeed = getCurrentSpeed(project, realLastGroove);
-
-            int effectiveSpeed = parameter;
-            if (delay > 0) {
-              effectiveSpeed = parameter / delay;
-            }
-            int slideValue = effectiveSpeed * currentSpeed;
-
-            if (cmd == 1) {
-              int8_t signedValue = (int8_t)(-slideValue & 0xFF);
-              setFxCommand(phraseRow, &fxSlot, fxPBN, (uint8_t)signedValue);
-            } else if (cmd == 2) {
-              setFxCommand(phraseRow, &fxSlot, fxPBN, (uint8_t)(slideValue & 0x7F));
-            } else if (cmd == 3) {
-              uint8_t portamentoValue = (uint8_t)parameter;
-              setFxCommand(phraseRow, &fxSlot, fxPSL, portamentoValue);
-            }
-          }
-        }
-        
-        
-        if (isFirstPattern && phraseNum == 0 && row == 0 && *lastUsedGroove < 0 && startSpeedGroove >= 0) {
-          setFxCommand(phraseRow, &fxSlot, fxGGR, (uint8_t)startSpeedGroove);
-          *lastUsedGroove = startSpeedGroove;
-          *realLastGroove = startSpeedGroove;
-        }
-        
-        while (fxSlot < 3) {
-          phraseRow->fx[fxSlot][0] = EMPTY_VALUE_8;
-          phraseRow->fx[fxSlot][1] = 0;
-          fxSlot++;
-        }
+        processChannelRow(project, phraseRow, chData, vt2Row,
+                         &currentInstrument[ch], &currentOrnament[ch], 
+                         &currentVolume[ch], &needsInstrumentAfterOff[ch],
+                         ornamentBaseIdx, cloneMap, isFirstPattern, phraseNum, row,
+                         lastUsedGroove, realLastGroove, startSpeedGroove);
       }
     }
     
@@ -859,7 +820,7 @@ static int convertPatternToPhrases(const VT2Pattern* pattern, Project* project,
 
         for (int ch = 0; ch < VT2_CHANNELS && !inserted; ch++) {
           PhraseRow* phraseRow = &phrases[ch]->rows[lastRow];
-          for (int fx = 0; fx < 3; fx++) {
+          for (int fx = 0; fx < MAX_FX_SLOTS; fx++) {
             if (phraseRow->fx[fx][0] == EMPTY_VALUE_8) {
               phraseRow->fx[fx][0] = fxGGR;
               phraseRow->fx[fx][1] = (uint8_t)skipGrooveIdx;
@@ -1088,6 +1049,7 @@ int projectLoadVT2(const char* path) {
   
   uint8_t globalCurrentInstrument[VT2_CHANNELS] = {0, 0, 0};
   uint8_t globalCurrentOrnament[VT2_CHANNELS] = {0, 0, 0};
+  uint8_t globalCurrentVolume[VT2_CHANNELS] = {DEFAULT_VOLUME, DEFAULT_VOLUME, DEFAULT_VOLUME};
   int globalNeedsInstrumentAfterOff[VT2_CHANNELS] = {0, 0, 0};
   
   int lastUsedGroove = -1;
@@ -1126,6 +1088,7 @@ int projectLoadVT2(const char* path) {
     int phrasesUsed = convertPatternToPhrases(pattern, project, phraseIndices, phrasesAllocated,
                                                ornamentBaseIdx, &cloneMap,
                                                globalCurrentInstrument, globalCurrentOrnament,
+                                               globalCurrentVolume,
                                                globalNeedsInstrumentAfterOff,
                                                isFirstPattern, startSpeedGroove, &lastUsedGroove, &realLastGroove, patIdx);
     
