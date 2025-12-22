@@ -290,11 +290,15 @@ static void processChannelRow(Project* project, PhraseRow* phraseRow,
     int finalInstrument = getFinalInstrument(baseInstrument, envType, cloneMap);
     
     phraseRow->instrument = finalInstrument;
-    phraseRow->volume = (*currentVolume == 0xFF) ? DEFAULT_VOLUME : *currentVolume;
+    phraseRow->volume = *currentVolume;
     *needsInstrumentAfterOff = 0;
   } else {
     phraseRow->instrument = EMPTY_VALUE_8;
-    phraseRow->volume = EMPTY_VALUE_8;
+    if (chData->volume != 0xFF) {
+      phraseRow->volume = chData->volume;
+    } else {
+      phraseRow->volume = EMPTY_VALUE_8;
+    }
   }
   
   int fxSlot = 0;
