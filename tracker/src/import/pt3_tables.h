@@ -12,4 +12,4 @@ extern const char* PT3TableNames[4];
 
 void loadPT3TablesFromCSV();
 
-#endif // PT3_TABLES_H
+#endif
