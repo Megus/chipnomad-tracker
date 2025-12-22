@@ -1,6 +1,6 @@
-#include <copy_paste.h>
-#include <screens.h>
-#include <project_utils.h>
+#include "copy_paste.h"
+#include "screens.h"
+#include "project_utils.h"
 #include <string.h>
 
 uint16_t cpBufSong[PROJECT_MAX_LENGTH][PROJECT_MAX_TRACKS];
@@ -24,6 +24,16 @@ static int cpBufTableRows = 0;
 static int cpBufTableStartCol;
 static int cpBufTableEndCol;
 static int cpBufInstrumentValid = 0;
+
+void resetCopyBuffers(void) {
+  cpBufGrooveLength = 0;
+  cpBufSongRows = 0;
+  cpBufSongCols = 0;
+  cpBufChainRows = 0;
+  cpBufPhraseRows = 0;
+  cpBufTableRows = 0;
+  cpBufInstrumentValid = 0;
+}
 
 void copyGroove(int grooveIdx, int startRow, int endRow, int isCut) {
   cpBufGrooveLength = endRow - startRow + 1;

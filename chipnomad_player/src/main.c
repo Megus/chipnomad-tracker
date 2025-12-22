@@ -4,7 +4,7 @@
 #include <SDL2/SDL.h>
 
 // ChipNomad library includes
-#include <chipnomad_lib.h>
+#include "chipnomad_lib.h"
 
 // Local modules
 #include "audio.h"

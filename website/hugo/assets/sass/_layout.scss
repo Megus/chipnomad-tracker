@@ -1,0 +1,223 @@
+/**
+ * Site header
+ */
+ .site-header {
+  height: $spacing-unit * 2.5;
+  // Positioning context for the mobile navigation icon
+  position: absolute;
+  width: 100%;
+  background-color: rgba(0,0,0,0.2);
+  z-index: 100;
+}
+
+.site-header-wrapper {
+  max-width: -webkit-calc(#{$home-width} - (#{$spacing-unit} * 2));
+  max-width:         calc(#{$home-width} - (#{$spacing-unit} * 2));
+  margin-right: auto;
+  margin-left: auto;
+  padding-right: $spacing-unit;
+  padding-left: $spacing-unit;
+  @extend %clearfix;
+
+  @include media-query($on-laptop) {
+    max-width: -webkit-calc(#{$home-width} - (#{$spacing-unit}));
+    max-width:         calc(#{$home-width} - (#{$spacing-unit}));
+    padding-right: $spacing-unit / 2;
+    padding-left: $spacing-unit / 2;
+  }
+}
+
+.site-title {
+  @include relative-font-size(1.5);
+  font-weight: 300;
+  line-height: $base-line-height * $base-font-size * 2.5;
+  letter-spacing: -1px;
+  margin-bottom: 0;
+  float: left;
+
+  &,
+  &:visited {
+    color: $grey-color-light;
+  }
+}
+
+.site-logo {
+  float: left;
+  width: 60px;
+  height: 60px;
+  margin: 8px 8px 4px 0px;
+  vertical-align: middle;
+}
+
+.site-nav {
+  float: right;
+  line-height: $base-line-height * $base-font-size * 2.5;
+
+  .nav-trigger {
+    display: none;
+  }
+
+  .menu-icon {
+    display: none;
+  }
+
+  .page-link {
+    color: $grey-color-light;
+    line-height: $base-line-height;
+    text-decoration: none;
+
+    // Gaps between nav items, but not on the last one
+    &:not(:last-child) {
+      margin-right: 20px;
+    }
+  }
+
+  @include media-query($on-palm) {
+    position: absolute;
+    top: 16px;
+    right: $spacing-unit / 2;
+    border-radius: 5px;
+    text-align: right;
+
+    label[for="nav-trigger"] {
+      display: block;
+      float: right;
+      width: 36px;
+      height: 36px;
+      z-index: 2;
+      cursor: pointer;
+    }
+
+    .menu-icon {
+      display: block;
+      float: right;
+      width: 36px;
+      height: 26px;
+      line-height: 0;
+      padding-top: 10px;
+      text-align: center;
+
+      > svg {
+        fill: $grey-color-light;
+      }
+    }
+
+    input ~ .trigger {
+      clear: both;
+      display: none;
+    }
+
+    input:checked ~ .trigger {
+      display: block;
+      padding-bottom: 5px;
+    }
+
+    .page-link {
+      display: block;
+      padding: 5px 10px;
+
+      &:not(:last-child) {
+        margin-right: 0;
+      }
+      margin-left: 20px;
+    }
+  }
+}
+
+.site-nav:has(input:checked) {
+  background-color: $background-dark;
+  box-shadow: 0 0 10px #000;
+}
+
+/**
+ * Site footer
+ */
+.site-footer {
+  padding-top: $spacing-unit;
+  padding-bottom: $spacing-unit;
+}
+
+.footer-wrapper {
+  @include relative-font-size(0.9);
+  color: $grey-color;
+  text-align: center;
+}
+
+.footer-row {
+  margin-bottom: $spacing-unit;
+}
+
+.social-buttons {
+  margin-top: $spacing-unit;
+  text-align: center;
+}
+
+
+
+/**
+ * Page content
+ */
+.page-content {
+  margin-top: $spacing-unit * 2.5;
+  padding: 0 0 $spacing-unit 0;
+  flex: 1;
+}
+
+.page-heading {
+  @include relative-font-size(2);
+}
+
+.post-list-heading {
+  @include relative-font-size(1.75);
+}
+
+.round-photo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: $spacing-unit;
+  margin-bottom: $spacing-unit;
+}
+
+.round-photo img {
+  border-radius: 50%;
+  max-width: 400px;
+  box-shadow: 0 0 10px rgb(0,0,0);
+}
+
+@include media-query($on-palm) {
+  .round-photo img {
+    width: 85%;
+  }
+}
+
+
+
+.youtube {
+  position: relative;
+  padding-bottom: 56.25%;
+  margin-bottom: $spacing-unit;
+  height: 0;
+  overflow: hidden;
+}
+
+.youtube iframe {
+  position: absolute; width: 100%; height: 100%; top: 0; left: 0; border: 0;
+}
+
+/**
+ * Page background image (for About)
+ */
+.about-bg {
+  transform: translateZ(0);
+  position: absolute;
+  top: 0;
+  bottom: -$spacing-unit * 2;
+  left: 0;
+  right: 0;
+  z-index: -1;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  opacity: 0.2;
+}

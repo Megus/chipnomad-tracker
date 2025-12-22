@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "project.h"
+#include <math.h>
 
 static const char hexBytes[256][3] = {
   "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0A", "0B", "0C", "0D", "0E", "0F",
@@ -51,4 +52,16 @@ int min(int a, int b) {
 
 int max(int a, int b) {
   return a > b ? a : b;
+}
+
+// Convert cents value to frequency in Hz
+float centsToFrequency(int cents) {
+  // Clamp to MIDI range: 0-127 * 100 cents = 0-12700 cents
+  if (cents < 0) cents = 0;
+  if (cents > 12700) cents = 12700;
+  
+  // A4 = 440 Hz = MIDI note 69 = 6900 cents
+  // Formula: freq = 440 * 2^((cents - 6900) / 1200)
+  float semitones = (cents - 6900) / 100.0f;
+  return 440.0f * powf(2.0f, semitones / 12.0f);
 }

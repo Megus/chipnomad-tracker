@@ -37,12 +37,12 @@ APP := ChipNomad
 
 .PHONY: RG35xx-deploy
 RG35xx-deploy: RG35xx .RG35xx-sh
-	mkdir -p $(BUILD)/deploy/$(APP) releases
+	mkdir -p $(BUILD)/deploy/$(APP) ../../releases
 	cp $(BUILD)/chipnomad.rg35xx $(BUILD)/deploy/$(APP)
 	cp $(BUILD)/launcher.sh $(BUILD)/deploy/$(APP).sh
 	cp packaging/rg35xx/j2k.so $(BUILD)/deploy/$(APP)
 	cp -r packaging/common/* $(BUILD)/deploy/$(APP)
 	$(eval VERSION := $(shell grep 'appVersion.*=' src/version.c | cut -d'"' -f2))
 	cd $(BUILD)/deploy && zip -r $(APP)-$$(date +%Y-%m-%d)-$(VERSION)-RG35xx.zip $(APP) $(APP).sh
-	mv $(BUILD)/deploy/$(APP)-*-RG35xx.zip releases/
+	mv $(BUILD)/deploy/$(APP)-*-RG35xx.zip ../../releases/
 	rm -rf $(BUILD)/deploy

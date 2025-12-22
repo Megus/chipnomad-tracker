@@ -8,7 +8,7 @@ FXName fxNames[256];
 
 // FX Names (in the order as they appear in FX select screen)
 FXName fxNamesCommon[] = {
-  {fxARP, "ARP"}, {fxARC, "ARC"}, {fxPVB, "PVB"}, {fxPBN, "PBN"}, {fxPSL, "PSL"}, {fxPIT, "PIT"},
+  {fxARP, "ARP"}, {fxARC, "ARC"}, {fxPVB, "PVB"}, {fxPBN, "PBN"}, {fxPSL, "PSL"}, {fxPIT, "PIT"}, {fxPRD, "PRD"},
   {fxVOL, "VOL"}, {fxRET, "RET"}, {fxDEL, "DEL"}, {fxOFF, "OFF"}, {fxKIL, "KIL"},
   {fxTIC, "TIC"}, {fxTBL, "TBL"}, {fxTBX, "TBX"}, {fxTHO, "THO"}, {fxTXH, "TXH"},
   {fxGRV, "GRV"}, {fxGGR, "GGR"}, {fxHOP, "HOP"},
@@ -45,6 +45,7 @@ void projectInit(Project* p) {
   // Title
   strcpy(p->title, "");
   strcpy(p->author, "");
+  p->linearPitch = 0;
 
   // Clean song structure
   for (int c = 0; c < PROJECT_MAX_LENGTH; c++) {
@@ -449,7 +450,16 @@ static int projectLoadInternal(int fileId, Project* project) {
 
   READ_STRING; if (sscanf(lpstr, "- Frame rate: %f", &p.tickRate) != 1) return 1;
   READ_STRING; if (sscanf(lpstr, "- Chips count: %d", &p.chipsCount) != 1) return 1;
-  READ_STRING; if (sscanf(lpstr, "- Chip type: %s", buf) != 1) return 1;
+
+  // Try to read linear pitch (optional for backwards compatibility)
+  READ_STRING;
+  int tempLinearPitch;
+  if (sscanf(lpstr, "- Linear pitch: %d", &tempLinearPitch) == 1) {
+    p.linearPitch = (uint8_t)tempLinearPitch;
+    READ_STRING; // Read next line for chip type
+  }
+  // If linear pitch not found, lpstr already contains the chip type line
+  if (sscanf(lpstr, "- Chip type: %s", buf) != 1) return 1;
 
   int found = 0;
   for (int c = 0; c < chipTotalCount; c++) {
@@ -706,6 +716,7 @@ static int projectSaveInternal(int fileId, Project* project) {
 
   filePrintf(fileId, "- Frame rate: %f\n", project->tickRate);
   filePrintf(fileId, "- Chips count: %d\n", project->chipsCount);
+  filePrintf(fileId, "- Linear pitch: %d\n", project->linearPitch);
   filePrintf(fileId, "- Chip type: %s\n", chipNames[project->chipType]);
 
   switch (project->chipType) {

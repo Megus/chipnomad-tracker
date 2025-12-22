@@ -1,0 +1,56 @@
+@charset "utf-8";
+
+// Define defaults for each variable.
+
+$base-font-family: 'PT Sans', sans-serif;
+$header-font-family: 'PT Sans Caption', sans-serif;
+$base-font-size:   18px !default;
+$base-font-weight: 400 !default;
+$small-font-size:  $base-font-size * 0.875 !default;
+$base-line-height: 1.5 !default;
+
+$spacing-unit:     30px !default;
+
+$text-color:       #b7d3d9 !default;
+$background-color: #051326 !default;
+$brand-color:      #a7c3c9 !default;
+
+$background-dark:   darken($background-color, 2%) !default;
+
+$grey-color:       #a2a2b2 !default;
+$grey-color-light: lighten($grey-color, 50%) !default;
+$grey-color-dark:  darken($grey-color, 25%) !default;
+
+$table-text-align: left !default;
+
+// Width of the content area
+$content-width:    800px !default;
+$home-width:       1024px !default;
+
+$on-palm:          600px !default;
+$on-laptop:        800px !default;
+
+// Use media queries like this:
+// @include media-query($on-palm) {
+//   .wrapper {
+//     padding-right: $spacing-unit / 2;
+//     padding-left: $spacing-unit / 2;
+//   }
+// }
+@mixin media-query($device) {
+  @media screen and (max-width: $device) {
+    @content;
+  }
+}
+
+@mixin relative-font-size($ratio) {
+  font-size: $base-font-size * $ratio;
+}
+
+// Import partials.
+@import
+  "base",
+  "chipnomad",
+  "layout",
+  "home"
+;

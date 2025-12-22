@@ -4,8 +4,8 @@
 #include <SDL2/SDL.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
-#include <project.h>
-#include <playback.h>
+#include "project.h"
+#include "playback.h"
 #include "config.h"
 
 typedef struct VisualState {

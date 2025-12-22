@@ -1,4 +1,4 @@
-#include <corelib_audio.h>
+#include "corelib_audio.h"
 #include <SDL/SDL.h>
 
 static void sdlAudioCallback(void* userdata, uint8_t* buffer, int bufferBytes) {

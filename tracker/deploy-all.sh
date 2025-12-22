@@ -38,5 +38,5 @@ make RG35xx-deploy
 echo ""
 echo "=========================================="
 echo "All platform releases completed!"
-echo "Check the releases/ directory for packages."
+echo "Check the ../../releases/ directory for packages."
 echo "=========================================="

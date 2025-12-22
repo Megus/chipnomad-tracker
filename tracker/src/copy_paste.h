@@ -1,4 +1,4 @@
-#include <chipnomad_lib.h>
+#include "chipnomad_lib.h"
 #include "screens/screens.h"
 
 // Groove copy/paste
@@ -42,3 +42,6 @@ int switchTableSelectionMode(ScreenData* screen);
 int switchChainSelectionMode(ScreenData* screen);
 int switchGrooveSelectionMode(ScreenData* screen);
 int switchSongSelectionMode(ScreenData* screen);
+
+// Copy buffer management
+void resetCopyBuffers(void);

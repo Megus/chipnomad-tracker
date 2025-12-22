@@ -5,5 +5,8 @@ autosave.cnm
 devfile.yaml
 releases
 settings.txt
-font_preview.png
-generate
+/font-generator/font_preview.png
+/font-generator/generate
+/website/hugo/public/
+/website/hugo/resources/_gen/
+.amazonq

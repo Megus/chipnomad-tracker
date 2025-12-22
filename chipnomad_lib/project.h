@@ -31,6 +31,7 @@ enum FX {
   fxPBN, // Pitch bend
   fxPSL, // Pitch slide (portamento)
   fxPIT, // Pitch offset
+  fxPRD, // Period offset
   fxVOL, // Volume (relative)
   fxRET, // Retrigger
   fxDEL, // Delay
@@ -185,6 +186,7 @@ typedef struct Project {
   enum ChipType chipType;
   ChipSetup chipSetup;
   int chipsCount;
+  uint8_t linearPitch;
 
   int tracksCount;
 

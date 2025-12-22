@@ -1,10 +1,10 @@
-#include <screens.h>
-#include <common.h>
-#include <corelib_gfx.h>
-#include <utils.h>
-#include <chipnomad_lib.h>
-#include <copy_paste.h>
-#include <help.h>
+#include "screens.h"
+#include "common.h"
+#include "corelib_gfx.h"
+#include "utils.h"
+#include "chipnomad_lib.h"
+#include "copy_paste.h"
+#include "help.h"
 
 static int tableIdx = 0;
 static TableRow *tableRows = NULL;
@@ -44,6 +44,22 @@ static ScreenData screen = {
   .drawField = drawField,
   .onEdit = onEdit,
 };
+
+static void init(void) {
+  lastPitchValue = 0;
+  lastVolume = 15;
+  lastFX[0] = 0;
+  lastFX[1] = 0;
+  screen.cursorRow = 0;
+  screen.cursorCol = 0;
+  screen.topRow = 0;
+  screen.selectMode = 0;
+  screen.selectStartRow = 0;
+  screen.selectStartCol = 0;
+  screen.selectAnchorRow = 0;
+  screen.selectAnchorCol = 0;
+  isFxEdit = 0;
+}
 
 static void setup(int input) {
   isFxEdit = 0;
@@ -365,5 +381,6 @@ const AppScreen screenTable = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
-  .onInput = onInput
+  .onInput = onInput,
+  .init = init
 };

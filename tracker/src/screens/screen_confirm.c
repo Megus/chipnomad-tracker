@@ -1,6 +1,6 @@
-#include <screens.h>
+#include "screens.h"
 #include <string.h>
-#include <corelib_gfx.h>
+#include "corelib_gfx.h"
 
 static char confirmMessage[128];
 static int selectedOption = 0; // 0 = OK, 1 = Cancel

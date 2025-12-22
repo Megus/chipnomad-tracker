@@ -1,9 +1,9 @@
-#include <screens.h>
-#include <common.h>
-#include <corelib_gfx.h>
-#include <utils.h>
-#include <chipnomad_lib.h>
-#include <copy_paste.h>
+#include "screens.h"
+#include "common.h"
+#include "corelib_gfx.h"
+#include "utils.h"
+#include "chipnomad_lib.h"
+#include "copy_paste.h"
 
 static int groove = 0;
 static uint8_t lastValue = 0;
@@ -36,6 +36,18 @@ static ScreenData screen = {
   .drawField = drawField,
   .onEdit = onEdit,
 };
+
+static void init(void) {
+  lastValue = 0;
+  screen.cursorRow = 0;
+  screen.cursorCol = 0;
+  screen.topRow = 0;
+  screen.selectMode = 0;
+  screen.selectStartRow = 0;
+  screen.selectStartCol = 0;
+  screen.selectAnchorRow = 0;
+  screen.selectAnchorCol = 0;
+}
 
 static void setup(int input) {
   groove = input;
@@ -169,5 +181,6 @@ const AppScreen screenGroove = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
-  .onInput = onInput
+  .onInput = onInput,
+  .init = init
 };

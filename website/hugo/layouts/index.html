@@ -1,0 +1,32 @@
+{{ define "main" }}
+  <main class="page-content" aria-role="main">
+    <div class="home">
+      <div class="chipnomad-hero">
+        <div class="img-shadow">
+          <img src="/img/chipnomad/chipnomad-wordmark-white.png" alt="ChipNomad" />
+        </div>
+      </div>
+
+      {{ .Content }}
+
+      <div class="home-social-links">
+        <h2>Join the Community</h2>
+        <a href="https://discord.gg/PJarAn2QCW">
+          <div class="home-social-bg" style="background-image: url('/img/social-icons/discord.svg');"></div>
+          <img src="/img/social-icons/discord.svg" alt="Discord" />
+          <span>Discord</span>
+        </a>
+        <a href="https://www.youtube.com/@chipnomad-tracker">
+          <div class="home-social-bg" style="background-image: url('/img/social-icons/youtube.svg');"></div>
+          <img src="/img/social-icons/youtube.svg" alt="YouTube" />
+          <span>YouTube</span>
+        </a>
+        <a href="https://github.com/Megus/chipnomad-tracker">
+          <div class="home-social-bg" style="background-image: url('/img/social-icons/github.svg');"></div>
+          <img src="/img/social-icons/github.svg" alt="GitHub" />
+          <span>GitHub</span>
+        </a>
+      </div>
+    </div>
+  </main>
+{{ end }}

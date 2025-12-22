@@ -1,12 +1,12 @@
-#include <screens.h>
-#include <screen_settings.h>
-#include <common.h>
-#include <corelib_gfx.h>
-#include <utils.h>
-#include <chipnomad_lib.h>
-#include <project_utils.h>
+#include "screens.h"
+#include "screen_settings.h"
+#include "common.h"
+#include "corelib_gfx.h"
+#include "utils.h"
+#include "chipnomad_lib.h"
+#include "project_utils.h"
 
-#include <copy_paste.h>
+#include "copy_paste.h"
 #include <string.h>
 
 // Screen state variables
@@ -41,17 +41,22 @@ static ScreenData screen = {
   .onEdit = onEdit,
 };
 
-void setup(int input) {
+static void init(void) {
+  lastChainValue = 0;
+  screen.cursorRow = 0;
+  screen.cursorCol = 0;
+  screen.topRow = 0;
+  screen.selectMode = 0;
+  screen.selectStartRow = 0;
+  screen.selectStartCol = 0;
+  screen.selectAnchorRow = 0;
+  screen.selectAnchorCol = 0;
   pSongRow = &screen.cursorRow;
   pSongTrack = &screen.cursorCol;
-  screen.selectMode = 0;
+}
 
-  if (input == 0x1234) { // Just a random value for now
-    screen.cursorRow = 0;
-    screen.cursorCol = 0;
-    screen.topRow = 0;
-    lastChainValue = 0;
-  }
+static void setup(int input) {
+  screen.selectMode = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -298,5 +303,6 @@ const AppScreen screenSong = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
-  .onInput = onInput
+  .onInput = onInput,
+  .init = init
 };

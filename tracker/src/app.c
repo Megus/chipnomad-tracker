@@ -1,14 +1,11 @@
 #include <string.h>
-#include <corelib_gfx.h>
-#include <common.h>
-#include <audio_manager.h>
-#include <app.h>
-#include <screens.h>
-#include <chipnomad_lib.h>
-#include <project_utils.h>
-
-
-#define TRACK_WARNING_COOLDOWN_FRAMES 5
+#include "corelib_gfx.h"
+#include "common.h"
+#include "audio_manager.h"
+#include "app.h"
+#include "screens.h"
+#include "chipnomad_lib.h"
+#include "project_utils.h"
 
 // Input handling vars:
 
@@ -18,8 +15,6 @@ static int pressedButtons;
 static int editDoubleTapCount;
 /** Frame counter for key repeats */
 static int keyRepeatCount;
-
-
 
 /**
 * @brief Handle play/stop key commands
@@ -129,6 +124,9 @@ void appSetup(void) {
     projectInitAY(&chipnomadState->project);
   }
 
+  // Initialize all screen states and pointers
+  screensInitAll();
+
   // Copy project to ChipNomadState and reinitialize playback
   // Project is already initialized in chipnomadState
   playbackInit(&chipnomadState->playbackState, &chipnomadState->project);
@@ -166,8 +164,6 @@ void appDraw(void) {
   screenDraw();
 
   if (!chipnomadState) return;
-
-
 
   // Tracks
   char digit[2] = "0";

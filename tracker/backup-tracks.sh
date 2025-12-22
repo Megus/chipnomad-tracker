@@ -3,7 +3,7 @@
 # Sample bash script for convenient backup of tracks via SFTP
 
 # Configuration variables
-BACKUP_DEST="../../backups/tracks"
+BACKUP_DEST="../../tracks/backups"
 REMOTE_SERVER="sftp://muos@10.0.0.219:2022"
 REMOTE_PATH="/SD2 (sdcard)/chiptune"
 PASSWORD="muos"

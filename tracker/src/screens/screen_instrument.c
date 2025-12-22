@@ -1,14 +1,14 @@
-#include <screens.h>
-#include <common.h>
-#include <corelib_gfx.h>
-#include <corelib/corelib_file.h>
-#include <utils.h>
-#include <chipnomad_lib.h>
-#include <project_utils.h>
-#include <screen_instrument.h>
-#include <copy_paste.h>
-#include <file_browser.h>
-#include <import_vts.h>
+#include "screens.h"
+#include "common.h"
+#include "corelib_gfx.h"
+#include "corelib/corelib_file.h"
+#include "utils.h"
+#include "chipnomad_lib.h"
+#include "project_utils.h"
+#include "screen_instrument.h"
+#include "copy_paste.h"
+#include "file_browser.h"
+#include "import_vts.h"
 #include <string.h>
 #include <strings.h>
 
@@ -128,6 +128,12 @@ static ScreenData* instrumentScreen(void) {
   data->drawColHeader = drawColHeader;
 
   return data;
+}
+
+static void init(void) {
+  isCharEdit = 0;
+  screenInstrumentNone.cursorRow = 0;
+  screenInstrumentNone.cursorCol = 0;
 }
 
 static void setup(int input) {
@@ -376,5 +382,6 @@ const AppScreen screenInstrument = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
-  .onInput = onInput
+  .onInput = onInput,
+  .init = init
 };

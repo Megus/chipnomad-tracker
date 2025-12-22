@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <corelib_mainloop.h>
-#include <chipnomad_lib.h>
+#include "corelib_mainloop.h"
+#include "chipnomad_lib.h"
 
 #define AUTOSAVE_FILENAME "autosave.cnm"
 #define FILENAME_LENGTH (24)

@@ -19,7 +19,7 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>LSMinimumSystemVersion</key>
-	<string>10.15</string>
+	<string>11.0</string>
 	<key>CFBundleIconFile</key>
 	<string>ChipNomad</string>
 	<key>NSHighResolutionCapable</key>
