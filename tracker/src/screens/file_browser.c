@@ -281,6 +281,7 @@ void fileBrowserDraw(void) {
     int itemIndex = topIndex + i;
     int y = 3 + i;
 
+    // Draw cursor
     if (itemIndex == selectedIndex) {
       gfxSetFgColor(appSettings.colorScheme.textValue);
       gfxPrint(0, y, ">");
@@ -290,6 +291,7 @@ void fileBrowserDraw(void) {
     }
 
     if (isFolderMode && itemIndex == 0) {
+      // Draw "Save to" option
       static char saveText[40];
       static char folderName[256];
 
@@ -320,6 +322,7 @@ void fileBrowserDraw(void) {
       gfxPrint(2, y, saveText);
 
     } else if (isFolderMode && itemIndex == 1) {
+      // Draw "Create Folder" option
       if (itemIndex == selectedIndex) {
         gfxSetFgColor(appSettings.colorScheme.textValue);
       } else {
@@ -328,6 +331,7 @@ void fileBrowserDraw(void) {
       gfxPrint(2, y, "Create Folder");
 
     } else {
+      // Draw file entry
       int entryIdx = isFolderMode ? itemIndex - 2 : itemIndex;
       if (entryIdx < 0 || entryIdx >= entryCount) continue;
 
@@ -355,12 +359,13 @@ void fileBrowserDraw(void) {
 
 int fileBrowserInput(int keys, int isDoubleTap) {
   int maxIndex = entryCount - 1;
-  if (isFolderMode) maxIndex += 2;
+  if (isFolderMode) maxIndex += 2; // Add 2 for "Save to" and "Create Folder" options
 
   if (keys == keyUp) {
     if (selectedIndex > 0) {
       selectedIndex--;
     } else {
+      // Loop to bottom
       selectedIndex = maxIndex;
     }
     if (selectedIndex < topIndex) {
@@ -374,6 +379,7 @@ int fileBrowserInput(int keys, int isDoubleTap) {
     if (selectedIndex < maxIndex) {
       selectedIndex++;
     } else {
+      // Loop to top
       selectedIndex = 0;
       topIndex = 0;
     }
@@ -383,6 +389,7 @@ int fileBrowserInput(int keys, int isDoubleTap) {
     resetScrollStateOnSelectionChange();
     return 1;
   } else if (keys == keyLeft) {
+    // Page up
     selectedIndex -= VISIBLE_ENTRIES;
     if (selectedIndex < 0) selectedIndex = 0;
     if (selectedIndex < topIndex) {
@@ -391,6 +398,7 @@ int fileBrowserInput(int keys, int isDoubleTap) {
     resetScrollStateOnSelectionChange();
     return 1;
   } else if (keys == keyRight) {
+    // Page down
     selectedIndex += VISIBLE_ENTRIES;
     if (selectedIndex > maxIndex) selectedIndex = maxIndex;
     if (selectedIndex >= topIndex + VISIBLE_ENTRIES) {
