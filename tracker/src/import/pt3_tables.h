@@ -10,6 +10,4 @@ extern uint16_t PT3ToneTable_3[96];
 extern const uint16_t* PT3ToneTables[4];
 extern const char* PT3TableNames[4];
 
-void loadPT3TablesFromCSV();
-
 #endif

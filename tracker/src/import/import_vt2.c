@@ -335,8 +335,6 @@ static void setupPitchTableFromVT2(Project* project, int noteTableIndex) {
     noteTableIndex = 2;
   }
 
-  loadPT3TablesFromCSV();
-
   const uint16_t* table = PT3ToneTables[noteTableIndex];
 
   strncpy(project->pitchTable.name, PT3TableNames[noteTableIndex], PROJECT_PITCH_TABLE_TITLE_LENGTH);
