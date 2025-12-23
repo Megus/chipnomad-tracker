@@ -231,5 +231,13 @@ char* noteName(Project* p, uint8_t note);
 int projectGetChipTracks(Project* p, int chipIndex);
 // Get total number of tracks for the project
 int projectGetTotalTracks(Project* p);
+// Clear a single phrase with proper initialization
+void phraseClear(Phrase* phrase);
+// Clear a single chain with proper initialization
+void chainClear(Chain* chain);
+// Clear a single instrument with proper initialization
+void instrumentClear(Instrument* instrument);
+// Clear a single table with proper initialization
+void tableClear(Table* table);
 
 #endif

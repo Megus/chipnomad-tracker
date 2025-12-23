@@ -139,6 +139,16 @@ static int phraseIsUsedInChains(Project* project, int phraseIdx) {
   return 0;
 }
 
+// Check if instrument is used in any phrase
+static int instrumentIsUsedInPhrases(Project* project, int instrumentIdx) {
+  for (int p = 0; p < PROJECT_MAX_PHRASES; p++) {
+    for (int row = 0; row < 16; row++) {
+      if (project->phrases[p].rows[row].instrument == instrumentIdx) return 1;
+    }
+  }
+  return 0;
+}
+
 // Find empty chain slot (empty and not used in project)
 int findEmptyChain(Project* project, int start) {
   for (int i = start; i < PROJECT_MAX_CHAINS; i++) {
@@ -162,3 +172,208 @@ int findEmptyInstrument(Project* project, int start) {
   }
   return EMPTY_VALUE_8;
 }
+
+// Cleanup unused phrases - returns count of cleaned phrases
+int cleanupUnusedPhrases(Project* project) {
+  int cleanedCount = 0;
+  
+  for (int i = 0; i < PROJECT_MAX_PHRASES; i++) {
+    // Skip if phrase is already empty
+    if (phraseIsEmpty(project, i)) continue;
+    
+    // Check if phrase is used in any chain
+    if (!phraseIsUsedInChains(project, i)) {
+      // Clear the unused phrase properly
+      phraseClear(&project->phrases[i]);
+      cleanedCount++;
+    }
+  }
+  
+  return cleanedCount;
+}
+
+// Cleanup unused chains - returns count of cleaned chains
+int cleanupUnusedChains(Project* project) {
+  int cleanedCount = 0;
+  
+  for (int i = 0; i < PROJECT_MAX_CHAINS; i++) {
+    // Skip if chain is already empty
+    if (chainIsEmpty(project, i)) continue;
+    
+    // Check if chain is used in the song
+    if (!chainIsUsedInSong(project, i)) {
+      // Clear the unused chain properly
+      chainClear(&project->chains[i]);
+      cleanedCount++;
+    }
+  }
+  
+  return cleanedCount;
+}
+
+// Cleanup unused instruments - returns count of cleaned instruments
+int cleanupUnusedInstruments(Project* project) {
+  int cleanedCount = 0;
+  
+  for (int i = 0; i < PROJECT_MAX_INSTRUMENTS; i++) {
+    // Skip if instrument is already empty
+    if (instrumentIsEmpty(project, i)) continue;
+    
+    // Check if instrument is used in any phrase
+    if (!instrumentIsUsedInPhrases(project, i)) {
+      // Clear the unused instrument and its table properly
+      instrumentClear(&project->instruments[i]);
+      tableClear(&project->tables[i]);
+      cleanedCount++;
+    }
+  }
+  
+  return cleanedCount;
+}
+
+// Update chain references in song
+static void updateChainReferences(Project* project, int oldChain, int newChain) {
+  for (int row = 0; row < PROJECT_MAX_LENGTH; row++) {
+    for (int col = 0; col < PROJECT_MAX_TRACKS; col++) {
+      if (project->song[row][col] == oldChain) {
+        project->song[row][col] = newChain;
+      }
+    }
+  }
+}
+
+// Remove duplicate chains - returns count of removed duplicates
+int removeDuplicateChains(Project* project) {
+  int removedCount = 0;
+  
+  for (int i = 0; i < PROJECT_MAX_CHAINS - 1; i++) {
+    // Skip if chain is empty
+    if (chainIsEmpty(project, i)) continue;
+    
+    for (int j = i + 1; j < PROJECT_MAX_CHAINS; j++) {
+      // Skip if chain is empty
+      if (chainIsEmpty(project, j)) continue;
+      
+      // Compare chains using memcmp
+      if (memcmp(&project->chains[i], &project->chains[j], sizeof(Chain)) == 0) {
+        // Update all references to chain j to point to chain i
+        updateChainReferences(project, j, i);
+        
+        // Clear the duplicate chain
+        chainClear(&project->chains[j]);
+        removedCount++;
+      }
+    }
+  }
+  
+  return removedCount;
+}
+
+// Update phrase references in chains
+static void updatePhraseReferences(Project* project, int oldPhrase, int newPhrase) {
+  for (int c = 0; c < PROJECT_MAX_CHAINS; c++) {
+    for (int row = 0; row < 16; row++) {
+      if (project->chains[c].rows[row].phrase == oldPhrase) {
+        project->chains[c].rows[row].phrase = newPhrase;
+      }
+    }
+  }
+}
+
+// Remove duplicate phrases - returns count of removed duplicates
+int removeDuplicatePhrases(Project* project) {
+  int removedCount = 0;
+  
+  for (int i = 0; i < PROJECT_MAX_PHRASES - 1; i++) {
+    // Skip if phrase is empty
+    if (phraseIsEmpty(project, i)) continue;
+    
+    for (int j = i + 1; j < PROJECT_MAX_PHRASES; j++) {
+      // Skip if phrase is empty
+      if (phraseIsEmpty(project, j)) continue;
+      
+      // Compare phrases using memcmp
+      if (memcmp(&project->phrases[i], &project->phrases[j], sizeof(Phrase)) == 0) {
+        // Update all references to phrase j to point to phrase i
+        updatePhraseReferences(project, j, i);
+        
+        // Clear the duplicate phrase
+        phraseClear(&project->phrases[j]);
+        removedCount++;
+      }
+    }
+  }
+  
+  return removedCount;
+}
+
+// Check if table is used in TBL/TBX commands
+static int tableIsUsedInCommands(Project* project, int tableIdx) {
+  // Check phrases for TBL/TBX commands
+  for (int p = 0; p < PROJECT_MAX_PHRASES; p++) {
+    for (int row = 0; row < 16; row++) {
+      for (int fx = 0; fx < 3; fx++) {
+        if ((project->phrases[p].rows[row].fx[fx][0] == fxTBL || 
+             project->phrases[p].rows[row].fx[fx][0] == fxTBX) &&
+            project->phrases[p].rows[row].fx[fx][1] == tableIdx) {
+          return 1;
+        }
+      }
+    }
+  }
+  
+  // Check tables for TBL/TBX commands
+  for (int t = 0; t < PROJECT_MAX_TABLES; t++) {
+    for (int row = 0; row < 16; row++) {
+      for (int fx = 0; fx < 4; fx++) {
+        if ((project->tables[t].rows[row].fx[fx][0] == fxTBL || 
+             project->tables[t].rows[row].fx[fx][0] == fxTBX) &&
+            project->tables[t].rows[row].fx[fx][1] == tableIdx) {
+          return 1;
+        }
+      }
+    }
+  }
+  
+  return 0;
+}
+
+// Cleanup unused tables - returns count of cleaned tables
+int cleanupUnusedTables(Project* project) {
+  int cleanedCount = 0;
+  
+  for (int i = 0; i < PROJECT_MAX_TABLES; i++) {
+    // Skip if table is already empty
+    if (tableIsEmpty(project, i)) continue;
+    
+    // For 0x00-0x7f range: table is used if corresponding instrument is not None
+    if (i < PROJECT_MAX_INSTRUMENTS && !instrumentIsEmpty(project, i)) {
+      continue; // Table is used as instrument table
+    }
+    
+    // For full range: check if table is used in TBL/TBX commands
+    if (!tableIsUsedInCommands(project, i)) {
+      // Clear the unused table properly
+      tableClear(&project->tables[i]);
+      cleanedCount++;
+    }
+  }
+  
+  return cleanedCount;
+}
+
+// Combined cleanup functions for UI
+
+// Cleanup phrases and chains (unused + duplicates)
+void cleanupPhrasesAndChains(Project* project, int* phrasesFreed, int* chainsFreed) {
+  *phrasesFreed = cleanupUnusedPhrases(project) + removeDuplicatePhrases(project);
+  *chainsFreed = cleanupUnusedChains(project) + removeDuplicateChains(project);
+}
+
+// Cleanup instruments and tables (unused only)
+void cleanupInstrumentsAndTables(Project* project, int* instrumentsFreed, int* tablesFreed) {
+  *instrumentsFreed = cleanupUnusedInstruments(project);
+  *tablesFreed = cleanupUnusedTables(project);
+}
+
+

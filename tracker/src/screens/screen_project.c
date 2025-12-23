@@ -17,8 +17,6 @@ static int editingStringLength = 0;
 static int tickRateI = 0;
 static uint16_t tickRateF = 0;
 
-
-
 static void onProjectLoaded(const char* path) {
   if (!path) {
     screenSetup(&screenProject, 0);
@@ -121,7 +119,7 @@ static void drawColHeader(int col, int state) {}
 
 int projectCommonColumnCount(int row) {
   if (row == 0) {
-    return 4; // Load, save, new, export
+    return 5; // Load, save, new, export, manage
   } else if (row >= 1 && row <= 3) {
     return 24; // File, title, author
   } else if (row == 4) {
@@ -163,6 +161,8 @@ void projectCommonDrawCursor(int col, int row) {
       gfxCursor(17, 2, 3); // New
     } else if (col == 3) {
       gfxCursor(21, 2, 6); // Export
+    } else if (col == 4) {
+      gfxCursor(28, 2, 6); // Manage
     }
   } else if (row >= 1 && row <= 3) {
     // Text fields: file name, title, author
@@ -199,6 +199,8 @@ void projectCommonDrawField(int col, int row, int state) {
       gfxPrint(17, 2, "New");
     } else if (col == 3) {
       gfxPrint(21, 2, "Export");
+    } else if (col == 4) {
+      gfxPrint(28, 2, "Manage");
     }
   } else if (row == 1) {
     // File name
@@ -258,6 +260,10 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
     } else if (col == 3) {
       // Export - go to export screen
       screenSetup(&screenExport, 0);
+      handled = 0;
+    } else if (col == 4) {
+      // Manage - go to manage screen
+      screenSetup(&screenManage, 0);
       handled = 0;
     }
   } else if (row == 1) {

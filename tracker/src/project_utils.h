@@ -17,3 +17,15 @@ void instrumentSwap(Project* p, uint8_t inst1, uint8_t inst2);
 int findEmptyChain(Project* p, int start);
 int findEmptyPhrase(Project* p, int start);
 int findEmptyInstrument(Project* p, int start);
+
+// Cleanup functions
+int cleanupUnusedPhrases(Project* p);
+int cleanupUnusedChains(Project* p);
+int cleanupUnusedInstruments(Project* p);
+int cleanupUnusedTables(Project* p);
+int removeDuplicateChains(Project* p);
+int removeDuplicatePhrases(Project* p);
+
+// Combined cleanup functions for UI
+void cleanupPhrasesAndChains(Project* p, int* phrasesFreed, int* chainsFreed);
+void cleanupInstrumentsAndTables(Project* p, int* instrumentsFreed, int* tablesFreed);

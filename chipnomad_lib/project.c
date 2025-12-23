@@ -56,10 +56,7 @@ void projectInit(Project* p) {
 
   // Clean chains
   for (int c = 0; c < PROJECT_MAX_CHAINS; c++) {
-    for (int d = 0; d < 16; d++) {
-      p->chains[c].rows[d].phrase = EMPTY_VALUE_16;
-      p->chains[c].rows[d].transpose = 0;
-    }
+    chainClear(&p->chains[c]);
   }
 
   // Clean grooves
@@ -75,34 +72,17 @@ void projectInit(Project* p) {
 
   // Clean phrases
   for (int c = 0; c < PROJECT_MAX_PHRASES; c++) {
-    for (int d = 0; d < 16; d++) {
-      p->phrases[c].rows[d].note = EMPTY_VALUE_8;
-      p->phrases[c].rows[d].instrument = EMPTY_VALUE_8;
-      p->phrases[c].rows[d].volume = EMPTY_VALUE_8;
-      for (int e = 0; e < 3; e++) {
-        p->phrases[c].rows[d].fx[e][0] = EMPTY_VALUE_8;
-        p->phrases[c].rows[d].fx[e][1] = 0;
-      }
-    }
+    phraseClear(&p->phrases[c]);
   }
 
   // Clean instruments
   for (int c = 0; c < PROJECT_MAX_INSTRUMENTS; c++) {
-    p->instruments[c].type = instNone;
-    p->instruments[c].name[0] = 0;
+    instrumentClear(&p->instruments[c]);
   }
 
   // Clean tables
   for (int c = 0; c < PROJECT_MAX_TABLES; c++) {
-    for (int d = 0; d < 16; d++) {
-      p->tables[c].rows[d].pitchFlag = 0;
-      p->tables[c].rows[d].pitchOffset = 0;
-      p->tables[c].rows[d].volume = EMPTY_VALUE_8;
-      for (int e = 0; e < 4; e++) {
-        p->tables[c].rows[d].fx[e][0] = EMPTY_VALUE_8;
-        p->tables[c].rows[d].fx[e][1] = 0;
-      }
-    }
+    tableClear(&p->tables[c]);
   }
 }
 
@@ -885,4 +865,44 @@ int projectGetTotalTracks(Project* p) {
     totalTracks += projectGetChipTracks(p, i);
   }
   return totalTracks;
+}
+
+// Clear a single phrase with proper initialization
+void phraseClear(Phrase* phrase) {
+  for (int d = 0; d < 16; d++) {
+    phrase->rows[d].note = EMPTY_VALUE_8;
+    phrase->rows[d].instrument = EMPTY_VALUE_8;
+    phrase->rows[d].volume = EMPTY_VALUE_8;
+    for (int e = 0; e < 3; e++) {
+      phrase->rows[d].fx[e][0] = EMPTY_VALUE_8;
+      phrase->rows[d].fx[e][1] = 0;
+    }
+  }
+}
+
+// Clear a single chain with proper initialization
+void chainClear(Chain* chain) {
+  for (int d = 0; d < 16; d++) {
+    chain->rows[d].phrase = EMPTY_VALUE_16;
+    chain->rows[d].transpose = 0;
+  }
+}
+
+// Clear a single instrument with proper initialization
+void instrumentClear(Instrument* instrument) {
+  instrument->type = instNone;
+  instrument->name[0] = 0;
+}
+
+// Clear a single table with proper initialization
+void tableClear(Table* table) {
+  for (int d = 0; d < 16; d++) {
+    table->rows[d].pitchFlag = 0;
+    table->rows[d].pitchOffset = 0;
+    table->rows[d].volume = EMPTY_VALUE_8;
+    for (int e = 0; e < 4; e++) {
+      table->rows[d].fx[e][0] = EMPTY_VALUE_8;
+      table->rows[d].fx[e][1] = 0;
+    }
+  }
 }

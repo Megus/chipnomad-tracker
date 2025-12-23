@@ -74,6 +74,7 @@ extern const AppScreen screenInstrument;
 extern const AppScreen screenInstrumentPool;
 extern const AppScreen screenTable;
 extern const AppScreen screenExport;
+extern const AppScreen screenManage;
 extern const AppScreen screenSettings;
 
 extern const AppScreen* currentScreen;
@@ -118,5 +119,12 @@ int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable
 int editFXValue(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable);
 int fxEditInput(int keys, int isDoubleTap, uint8_t* fx, uint8_t* lastFX);
 void fxEditFullDraw(uint8_t currentFX);
+
+// Manage screen functions
+int manageColumnCount(int row);
+void manageDrawStatic(void);
+void manageDrawCursor(int col, int row);
+void manageDrawField(int col, int row, int state);
+int manageOnEdit(int col, int row, enum CellEditAction action);
 
 #endif
