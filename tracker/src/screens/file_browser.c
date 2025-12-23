@@ -6,6 +6,18 @@
 #include <stdlib.h>
 
 #define VISIBLE_ENTRIES 16
+#define SCROLL_DELAY_FRAMES 120
+#define SCROLL_SPEED_FRAMES 8
+#define MAX_DISPLAY_DIR 31
+#define MAX_DISPLAY_FILE 34
+#define BOUNDARY_WAIT_FRAMES (SCROLL_DELAY_FRAMES * 2)
+
+typedef struct {
+  int lastSelectedIndex;
+  int selectionFrameCount;
+  int scrollOffset;
+  int scrollDirection;
+} ScrollState;
 
 static FileEntry* entries = NULL;
 static int entryCount = 0;
@@ -20,10 +32,16 @@ static int isFolderMode = 0;
 static void (*onFileSelected)(const char* path);
 static void (*onCancelled)(void);
 static char pendingSavePath[2048];
+static ScrollState scrollState = {-1, 0, 0, 1};
 
-// Forward declarations
 static void fileBrowserRefreshWithSelection(const char* selectName);
 void fileBrowserRefresh(void);
+static int getEntryIndex(void);
+static int getMaxDisplayForEntry(int entryIdx);
+static void resetScrollState(void);
+static void resetScrollStateOnSelectionChange(void);
+static void formatEntryName(char* buffer, size_t bufferSize, const char* name, int entryIdx, int isScrolling, int scrollOffset);
+static int handleBoundaryWait(int isAtStart, int isAtEnd);
 
 static void doSave(void) {
   if (onFileSelected) {
@@ -86,6 +104,7 @@ static void fileBrowserRefreshWithSelection(const char* selectName) {
 
 void fileBrowserRefresh(void) {
   fileBrowserRefreshWithSelection(NULL);
+  resetScrollStateOnSelectionChange();
 }
 
 void fileBrowserSetup(const char* title, const char* extension, const char* startPath, void (*fileCallback)(const char*), void (*cancelCallback)(void)) {
@@ -127,6 +146,118 @@ void fileBrowserSetupFolderMode(const char* title, const char* startPath, const 
   fileBrowserRefresh();
 }
 
+static int getEntryIndex(void) {
+  if (isFolderMode && (selectedIndex == 0 || selectedIndex == 1)) {
+    return -1;
+  }
+  return isFolderMode ? selectedIndex - 2 : selectedIndex;
+}
+
+static int getMaxDisplayForEntry(int entryIdx) {
+  if (entryIdx < 0 || entryIdx >= entryCount) {
+    return 0;
+  }
+  return entries[entryIdx].isDirectory ? MAX_DISPLAY_DIR : MAX_DISPLAY_FILE;
+}
+
+static void resetScrollState(void) {
+  scrollState.selectionFrameCount = 0;
+  scrollState.scrollOffset = 0;
+  scrollState.scrollDirection = 1;
+}
+
+static void resetScrollStateOnSelectionChange(void) {
+  scrollState.lastSelectedIndex = -1;
+  resetScrollState();
+}
+
+static void formatEntryName(char* buffer, size_t bufferSize, const char* name, int entryIdx, int isScrolling, int scrollOffset) {
+  int maxDisplay = getMaxDisplayForEntry(entryIdx);
+  int nameLen = strlen(name);
+  int isDirectory = entries[entryIdx].isDirectory;
+  int displayLen = maxDisplay;
+  const char* displayName = name;
+  
+  if (isScrolling && nameLen > maxDisplay) {
+    int startPos = scrollOffset;
+    if (startPos + displayLen > nameLen) {
+      displayLen = nameLen - startPos;
+    }
+    displayName = name + startPos;
+  }
+  
+  if (isDirectory) {
+    snprintf(buffer, bufferSize, "[%.*s]", displayLen, displayName);
+  } else {
+    snprintf(buffer, bufferSize, "%.*s", displayLen, displayName);
+  }
+}
+
+static int handleBoundaryWait(int isAtStart, int isAtEnd) {
+  if (scrollState.selectionFrameCount < BOUNDARY_WAIT_FRAMES) {
+    return 1;
+  }
+  
+  if (isAtStart) {
+    scrollState.scrollDirection = 1;
+  } else {
+    scrollState.scrollDirection = -1;
+  }
+  scrollState.selectionFrameCount = SCROLL_DELAY_FRAMES;
+  return 1;
+}
+
+void fileBrowserUpdate(void) {
+  if (selectedIndex != scrollState.lastSelectedIndex) {
+    scrollState.lastSelectedIndex = selectedIndex;
+    resetScrollState();
+    return;
+  }
+
+  int entryIdx = getEntryIndex();
+  if (entryIdx < 0 || entryIdx >= entryCount) {
+    resetScrollState();
+    return;
+  }
+
+  int nameLen = strlen(entries[entryIdx].name);
+  int maxDisplay = getMaxDisplayForEntry(entryIdx);
+  int maxScroll = nameLen - maxDisplay;
+
+  if (maxScroll <= 0) {
+    scrollState.scrollOffset = 0;
+    return;
+  }
+
+  scrollState.selectionFrameCount++;
+
+  if (scrollState.selectionFrameCount < SCROLL_DELAY_FRAMES) {
+    return;
+  }
+
+  int isAtStart = scrollState.scrollOffset == 0 && scrollState.scrollDirection == -1;
+  int isAtEnd = scrollState.scrollOffset >= maxScroll && scrollState.scrollDirection == 1;
+  
+  if (isAtStart || isAtEnd) {
+    handleBoundaryWait(isAtStart, isAtEnd);
+    return;
+  }
+
+  int scrollFrames = scrollState.selectionFrameCount - SCROLL_DELAY_FRAMES;
+  if (scrollFrames % SCROLL_SPEED_FRAMES == 0) {
+    int newOffset = scrollState.scrollOffset + scrollState.scrollDirection;
+    if (newOffset < 0) {
+      scrollState.scrollOffset = 0;
+      scrollState.selectionFrameCount = SCROLL_DELAY_FRAMES;
+    } else if (newOffset > maxScroll) {
+      scrollState.scrollOffset = maxScroll;
+      scrollState.selectionFrameCount = SCROLL_DELAY_FRAMES;
+    } else {
+      scrollState.scrollOffset = newOffset;
+    }
+  }
+}
+
 void fileBrowserDraw(void) {
   gfxSetBgColor(appSettings.colorScheme.background);
   gfxClear();
@@ -150,7 +281,6 @@ void fileBrowserDraw(void) {
     int itemIndex = topIndex + i;
     int y = 3 + i;
 
-    // Draw cursor
     if (itemIndex == selectedIndex) {
       gfxSetFgColor(appSettings.colorScheme.textValue);
       gfxPrint(0, y, ">");
@@ -160,7 +290,6 @@ void fileBrowserDraw(void) {
     }
 
     if (isFolderMode && itemIndex == 0) {
-      // Draw "Save to" option
       static char saveText[40];
       static char folderName[256];
 
@@ -191,7 +320,6 @@ void fileBrowserDraw(void) {
       gfxPrint(2, y, saveText);
 
     } else if (isFolderMode && itemIndex == 1) {
-      // Draw "Create Folder" option
       if (itemIndex == selectedIndex) {
         gfxSetFgColor(appSettings.colorScheme.textValue);
       } else {
@@ -200,8 +328,8 @@ void fileBrowserDraw(void) {
       gfxPrint(2, y, "Create Folder");
 
     } else {
-      // Draw file entry
       int entryIdx = isFolderMode ? itemIndex - 2 : itemIndex;
+      if (entryIdx < 0 || entryIdx >= entryCount) continue;
 
       if (isFolderMode) {
         if (entries[entryIdx].isDirectory) {
@@ -213,12 +341,13 @@ void fileBrowserDraw(void) {
         gfxSetFgColor(appSettings.colorScheme.textDefault);
       }
 
-      char displayName[35];
-      if (entries[entryIdx].isDirectory) {
-        snprintf(displayName, sizeof(displayName), "[%.31s]", entries[entryIdx].name);
-      } else {
-        snprintf(displayName, sizeof(displayName), "%.34s", entries[entryIdx].name);
-      }
+      char displayName[256];
+      const char* name = entries[entryIdx].name;
+      int nameLen = strlen(name);
+      int maxDisplay = getMaxDisplayForEntry(entryIdx);
+      int isScrolling = itemIndex == selectedIndex && nameLen > maxDisplay && scrollState.selectionFrameCount >= SCROLL_DELAY_FRAMES;
+      
+      formatEntryName(displayName, sizeof(displayName), name, entryIdx, isScrolling, scrollState.scrollOffset);
       gfxPrint(2, y, displayName);
     }
   }
@@ -226,13 +355,12 @@ void fileBrowserDraw(void) {
 
 int fileBrowserInput(int keys, int isDoubleTap) {
   int maxIndex = entryCount - 1;
-  if (isFolderMode) maxIndex += 2; // Add 2 for "Save to" and "Create Folder" options
+  if (isFolderMode) maxIndex += 2;
 
   if (keys == keyUp) {
     if (selectedIndex > 0) {
       selectedIndex--;
     } else {
-      // Loop to bottom
       selectedIndex = maxIndex;
     }
     if (selectedIndex < topIndex) {
@@ -240,34 +368,35 @@ int fileBrowserInput(int keys, int isDoubleTap) {
     } else if (selectedIndex >= topIndex + VISIBLE_ENTRIES) {
       topIndex = selectedIndex - VISIBLE_ENTRIES + 1;
     }
+    resetScrollStateOnSelectionChange();
     return 1;
   } else if (keys == keyDown) {
     if (selectedIndex < maxIndex) {
       selectedIndex++;
     } else {
-      // Loop to top
       selectedIndex = 0;
       topIndex = 0;
     }
     if (selectedIndex >= topIndex + VISIBLE_ENTRIES) {
       topIndex = selectedIndex - VISIBLE_ENTRIES + 1;
     }
+    resetScrollStateOnSelectionChange();
     return 1;
   } else if (keys == keyLeft) {
-    // Page up
     selectedIndex -= VISIBLE_ENTRIES;
     if (selectedIndex < 0) selectedIndex = 0;
     if (selectedIndex < topIndex) {
       topIndex = selectedIndex;
     }
+    resetScrollStateOnSelectionChange();
     return 1;
   } else if (keys == keyRight) {
-    // Page down
     selectedIndex += VISIBLE_ENTRIES;
     if (selectedIndex > maxIndex) selectedIndex = maxIndex;
     if (selectedIndex >= topIndex + VISIBLE_ENTRIES) {
       topIndex = selectedIndex - VISIBLE_ENTRIES + 1;
     }
+    resetScrollStateOnSelectionChange();
     return 1;
   } else if (keys == keyEdit) {
     // Handle "Save to" option in folder mode
@@ -298,8 +427,8 @@ int fileBrowserInput(int keys, int isDoubleTap) {
       return 0;
     }
 
-    int entryIdx = isFolderMode ? selectedIndex - 2 : selectedIndex;
-    if (entryIdx >= 0 && entries[entryIdx].isDirectory) {
+    int entryIdx = getEntryIndex();
+    if (entryIdx >= 0 && entryIdx < entryCount && entries[entryIdx].isDirectory) {
       // Enter directory
       if (strcmp(entries[entryIdx].name, "..") == 0) {
         // Go up one level - stay on [..] entry
