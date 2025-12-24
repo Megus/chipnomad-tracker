@@ -12,6 +12,9 @@ void fileBrowserSetPath(const char* path);
 // Draw the file browser
 void fileBrowserDraw(void);
 
+// Update file browser state (call every frame)
+void fileBrowserUpdate(void);
+
 // Handle input, returns 1 if handled
 int fileBrowserInput(int keys, int isDoubleTap);
 

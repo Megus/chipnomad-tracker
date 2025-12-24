@@ -9,6 +9,8 @@ static void fullRedraw(void) {
 }
 
 static void draw(void) {
+  fileBrowserUpdate();
+  fileBrowserDraw();
 }
 
 static void onInput(int keys, int isDoubleTap) {
