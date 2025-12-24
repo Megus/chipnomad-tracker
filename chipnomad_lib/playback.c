@@ -405,6 +405,7 @@ void playbackInit(PlaybackState* state, Project* project) {
     resetTrack(state, c);
     state->tracks[c].queue.mode = playbackModeNone;
     state->tracks[c].queue.loop = 0;
+    state->trackEnabled[c] = 1;
   }
 
   // TODO: Properly initialize other global chip states, but for now it's AY only

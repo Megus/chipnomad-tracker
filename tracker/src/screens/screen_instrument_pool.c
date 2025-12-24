@@ -88,19 +88,19 @@ static void draw(void) {
 
 static int editPressed = 0;
 
-static void onInput(int keys, int isDoubleTap) {
+static int onInput(int isKeyDown, int keys, int isDoubleTap) {
   int oldCursorRow = cursorRow;
   int oldTopRow = topRow;
 
   // Handle Edit button press/release for instrument selection
   if (keys == keyEdit) {
     editPressed = 1;
-    return;
+    return 1;
   } else if (keys == 0 && editPressed) {
     editPressed = 0;
     // Go to selected instrument when Edit is released
     screenSetup(&screenInstrument, cursorRow);
-    return;
+    return 1;
   } else if (keys != 0) {
     editPressed = 0;
   }
@@ -111,7 +111,7 @@ static void onInput(int keys, int isDoubleTap) {
       if (cursorRow < topRow) {
         topRow--;
         fullRedraw();
-        return;
+        return 1;
       }
     }
   } else if (keys == keyDown) {
@@ -120,7 +120,7 @@ static void onInput(int keys, int isDoubleTap) {
       if (cursorRow >= topRow + 16) {
         topRow++;
         fullRedraw();
-        return;
+        return 1;
       }
     }
   } else if (keys == keyLeft) {
@@ -130,7 +130,7 @@ static void onInput(int keys, int isDoubleTap) {
     topRow -= 16;
     if (topRow < 0) topRow = 0;
     fullRedraw();
-    return;
+    return 1;
   } else if (keys == keyRight) {
     // Page down (16 lines)
     cursorRow += 16;
@@ -139,19 +139,19 @@ static void onInput(int keys, int isDoubleTap) {
     if (topRow + 16 >= PROJECT_MAX_INSTRUMENTS) topRow = PROJECT_MAX_INSTRUMENTS - 16;
     if (topRow < 0) topRow = 0;
     fullRedraw();
-    return;
+    return 1;
   } else if (keys == (keyUp | keyShift)) {
     // To Instrument screen
     screenSetup(&screenInstrument, cursorRow);
-    return;
+    return 1;
   } else if (keys == (keyLeft | keyShift)) {
     // To Phrase screen
     screenSetup(&screenPhrase, -1);
-    return;
+    return 1;
   } else if (keys == (keyRight | keyShift)) {
     // To Table screen
     screenSetup(&screenTable, cursorRow);
-    return;
+    return 1;
   } else if (keys == (keyEdit | keyUp)) {
     // Move instrument up
     if (cursorRow > 0) {
@@ -163,7 +163,7 @@ static void onInput(int keys, int isDoubleTap) {
       }
       fullRedraw();
     }
-    return;
+    return 1;
   } else if (keys == (keyEdit | keyDown)) {
     // Move instrument down
     if (cursorRow < PROJECT_MAX_INSTRUMENTS - 1) {
@@ -175,24 +175,24 @@ static void onInput(int keys, int isDoubleTap) {
       }
       fullRedraw();
     }
-    return;
+    return 1;
   } else if (keys == (keyEdit | keyPlay)) {
     // Preview instrument
     if (!instrumentIsEmpty(&chipnomadState->project, cursorRow) && !playbackIsPlaying(&chipnomadState->playbackState)) {
       uint8_t note = instrumentFirstNote(&chipnomadState->project, cursorRow);
       playbackPreviewNote(&chipnomadState->playbackState, *pSongTrack, note, cursorRow);
     }
-    return;
+    return 1;
   } else if (keys == (keyShift | keyOpt)) {
     // Copy instrument
     copyInstrument(cursorRow);
     screenMessage(MESSAGE_TIME, "Copied instrument");
-    return;
+    return 1;
   } else if (keys == (keyShift | keyEdit)) {
     // Paste instrument
     pasteInstrument(cursorRow);
     fullRedraw();
-    return;
+    return 1;
   }
 
   // Stop preview when keys are released
@@ -241,6 +241,7 @@ static void onInput(int keys, int isDoubleTap) {
     gfxClearRect(20, newY, 14, 1);
     gfxPrint(20, newY, instrumentTypeName(chipnomadState->project.instruments[cursorRow].type));
   }
+  return 0;
 }
 
 const AppScreen screenInstrumentPool = {

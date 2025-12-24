@@ -5,12 +5,23 @@
 #include "utils.h"
 #include "chipnomad_lib.h"
 #include "project_utils.h"
+#include "audio_manager.h"
 
 #include "copy_paste.h"
 #include <string.h>
 
 // Screen state variables
 static uint16_t lastChainValue = 0;
+
+// Track mute/solo state machine
+typedef enum {
+  MUTE_SOLO_EMPTY,
+  MUTE_SOLO_OPT_PRESSED,
+  MUTE_SOLO_MUTE_STATE,
+  MUTE_SOLO_SOLO_STATE
+} MuteSoloState;
+
+static MuteSoloState muteSoloState = MUTE_SOLO_EMPTY;
 
 static int getColumnCount(int row);
 static void drawStatic(void);
@@ -129,6 +140,16 @@ static void draw(void) {
         gfxPrint(2 + c * 3, 3 + row, ">");
       }
     }
+    
+    // Draw mute/solo indicator above track number
+    gfxSetFgColor(appSettings.colorScheme.textTitles);
+    if (audioManager.trackStates[c] == TRACK_MUTED) {
+      gfxPrint(3 + c * 3, 1, "M");
+    } else if (audioManager.trackStates[c] == TRACK_SOLO) {
+      gfxPrint(3 + c * 3, 1, "S");
+    } else {
+      gfxPrint(3 + c * 3, 1, " "); // Clear indicator
+    }
   }
 
   screenDrawOverlays(&screen);
@@ -140,6 +161,7 @@ static void draw(void) {
 //
 
 static int inputScreenNavigation(int keys, int isDoubleTap) {
+  // Fix all bare returns in this function
   // Go to Chain screen
   if (keys == (keyRight | keyShift)) {
     int chain = chipnomadState->project.song[screen.cursorRow][screen.cursorCol];
@@ -292,9 +314,83 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   return 0;
 }
 
-static void onInput(int keys, int isDoubleTap) {
-  if (screen.selectMode == 0 && inputScreenNavigation(keys, isDoubleTap)) return;
-  screenInput(&screen, keys, isDoubleTap);
+static int onInput(int isKeyDown, int keys, int isDoubleTap) {
+  int handled = 0;
+
+  // Only handle mute/solo when not in selection mode
+  if (screen.selectMode == 0) {
+    switch (muteSoloState) {
+      case MUTE_SOLO_EMPTY:
+        if (isKeyDown && keys == keyOpt) {
+          muteSoloState = MUTE_SOLO_OPT_PRESSED;
+          handled = 1;
+        }
+        break;
+
+      case MUTE_SOLO_OPT_PRESSED:
+        if (isKeyDown && keys == (keyOpt | keyShift)) {
+          audioManager.toggleTrackMute(screen.cursorCol);
+          muteSoloState = MUTE_SOLO_MUTE_STATE;
+          handled = 1;
+        } else if (isKeyDown && keys == (keyOpt | keyPlay)) {
+          audioManager.toggleTrackSolo(screen.cursorCol);
+          muteSoloState = MUTE_SOLO_SOLO_STATE;
+          handled = 1;
+        } else if (isKeyDown && keys == keyOpt) {
+          handled = 1; // Stay in OPT_PRESSED state
+        } else if (keys == 0) {
+          muteSoloState = MUTE_SOLO_EMPTY;
+        }
+        break;
+
+      case MUTE_SOLO_MUTE_STATE:
+        if (!isKeyDown && keys == keyOpt) {
+          // SHIFT released first - momentary unmute
+          audioManager.toggleTrackMute(screen.cursorCol);
+          muteSoloState = MUTE_SOLO_OPT_PRESSED;
+          handled = 1;
+        } else if (!isKeyDown && keys == keyShift) {
+          // OPT released first - mute sticks
+          muteSoloState = MUTE_SOLO_EMPTY;
+          handled = 1;
+        } else if (keys == (keyOpt | keyShift)) {
+          handled = 1; // Stay in mute state
+        } else if (keys == 0) {
+          muteSoloState = MUTE_SOLO_EMPTY;
+        }
+        break;
+
+      case MUTE_SOLO_SOLO_STATE:
+        if (!isKeyDown && keys == keyOpt) {
+          // PLAY released first - momentary unsolo
+          audioManager.toggleTrackSolo(screen.cursorCol);
+          muteSoloState = MUTE_SOLO_OPT_PRESSED;
+          handled = 1;
+        } else if (!isKeyDown && keys == keyPlay) {
+          // OPT released first - solo sticks
+          muteSoloState = MUTE_SOLO_EMPTY;
+          handled = 1;
+        } else if (keys == (keyOpt | keyPlay)) {
+          handled = 1; // Stay in solo state
+        } else if (keys == 0) {
+          muteSoloState = MUTE_SOLO_EMPTY;
+        }
+        break;
+    }
+  }
+
+  // Reset state when all keys released or entering selection mode
+  if (keys == 0 || screen.selectMode != 0) {
+    muteSoloState = MUTE_SOLO_EMPTY;
+  }
+
+  // Only call common input handling if we didn't handle Song-specific input
+  if (!handled) {
+    if (isKeyDown && screen.selectMode == 0 && inputScreenNavigation(keys, isDoubleTap)) return 1;
+    return screenInput(&screen, isKeyDown, keys, isDoubleTap);
+  }
+
+  return handled;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

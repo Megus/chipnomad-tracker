@@ -131,9 +131,9 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
   return 0;
 }
 
-static void onInput(int keys, int isDoubleTap) {
-  if (inputScreenNavigation(keys, isDoubleTap)) return;
-  screenInput(&screenSettingsData, keys, isDoubleTap);
+static int onInput(int isKeyDown, int keys, int isDoubleTap) {
+  if (inputScreenNavigation(keys, isDoubleTap)) return 1;
+  return screenInput(&screenSettingsData, isKeyDown, keys, isDoubleTap);
 }
 
 const AppScreen screenSettings = {

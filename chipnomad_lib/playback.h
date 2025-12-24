@@ -134,6 +134,7 @@ typedef struct PlaybackState {
   Project* p;
   PlaybackTrackState tracks[PROJECT_MAX_TRACKS];
   PlaybackChipState chips[PROJECT_MAX_CHIPS];
+  uint8_t trackEnabled[PROJECT_MAX_TRACKS];
 } PlaybackState;
 
 

@@ -150,7 +150,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
   return 0;
 }
 
-static void onInput(int keys, int isDoubleTap) {
+static int onInput(int isKeyDown, int keys, int isDoubleTap) {
   if (isCharEdit) {
     char result = charEditInput(keys, isDoubleTap, editingString, screenPitchTableData.cursorCol, editingStringLength);
     if (result) {
@@ -161,9 +161,10 @@ static void onInput(int keys, int isDoubleTap) {
       fullRedraw();
     }
   } else {
-    if (inputScreenNavigation(keys, isDoubleTap)) return;
-    if (screenInput(&screenPitchTableData, keys, isDoubleTap)) return;
+    if (inputScreenNavigation(keys, isDoubleTap)) return 1;
+    if (screenInput(&screenPitchTableData, isKeyDown, keys, isDoubleTap)) return 1;
   }
+  return 0;
 }
 
 const AppScreen screenPitchTable = {

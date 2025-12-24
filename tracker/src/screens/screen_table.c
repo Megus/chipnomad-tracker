@@ -348,7 +348,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
   return 0;
 }
 
-static void onInput(int keys, int isDoubleTap) {
+static int onInput(int isKeyDown, int keys, int isDoubleTap) {
   if (isFxEdit) {
     int fxIdx = (screen.cursorCol - 3) / 2;
     int result = fxEditInput(keys, isDoubleTap, tableRows[screen.cursorRow].fx[fxIdx], lastFX);
@@ -370,11 +370,11 @@ static void onInput(int keys, int isDoubleTap) {
 
       fullRedraw();
     }
-    return;
+    return 1;
   }
 
-  if (screen.selectMode == 0 && inputScreenNavigation(keys, isDoubleTap)) return;
-  screenInput(&screen, keys, isDoubleTap);
+  if (screen.selectMode == 0 && inputScreenNavigation(keys, isDoubleTap)) return 1;
+  return screenInput(&screen, isKeyDown, keys, isDoubleTap);
 }
 
 const AppScreen screenTable = {

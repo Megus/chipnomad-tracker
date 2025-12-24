@@ -10,7 +10,7 @@ typedef struct AppScreen {
   void (*setup)(int input);
   void (*fullRedraw)(void);
   void (*draw)(void);
-  void (*onInput)(int keys, int isDoubleTap);
+  int (*onInput)(int isKeyDown, int keys, int isDoubleTap); // Return 1 if handled, 0 if not
 } AppScreen;
 
 enum CellState {
@@ -87,7 +87,7 @@ void screensInitAll(void);
 // Spreadsheet functions
 void screenFullRedraw(ScreenData* screen);
 void screenDrawOverlays(ScreenData* screen);
-int screenInput(ScreenData* screen, int keys, int isDoubleTap);
+int screenInput(ScreenData* screen, int isKeyDown, int keys, int isDoubleTap);
 
 // Utility functions
 void setCellColor(int state, int isEmpty, int hasContent);

@@ -47,22 +47,27 @@ static void fullRedraw(void) {
 static void draw(void) {
 }
 
-static void onInput(int keys, int isDoubleTap) {
+static int onInput(int isKeyDown, int keys, int isDoubleTap) {
   if (keys == keyLeft && selectedOption > 0) {
     selectedOption--;
     fullRedraw();
+    return 1;
   } else if (keys == keyRight && selectedOption < 1) {
     selectedOption++;
     fullRedraw();
+    return 1;
   } else if (keys == keyEdit) {
     if (selectedOption == 0 && onConfirm) {
       onConfirm();
     } else if (selectedOption == 1 && onCancel) {
       onCancel();
     }
+    return 1;
   } else if (keys == keyOpt && onCancel) {
     onCancel();
+    return 1;
   }
+  return 0;
 }
 
 const AppScreen screenConfirm = {

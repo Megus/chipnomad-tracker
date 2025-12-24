@@ -69,27 +69,34 @@ static int inputPlayback(int keys, int isDoubleTap) {
 /**
 * @brief App input handler. Handles app-wide commands and then forwards the call to the current screen
 *
+* @param isKeyDown whether this is a key press (1) or key release (0)
 * @param keys Pressed buttons
 * @param isDoubleTap is it a double tap?
 */
-static void appInput(int keys, int isDoubleTap) {
+static void appInput(int isKeyDown, int keys, int isDoubleTap) {
   int volumeChanged = 0;
 
-  // Volume control
-  if (keys == keyVolumeUp) {
-    if (appSettings.volume < 1.0) appSettings.volume += 0.1;
-    volumeChanged = 1;
-  } else if (keys == keyVolumeDown) {
-    if (appSettings.volume > 0.0) appSettings.volume -= 0.1;
-    volumeChanged = 1;
-  }
-  if (volumeChanged) {
-    if (appSettings.volume < 0.0) appSettings.volume = 0;
-    if (appSettings.volume > 1.0) appSettings.volume = 1.0;
+  // Volume control (only on key down)
+  if (isKeyDown) {
+    if (keys == keyVolumeUp) {
+      if (appSettings.volume < 1.0) appSettings.volume += 0.1;
+      volumeChanged = 1;
+    } else if (keys == keyVolumeDown) {
+      if (appSettings.volume > 0.0) appSettings.volume -= 0.1;
+      volumeChanged = 1;
+    }
+    if (volumeChanged) {
+      if (appSettings.volume < 0.0) appSettings.volume = 0;
+      if (appSettings.volume > 1.0) appSettings.volume = 1.0;
+    }
   }
 
-  if (inputPlayback(keys, isDoubleTap)) return;
-  currentScreen->onInput(keys, isDoubleTap);
+  // Let screen handle input first, then try global playback if not handled
+  if (!currentScreen->onInput(isKeyDown, keys, isDoubleTap)) {
+    if (isKeyDown) {
+      inputPlayback(keys, isDoubleTap);
+    }
+  }
 }
 
 
@@ -124,11 +131,9 @@ void appSetup(void) {
     projectInitAY(&chipnomadState->project);
   }
 
-  // Initialize all screen states and pointers
+  // Initialize all screen states
   screensInitAll();
 
-  // Copy project to ChipNomadState and reinitialize playback
-  // Project is already initialized in chipnomadState
   playbackInit(&chipnomadState->playbackState, &chipnomadState->project);
 
   // Set mix volume from settings
@@ -136,10 +141,7 @@ void appSetup(void) {
 
   // Initialize audio system
   chipnomadInitChips(chipnomadState, appSettings.audioSampleRate, NULL);
-
-  // Set quality from settings
   chipnomadSetQuality(chipnomadState, appSettings.quality);
-
   audioManager.start(appSettings.audioSampleRate, appSettings.audioBufferSize);
   audioManager.resume();
 
@@ -168,6 +170,16 @@ void appDraw(void) {
   // Tracks
   char digit[2] = "0";
   for (int c = 0; c < chipnomadState->project.tracksCount; c++) {
+    // Draw mute/solo indicator to the left of track number
+    gfxSetFgColor(cs.textTitles);
+    if (audioManager.trackStates[c] == TRACK_MUTED) {
+      gfxPrint(34, 3 + c, "M");
+    } else if (audioManager.trackStates[c] == TRACK_SOLO) {
+      gfxPrint(34, 3 + c, "S");
+    } else {
+      gfxPrint(34, 3 + c, " "); // Clear indicator
+    }
+    
     // Use warning color for track numbers if audio overload is active
     int useOverloadColor = (chipnomadState->audioOverload > 0);
     gfxSetFgColor(useOverloadColor ? cs.warning :
@@ -215,7 +227,7 @@ void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
       // As we don't support multiple d-pad keys, keep only the last pressed one
       pressedButtons = (pressedButtons & ~dPadMask) | value;
     }
-    appInput(pressedButtons, isDoubleTap);
+    appInput(1, pressedButtons, isDoubleTap);
     editDoubleTapCount = 0;
     break;
   case eventKeyUp:
@@ -223,10 +235,12 @@ void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
     // Double tap is only applicable to Edit button
     if (value == keyEdit) editDoubleTapCount = appSettings.doubleTapFrames;
 
+    // Call appInput on key release
+    appInput(0, pressedButtons, 0);
+
     if (pressedButtons == 0) {
       // Clean untimed screen message when all keys are released
       screenMessage(0, "");
-      appInput(pressedButtons, 0);
     }
     break;
   case eventTick:
@@ -238,7 +252,7 @@ void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
         keyRepeatCount--;
         if (keyRepeatCount == 0) {
           keyRepeatCount = appSettings.keyRepeatSpeed;
-          appInput(pressedButtons, 0);
+          appInput(1, pressedButtons, 0);
         }
       } else {
         keyRepeatCount = 0;

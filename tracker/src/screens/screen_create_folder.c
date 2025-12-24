@@ -144,7 +144,7 @@ static void createFolder(void) {
   }
 }
 
-static void onInput(int keys, int isDoubleTap) {
+static int onInput(int isKeyDown, int keys, int isDoubleTap) {
   if (isCharEdit) {
     char result = charEditInput(keys, isDoubleTap, editingString, screenData.cursorCol, editingStringLength);
     if (result) {
@@ -155,8 +155,9 @@ static void onInput(int keys, int isDoubleTap) {
       fullRedraw();
     }
   } else {
-    screenInput(&screenData, keys, isDoubleTap);
+    return screenInput(&screenData, isKeyDown, keys, isDoubleTap);
   }
+  return 0;
 }
 
 const AppScreen screenCreateFolder = {

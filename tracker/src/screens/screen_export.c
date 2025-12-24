@@ -68,23 +68,23 @@ static void draw(void) {
   }
 }
 
-static void onInput(int keys, int isDoubleTap) {
+static int onInput(int isKeyDown, int keys, int isDoubleTap) {
   if (currentExporter) {
     if (keys == keyOpt) {
       currentExporter->cancel(currentExporter);
       currentExporter = NULL;
       screenMessage(MESSAGE_TIME, "Export cancelled");
     }
-    return; // Block all other input during export
+    return 1; // Block all other input during export
   }
 
   if (keys == keyOpt) {
     screenSetup(&screenProject, 0);
-    return;
+    return 1;
   }
 
   ScreenData* screen = exportScreen();
-  screenInput(screen, keys, isDoubleTap);
+  return screenInput(screen, isKeyDown, keys, isDoubleTap);
 }
 
 const AppScreen screenExport = {
@@ -107,7 +107,7 @@ int exportCommonColumnCount(int row) {
   } else if (row == 2) {
     return 1; // Bit depth
   }
-  return 1;
+  return 0;
 }
 
 void exportCommonDrawStatic(void) {

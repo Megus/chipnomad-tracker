@@ -192,7 +192,7 @@ void outputRegistersAY(PlaybackState* state, int trackIdx, int chipIdx, SoundChi
         if (volume > 15) volume = 15;
       }
 
-      chip->setRegister(chip, 8 + ayChannel, volume);
+      chip->setRegister(chip, 8 + ayChannel, state->trackEnabled[t] ? volume : 0);
 
       // Noise
       if ((track->note.chip.ay.mixer & 8) == 0 && track->note.chip.ay.noiseBase != EMPTY_VALUE_8) {

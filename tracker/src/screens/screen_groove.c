@@ -172,9 +172,9 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
   return 0;
 }
 
-static void onInput(int keys, int isDoubleTap) {
-  if (screen.selectMode == 0 && inputScreenNavigation(keys, isDoubleTap)) return;
-  screenInput(&screen, keys, isDoubleTap);
+static int onInput(int isKeyDown, int keys, int isDoubleTap) {
+  if (screen.selectMode == 0 && inputScreenNavigation(keys, isDoubleTap)) return 1;
+  return screenInput(&screen, isKeyDown, keys, isDoubleTap);
 }
 
 const AppScreen screenGroove = {

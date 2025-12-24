@@ -356,7 +356,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
   return 0;
 }
 
-static void onInput(int keys, int isDoubleTap) {
+static int onInput(int isKeyDown, int keys, int isDoubleTap) {
   // Stop preview when keys are released
   if (keys == 0) {
     playbackStopPreview(&chipnomadState->playbackState, *pSongTrack);
@@ -371,11 +371,12 @@ static void onInput(int keys, int isDoubleTap) {
       fullRedraw();
     }
   } else {
-    if (inputScreenNavigation(keys, isDoubleTap)) return;
+    if (inputScreenNavigation(keys, isDoubleTap)) return 1;
 
     ScreenData* screen = instrumentScreen();
-    if (screenInput(screen, keys, isDoubleTap)) return;
+    if (screenInput(screen, isKeyDown, keys, isDoubleTap)) return 1;
   }
+  return 0;
 }
 
 const AppScreen screenInstrument = {

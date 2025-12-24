@@ -4,8 +4,6 @@
 #include "common.h"
 #include "chipnomad_lib.h"
 
-#define AUDIO_MAX_CHIPS (1)
-
 typedef void FrameCallback(void* userdata);
 
 typedef struct AudioManager {
@@ -13,9 +11,17 @@ typedef struct AudioManager {
   void (*pause)(void);
   void (*resume)(void);
   void (*stop)();
+  void (*toggleTrackMute)(int trackIdx);
+  void (*toggleTrackSolo)(int trackIdx);
+  uint8_t trackStates[PROJECT_MAX_TRACKS];
 } AudioManager;
 
 // Singleton AudioManager struct
 extern AudioManager audioManager;
+
+// Track state constants
+#define TRACK_NORMAL 0
+#define TRACK_SOLO 1
+#define TRACK_MUTED 2
 
 #endif
