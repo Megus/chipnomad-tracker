@@ -12,6 +12,11 @@ ChipNomad is a multi-platform tracker with LSDJ-like interface designed for crea
 - Pre-2024 Anbernic RG35xx with GarlicOS 1.4
 - macOS
 - Windows
+- Linux (x86_64 and ARM)
+
+## Building
+
+See [tracker/README.md](tracker/README.md) for detailed build instructions.
 
 ## Hardware Requirements
 
@@ -29,70 +34,6 @@ for GameBoy music. I come from ZX Spectrum scene, so I want to make music for AY
 every day and love it. This is how I chose the approach to the UI. I considered making an app for iOS/Android, but I find
 using touchscreen for music making a painful experience and prefer a device with physical buttons.
 I have Anbernic RG35xx with Garlic OS which allows installing 3rd party native apps. This is how I chose the platform.
-
-## Building
-
-### Quick Start
-
-```bash
-# Build for current platform (macOS/Linux)
-make desktop
-
-# Build all platform releases
-./deploy-all.sh
-# or
-make deploy-all
-```
-
-### Platform-Specific Builds
-
-#### Desktop (macOS/Linux)
-```bash
-# Simple build
-make desktop
-./build-desktop.sh
-
-# macOS app bundle with packaging
-make macOS-deploy
-```
-
-#### Windows
-```bash
-# Cross-compile from macOS/Linux (recommended)
-make windows-deploy
-
-# Native Windows build
-build-windows.bat  # On Windows with MinGW
-```
-
-#### Handheld Consoles
-```bash
-# PortMaster (multiple ARM devices)
-make PortMaster-deploy
-
-# RG35xx specific
-make RG35xx-deploy
-```
-
-### Requirements
-
-#### For Cross-Platform Builds (Docker)
-- Docker installed and running
-- No additional setup required
-
-#### For Native Builds
-- **macOS**: Xcode Command Line Tools, Homebrew, SDL2
-- **Linux**: GCC, SDL2 development libraries
-- **Windows**: MinGW-w64, SDL2 development libraries
-
-### Native Windows Setup (Optional)
-
-For Windows developers who prefer native builds:
-
-1. Install [MinGW-w64](https://www.mingw-w64.org/) or [MSYS2](https://www.msys2.org/)
-2. Download [SDL2 development libraries](https://github.com/libsdl-org/SDL/releases/tag/release-2.32.6)
-3. Set `SDL_PATH` environment variable (optional)
-4. Run `build-windows.bat`
 
 ## Acknowledgements
 

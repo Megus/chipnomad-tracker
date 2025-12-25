@@ -27,8 +27,8 @@ docker run --platform linux/amd64 --rm \
     make -f Makefile.linux linux-package
 
 echo "Linux package build completed!"
-if [ -f build/linux/ChipNomad-*-Linux-x86_64.tar.gz ]; then
-    echo "Output: $(ls build/linux/ChipNomad-*-Linux-x86_64.tar.gz)"
+if [ -f build/linux/ChipNomad-*-Linux-*.tar.gz ]; then
+    echo "Output: $(ls build/linux/ChipNomad-*-Linux-*.tar.gz)"
 else
     echo "Error: Package not found in build/linux/"
     exit 1
