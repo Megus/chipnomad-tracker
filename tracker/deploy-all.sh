@@ -36,6 +36,10 @@ echo "Building RG35xx release..."
 make RG35xx-deploy
 
 echo ""
+echo "Building Linux package..."
+make linux-package-deploy
+
+echo ""
 echo "=========================================="
 echo "All platform releases completed!"
 echo "Check the ../../releases/ directory for packages."

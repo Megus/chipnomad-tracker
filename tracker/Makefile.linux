@@ -1,0 +1,40 @@
+# Linux platform identifier
+PLATFORM = linux
+
+include Makefile.common
+
+# Linux-specific settings
+LIBS = $(COMMON_LIBS) platforms/sdl2
+OUTPUT_EXT =
+
+XTRA_CFLAGS = -DDESKTOP_BUILD
+XTRA_LIBS = -lSDL2 -lm
+CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(XTRA_CFLAGS)
+OUTPUT = -o $(BUILD)/chipnomad$(OUTPUT_EXT)
+
+APPNAME = ChipNomad
+VERSION = $(shell grep 'appVersion.*=' src/version.c | cut -d'"' -f2)
+
+# Simple Linux build
+.PHONY: linux
+linux:
+	$(call build_target)
+
+# Linux package build (tar.gz)
+.PHONY: linux-package
+linux-package: linux
+	@echo "Creating Linux package..."
+	@mkdir -p $(BUILD)/$(APPNAME)-Linux
+	@cp $(BUILD)/chipnomad $(BUILD)/$(APPNAME)-Linux/
+	@cp -r packaging/common/* $(BUILD)/$(APPNAME)-Linux/
+	@cp packaging/linux/README.txt $(BUILD)/$(APPNAME)-Linux/
+	@echo '#!/bin/bash' > $(BUILD)/$(APPNAME)-Linux/chipnomad.sh
+	@echo 'cd "$$(dirname "$$0")"' >> $(BUILD)/$(APPNAME)-Linux/chipnomad.sh
+	@echo './chipnomad "$$@"' >> $(BUILD)/$(APPNAME)-Linux/chipnomad.sh
+	@chmod +x $(BUILD)/$(APPNAME)-Linux/chipnomad.sh
+	@cd $(BUILD) && tar -czf $(APPNAME)-$(VERSION)-Linux-x86_64.tar.gz $(APPNAME)-Linux
+	@echo "Linux package created: $(BUILD)/$(APPNAME)-$(VERSION)-Linux-x86_64.tar.gz"
+
+.PHONY: clean
+clean:
+	rm -rf $(BUILD)
