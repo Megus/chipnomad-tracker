@@ -29,3 +29,7 @@ int removeDuplicatePhrases(Project* p);
 // Combined cleanup functions for UI
 void cleanupPhrasesAndChains(Project* p, int* phrasesFreed, int* chainsFreed);
 void cleanupInstrumentsAndTables(Project* p, int* instrumentsFreed, int* tablesFreed);
+
+// Usage checking functions
+int isChainUsedElsewhere(Project* p, int chainIdx, int excludeTrack, int excludeRow);
+int isPhraseUsedElsewhere(Project* p, int phraseIdx, int excludeChain, int excludeRow);

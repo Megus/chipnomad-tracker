@@ -227,10 +227,8 @@ static int editCell(int col, int row, enum CellEditAction action) {
   } else if (action == editDeepClone) {
     int current = chipnomadState->project.song[row][col];
     if (current != EMPTY_VALUE_16) {
-      int cloned = deepCloneChainToNext(current);
-      if (cloned != EMPTY_VALUE_16) {
-        chipnomadState->project.song[row][col] = cloned;
-        lastChainValue = cloned;
+      // Deep clone the phrases in the existing chain (don't create a new chain)
+      if (deepCloneChain(current)) {
         return 1;
       }
     }

@@ -10,6 +10,7 @@
 #define AUTOSAVE_FILENAME "autosave.cnm"
 #define FILENAME_LENGTH (24)
 #define PATH_LENGTH (4096)
+#define THEME_NAME_LENGTH (16)
 
 typedef struct ColorScheme {
   int background;
@@ -38,10 +39,12 @@ typedef struct AppSettings {
   int pitchConflictWarning;
   int gamepadSwapAB;
   ColorScheme colorScheme;
+  char themeName[THEME_NAME_LENGTH + 1];
   char projectFilename[FILENAME_LENGTH + 1];
   char projectPath[PATH_LENGTH + 1];
   char pitchTablePath[PATH_LENGTH + 1];
   char instrumentPath[PATH_LENGTH + 1];
+  char themePath[PATH_LENGTH + 1];
 } AppSettings;
 
 extern AppSettings appSettings;
@@ -54,6 +57,9 @@ extern ChipNomadState* chipnomadState;
 // Settings functions
 int settingsSave(void);
 int settingsLoad(void);
+int saveTheme(const char* path);
+int loadTheme(const char* path);
+void resetToDefaultColors(void);
 
 // Utility functions
 void extractFilenameWithoutExtension(const char* path, char* output, int maxLength);

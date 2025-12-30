@@ -376,4 +376,26 @@ void cleanupInstrumentsAndTables(Project* project, int* instrumentsFreed, int* t
   *tablesFreed = cleanupUnusedTables(project);
 }
 
+// Check if chain is used elsewhere in the song (excluding specific position)
+int isChainUsedElsewhere(Project* project, int chainIdx, int excludeTrack, int excludeRow) {
+  for (int row = 0; row < PROJECT_MAX_LENGTH; row++) {
+    for (int col = 0; col < PROJECT_MAX_TRACKS; col++) {
+      if (row == excludeRow && col == excludeTrack) continue;
+      if (project->song[row][col] == chainIdx) return 1;
+    }
+  }
+  return 0;
+}
+
+// Check if phrase is used elsewhere in chains (excluding specific position)
+int isPhraseUsedElsewhere(Project* project, int phraseIdx, int excludeChain, int excludeRow) {
+  for (int c = 0; c < PROJECT_MAX_CHAINS; c++) {
+    for (int row = 0; row < 16; row++) {
+      if (c == excludeChain && row == excludeRow) continue;
+      if (project->chains[c].rows[row].phrase == phraseIdx) return 1;
+    }
+  }
+  return 0;
+}
+
 

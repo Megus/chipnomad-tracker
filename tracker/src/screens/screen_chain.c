@@ -70,7 +70,7 @@ static int getColumnCount(int row) {
 
 static void drawStatic(void) {
   gfxSetFgColor(appSettings.colorScheme.textTitles);
-  gfxPrintf(0, 0, "CHAIN %02X", chain);
+  gfxPrintf(0, 0, "CHAIN %02X%c", chain, isChainUsedElsewhere(&chipnomadState->project, chain, *pSongTrack, *pSongRow) ? '*' : ' ');
 }
 
 static void drawField(int col, int row, int state) {

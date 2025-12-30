@@ -37,12 +37,12 @@ int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastValue, int isTa
     lastValue[0] = fx[0];
     lastValue[1] = fx[1];
     result = 2;
-  } else if (action == editIncrease) {
+  } else if (action == editIncrease && fx[0] != EMPTY_VALUE_8) {
     // Next FX
     if (fx[0] < fxTotalCount - 1) fx[0]++;
     lastValue[0] = fx[0];
     result = 2;
-  } else if (action == editDecrease) {
+  } else if (action == editDecrease && fx[0] != EMPTY_VALUE_8) {
     // Previous FX
     if (fx[0] > 0) fx[0]--;
     lastValue[0] = fx[0];

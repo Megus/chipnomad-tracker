@@ -424,7 +424,7 @@ static int projectLoadInternal(int fileId, Project* project) {
   READ_STRING;
   if (!strncmp(lpstr, "- Author:", 9)) {
     if (sscanf(lpstr, "- Author: %[^\n]", p.author) != 1) {
-      p.title[0] = 0; // Empty author
+      p.author[0] = 0; // Empty author
     }
   }
 

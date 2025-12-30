@@ -82,7 +82,7 @@ static int getColumnCount(int row) {
 
 static void drawStatic(void) {
   gfxSetFgColor(appSettings.colorScheme.textTitles);
-  gfxPrintf(0, 0, "PHRASE %03X", phraseIdx);
+  gfxPrintf(0, 0, "PHRASE %03X%c", phraseIdx, isPhraseUsedElsewhere(&chipnomadState->project, phraseIdx, chipnomadState->project.song[*pSongRow][*pSongTrack], *pChainRow) ? '*' : ' ');
 }
 
 static void fullRedraw(void) {
