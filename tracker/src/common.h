@@ -36,6 +36,7 @@ typedef struct AppSettings {
   float mixVolume;
   int quality;
   int pitchConflictWarning;
+  int gamepadSwapAB;
   ColorScheme colorScheme;
   char projectFilename[FILENAME_LENGTH + 1];
   char projectPath[PATH_LENGTH + 1];

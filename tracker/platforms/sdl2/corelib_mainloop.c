@@ -5,6 +5,16 @@
 
 #define FPS 60
 
+// Enable gamepad support for desktop builds
+#ifdef DESKTOP_BUILD
+#define GAMEPAD_SUPPORT
+#endif
+
+#ifdef GAMEPAD_SUPPORT
+// Gamepad support
+static SDL_GameController* gameController = NULL;
+#endif
+
 // Keyboard mapping
 #if defined(DESKTOP_BUILD) || defined(PORTMASTER_BUILD)
 // Desktop and PortMaster mapping
@@ -65,12 +75,37 @@ static int decodeKey(int sym) {
   return 0;
 }
 
+#ifdef GAMEPAD_SUPPORT
+static int decodeGamepadButton(int button) {
+  switch (button) {
+    case SDL_CONTROLLER_BUTTON_DPAD_UP: return keyUp;
+    case SDL_CONTROLLER_BUTTON_DPAD_DOWN: return keyDown;
+    case SDL_CONTROLLER_BUTTON_DPAD_LEFT: return keyLeft;
+    case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: return keyRight;
+    case SDL_CONTROLLER_BUTTON_A: return keyEdit;  // Steam Deck: A button
+    case SDL_CONTROLLER_BUTTON_B: return keyOpt;   // Steam Deck: B button
+    case SDL_CONTROLLER_BUTTON_START: return keyPlay;  // Steam Deck: Menu button
+    case SDL_CONTROLLER_BUTTON_BACK:  // Steam Deck: View button
+    case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+    case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: return keyShift;
+    default: return 0;
+  }
+}
+#endif
+
 void mainLoopRun(void (*draw)(void), void (*onEvent)(enum MainLoopEvent event, int value, void* userdata)) {
   uint32_t delay = 1000 / FPS;
   uint32_t start;
   uint32_t busytime = 0;
   SDL_Event event;
   int menu = 0;
+
+#ifdef GAMEPAD_SUPPORT
+  // Initialize gamepad support
+  if (SDL_NumJoysticks() > 0) {
+    gameController = SDL_GameControllerOpen(0);
+  }
+#endif
 
   while (1) {
     start = SDL_GetTicks();
@@ -81,6 +116,12 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(enum MainLoopEvent event, i
         (event.key.keysym.sym == BTN_EXIT) ||
         (menu && event.key.keysym.sym == BTN_X)))) {
         onEvent(eventExit, 0, NULL);
+#ifdef GAMEPAD_SUPPORT
+        if (gameController) {
+          SDL_GameControllerClose(gameController);
+          gameController = NULL;
+        }
+#endif
         return;
       } else if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
         if (event.key.keysym.sym == BTN_MENU) {
@@ -89,6 +130,13 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(enum MainLoopEvent event, i
           enum Key key = decodeKey(event.key.keysym.sym);
           if (key != -1 ) onEvent(event.type == SDL_KEYDOWN ? eventKeyDown : eventKeyUp, key, NULL);
         }
+#ifdef GAMEPAD_SUPPORT
+      } else if (event.type == SDL_CONTROLLERBUTTONDOWN || event.type == SDL_CONTROLLERBUTTONUP) {
+        enum Key key = decodeGamepadButton(event.cbutton.button);
+        if (key != 0) {
+          onEvent(event.type == SDL_CONTROLLERBUTTONDOWN ? eventKeyDown : eventKeyUp, key, NULL);
+        }
+#endif
       }
     }
     onEvent(eventTick, 0, NULL);

@@ -28,6 +28,7 @@ AppSettings appSettings = {
   .mixVolume = 20000.0f / 32767.0f,
   .quality = CHIPNOMAD_QUALITY_MEDIUM,
   .pitchConflictWarning = 0,
+  .gamepadSwapAB = 0,
   .colorScheme = {
     .background = 0x000f1a,
     .textEmpty = 0x002638,
@@ -94,6 +95,7 @@ int settingsSave(void) {
   filePrintf(fileId, "mixVolume: %f\n", appSettings.mixVolume);
   filePrintf(fileId, "quality: %d\n", appSettings.quality);
   filePrintf(fileId, "pitchConflictWarning: %d\n", appSettings.pitchConflictWarning);
+  filePrintf(fileId, "gamepadSwapAB: %d\n", appSettings.gamepadSwapAB);
   filePrintf(fileId, "colorBackground: 0x%06x\n", appSettings.colorScheme.background);
   filePrintf(fileId, "colorTextEmpty: 0x%06x\n", appSettings.colorScheme.textEmpty);
   filePrintf(fileId, "colorTextInfo: 0x%06x\n", appSettings.colorScheme.textInfo);
@@ -147,6 +149,8 @@ int settingsLoad(void) {
       sscanf(line + 9, "%d", &appSettings.quality);
     } else if (strncmp(line, "pitchConflictWarning: ", 22) == 0) {
       sscanf(line + 22, "%d", &appSettings.pitchConflictWarning);
+    } else if (strncmp(line, "gamepadSwapAB: ", 15) == 0) {
+      sscanf(line + 15, "%d", &appSettings.gamepadSwapAB);
     } else if (strncmp(line, "colorBackground: ", 17) == 0) {
       sscanf(line + 17, "0x%x", &appSettings.colorScheme.background);
     } else if (strncmp(line, "colorTextEmpty: ", 16) == 0) {

@@ -14,7 +14,7 @@ static void settingsDrawField(int col, int row, int state);
 static int settingsOnEdit(int col, int row, enum CellEditAction action);
 
 static ScreenData screenSettingsData = {
-  .rows = 4,
+  .rows = 5,
   .cursorRow = 0,
   .cursorCol = 0,
   .selectMode = -1,
@@ -56,6 +56,8 @@ void settingsDrawCursor(int col, int row) {
   } else if (row == 2 && col == 0) {
     gfxCursor(23, 4, 6); // Under quality value
   } else if (row == 3 && col == 0) {
+    gfxCursor(23, 5, 3); // Under gamepad swap ON/OFF
+  } else if (row == 4 && col == 0) {
     gfxCursor(0, 17, 14); // "Quit ChipNomad"
   }
 }
@@ -85,6 +87,11 @@ void settingsDrawField(int col, int row, int state) {
     const char* qualityNames[] = {"LOW   ", "MEDIUM", "HIGH  ", "BEST  "};
     gfxPrint(23, 4, qualityNames[appSettings.quality]);
   } else if (row == 3 && col == 0) {
+    gfxSetFgColor(appSettings.colorScheme.textDefault);
+    gfxPrint(0, 5, "Gamepad swap A/B");
+    gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    gfxPrint(23, 5, appSettings.gamepadSwapAB ? "ON " : "OFF");
+  } else if (row == 4 && col == 0) {
     gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     gfxPrint(0, 17, "Quit ChipNomad");
   }
@@ -115,7 +122,11 @@ int settingsOnEdit(int col, int row, enum CellEditAction action) {
       chipnomadSetQuality(chipnomadState, appSettings.quality);
     }
     return handled;
-  } else if (row == 3 && col == 0 && action == editTap) {
+  } else if (row == 3 && col == 0) {
+    // Gamepad swap A/B (0/1)
+    static uint8_t lastValue = 0;
+    return edit8withLimit(action, (uint8_t*)&appSettings.gamepadSwapAB, &lastValue, 1, 1);
+  } else if (row == 4 && col == 0 && action == editTap) {
     // Trigger exit event
     mainLoopTriggerQuit();
     return 1;

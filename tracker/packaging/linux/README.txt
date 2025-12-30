@@ -15,6 +15,12 @@ INSTALLATION:
    - Run ./chipnomad.sh from terminal
    - Run ./chipnomad directly from terminal
 
+CONTROLS:
+- Keyboard: Arrow keys, X (A), Z (B), Space (Start), Shift (Select)
+- Gamepad: D-pad, A button, B button, Start/Menu, Shoulder buttons
+- Steam Deck: Native controller support included
+- PS5/Xbox controllers: Use Settings > Gamepad swap A/B if needed
+
 CONTENTS:
 - chipnomad: Main executable
 - chipnomad.sh: Launcher script
