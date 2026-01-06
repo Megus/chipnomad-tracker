@@ -2,12 +2,14 @@
 #include <string.h>
 #include <locale.h>
 #include <stdlib.h>
+#include <ctype.h> // For tolower()
 
-#ifdef SDL2
+// Only include SDL headers for keyboard detection when building for desktop
+// Embedded platforms don't need SDL for locale-based detection
+#if defined(DESKTOP_BUILD) && defined(SDL2)
 #include <SDL2/SDL.h>
-#else
-#include <SDL/SDL.h>
 #endif
+// Note: SDL1.2 builds don't include headers here since they're embedded or use different paths
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -27,12 +29,17 @@ KeyboardLayout detectKeyboardLayout(void) {
   const char* locale = NULL;
   
   // Try different methods to get locale information
-#ifdef _WIN32
-  // Windows-specific locale detection
+#if defined(_WIN32) && !defined(__USE_MINGW_ANSI_STDIO)
+  // Windows-specific locale detection (MSVC)
   char localeBuffer[LOCALE_NAME_MAX_LENGTH];
   if (GetLocaleInfoA(LOCALE_USER_DEFAULT, LOCALE_SNAME, localeBuffer, sizeof(localeBuffer)) > 0) {
     locale = localeBuffer;
   }
+#elif defined(_WIN32) && defined(__USE_MINGW_ANSI_STDIO)
+  // MinGW build - fallback to environment variables
+  locale = getenv("LC_ALL");
+  if (!locale) locale = getenv("LC_CTYPE");
+  if (!locale) locale = getenv("LANG");
 #else
   // Unix-like systems (Linux, macOS)
   // First try setlocale to ensure locale is properly initialized
@@ -117,7 +124,7 @@ KeyboardLayout detectKeyboardLayout(void) {
   }
 
   // Try SDL-based detection as fallback
-#ifdef SDL2
+#if defined(DESKTOP_BUILD) && defined(SDL2)
   // SDL2 provides more detailed keyboard information
   // Try to get keyboard layout name if available
   char* keyboardName = SDL_GetKeyboardName(0); // Get first keyboard's name
@@ -173,7 +180,7 @@ static KeyboardLayout detectLayoutFromKeyPosition(void) {
   // 2. Compare with expected positions for different layouts
   // 3. Use platform-specific APIs for keyboard mapping
   
-#ifdef SDL2
+#if defined(DESKTOP_BUILD) && defined(SDL2)
   // SDL2 allows us to get scancode information
   // For now, this is a simplified version
   SDL_Scancode yScan = SDL_GetScancodeFromKey(SDLK_y);
