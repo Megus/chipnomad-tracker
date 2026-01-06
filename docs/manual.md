@@ -41,7 +41,7 @@ Control mapping on desktop:
 - SELECT - Left Shift
 - START - Space
 - A - X
-- B - Z
+- B - Y or Z for qwerty and qwertz keyboard layouts
 
 ## Project Structure
 

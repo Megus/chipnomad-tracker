@@ -16,7 +16,8 @@
 #define BTN_A           120
 #define BTN_B           122
 #define BTN_X           113
-#define BTN_Y           0
+#define BTN_Y           121
+#define BTN_Z           122
 #define BTN_L1          0
 #define BTN_R1          0
 #define BTN_L2          0
@@ -38,6 +39,7 @@
 #define BTN_B           98
 #define BTN_X           120
 #define BTN_Y           121
+#define BTN_Z           122
 #define BTN_L1          104
 #define BTN_R1          108
 #define BTN_L2          106
@@ -58,11 +60,14 @@ static int decodeKey(int sym) {
   if (sym == BTN_LEFT) return keyLeft;
   if (sym == BTN_RIGHT) return keyRight;
   if (sym == BTN_A) return keyEdit;
-  if (sym == BTN_B) return keyOpt;
+  // Map both Y and Z keys to keyOpt for QWERTY and QWERTZ keyboard layouts
+  // This ensures the B button function works regardless of keyboard layout
+  if (sym == BTN_B || sym == BTN_Y || sym == BTN_Z) return keyOpt;
   if (sym == BTN_START) return keyPlay;
   if (sym == BTN_SELECT || sym == BTN_R1 || sym == BTN_L1) return keyShift;
   if (sym == BTN_VOLUME_UP) return keyVolumeUp;
   if (sym == BTN_VOLUME_DOWN) return keyVolumeDown;
+  
   return 0;
 }
 

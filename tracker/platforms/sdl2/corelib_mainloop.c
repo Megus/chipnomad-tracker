@@ -23,7 +23,8 @@ static SDL_GameController* gameController = NULL;
 #define BTN_LEFT        (SDLK_LEFT)
 #define BTN_RIGHT       (SDLK_RIGHT)
 #define BTN_A           (SDLK_x)
-#define BTN_B           (SDLK_z)
+#define BTN_B1          (SDLK_y)
+#define BTN_B2          (SDLK_z)
 #define BTN_X           (SDLK_c)
 #define BTN_Y           (SDLK_a)
 #define BTN_L1          (SDLK_LSHIFT)
@@ -67,11 +68,14 @@ static int decodeKey(int sym) {
   if (sym == BTN_LEFT) return keyLeft;
   if (sym == BTN_RIGHT) return keyRight;
   if (sym == BTN_A) return keyEdit;
-  if (sym == BTN_B) return keyOpt;
+  // Map both Y and Z keys to keyOpt for QWERTY and QWERTZ keyboard layouts
+  // This ensures the B button function works regardless of keyboard layout
+  if (sym == BTN_B1 || sym == BTN_B2) return keyOpt;
   if (sym == BTN_START) return keyPlay;
   if (sym == BTN_SELECT || sym == BTN_R1 || sym == BTN_L1) return keyShift;
   if (sym == BTN_VOLUME_UP) return keyVolumeUp;
   if (sym == BTN_VOLUME_DOWN) return keyVolumeDown;
+  
   return 0;
 }
 
