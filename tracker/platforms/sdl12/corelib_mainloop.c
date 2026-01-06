@@ -3,6 +3,8 @@
 #include <SDL/SDL.h>
 
 #include "corelib_gfx.h"
+#include "common.h"
+#include "keyboard_layout.h"
 
 #define FPS 60
 
@@ -60,9 +62,33 @@ static int decodeKey(int sym) {
   if (sym == BTN_LEFT) return keyLeft;
   if (sym == BTN_RIGHT) return keyRight;
   if (sym == BTN_A) return keyEdit;
-  // Map both Y and Z keys to keyOpt for QWERTY and QWERTZ keyboard layouts
-  // This ensures the B button function works regardless of keyboard layout
-  if (sym == BTN_B || sym == BTN_Y || sym == BTN_Z) return keyOpt;
+  
+  // Handle keyboard layout for B button mapping
+  // This ensures proper B button mapping based on current keyboard layout setting
+  switch (appSettings.keyboardLayout) {
+    case KEYBOARD_LAYOUT_QWERTY:
+      // QWERTY: Z key is where QWERTZ has Y, so both Y and Z work for compatibility
+      if (sym == BTN_Z) return keyOpt;
+      break;
+    case KEYBOARD_LAYOUT_QWERTZ:
+      // QWERTZ: Y key is where QWERTY has Z, so both Y and Z work for compatibility  
+      if (sym == BTN_Y) return keyOpt;
+      break;
+    case KEYBOARD_LAYOUT_AZERTY:
+      // AZERTY: Both Y and Z should work for compatibility
+      if (sym == BTN_Y || sym == BTN_Z) return keyOpt;
+      break;
+    case KEYBOARD_LAYOUT_DVORAK:
+      // DVORAK: Both Y and Z should work for compatibility
+      if (sym == BTN_Y || sym == BTN_Z) return keyOpt;
+      break;
+    default: // AUTO
+      // AUTO mode: Map both Y and Z keys to keyOpt for maximum compatibility
+      // This ensures the B button function works regardless of keyboard layout
+      if (sym == BTN_B || sym == BTN_Y || sym == BTN_Z) return keyOpt;
+      break;
+  }
+  
   if (sym == BTN_START) return keyPlay;
   if (sym == BTN_SELECT || sym == BTN_R1 || sym == BTN_L1) return keyShift;
   if (sym == BTN_VOLUME_UP) return keyVolumeUp;

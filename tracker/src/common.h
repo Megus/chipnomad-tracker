@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
-#include "corelib_mainloop.h"
 #include "chipnomad_lib.h"
+#include "corelib_mainloop.h"
 
 #define AUTOSAVE_FILENAME "autosave.cnm"
 #define FILENAME_LENGTH (24)
@@ -25,6 +25,14 @@ typedef struct ColorScheme {
   int warning;
 } ColorScheme;
 
+typedef enum {
+  KEYBOARD_LAYOUT_AUTO = 0,
+  KEYBOARD_LAYOUT_QWERTY = 1,
+  KEYBOARD_LAYOUT_QWERTZ = 2,
+  KEYBOARD_LAYOUT_AZERTY = 3,
+  KEYBOARD_LAYOUT_DVORAK = 4
+} KeyboardLayout;
+
 typedef struct AppSettings {
   int screenWidth;
   int screenHeight;
@@ -38,6 +46,7 @@ typedef struct AppSettings {
   int quality;
   int pitchConflictWarning;
   int gamepadSwapAB;
+  KeyboardLayout keyboardLayout;
   ColorScheme colorScheme;
   char themeName[THEME_NAME_LENGTH + 1];
   char projectFilename[FILENAME_LENGTH + 1];

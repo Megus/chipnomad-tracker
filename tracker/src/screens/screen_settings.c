@@ -4,6 +4,7 @@
 #include "corelib_gfx.h"
 #include "corelib_mainloop.h"
 #include "screens.h"
+#include "keyboard_layout.h"
 
 // Forward declarations
 static int settingsColumnCount(int row);
@@ -15,7 +16,7 @@ static void settingsDrawField(int col, int row, int state);
 static int settingsOnEdit(int col, int row, enum CellEditAction action);
 
 static ScreenData screenSettingsData = {
-  .rows = 6,
+  .rows = 7,
   .cursorRow = 0,
   .cursorCol = 0,
   .selectMode = -1,
@@ -61,6 +62,8 @@ void settingsDrawCursor(int col, int row) {
   } else if (row == 4 && col == 0) {
     gfxCursor(0, 6, 16); // "Edit color theme"
   } else if (row == 5 && col == 0) {
+    gfxCursor(23, 6, 6); // Under keyboard layout value
+  } else if (row == 6 && col == 0) {
     gfxCursor(0, 17, 14); // "Quit ChipNomad"
   }
 }
@@ -98,6 +101,11 @@ void settingsDrawField(int col, int row, int state) {
     gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     gfxPrint(0, 6, "Edit color theme");
   } else if (row == 5 && col == 0) {
+    gfxSetFgColor(appSettings.colorScheme.textDefault);
+    gfxPrint(0, 6, "Keyboard layout");
+    gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    gfxPrint(23, 6, getKeyboardLayoutName(appSettings.keyboardLayout));
+  } else if (row == 6 && col == 0) {
     gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     gfxPrint(0, 17, "Quit ChipNomad");
   }
@@ -136,7 +144,18 @@ int settingsOnEdit(int col, int row, enum CellEditAction action) {
     // Navigate to color theme screen
     screenSetup(&screenColorTheme, 0);
     return 0;
-  } else if (row == 5 && col == 0 && action == editTap) {
+  } else if (row == 5 && col == 0) {
+    // Keyboard layout (0-4)
+    static uint8_t lastValue = 0;
+    int result = edit8withLimit(action, (uint8_t*)&appSettings.keyboardLayout, &lastValue, 1, 4);
+    
+    // If keyboard layout was actually changed, update the active layout
+    if (result && appSettings.keyboardLayout != lastValue) {
+      updateKeyboardLayout();
+    }
+    
+    return result;
+  } else if (row == 6 && col == 0 && action == editTap) {
     // Trigger exit event
     mainLoopTriggerQuit();
     return 1;
