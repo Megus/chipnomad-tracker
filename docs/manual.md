@@ -41,7 +41,28 @@ Control mapping on desktop:
 - SELECT - Left Shift
 - START - Space
 - A - X
-- B - Z
+- B - Y or Z for qwerty and qwertz keyboard layouts
+
+### Keyboard Layout Support
+
+ChipNomad automatically detects your keyboard layout based on system locale and provides manual override options in the Settings screen:
+
+- **AUTO**: Automatically detect based on system locale
+- **QWERTY**: US/UK keyboard layout (Z key for B button)
+- **QWERTZ**: German/Austrian keyboard layout (Y key for B button)
+- **AZERTY**: French keyboard layout
+- **DVORAK**: Dvorak keyboard layout
+
+The layout detection works by checking:
+1. System locale settings (LANG, LC_ALL, etc.)
+2. Regional keyboard conventions
+3. SDL keyboard information when available
+
+Supported locales:
+- German-speaking regions (DE, AT, CH, LU) → QWERTZ
+- French-speaking regions (FR, BE, CA) → AZERTY
+- English-speaking regions → QWERTY
+- Other European regions → Appropriate local layouts
 
 ## Project Structure
 

@@ -4,6 +4,7 @@
 
 - *PLATFORM*: Linux x86_64 package for Linux desktops and Steam Deck
 - Gamepad support for desktop builds
+- Support QWERTZ and QWERTY keyboard layouts for desktop builds
 - Support for 2x and 3x AY/YM chips
 - Linear pitch option (pitch tables are defined in cents)
 - Mute/solo tracks (B + Select/Start on Song screen. Release B first to keep mute/solo)

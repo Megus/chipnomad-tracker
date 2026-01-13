@@ -1,6 +1,7 @@
 #include "common.h"
 #include "corelib/corelib_file.h"
-#include "corelib_gfx.h"
+#include "corelib/corelib_gfx.h"
+#include "keyboard_layout.h"
 #include <string.h>
 
 #ifdef MACOS_BUILD
@@ -29,6 +30,7 @@ AppSettings appSettings = {
   .quality = CHIPNOMAD_QUALITY_MEDIUM,
   .pitchConflictWarning = 0,
   .gamepadSwapAB = 0,
+  .keyboardLayout = KEYBOARD_LAYOUT_AUTO,
   .colorScheme = {
     .background = 0x000f1a,
     .textEmpty = 0x002638,
@@ -97,6 +99,8 @@ int settingsSave(void) {
   filePrintf(fileId, "quality: %d\n", appSettings.quality);
   filePrintf(fileId, "pitchConflictWarning: %d\n", appSettings.pitchConflictWarning);
   filePrintf(fileId, "gamepadSwapAB: %d\n", appSettings.gamepadSwapAB);
+  filePrintf(fileId, "keyboardLayout: %d\n", (int)appSettings.keyboardLayout);
+  filePrintf(fileId, "gamepadSwapAB: %d\n", appSettings.gamepadSwapAB);
   filePrintf(fileId, "colorBackground: 0x%06x\n", appSettings.colorScheme.background);
   filePrintf(fileId, "colorTextEmpty: 0x%06x\n", appSettings.colorScheme.textEmpty);
   filePrintf(fileId, "colorTextInfo: 0x%06x\n", appSettings.colorScheme.textInfo);
@@ -154,6 +158,10 @@ int settingsLoad(void) {
       sscanf(line + 22, "%d", &appSettings.pitchConflictWarning);
     } else if (strncmp(line, "gamepadSwapAB: ", 15) == 0) {
       sscanf(line + 15, "%d", &appSettings.gamepadSwapAB);
+    } else if (strncmp(line, "keyboardLayout: ", 16) == 0) {
+      int layoutValue;
+      sscanf(line + 16, "%d", &layoutValue);
+      appSettings.keyboardLayout = (KeyboardLayout)layoutValue;
     } else if (strncmp(line, "colorBackground: ", 17) == 0) {
       sscanf(line + 17, "0x%x", &appSettings.colorScheme.background);
     } else if (strncmp(line, "colorTextEmpty: ", 16) == 0) {
