@@ -74,28 +74,34 @@ char* helpFXHint(uint8_t* fx, int isTable) {
       sprintf(buffer, "Aux table %s", byteToHex(fx[1]));
       break;
     case fxTHO: // Table hop
-      sprintf(buffer, "Jump to instrument table row %hhX", fx[1] & 0xf);
+      sprintf(buffer, "Hop to instrument table row %hhX", fx[1] & 0xf);
       break;
     case fxTXH: // Aux table hop
-      sprintf(buffer, "Jump to aux table row %hhX", fx[1] & 0xf);
+      sprintf(buffer, "Hop to aux table row %hhX", fx[1] & 0xf);
       break;
     case fxGRV: // Track groove
-      sprintf(buffer, "Track groove %hhu", fx[1]);
+      sprintf(buffer, "Track groove %s", byteToHex(fx[1]));
       break;
     case fxGGR: // Global groove
-      sprintf(buffer, "Global groove %hhu", fx[1]);
+      sprintf(buffer, "Global groove %s", byteToHex(fx[1]));
       break;
     case fxHOP: // Hop
-      if (isTable) {
-        sprintf(buffer, "Jump to row %hhX in this column", fx[1] & 0xf);
+      if (!isTable && fx[1] == 0xff) {
+        sprintf(buffer, "Stop playback");
       } else {
-        if (fx[1] == 0xff) {
-          sprintf(buffer, "Stop playback");
+        if ((fx[1] & 0xf0) == 0) {
+          sprintf(buffer, "Hop to row %hhX ", fx[1] & 0xf);
         } else {
-          sprintf(buffer, "Jump to song row %s", byteToHex(fx[1]));
+          sprintf(buffer, "Hop to row %hhX (%hhu times)", fx[1] & 0xf, fx[1] >> 4);
         }
       }
       break;
+    case fxSNG: // Song hop
+      if (isTable) {
+        sprintf(buffer, "No effect");
+      } else {
+        sprintf(buffer, "Song hop by %s", byteToHex(fx[1]));
+      }
     // AY-specific FX
     case fxAYM: // AY Mixer settting
       if (fx[1] & 0xf0) {
@@ -179,7 +185,8 @@ static const char* fxHelpText[] = {
   [fxTXH] = "Aux Table Hop\nJumps to specific\naux table row",
   [fxGRV] = "Track Groove\nSets groove for\nthis track only",
   [fxGGR] = "Global Groove\nSets groove for\nall tracks",
-  [fxHOP] = "Hop\nJumps to song row\nor stops playback",
+  [fxHOP] = "Hop\nHops to phrase/table row X times",
+  [fxSNG] = "Song Hop\nHops in song by\namount specified",
   [fxAYM] = "AY Mixer\nControls tone/noise mix\nand envelope mode",
   [fxERT] = "Envelope Retrigger\nRestarts AY envelope\nfrom beginning",
   [fxNOI] = "Noise Offset\nAdds offset to\nnoise period",

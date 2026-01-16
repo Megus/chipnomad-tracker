@@ -10,6 +10,7 @@ void tableInit(PlaybackState* state, int trackIdx, struct PlaybackTableState* ta
 void tableReadFX(PlaybackState* state, int trackIdx, struct PlaybackTableState* table, int fxIdx, int forceRead);
 void initFX(PlaybackState* state, int trackIdx, uint8_t* fx, PlaybackFXState *fxState, int forceCleanState);
 int handleFX(PlaybackState* state, int trackIdx, int chipIdx);
+void hopToTableRow(PlaybackState* state, int trackIdx, PlaybackTableState* table, int tableRow);
 int vibratoCommonLogic(PlaybackFXState *fxState, int scale);
 
 // Chip-specific functions

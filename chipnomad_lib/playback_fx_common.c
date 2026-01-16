@@ -147,6 +147,7 @@ static void handleFX_ARP(struct PlaybackState *state, PlaybackTrackState *track,
 // ARC - Arp settings
 static void handleFX_ARC(struct PlaybackState *state, PlaybackTrackState *track, int trackIdx, int chipIdx, PlaybackFXState *fx, PlaybackTableState *tableState) {
   track->arpSpeed = fx->value & 0x0F;
+  if (track->arpSpeed == 0) track->arpSpeed = 1;
   track->arpType = (fx->value & 0xF0) >> 4;
 }
 
@@ -180,11 +181,7 @@ static void handleFX_THO(PlaybackState* state, PlaybackTrackState* track, int tr
   if (tableState == NULL) {
     // FX is in Phrase - hop only in instrument table
     if (track->note.instrumentTable.tableIdx != EMPTY_VALUE_8) {
-      for (int i = 0; i < 4; i++) {
-        track->note.instrumentTable.counters[i] = 0;
-        track->note.instrumentTable.rows[i] = fx->value & 0xf;
-        tableReadFX(state, trackIdx, &track->note.instrumentTable, i, 0);
-      }
+      hopToTableRow(state, trackIdx, &track->note.instrumentTable, fx->value & 0xf);
     }
     handleAllTableFX(state, trackIdx, chipIdx);
   }
@@ -196,11 +193,7 @@ static void handleFX_TXH(PlaybackState* state, PlaybackTrackState* track, int tr
   if (tableState == NULL) {
     // FX is in Phrase - hop only in aux table
     if (track->note.auxTable.tableIdx != EMPTY_VALUE_8) {
-      for (int i = 0; i < 4; i++) {
-        track->note.auxTable.counters[i] = 0;
-        track->note.auxTable.rows[i] = fx->value & 0xf;
-        tableReadFX(state, trackIdx, &track->note.auxTable, i, 0);
-      }
+      hopToTableRow(state, trackIdx, &track->note.auxTable, fx->value & 0xf);
     }
     handleAllTableFX(state, trackIdx, chipIdx);
   }
@@ -342,7 +335,7 @@ static void handleFX_PVB(PlaybackState* state, PlaybackTrackState* track, int tr
   track->note.pitchOffset += vibratoCommonLogic(fx, scale);
 }
 
-// PSL - Pitch slide (portamento
+// PSL - Pitch slide (portamento)
 static void handleFX_PSL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
   if (fx->data.psl.startPeriod == 0 || (fx->data.psl.counter == 0 && (track->note.noteBase == EMPTY_VALUE_8 || track->note.noteBase == NOTE_OFF)) || fx->data.psl.counter >= fx->value) {
     fx->fx = EMPTY_VALUE_8;

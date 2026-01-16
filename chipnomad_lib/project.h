@@ -45,6 +45,7 @@ enum FX {
   fxGRV, // Track groove
   fxGGR, // Global groove
   fxHOP, // Hop
+  fxSNG, // Song hop
   // AY-specific FX
   fxAYM, // AY Mixer settting
   fxERT, // Envelope retrigger

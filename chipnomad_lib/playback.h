@@ -21,6 +21,7 @@ typedef struct PlaybackTableState {
   uint8_t counters[4];
   uint8_t speed[4];
   PlaybackFXState fx[4];
+  uint8_t fxAuxState[16][4];
 } PlaybackTableState;
 
 typedef struct PlaybackAYNoteState {
@@ -117,9 +118,10 @@ typedef struct PlaybackTrackState {
 
   // Currently playing note
   PlaybackNoteState note;
-
   // Cached phrase row data
   PhraseRow currentPhraseRow;
+  // FX auxillary state data
+  uint8_t fxAuxState[16][3];
 } PlaybackTrackState;
 
 typedef struct PlaybackAYChipState {

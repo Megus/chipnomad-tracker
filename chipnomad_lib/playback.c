@@ -8,6 +8,23 @@
 // Common logic
 //
 
+static void resetTrackFXAuxState(PlaybackState* state, int trackIdx) {
+  PlaybackTrackState* track = &state->tracks[trackIdx];
+  for (int c = 0; c < 16; c++) {
+    for (int d = 0; d < 3; d++) {
+      track->fxAuxState[c][d] = 0;
+    }
+  }
+}
+
+static void resetTableFXAuxState(PlaybackTableState* tableState) {
+  for (int c = 0; c < 16; c++) {
+    for (int d = 0; d < 4; d++) {
+      tableState->fxAuxState[c][d] = 0;
+    }
+  }
+}
+
 static void resetTrack(PlaybackState* state, int trackIdx) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
 
@@ -39,6 +56,10 @@ static void resetTrack(PlaybackState* state, int trackIdx) {
     track->note.fx[i].fx = EMPTY_VALUE_8;
   }
 
+  resetTrackFXAuxState(state, trackIdx);
+  resetTableFXAuxState(&track->note.instrumentTable);
+  resetTableFXAuxState(&track->note.auxTable);
+
   // Clear cached phrase row
   memset(&track->currentPhraseRow, EMPTY_VALUE_8, sizeof(track->currentPhraseRow));
 
@@ -51,6 +72,8 @@ void tableInit(PlaybackState* state, int trackIdx, struct PlaybackTableState* ta
 
   Project* p = state->p;
 
+  resetTableFXAuxState(table);
+
   for (int i = 0; i < 4; i++) {
     table->counters[i] = 0;
     table->rows[i] = 0;
@@ -62,6 +85,14 @@ void tableInit(PlaybackState* state, int trackIdx, struct PlaybackTableState* ta
     }
 
     tableReadFX(state, trackIdx, table, i, 1);
+  }
+}
+
+void hopToTableRow(PlaybackState* state, int trackIdx, PlaybackTableState* table, int tableRow) {
+  for (int c = 0; c < 4; c++) {
+    table->counters[c] = 0;
+    table->rows[c] = tableRow;
+    tableReadFX(state, trackIdx, table, c, 0);
   }
 }
 
@@ -89,34 +120,59 @@ static void tableProgress(PlaybackState* state, int trackIdx, struct PlaybackTab
       uint8_t fxType = p->tables[table->tableIdx].rows[table->rows[i]].fx[i][0];
       uint8_t fxValue = p->tables[table->tableIdx].rows[table->rows[i]].fx[i][1];
 
-      // Special case for THO/HOP pointing to the same row - we should not progress further
+      // Special case for THO/HOP pointing to the same row - we may not progress further
+      int shouldProgress = 1;
+
       if (fxType == fxTHO && (fxValue & 0xf) == table->rows[i]) {
-        for (int c = 0; c < 4; c++) {
-          table->counters[c] = 0;
-          table->rows[c] = fxValue & 0xf;
-          tableReadFX(state, trackIdx, table, c, 0);
-        }
+        // THO: Stay on the same row
+        hopToTableRow(state, trackIdx, table, fxValue & 0xf);
         break;
-      } else if (fxType == fxHOP && (fxValue & 0xf) == table->rows[i]) {
-        // Do nothing here, we just don't progres further and stay on the same row
-      } else {
+      }
+      if (fxType == fxHOP && (fxValue & 0xf) == table->rows[i]) {
+        // HOP: Loop if needed
+        if (fxValue & 0xf0) {
+          // Loop counter
+          table->fxAuxState[table->rows[i]][i]++;
+          if (table->fxAuxState[table->rows[i]][i] <= ((fxValue & 0xf0) >> 4)) {
+            shouldProgress = 0;
+          }
+        }
+      }
+
+      if (shouldProgress) {
         // Progres further in the table
         table->rows[i] = (table->rows[i] + 1) & 15;
+        uint8_t row = table->rows[i];
 
-        // Handle THO and HOP table FX right nere
-        fxType = p->tables[table->tableIdx].rows[table->rows[i]].fx[i][0];
-        fxValue = p->tables[table->tableIdx].rows[table->rows[i]].fx[i][1];
-        if (fxType == fxTHO) {
-          // Hop on all FX lanes
-          for (int c = 0; c < 4; c++) {
-            table->counters[c] = 0;
-            table->rows[c] = fxValue & 0xf;
-            tableReadFX(state, trackIdx, table, c, 0);
+        if (row == 0) {
+          // Reset all loop counters
+          for (int c = 0; c < 16; c++) {
+            table->fxAuxState[c][i] = 0;
           }
+        }
+
+        // Handle THO and HOP table FX
+        fxType = p->tables[table->tableIdx].rows[row].fx[i][0];
+        fxValue = p->tables[table->tableIdx].rows[row].fx[i][1];
+        if (fxType == fxTHO) {
+          // THO: Hop on all FX lanes
+          hopToTableRow(state, trackIdx, table, fxValue & 0xf);
           break;
         } else if (fxType == fxHOP) {
-          // Hop only on the current lane
-          table->rows[i] = fxValue & 0xf;
+          // HOP: Hop only on the current lane
+          if (fxValue & 0xf0) {
+            // Loop counter
+            table->fxAuxState[table->rows[i]][i]++;
+            if (table->fxAuxState[table->rows[i]][i] <= ((fxValue & 0xf0) >> 4)) {
+              // Reset "nested" loops. Works only when hopping back
+              for (int c = fxValue & 0xf; c < table->rows[i]; c++) {
+                table->fxAuxState[c][i] = 0;
+              }
+              table->rows[i] = fxValue & 0xf;
+            }
+          } else {
+            table->rows[i] = fxValue & 0xf;
+          }
         }
       }
       tableReadFX(state, trackIdx, table, i, 0);
@@ -366,6 +422,8 @@ static int moveToNextPhraseRow(PlaybackState* state, int trackIdx) {
         stopped = 1;
       }
     }
+    // TODO: If in the future I will add NTH command from M8, this logic will need to be updated
+    resetTrackFXAuxState(state, trackIdx);
   }
 
   return stopped;
