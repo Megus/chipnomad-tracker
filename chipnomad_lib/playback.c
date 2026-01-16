@@ -8,6 +8,8 @@
 // Common logic
 //
 
+static int moveToNextPhraseRow(PlaybackState* state, int trackIdx);
+
 static void resetTrackFXAuxState(PlaybackState* state, int trackIdx) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
   for (int c = 0; c < 16; c++) {
@@ -314,14 +316,15 @@ void readPhraseRow(PlaybackState* state, int trackIdx, int skipDelCheck) {
           uint8_t loopCount = (hopValue & 0xF0) >> 4;
           
           if (loopCount == 0) {
-            // Unconditional jump
-            if (targetRow < phraseRow && !track->loop) {
-              // Jumping backwards with loop disabled - stop playback
-              resetTrack(state, trackIdx);
+            // Unconditional jump to next phrase
+            track->phraseRow = 15;
+            if (moveToNextPhraseRow(state, trackIdx)) {
               return;
             }
             track->phraseRow = targetRow;
-            currentRow = &phrase->rows[targetRow];
+            resetTrackFXAuxState(state, trackIdx);
+            readPhraseRow(state, trackIdx, skipDelCheck);
+            return;
           } else {
             // Conditional jump with loop counter
             track->fxAuxState[phraseRow][i]++;

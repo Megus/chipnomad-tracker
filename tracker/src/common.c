@@ -100,7 +100,6 @@ int settingsSave(void) {
   filePrintf(fileId, "pitchConflictWarning: %d\n", appSettings.pitchConflictWarning);
   filePrintf(fileId, "gamepadSwapAB: %d\n", appSettings.gamepadSwapAB);
   filePrintf(fileId, "keyboardLayout: %d\n", (int)appSettings.keyboardLayout);
-  filePrintf(fileId, "gamepadSwapAB: %d\n", appSettings.gamepadSwapAB);
   filePrintf(fileId, "colorBackground: 0x%06x\n", appSettings.colorScheme.background);
   filePrintf(fileId, "colorTextEmpty: 0x%06x\n", appSettings.colorScheme.textEmpty);
   filePrintf(fileId, "colorTextInfo: 0x%06x\n", appSettings.colorScheme.textInfo);

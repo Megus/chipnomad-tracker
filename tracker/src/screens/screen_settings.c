@@ -60,9 +60,9 @@ void settingsDrawCursor(int col, int row) {
   } else if (row == 3 && col == 0) {
     gfxCursor(23, 5, 3); // Under gamepad swap ON/OFF
   } else if (row == 4 && col == 0) {
-    gfxCursor(0, 6, 16); // "Edit color theme"
-  } else if (row == 5 && col == 0) {
     gfxCursor(23, 6, 6); // Under keyboard layout value
+  } else if (row == 5 && col == 0) {
+    gfxCursor(0, 7, 16); // "Edit color theme"
   } else if (row == 6 && col == 0) {
     gfxCursor(0, 17, 14); // "Quit ChipNomad"
   }
@@ -98,13 +98,13 @@ void settingsDrawField(int col, int row, int state) {
     gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     gfxPrint(23, 5, appSettings.gamepadSwapAB ? "ON " : "OFF");
   } else if (row == 4 && col == 0) {
-    gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(0, 6, "Edit color theme");
-  } else if (row == 5 && col == 0) {
     gfxSetFgColor(appSettings.colorScheme.textDefault);
     gfxPrint(0, 6, "Keyboard layout");
     gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     gfxPrint(23, 6, getKeyboardLayoutName(appSettings.keyboardLayout));
+  } else if (row == 5 && col == 0) {
+    gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    gfxPrint(0, 7, "Edit color theme");
   } else if (row == 6 && col == 0) {
     gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     gfxPrint(0, 17, "Quit ChipNomad");
@@ -140,21 +140,21 @@ int settingsOnEdit(int col, int row, enum CellEditAction action) {
     // Gamepad swap A/B (0/1)
     static uint8_t lastValue = 0;
     return edit8withLimit(action, (uint8_t*)&appSettings.gamepadSwapAB, &lastValue, 1, 1);
-  } else if (row == 4 && col == 0 && action == editTap) {
-    // Navigate to color theme screen
-    screenSetup(&screenColorTheme, 0);
-    return 0;
-  } else if (row == 5 && col == 0) {
+  } else if (row == 4 && col == 0) {
     // Keyboard layout (0-4)
     static uint8_t lastValue = 0;
     int result = edit8withLimit(action, (uint8_t*)&appSettings.keyboardLayout, &lastValue, 1, 4);
-    
+
     // If keyboard layout was actually changed, update the active layout
     if (result && appSettings.keyboardLayout != lastValue) {
       updateKeyboardLayout();
     }
-    
+
     return result;
+  } else if (row == 5 && col == 0 && action == editTap) {
+    // Navigate to color theme screen
+    screenSetup(&screenColorTheme, 0);
+    return 0;
   } else if (row == 6 && col == 0 && action == editTap) {
     // Trigger exit event
     mainLoopTriggerQuit();
