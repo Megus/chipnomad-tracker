@@ -100,8 +100,9 @@ char* helpFXHint(uint8_t* fx, int isTable) {
       if (isTable) {
         sprintf(buffer, "No effect");
       } else {
-        sprintf(buffer, "Song hop by %s", byteToHex(fx[1]));
+        sprintf(buffer, "Song hop by %hhd", fx[1]);
       }
+      break;
     // AY-specific FX
     case fxAYM: // AY Mixer settting
       if (fx[1] & 0xf0) {

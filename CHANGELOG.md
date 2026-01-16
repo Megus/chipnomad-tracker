@@ -8,6 +8,8 @@
 - Support QWERTZ and QWERTY keyboard layouts for desktop builds
 - Support for 2x and 3x AY/YM chips
 - Linear pitch option (pitch tables are defined in cents)
+- SNG FX to jump between song positions
+- HOP FX now supports conditional loops both in Tables and Phrases
 - Mute/solo tracks (B + Select/Start on Song screen. Release B first to keep mute/solo)
 - Clean up of unused instruments, unused/duplicate phrases and chains
 - Chain and Phrase screens show asterisk next to chain/phrase number if it's used elsewhere in the song

@@ -262,7 +262,85 @@ void readPhraseRow(PlaybackState* state, int trackIdx, int skipDelCheck) {
     if (phraseIdx != EMPTY_VALUE_16) {
       int phraseRow = track->phraseRow;
       Phrase* phrase = &p->phrases[phraseIdx];
-      readPhraseRowDirect(state, trackIdx, &phrase->rows[phraseRow], skipDelCheck);
+      PhraseRow* currentRow = &phrase->rows[phraseRow];
+      
+      // Check for SNG command in Song mode
+      if (track->mode == playbackModeSong) {
+        for (int i = 0; i < 3; i++) {
+          if (currentRow->fx[i][0] == fxSNG && currentRow->fx[i][1] != 0) {
+            int8_t offset = (int8_t)currentRow->fx[i][1];
+            int newSongRow = track->songRow + offset;
+            
+            // Check if jump is negative and loop is disabled
+            if (offset < 0 && !track->loop) {
+              resetTrack(state, trackIdx);
+              return;
+            }
+            
+            // Validate target song position
+            if (newSongRow >= 0 && newSongRow < PROJECT_MAX_LENGTH) {
+              uint16_t targetChainIdx = p->song[newSongRow][trackIdx];
+              if (targetChainIdx != EMPTY_VALUE_16) {
+                uint16_t targetPhraseIdx = p->chains[targetChainIdx].rows[0].phrase;
+                if (targetPhraseIdx != EMPTY_VALUE_16) {
+                  // Valid target, perform jump and read from new position
+                  track->songRow = newSongRow;
+                  track->chainRow = 0;
+                  track->phraseRow = 0;
+                  resetTrackFXAuxState(state, trackIdx);
+                  readPhraseRow(state, trackIdx, skipDelCheck);
+                  return;
+                }
+              }
+            }
+            // Invalid target or out of bounds, ignore SNG command and continue normally
+            break;
+          }
+        }
+      }
+      
+      // Check for HOP command
+      for (int i = 0; i < 3; i++) {
+        if (currentRow->fx[i][0] == fxHOP) {
+          uint8_t hopValue = currentRow->fx[i][1];
+          
+          // 0xFF = stop track
+          if (hopValue == 0xFF) {
+            resetTrack(state, trackIdx);
+            return;
+          }
+          
+          uint8_t targetRow = hopValue & 0x0F;
+          uint8_t loopCount = (hopValue & 0xF0) >> 4;
+          
+          if (loopCount == 0) {
+            // Unconditional jump
+            if (targetRow < phraseRow && !track->loop) {
+              // Jumping backwards with loop disabled - stop playback
+              resetTrack(state, trackIdx);
+              return;
+            }
+            track->phraseRow = targetRow;
+            currentRow = &phrase->rows[targetRow];
+          } else {
+            // Conditional jump with loop counter
+            track->fxAuxState[phraseRow][i]++;
+            if (track->fxAuxState[phraseRow][i] <= loopCount) {
+              // Reset nested loop counters when hopping backwards
+              if (targetRow < phraseRow) {
+                for (int c = targetRow; c < phraseRow; c++) {
+                  track->fxAuxState[c][i] = 0;
+                }
+              }
+              track->phraseRow = targetRow;
+              currentRow = &phrase->rows[targetRow];
+            }
+          }
+          break;
+        }
+      }
+      
+      readPhraseRowDirect(state, trackIdx, currentRow, skipDelCheck);
     } else {
       // Safeguard for phrase in chain
       resetTrack(state, trackIdx);
