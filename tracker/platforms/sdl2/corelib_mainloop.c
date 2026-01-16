@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include <SDL2/SDL.h>
 #include "corelib_gfx.h"
+#include "common.h"
+#include "keyboard_layout.h"
 
 #define FPS 60
 
@@ -23,7 +25,8 @@ static SDL_GameController* gameController = NULL;
 #define BTN_LEFT        (SDLK_LEFT)
 #define BTN_RIGHT       (SDLK_RIGHT)
 #define BTN_A           (SDLK_x)
-#define BTN_B           (SDLK_z)
+#define BTN_B1          (SDLK_y)
+#define BTN_B2          (SDLK_z)
 #define BTN_X           (SDLK_c)
 #define BTN_Y           (SDLK_a)
 #define BTN_L1          (SDLK_LSHIFT)
@@ -67,11 +70,53 @@ static int decodeKey(int sym) {
   if (sym == BTN_LEFT) return keyLeft;
   if (sym == BTN_RIGHT) return keyRight;
   if (sym == BTN_A) return keyEdit;
-  if (sym == BTN_B) return keyOpt;
+  
+  // Handle keyboard layout for B button mapping
+  // This ensures proper B button mapping based on current keyboard layout setting
+#if defined(DESKTOP_BUILD) || defined(PORTMASTER_BUILD)
+  switch (appSettings.keyboardLayout) {
+    case KEYBOARD_LAYOUT_QWERTY:
+      // QWERTY: Use Z key for B button (BTN_B2 is SDLK_z)
+      if (sym == BTN_B2) return keyOpt;
+      break;
+    case KEYBOARD_LAYOUT_QWERTZ:
+      // QWERTZ: Use Y key for B button (BTN_B1 is SDLK_y)
+      if (sym == BTN_B1) return keyOpt;
+      break;
+    case KEYBOARD_LAYOUT_AZERTY:
+      // AZERTY: Both Y and Z should work for compatibility
+      if (sym == BTN_B1 || sym == BTN_B2) return keyOpt;
+      break;
+    case KEYBOARD_LAYOUT_DVORAK:
+      // DVORAK: Both Y and Z should work for compatibility
+      if (sym == BTN_B1 || sym == BTN_B2) return keyOpt;
+      break;
+    default: // AUTO
+      // AUTO mode: Map both Y and Z keys to keyOpt for maximum compatibility
+      if (sym == BTN_B1 || sym == BTN_B2) return keyOpt;
+      break;
+  }
+#else
+  switch (appSettings.keyboardLayout) {
+    case KEYBOARD_LAYOUT_QWERTY:
+    case KEYBOARD_LAYOUT_QWERTZ:
+    case KEYBOARD_LAYOUT_AZERTY:
+    case KEYBOARD_LAYOUT_DVORAK:
+      // RG35xx: Single B key maps to keyOpt
+      if (sym == BTN_B) return keyOpt;
+      break;
+    default: // AUTO
+      // RG35xx: Single B key maps to keyOpt
+      if (sym == BTN_B) return keyOpt;
+      break;
+  }
+#endif
+  
   if (sym == BTN_START) return keyPlay;
   if (sym == BTN_SELECT || sym == BTN_R1 || sym == BTN_L1) return keyShift;
   if (sym == BTN_VOLUME_UP) return keyVolumeUp;
   if (sym == BTN_VOLUME_DOWN) return keyVolumeDown;
+  
   return 0;
 }
 
