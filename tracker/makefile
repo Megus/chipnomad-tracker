@@ -48,14 +48,9 @@ linux-package:
 
 linux-package-deploy: linux-package
 	mkdir -p ../../releases
-	$(eval VERSION := $(shell grep 'appVersion.*=' src/version.c | cut -d'"' -f2))
-	@if [ -f build/linux/ChipNomad-$(VERSION)-Linux-$(shell uname -m).tar.gz ]; then \
-		mv build/linux/ChipNomad-$(VERSION)-Linux-$(shell uname -m).tar.gz ../../releases/ChipNomad-$$(date +%Y-%m-%d)-$(VERSION)-Linux-$(shell uname -m).tar.gz; \
-		echo "Linux package created: ../../releases/ChipNomad-$$(date +%Y-%m-%d)-$(VERSION)-Linux-$(shell uname -m).tar.gz"; \
-	else \
-		echo "Error: Package not found at build/linux/ChipNomad-$(VERSION)-Linux-$(shell uname -m).tar.gz"; \
-		exit 1; \
-	fi
+	@mv build/linux/ChipNomad-*-Linux-*.tar.gz ../../releases/ 2>/dev/null && \
+		echo "Linux package moved to ../../releases/" || \
+		(echo "Error: Package not found in build/linux/"; exit 1)
 
 .PHONY: deploy-all
 deploy-all:

@@ -32,8 +32,8 @@ linux-package: linux
 	@echo 'cd "$$(dirname "$$0")"' >> $(BUILD)/$(APPNAME)-Linux/chipnomad.sh
 	@echo './chipnomad "$$@"' >> $(BUILD)/$(APPNAME)-Linux/chipnomad.sh
 	@chmod +x $(BUILD)/$(APPNAME)-Linux/chipnomad.sh
-	@cd $(BUILD) && tar -czf $(APPNAME)-$(VERSION)-Linux-$(shell uname -m).tar.gz $(APPNAME)-Linux
-	@echo "Linux package created: $(BUILD)/$(APPNAME)-$(VERSION)-Linux-$(shell uname -m).tar.gz"
+	@cd $(BUILD) && tar -czf $(APPNAME)-$$(date +%Y-%m-%d)-$(VERSION)-Linux-$(shell uname -m).tar.gz $(APPNAME)-Linux
+	@echo "Linux package created: $(BUILD)/$(APPNAME)-$$(date +%Y-%m-%d)-$(VERSION)-Linux-$(shell uname -m).tar.gz"
 
 .PHONY: clean
 clean:

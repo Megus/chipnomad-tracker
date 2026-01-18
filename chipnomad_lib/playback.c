@@ -138,6 +138,9 @@ static void tableProgress(PlaybackState* state, int trackIdx, struct PlaybackTab
           if (table->fxAuxState[table->rows[i]][i] <= ((fxValue & 0xf0) >> 4)) {
             shouldProgress = 0;
           }
+        } else {
+          // Unconditional loop on same row
+          shouldProgress = 0;
         }
       }
 

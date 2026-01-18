@@ -310,3 +310,35 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
     }
     isDirty = 0;
   }
+
+  void gfxDrawCharBitmap(uint8_t* bitmap, int col, int row) {
+    int cx = CHAR_X(col);
+    int cy = CHAR_Y(row);
+    
+    uint8_t fgR = (fgColor >> 16) & 0xFF;
+    uint8_t fgG = (fgColor >> 8) & 0xFF;
+    uint8_t fgB = fgColor & 0xFF;
+    uint8_t bgR = (bgColor >> 16) & 0xFF;
+    uint8_t bgG = (bgColor >> 8) & 0xFF;
+    uint8_t bgB = bgColor & 0xFF;
+    
+    for (int y = 0; y < fontH; y++) {
+      for (int x = 0; x < fontPixelW; x++) {
+        uint8_t alpha = bitmap[y * fontPixelW + x];
+        uint8_t r = bgR + ((fgR - bgR) * alpha) / 255;
+        uint8_t g = bgG + ((fgG - bgG) * alpha) / 255;
+        uint8_t b = bgB + ((fgB - bgB) * alpha) / 255;
+        SDL_SetRenderDrawColor(renderer, r, g, b, 255);
+        SDL_RenderDrawPoint(renderer, cx + x, cy + y);
+      }
+    }
+    isDirty = 1;
+  }
+
+  int gfxGetCharWidth(void) {
+    return fontPixelW;
+  }
+
+  int gfxGetCharHeight(void) {
+    return fontH;
+  }

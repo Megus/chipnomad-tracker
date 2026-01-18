@@ -132,7 +132,7 @@ void outputRegistersAY(PlaybackState* state, int trackIdx, int chipIdx, SoundChi
         period -= track->note.periodOffsetAcc;
       } else {
         // Traditional period mode
-        period = p->pitchTable.values[track->note.noteFinal] - track->note.pitchOffset - track->note.pitchOffsetAcc + track->note.periodOffsetAcc;
+        period = p->pitchTable.values[track->note.noteFinal] - track->note.pitchOffset - track->note.pitchOffsetAcc - track->note.periodOffsetAcc;
       }
       // Clamp period to valid AY range
       if (period < 1) period = 1;

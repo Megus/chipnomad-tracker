@@ -30,7 +30,8 @@ enum FX {
   fxPVB, // Pitch vibrato
   fxPBN, // Pitch bend
   fxPSL, // Pitch slide (portamento)
-  fxPIT, // Pitch offset
+  fxPIT, // Pitch offset (semitones)
+  fxFIN, // Fine pitch offset
   fxPRD, // Period offset
   fxVOL, // Volume (relative)
   fxRET, // Retrigger

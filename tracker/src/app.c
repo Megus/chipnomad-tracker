@@ -7,6 +7,7 @@
 #include "chipnomad_lib.h"
 #include "project_utils.h"
 #include "keyboard_layout.h"
+#include "waveform_display.h"
 
 // Input handling vars:
 
@@ -122,6 +123,9 @@ void appSetup(void) {
   gfxSetBgColor(appSettings.colorScheme.background);
   gfxClear();
 
+  // Initialize waveform display
+  waveformDisplayInit();
+
   // Create ChipNomad state
   chipnomadState = chipnomadCreate();
   if (!chipnomadState) {
@@ -190,6 +194,13 @@ void appDraw(void) {
       (*pSongTrack == c ? cs.textDefault : cs.textInfo));
     digit[0] = c + 49;
     gfxPrint(35, 3 + c, digit);
+
+    // Draw waveform between track number and note
+    gfxSetFgColor(cs.textInfo);
+    uint8_t* waveformBitmap = waveformDisplayGetBitmap(c);
+    if (waveformBitmap) {
+      gfxDrawCharBitmap(waveformBitmap, 36, 3 + c);
+    }
 
     uint8_t note = chipnomadState->playbackState.tracks[c].note.noteFinal;
     char* noteStr = noteName(&chipnomadState->project, note);

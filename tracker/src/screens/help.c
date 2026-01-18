@@ -43,8 +43,11 @@ char* helpFXHint(uint8_t* fx, int isTable) {
     case fxPSL: // Pitch slide (portamento)
       sprintf(buffer, "Pitch slide for %hhd tics", fx[1]);
       break;
-    case fxPIT: // Pitch offset
-      sprintf(buffer, "Pitch offset by %hhd", fx[1]);
+    case fxPIT: // Pitch offset (semitones)
+      sprintf(buffer, "Pitch offset by %hhd semitones", (int8_t)fx[1]);
+      break;
+    case fxFIN: // Fine pitch offset
+      sprintf(buffer, "Fine pitch offset by %hhd", (int8_t)fx[1]);
       break;
     case fxPRD: // Period offset
       sprintf(buffer, "Period offset by %hhd", fx[1]);
@@ -172,7 +175,8 @@ static const char* fxHelpText[] = {
   [fxPVB] = "Pitch Vibrato\nOscillates pitch up/down\nwith speed and depth",
   [fxPBN] = "Pitch Bend\nSlides pitch by amount\nper step continuously",
   [fxPSL] = "Pitch Slide\nSlides to target pitch\nover specified tics",
-  [fxPIT] = "Pitch Offset\nAdds fixed offset\nto note pitch",
+  [fxPIT] = "Pitch Offset\nAdds semitone offset\nto note pitch",
+  [fxFIN] = "Fine Pitch Offset\nAdds fine offset\nto note pitch",
   [fxPRD] = "Period Offset\nAdds fixed offset\nto chip period",
   [fxVOL] = "Volume Offset\nAdds/subtracts from\ncurrent volume",
   [fxRET] = "Retrigger\nRetriggers note every\nN tics",

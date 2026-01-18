@@ -1,15 +1,18 @@
 # ChipNomad changelog
 
-## Not yet released
+## v0.1.0b (Not yet released)
 
 - *PLATFORM*: Linux x86_64 package for Linux desktops and Steam Deck
 - Vortex Tracker 2 tracks (.vt2) import (by [Pator](https://github.com/paator))
 - Gamepad support for desktop builds
-- Support QWERTZ and QWERTY keyboard layouts for desktop builds
+- Support QWERTZ and QWERTY keyboard layouts for desktop builds (by [koppi](https://github.com/koppi))
 - Support for 2x and 3x AY/YM chips
 - Linear pitch option (pitch tables are defined in cents)
 - SNG FX to jump between song positions
 - HOP FX now supports conditional loops both in Tables and Phrases
+- ARP should work with octaves of any size, not just 12 notes
+- *BREAKING CHANGE*: PIT now sets offset in semitones. New FIN command sets fine pitch offset
+- Schematic waveform display
 - Mute/solo tracks (B + Select/Start on Song screen. Release B first to keep mute/solo)
 - Clean up of unused instruments, unused/duplicate phrases and chains
 - Chain and Phrase screens show asterisk next to chain/phrase number if it's used elsewhere in the song
