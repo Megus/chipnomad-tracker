@@ -299,7 +299,13 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     copyTable(tableIdx, startCol, startRow, endCol, endRow, 1);
     return 1;
   } else if (action == editPaste) {
-    pasteTable(tableIdx, col, row);
+    const int rowsPasted = pasteTable(tableIdx, col, row);
+    if (rowsPasted > 0) {
+      // Move cursor below pasted data, or to last row if paste extends to end
+      int newRow = row + rowsPasted;
+      if (newRow > 15) newRow = 15;
+      screen.cursorRow = newRow;
+    }
     fullRedraw();
     return 1;
   } else {
