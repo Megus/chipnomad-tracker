@@ -1,26 +1,27 @@
-#include "chipnomad_lib.h"
+#ifndef COPY_PASTE_H
+#define COPY_PASTE_H
 #include "screens/screens.h"
 
 // Groove copy/paste
 void copyGroove(int grooveIdx, int startRow, int endRow, int isCut);
-void pasteGroove(int grooveIdx, int startRow);
+int pasteGroove(int grooveIdx, int startRow);
 
 // Song copy/paste
 void copySong(int startCol, int startRow, int endCol, int endRow, int isCut);
-void pasteSong(int startCol, int startRow);
+int pasteSong(int startCol, int startRow);
 void shiftSongColumnUp(int col, int startRow);
 
 // Chain copy/paste
 void copyChain(int chainIdx, int startCol, int startRow, int endCol, int endRow, int isCut);
-void pasteChain(int chainIdx, int startCol, int startRow);
+int pasteChain(int chainIdx, int startCol, int startRow);
 
 // Phrase copy/paste
 void copyPhrase(int phraseIdx, int startCol, int startRow, int endCol, int endRow, int isCut);
-void pastePhrase(int phraseIdx, int startCol, int startRow);
+int pastePhrase(int phraseIdx, int startCol, int startRow);
 
 // Table copy/paste
 void copyTable(int tableIdx, int startCol, int startRow, int endCol, int endRow, int isCut);
-void pasteTable(int tableIdx, int startCol, int startRow);
+int pasteTable(int tableIdx, int startCol, int startRow);
 
 // Instrument copy/paste
 void copyInstrument(int instrumentIdx);
@@ -45,3 +46,4 @@ int switchSongSelectionMode(ScreenData* screen);
 
 // Copy buffer management
 void resetCopyBuffers(void);
+#endif // COPY_PASTE_H
