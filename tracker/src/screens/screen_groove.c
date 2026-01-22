@@ -115,6 +115,32 @@ static int editCell(int col, int row, enum CellEditAction action) {
 static int onEdit(int col, int row, enum CellEditAction action) {
   if (action == editSwitchSelection) {
     return switchGrooveSelectionMode(&screen);
+  } else if (action == editIncreaseBig || action == editDecreaseBig) {
+    // Groove nudge: work in row pairs (0-1, 2-3, 4-5, etc.)
+    int firstRow = row & ~1;
+    int secondRow = firstRow + 1;
+    uint8_t* firstValue = &chipnomadState->project.grooves[groove].speed[firstRow];
+    uint8_t* secondValue = &chipnomadState->project.grooves[groove].speed[secondRow];
+
+    if (*firstValue == EMPTY_VALUE_8 || *secondValue == EMPTY_VALUE_8) {
+      return 0;
+    }
+
+    if (action == editIncreaseBig) {
+      if (*firstValue < EMPTY_VALUE_8 - 1 && *secondValue > 0) {
+        (*firstValue)++;
+        (*secondValue)--;
+      }
+    } else {
+      if (*firstValue > 0 && *secondValue < EMPTY_VALUE_8 - 1) {
+        (*firstValue)--;
+        (*secondValue)++;
+      }
+    }
+
+    int otherRow = (row == firstRow) ? secondRow : firstRow;
+    drawField(col, otherRow, 0);
+    return 1;
   } else if (action == editMultiIncrease || action == editMultiDecrease) {
     if (!isSingleColumnSelection(&screen)) return 0;
     return applyMultiEdit(&screen, action, editCell);
