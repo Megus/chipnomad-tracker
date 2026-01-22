@@ -344,6 +344,18 @@ static void moveCursorToSelectionStart(ScreenData* screen) {
   screen->cursorRow = startRow;
 }
 
+static void moveCursorBelowSelection(ScreenData* screen) {
+  int startCol, startRow, endCol, endRow;
+  getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
+  screen->cursorCol = startCol;
+  // Move below selection, unless last row is in selection
+  if (endRow < screen->rows - 1) {
+    screen->cursorRow = endRow + 1;
+  } else {
+    screen->cursorRow = screen->rows - 1;
+  }
+}
+
 static void redrawSelection(ScreenData* screen) {
   int startCol, startRow, endCol, endRow;
   getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
@@ -379,7 +391,7 @@ static int inputSelectMode(ScreenData* screen, int keys, int isDoubleTap) {
       handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editCopy);
       if (handled) {
         screenMessage(0, "Copied selection");
-        moveCursorToSelectionStart(screen);
+        moveCursorBelowSelection(screen);
       }
       screen->selectMode = 0;
       screenFullRedraw(screen);

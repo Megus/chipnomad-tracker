@@ -45,10 +45,13 @@ void copyGroove(int grooveIdx, int startRow, int endRow, int isCut) {
   }
 }
 
-void pasteGroove(int grooveIdx, int startRow) {
+int pasteGroove(int grooveIdx, int startRow) {
+  int rowsPasted = 0;
   for (int row = 0; row < cpBufGrooveLength && startRow + row < 16; row++) {
+    rowsPasted++;
     chipnomadState->project.grooves[grooveIdx].speed[startRow + row] = cpBufGroove.speed[row];
   }
+  return rowsPasted;
 }
 
 void copySong(int startCol, int startRow, int endCol, int endRow, int isCut) {
@@ -65,7 +68,7 @@ void copySong(int startCol, int startRow, int endCol, int endRow, int isCut) {
   }
 }
 
-void pasteSong(int startCol, int startRow) {
+int pasteSong(int startCol, int startRow) {
   // Push down existing data in the paste area
   for (int col = startCol; col < startCol + cpBufSongCols && col < PROJECT_MAX_TRACKS; col++) {
     for (int row = PROJECT_MAX_LENGTH - 1; row >= startRow + cpBufSongRows; row--) {
@@ -74,11 +77,14 @@ void pasteSong(int startCol, int startRow) {
   }
 
   // Paste the buffer data
+  int rowsPasted = 0;
   for (int row = 0; row < cpBufSongRows && startRow + row < PROJECT_MAX_LENGTH; row++) {
+    rowsPasted++;
     for (int col = 0; col < cpBufSongCols && startCol + col < PROJECT_MAX_TRACKS; col++) {
       chipnomadState->project.song[startRow + row][startCol + col] = cpBufSong[row][col];
     }
   }
+  return rowsPasted;
 }
 
 void shiftSongColumnUp(int col, int startRow) {
@@ -103,11 +109,13 @@ void copyChain(int chainIdx, int startCol, int startRow, int endCol, int endRow,
   }
 }
 
-void pasteChain(int chainIdx, int startCol, int startRow) {
+int pasteChain(int chainIdx, int startCol, int startRow) {
   // Only paste if column types match
-  if (startCol != cpBufChainStartCol) return;
+  if (startCol != cpBufChainStartCol) return 0;
 
+  int rowsPasted = 0;
   for (int row = 0; row < cpBufChainRows && startRow + row < 16; row++) {
+    rowsPasted++;
     if (cpBufChainStartCol == 0) {
       chipnomadState->project.chains[chainIdx].rows[startRow + row].phrase = cpBufChain.rows[row].phrase;
       // If we copied both columns (startCol=0, endCol=1), also paste transpose
@@ -118,6 +126,7 @@ void pasteChain(int chainIdx, int startCol, int startRow) {
       chipnomadState->project.chains[chainIdx].rows[startRow + row].transpose = cpBufChain.rows[row].transpose;
     }
   }
+  return rowsPasted;
 }
 
 void copyPhrase(int phraseIdx, int startCol, int startRow, int endCol, int endRow, int isCut) {
@@ -148,14 +157,16 @@ void copyPhrase(int phraseIdx, int startCol, int startRow, int endCol, int endRo
   }
 }
 
-void pastePhrase(int phraseIdx, int startCol, int startRow) {
+int pastePhrase(int phraseIdx, int startCol, int startRow) {
   // Check if we can paste - same column or FX to FX
   int canPaste = (startCol == cpBufPhraseStartCol) ||
   (startCol >= 3 && startCol <= 8 && cpBufPhraseStartCol >= 3 && cpBufPhraseStartCol <= 8);
 
-  if (!canPaste) return;
+  if (!canPaste) return 0;
 
+  int rowsPasted = 0;
   for (int row = 0; row < cpBufPhraseRows && startRow + row < 16; row++) {
+    rowsPasted++;
     // Handle FX-only paste (can paste to different FX columns)
     if (cpBufPhraseStartCol >= 3 && cpBufPhraseStartCol <= 8) {
       int colOffset = startCol - cpBufPhraseStartCol;
@@ -197,6 +208,7 @@ void pastePhrase(int phraseIdx, int startCol, int startRow) {
       }
     }
   }
+  return rowsPasted;
 }
 
 void copyTable(int tableIdx, int startCol, int startRow, int endCol, int endRow, int isCut) {
@@ -231,14 +243,16 @@ void copyTable(int tableIdx, int startCol, int startRow, int endCol, int endRow,
   }
 }
 
-void pasteTable(int tableIdx, int startCol, int startRow) {
+int pasteTable(int tableIdx, int startCol, int startRow) {
   // Check if we can paste - same column or FX to FX
   int canPaste = (startCol == cpBufTableStartCol) ||
   (startCol >= 3 && startCol <= 10 && cpBufTableStartCol >= 3 && cpBufTableStartCol <= 10);
 
-  if (!canPaste) return;
+  if (!canPaste) return 0;
 
+  int rowsPasted = 0;
   for (int row = 0; row < cpBufTableRows && startRow + row < 16; row++) {
+    rowsPasted++;
     // Handle FX-only paste (can paste to different FX columns)
     if (cpBufTableStartCol >= 3 && cpBufTableStartCol <= 10) {
       int colOffset = startCol - cpBufTableStartCol;
@@ -280,6 +294,7 @@ void pasteTable(int tableIdx, int startCol, int startRow) {
       }
     }
   }
+  return rowsPasted;
 }
 
 // Selection mode switching helpers

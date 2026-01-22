@@ -303,7 +303,13 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     copySong(startCol, startRow, endCol, endRow, 1);
     return 1;
   } else if (action == editPaste) {
-    pasteSong(col, row);
+    const int rowsPasted = pasteSong(col, row);
+    if (rowsPasted > 0) {
+      // Move cursor below pasted data, or to last row if paste extends to end
+      int newRow = row + rowsPasted;
+      if (newRow >= screen.rows) newRow = screen.rows - 1;
+      screen.cursorRow = newRow;
+    }
     fullRedraw();
     return 1;
   } else {
