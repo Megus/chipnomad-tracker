@@ -93,13 +93,13 @@ int manageOnEdit(int col, int row, enum CellEditAction action) {
   return 1;
 }
 
-static int onInput(int isKeyDown, int keys, int isDoubleTap) {
+static int onInput(int isKeyDown, int keys, int tapCount) {
   if (keys == keyOpt) {
     screenSetup(&screenProject, 0);
     return 1;
   }
   
-  return screenInput(&screenManageData, isKeyDown, keys, isDoubleTap);
+  return screenInput(&screenManageData, isKeyDown, keys, tapCount);
 }
 
 const AppScreen screenManage = {

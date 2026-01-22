@@ -144,9 +144,9 @@ static void createFolder(void) {
   }
 }
 
-static int onInput(int isKeyDown, int keys, int isDoubleTap) {
+static int onInput(int isKeyDown, int keys, int tapCount) {
   if (isCharEdit) {
-    char result = charEditInput(keys, isDoubleTap, editingString, screenData.cursorCol, editingStringLength);
+    char result = charEditInput(keys, tapCount, editingString, screenData.cursorCol, editingStringLength);
     if (result) {
       isCharEdit = 0;
       if (screenData.cursorCol < editingStringLength - 1) screenData.cursorCol++;
@@ -155,7 +155,7 @@ static int onInput(int isKeyDown, int keys, int isDoubleTap) {
       fullRedraw();
     }
   } else {
-    return screenInput(&screenData, isKeyDown, keys, isDoubleTap);
+    return screenInput(&screenData, isKeyDown, keys, tapCount);
   }
   return 0;
 }

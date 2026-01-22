@@ -127,7 +127,7 @@ void fxEditFullDraw(uint8_t currentFX) {
 }
 
 
-int fxEditInput(int keys, int isDoubleTap, uint8_t* fx, uint8_t* lastFX) {
+int fxEditInput(int keys, int tapCount, uint8_t* fx, uint8_t* lastFX) {
   if (keys == 0) {
     // Selection complete - update the FX value
     fx[0] = getGroup(currentGroup)[currentIdx].fx;

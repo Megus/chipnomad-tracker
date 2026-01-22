@@ -68,7 +68,7 @@ static void draw(void) {
   }
 }
 
-static int onInput(int isKeyDown, int keys, int isDoubleTap) {
+static int onInput(int isKeyDown, int keys, int tapCount) {
   if (currentExporter) {
     if (keys == keyOpt) {
       currentExporter->cancel(currentExporter);
@@ -84,7 +84,7 @@ static int onInput(int isKeyDown, int keys, int isDoubleTap) {
   }
 
   ScreenData* screen = exportScreen();
-  return screenInput(screen, isKeyDown, keys, isDoubleTap);
+  return screenInput(screen, isKeyDown, keys, tapCount);
 }
 
 const AppScreen screenExport = {

@@ -47,7 +47,7 @@ static void fullRedraw(void) {
 static void draw(void) {
 }
 
-static int onInput(int isKeyDown, int keys, int isDoubleTap) {
+static int onInput(int isKeyDown, int keys, int tapCount) {
   if (keys == keyLeft && selectedOption > 0) {
     selectedOption--;
     fullRedraw();

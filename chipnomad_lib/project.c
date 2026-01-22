@@ -51,6 +51,7 @@ void projectInit(Project* p) {
   for (int c = 0; c < PROJECT_MAX_LENGTH; c++) {
     for (int d = 0; d < PROJECT_MAX_TRACKS; d++) {
       p->song[c][d] = EMPTY_VALUE_16;
+      p->songHighlight[c][d] = 0;
     }
   }
 
@@ -202,14 +203,15 @@ static int projectLoadPitchTable(int fileId, Project* p) {
 }
 
 static int projectLoadSong(int fileId, Project* p) {
-  char buf[3];
+  char buf[4];
   if (strcmp(lpstr, "## Song")) return 1;
 
   int idx = 0;
   while (1) {
     READ_STRING;
     if (lpstr[0] == '#') break;
-    if (strlen(lpstr) != (p->tracksCount * 3 - 1)) return 1;
+    // Minimum length: 2 chars per cell, plus 1 separator for each cell (optional for last)
+    if (strlen(lpstr) < (p->tracksCount * 3 - 1)) return 1;
     for (int c = 0; c < p->tracksCount; c++) {
       buf[0] = lpstr[c * 3];
       buf[1] = lpstr[c * 3 + 1];
@@ -218,6 +220,12 @@ static int projectLoadSong(int fileId, Project* p) {
         p->song[idx][c] = EMPTY_VALUE_16;
       } else {
         if (sscanf(buf, "%hX", &p->song[idx][c]) != 1) return 1;
+      }
+      // Check for highlight asterisk (after the 2 hex digits)
+      if ((int)strlen(lpstr) > c * 3 + 2 && lpstr[c * 3 + 2] == '*') {
+        p->songHighlight[idx][c] = 1;
+      } else {
+        p->songHighlight[idx][c] = 0;
       }
     }
     idx++;
@@ -558,10 +566,17 @@ static int projectSaveSong(int fileId, Project* project) {
   for (int c = 0; c < songLength; c++) {
     for (int d = 0; d < project->tracksCount; d++) {
       int chain = project->song[c][d];
+      int isHighlighted = project->songHighlight[c][d];
       if (chain == EMPTY_VALUE_16) {
-        filePrintf(fileId, "-- ");
+        filePrintf(fileId, "--");
       } else {
-        filePrintf(fileId, "%s ", byteToHex(chain));
+        filePrintf(fileId, "%s", byteToHex(chain));
+      }
+      // Add asterisk if highlighted, otherwise space (except after last column)
+      if (isHighlighted) {
+        filePrintf(fileId, "*");
+      } else if (d < project->tracksCount - 1) {
+        filePrintf(fileId, " ");
       }
     }
     filePrintf(fileId, "\n");

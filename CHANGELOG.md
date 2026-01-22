@@ -13,6 +13,7 @@
 - ARP should work with octaves of any size, not just 12 notes
 - *BREAKING CHANGE*: PIT now sets offset in semitones. New FIN command sets fine pitch offset
 - Schematic waveform display
+- Triple-tap B on a chain at Song screen to highlight it (useful to visualize song structure)
 - Mute/solo tracks (B + Select/Start on Song screen. Release B first to keep mute/solo)
 - Clean up of unused instruments, unused/duplicate phrases and chains
 - Chain and Phrase screens show asterisk next to chain/phrase number if it's used elsewhere in the song

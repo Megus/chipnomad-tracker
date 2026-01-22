@@ -10,7 +10,7 @@ typedef struct AppScreen {
   void (*setup)(int input);
   void (*fullRedraw)(void);
   void (*draw)(void);
-  int (*onInput)(int isKeyDown, int keys, int isDoubleTap); // Return 1 if handled, 0 if not
+  int (*onInput)(int isKeyDown, int keys, int tapCount); // Return 1 if handled, 0 if not
 } AppScreen;
 
 enum CellState {
@@ -88,7 +88,7 @@ void screensInitAll(void);
 // Spreadsheet functions
 void screenFullRedraw(ScreenData* screen);
 void screenDrawOverlays(ScreenData* screen);
-int screenInput(ScreenData* screen, int isKeyDown, int keys, int isDoubleTap);
+int screenInput(ScreenData* screen, int isKeyDown, int keys, int tapCount);
 
 // Utility functions
 void setCellColor(int state, int isEmpty, int hasContent);
@@ -113,12 +113,12 @@ enum CellEditAction convertMultiAction(enum CellEditAction action);
 
 // Character edit
 int editCharacter(enum CellEditAction action, char* str, int idx, int maxLen);
-char charEditInput(int keys, int isDoubleTap, char* str, int idx, int maxLen);
+char charEditInput(int keys, int tapCount, char* str, int idx, int maxLen);
 
 // FX edit
 int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable);
 int editFXValue(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable);
-int fxEditInput(int keys, int isDoubleTap, uint8_t* fx, uint8_t* lastFX);
+int fxEditInput(int keys, int tapCount, uint8_t* fx, uint8_t* lastFX);
 void fxEditFullDraw(uint8_t currentFX);
 
 // Manage screen functions

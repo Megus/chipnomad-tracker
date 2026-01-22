@@ -88,7 +88,13 @@ static void drawField(int col, int row, int state) {
   if (row < screen.topRow || row >= (screen.topRow + 16)) return; // Don't draw outside of the viewing area
 
   int chain = chipnomadState->project.song[row][col];
-  setCellColor(state, chain == EMPTY_VALUE_16, chain != EMPTY_VALUE_16 && chainHasNotes(&chipnomadState->project, chain));
+  int isHighlighted = chipnomadState->project.songHighlight[row][col];
+
+  if (isHighlighted) {
+    gfxSetFgColor(appSettings.colorScheme.textTitles);
+  } else {
+    setCellColor(state, chain == EMPTY_VALUE_16, chain != EMPTY_VALUE_16 && chainHasNotes(&chipnomadState->project, chain));
+  }
   gfxPrint(3 + col * 3, 3 + row - screen.topRow, chain == EMPTY_VALUE_16 ? "--" : byteToHex(chain));
 }
 
@@ -140,7 +146,7 @@ static void draw(void) {
         gfxPrint(2 + c * 3, 3 + row, ">");
       }
     }
-    
+
     // Draw mute/solo indicator above track number
     gfxSetFgColor(appSettings.colorScheme.textTitles);
     if (audioManager.trackStates[c] == TRACK_MUTED) {
@@ -160,7 +166,7 @@ static void draw(void) {
 // Input handling
 //
 
-static int inputScreenNavigation(int keys, int isDoubleTap) {
+static int inputScreenNavigation(int keys, int tapCount) {
   // Fix all bare returns in this function
   // Go to Chain screen
   if (keys == (keyRight | keyShift)) {
@@ -318,7 +324,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   return 0;
 }
 
-static int onInput(int isKeyDown, int keys, int isDoubleTap) {
+static int onInput(int isKeyDown, int keys, int tapCount) {
   int handled = 0;
 
   // Only handle mute/solo when not in selection mode
@@ -326,8 +332,15 @@ static int onInput(int isKeyDown, int keys, int isDoubleTap) {
     switch (muteSoloState) {
       case MUTE_SOLO_EMPTY:
         if (isKeyDown && keys == keyOpt) {
-          muteSoloState = MUTE_SOLO_OPT_PRESSED;
-          handled = 1;
+          if (tapCount == 3) {
+            // Toggle highlight on triple-tap Opt
+            chipnomadState->project.songHighlight[screen.cursorRow][screen.cursorCol] ^= 1;
+            drawField(screen.cursorCol, screen.cursorRow, stateFocus);
+            drawCursor(screen.cursorCol, screen.cursorRow);
+          } else {
+            muteSoloState = MUTE_SOLO_OPT_PRESSED;
+          }
+            handled = 1;
         }
         break;
 
@@ -342,7 +355,7 @@ static int onInput(int isKeyDown, int keys, int isDoubleTap) {
           handled = 1;
         } else if (isKeyDown && keys == keyOpt) {
           handled = 1; // Stay in OPT_PRESSED state
-        } else if (keys == 0) {
+        } else if (!isKeyDown && keys == 0) {
           muteSoloState = MUTE_SOLO_EMPTY;
         }
         break;
@@ -390,8 +403,8 @@ static int onInput(int isKeyDown, int keys, int isDoubleTap) {
 
   // Only call common input handling if we didn't handle Song-specific input
   if (!handled) {
-    if (isKeyDown && screen.selectMode == 0 && inputScreenNavigation(keys, isDoubleTap)) return 1;
-    return screenInput(&screen, isKeyDown, keys, isDoubleTap);
+    if (isKeyDown && screen.selectMode == 0 && inputScreenNavigation(keys, tapCount)) return 1;
+    return screenInput(&screen, isKeyDown, keys, tapCount);
   }
 
   return handled;

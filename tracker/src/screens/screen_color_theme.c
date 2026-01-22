@@ -276,7 +276,7 @@ int colorThemeOnEdit(int col, int row, enum CellEditAction action) {
   return 0;
 }
 
-static int inputScreenNavigation(int keys, int isDoubleTap) {
+static int inputScreenNavigation(int keys, int tapCount) {
   if (keys == keyOpt && screenColorThemeData.cursorRow != 10) {
     screenSetup(&screenSettings, 0);
     return 1;
@@ -284,9 +284,9 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
   return 0;
 }
 
-static int onInput(int isKeyDown, int keys, int isDoubleTap) {
+static int onInput(int isKeyDown, int keys, int tapCount) {
   if (isCharEdit) {
-    char result = charEditInput(keys, isDoubleTap, appSettings.themeName, screenColorThemeData.cursorCol, THEME_NAME_LENGTH);
+    char result = charEditInput(keys, tapCount, appSettings.themeName, screenColorThemeData.cursorCol, THEME_NAME_LENGTH);
     if (result) {
       isCharEdit = 0;
       if (screenColorThemeData.cursorCol < THEME_NAME_LENGTH - 1) screenColorThemeData.cursorCol++;
@@ -295,9 +295,9 @@ static int onInput(int isKeyDown, int keys, int isDoubleTap) {
     return 1;
   }
 
-  if (inputScreenNavigation(keys, isDoubleTap)) return 1;
+  if (inputScreenNavigation(keys, tapCount)) return 1;
 
-  return screenInput(&screenColorThemeData, isKeyDown, keys, isDoubleTap);
+  return screenInput(&screenColorThemeData, isKeyDown, keys, tapCount);
 }
 
 const AppScreen screenColorTheme = {

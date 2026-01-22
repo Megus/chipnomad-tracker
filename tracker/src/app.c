@@ -13,8 +13,12 @@
 
 /** Currently pressed buttons */
 static int pressedButtons;
-/** Frame counter for double tap detection */
-static int editDoubleTapCount;
+/** Frame counter for tap detection */
+static int tapTimerCount;
+/** Button that triggered tap timer */
+static int tapButton;
+/** Number of taps detected */
+static int tapCount;
 /** Frame counter for key repeats */
 static int keyRepeatCount;
 
@@ -22,10 +26,10 @@ static int keyRepeatCount;
 * @brief Handle play/stop key commands
 *
 * @param keys Pressed keys
-* @param isDoubleTap is it a double tap?
+* @param tapCount number of taps
 * @return int 0 - input not handled, 1 - input handled
 */
-static int inputPlayback(int keys, int isDoubleTap) {
+static int inputPlayback(int keys, int tapCount) {
   if (!chipnomadState) return 0;
 
   int isPlaying = playbackIsPlaying(&chipnomadState->playbackState);
@@ -69,9 +73,9 @@ static int inputPlayback(int keys, int isDoubleTap) {
 *
 * @param isKeyDown whether this is a key press (1) or key release (0)
 * @param keys Pressed buttons
-* @param isDoubleTap is it a double tap?
+* @param tapCount number of taps
 */
-static void appInput(int isKeyDown, int keys, int isDoubleTap) {
+static void appInput(int isKeyDown, int keys, int tapCount) {
   int volumeChanged = 0;
 
   // Volume control (only on key down)
@@ -94,9 +98,9 @@ static void appInput(int isKeyDown, int keys, int isDoubleTap) {
     playbackStop(&chipnomadState->playbackState);
   }
   // Let screen handle input first, then try global playback if not handled
-  if (!currentScreen->onInput(isKeyDown, keys, isDoubleTap)) {
+  if (!currentScreen->onInput(isKeyDown, keys, tapCount)) {
     if (isKeyDown) {
-      inputPlayback(keys, isDoubleTap);
+      inputPlayback(keys, tapCount);
     }
   }
 }
@@ -113,10 +117,12 @@ static void appInput(int isKeyDown, int keys, int isDoubleTap) {
 void appSetup(void) {
   // Initialize keyboard layout system
   initKeyboardLayout();
-  
+
   // Keyboard input reset
   pressedButtons = 0;
-  editDoubleTapCount = 0;
+  tapTimerCount = 0;
+  tapButton = 0;
+  tapCount = 0;
   keyRepeatCount = 0;
 
   // Clear screen
@@ -223,6 +229,7 @@ void appDraw(void) {
 */
 void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
   static int dPadMask = keyLeft | keyRight | keyUp | keyDown;
+  static int doubleTapMask = keyEdit | keyOpt;
   static int cachedGamepadSwapAB = 0;
 
   // Update gamepad swap setting only when no keys are pressed
@@ -248,8 +255,13 @@ void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
       pressedButtons |= value;
     }
 
-    // Double tap is only applicable to Edit button
-    int isDoubleTap = (value == keyEdit && editDoubleTapCount > 0) ? 1 : 0;
+    // Tap detection
+    int currentTapCount = 0;
+    if ((value & doubleTapMask) && value == tapButton && tapTimerCount > 0) {
+      tapCount++;
+      currentTapCount = tapCount;
+      tapTimerCount = appSettings.doubleTapFrames; // Reset timer for next tap
+    }
 
     if (value & dPadMask) {
       // Key repeats are only applicable to d-pad
@@ -257,13 +269,21 @@ void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
       // As we don't support multiple d-pad keys, keep only the last pressed one
       pressedButtons = (pressedButtons & ~dPadMask) | value;
     }
-    appInput(1, pressedButtons, isDoubleTap);
-    editDoubleTapCount = 0;
+    appInput(1, pressedButtons, currentTapCount);
     break;
   case eventKeyUp:
     pressedButtons &= ~value;
-    // Double tap is only applicable to Edit button
-    if (value == keyEdit) editDoubleTapCount = appSettings.doubleTapFrames;
+    // Set tap timer
+    if (value & doubleTapMask) {
+      if (value == tapButton && tapTimerCount > 0) {
+        // Same button released again within timer - keep current count
+      } else {
+        // First tap or different button
+        tapButton = value;
+        tapCount = 1;
+      }
+      tapTimerCount = appSettings.doubleTapFrames;
+    }
 
     // Call appInput on key release
     appInput(0, pressedButtons, 0);
@@ -274,7 +294,14 @@ void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
     }
     break;
   case eventTick:
-    if (editDoubleTapCount > 0) editDoubleTapCount--;
+    if (tapTimerCount > 0) {
+      tapTimerCount--;
+      if (tapTimerCount == 0) {
+        // Timer expired, reset tap count
+        tapCount = 0;
+        tapButton = 0;
+      }
+    }
     if (keyRepeatCount > 0) {
       int maskedButtons = pressedButtons & dPadMask;
       // Only one d-pad button can be pressed for key repeats

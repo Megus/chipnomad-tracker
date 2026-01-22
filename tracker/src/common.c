@@ -22,7 +22,7 @@ AppSettings appSettings = {
   .screenHeight = 0, // 0 to auto-detect resolution
   .audioSampleRate = 44100,
   .audioBufferSize = 2048,
-  .doubleTapFrames = 10,
+  .doubleTapFrames = 20,
   .keyRepeatDelay = 16,
   .keyRepeatSpeed = 2,
   .volume = DEFAULT_VOLUME,
@@ -222,7 +222,7 @@ void resetToDefaultColors(void) {
 int saveTheme(const char* path) {
   int fileId = fileOpen(path, 1);
   if (fileId == -1) return 1;
-  
+
   filePrintf(fileId, "colorBackground: 0x%06x\n", appSettings.colorScheme.background);
   filePrintf(fileId, "colorTextEmpty: 0x%06x\n", appSettings.colorScheme.textEmpty);
   filePrintf(fileId, "colorTextInfo: 0x%06x\n", appSettings.colorScheme.textInfo);
@@ -233,7 +233,7 @@ int saveTheme(const char* path) {
   filePrintf(fileId, "colorCursor: 0x%06x\n", appSettings.colorScheme.cursor);
   filePrintf(fileId, "colorSelection: 0x%06x\n", appSettings.colorScheme.selection);
   filePrintf(fileId, "colorWarning: 0x%06x\n", appSettings.colorScheme.warning);
-  
+
   fileClose(fileId);
   return 0;
 }
@@ -241,10 +241,10 @@ int saveTheme(const char* path) {
 int loadTheme(const char* path) {
   int fileId = fileOpen(path, 0);
   if (fileId == -1) return 1;
-  
+
   // First reset to defaults to ensure all colors have valid values
   resetToDefaultColors();
-  
+
   char* line;
   while ((line = fileReadString(fileId)) != NULL) {
     if (strncmp(line, "colorBackground: ", 17) == 0) {
@@ -269,7 +269,7 @@ int loadTheme(const char* path) {
       sscanf(line + 14, "0x%x", &appSettings.colorScheme.warning);
     }
   }
-  
+
   fileClose(fileId);
   return 0;
 }

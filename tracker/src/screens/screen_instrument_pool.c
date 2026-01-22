@@ -88,7 +88,7 @@ static void draw(void) {
 
 static int editPressed = 0;
 
-static int onInput(int isKeyDown, int keys, int isDoubleTap) {
+static int onInput(int isKeyDown, int keys, int tapCount) {
   int oldCursorRow = cursorRow;
   int oldTopRow = topRow;
 

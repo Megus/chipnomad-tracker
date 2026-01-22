@@ -357,7 +357,7 @@ void fileBrowserDraw(void) {
   }
 }
 
-int fileBrowserInput(int keys, int isDoubleTap) {
+int fileBrowserInput(int keys, int tapCount) {
   int maxIndex = entryCount - 1;
   if (isFolderMode) maxIndex += 2; // Add 2 for "Save to" and "Create Folder" options
 

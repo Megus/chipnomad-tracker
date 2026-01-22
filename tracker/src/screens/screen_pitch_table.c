@@ -142,7 +142,7 @@ static void fullRedraw(void) {
 static void draw(void) {
 }
 
-static int inputScreenNavigation(int keys, int isDoubleTap) {
+static int inputScreenNavigation(int keys, int tapCount) {
   if (keys == keyOpt) {
     screenSetup(&screenProject, 0);
     return 1;
@@ -150,9 +150,9 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
   return 0;
 }
 
-static int onInput(int isKeyDown, int keys, int isDoubleTap) {
+static int onInput(int isKeyDown, int keys, int tapCount) {
   if (isCharEdit) {
-    char result = charEditInput(keys, isDoubleTap, editingString, screenPitchTableData.cursorCol, editingStringLength);
+    char result = charEditInput(keys, tapCount, editingString, screenPitchTableData.cursorCol, editingStringLength);
     if (result) {
       isCharEdit = 0;
       if (screenPitchTableData.cursorCol < editingStringLength - 1) screenPitchTableData.cursorCol++;
@@ -161,8 +161,8 @@ static int onInput(int isKeyDown, int keys, int isDoubleTap) {
       fullRedraw();
     }
   } else {
-    if (inputScreenNavigation(keys, isDoubleTap)) return 1;
-    if (screenInput(&screenPitchTableData, isKeyDown, keys, isDoubleTap)) return 1;
+    if (inputScreenNavigation(keys, tapCount)) return 1;
+    if (screenInput(&screenPitchTableData, isKeyDown, keys, tapCount)) return 1;
   }
   return 0;
 }

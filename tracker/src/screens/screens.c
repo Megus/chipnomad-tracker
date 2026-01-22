@@ -244,7 +244,7 @@ static void inputCursorCommon(ScreenData* screen, int keys, int* handled, int* r
   }
 }
 
-static int inputNormalMode(ScreenData* screen, int keys, int isDoubleTap) {
+static int inputNormalMode(ScreenData* screen, int keys, int tapCount) {
   int oldCursorCol = screen->cursorCol;
   int oldCursorRow = screen->cursorRow;
   int handled = 0;
@@ -287,10 +287,10 @@ static int inputNormalMode(ScreenData* screen, int keys, int isDoubleTap) {
         redrawn = 1;
         handled = 1;
       }
-    } else if (keys == keyEdit && isDoubleTap == 0) {
+    } else if (keys == keyEdit && tapCount == 0) {
       // Edit: insert/copy value
       handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editTap);
-    } else if (keys == keyEdit && isDoubleTap == 1) {
+    } else if (keys == keyEdit && tapCount == 2) {
       // Edit: double tap (usually increment to an empty value)
       handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editDoubleTap);
     } else if (keys == (keyRight | keyEdit)) {
@@ -366,7 +366,7 @@ static void redrawSelection(ScreenData* screen) {
   }
 }
 
-static int inputSelectMode(ScreenData* screen, int keys, int isDoubleTap) {
+static int inputSelectMode(ScreenData* screen, int keys, int tapCount) {
   int oldCursorCol = screen->cursorCol;
   int oldCursorRow = screen->cursorRow;
   int handled = 0;
@@ -489,11 +489,11 @@ static int inputSelectMode(ScreenData* screen, int keys, int isDoubleTap) {
   return handled;
 }
 
-int screenInput(ScreenData* screen, int isKeyDown, int keys, int isDoubleTap) {
+int screenInput(ScreenData* screen, int isKeyDown, int keys, int tapCount) {
   // Discard key up events unless no buttons are pressed (for existing logic that expects keys == 0)
   if (!isKeyDown && keys != 0) return 0;
 
-  return (screen->selectMode == 1) ? inputSelectMode(screen, keys, isDoubleTap) : inputNormalMode(screen, keys, isDoubleTap);
+  return (screen->selectMode == 1) ? inputSelectMode(screen, keys, tapCount) : inputNormalMode(screen, keys, tapCount);
 }
 
 

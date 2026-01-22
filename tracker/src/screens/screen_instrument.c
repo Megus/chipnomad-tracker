@@ -292,7 +292,7 @@ int instrumentCommonOnEdit(int col, int row, enum CellEditAction action) {
 // Input handling
 //
 
-static int inputScreenNavigation(int keys, int isDoubleTap) {
+static int inputScreenNavigation(int keys, int tapCount) {
   if (keys == (keyRight | keyShift)) {
     // To Table screen with the default instrument table
     screenSetup(&screenTable, cInstrument);
@@ -356,7 +356,7 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
   return 0;
 }
 
-static int onInput(int isKeyDown, int keys, int isDoubleTap) {
+static int onInput(int isKeyDown, int keys, int tapCount) {
   // Stop preview when keys are released
   if (keys == 0) {
     playbackStopPreview(&chipnomadState->playbackState, *pSongTrack);
@@ -364,17 +364,17 @@ static int onInput(int isKeyDown, int keys, int isDoubleTap) {
 
   if (isCharEdit) {
     ScreenData* screen = instrumentScreen();
-    char result = charEditInput(keys, isDoubleTap, chipnomadState->project.instruments[cInstrument].name, screen->cursorCol, PROJECT_INSTRUMENT_NAME_LENGTH);
+    char result = charEditInput(keys, tapCount, chipnomadState->project.instruments[cInstrument].name, screen->cursorCol, PROJECT_INSTRUMENT_NAME_LENGTH);
     if (result) {
       isCharEdit = 0;
       if (screen->cursorCol < 15) screen->cursorCol++;
       fullRedraw();
     }
   } else {
-    if (inputScreenNavigation(keys, isDoubleTap)) return 1;
+    if (inputScreenNavigation(keys, tapCount)) return 1;
 
     ScreenData* screen = instrumentScreen();
-    if (screenInput(screen, isKeyDown, keys, isDoubleTap)) return 1;
+    if (screenInput(screen, isKeyDown, keys, tapCount)) return 1;
   }
   return 0;
 }

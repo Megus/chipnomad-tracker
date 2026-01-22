@@ -13,8 +13,8 @@ static void draw(void) {
   fileBrowserDraw();
 }
 
-static int onInput(int isKeyDown, int keys, int isDoubleTap) {
-  if (fileBrowserInput(keys, isDoubleTap)) {
+static int onInput(int isKeyDown, int keys, int tapCount) {
+  if (fileBrowserInput(keys, tapCount)) {
     fileBrowserDraw();
     return 1;
   }

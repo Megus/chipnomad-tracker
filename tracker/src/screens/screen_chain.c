@@ -236,7 +236,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   }
 }
 
-static int inputScreenNavigation(int keys, int isDoubleTap) {
+static int inputScreenNavigation(int keys, int tapCount) {
   if (keys == (keyRight | keyShift)) {
     // To Phrase screen
     int phrase = chipnomadState->project.chains[chain].rows[screen.cursorRow].phrase;
@@ -289,9 +289,9 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
   return 0;
 }
 
-static int onInput(int isKeyDown, int keys, int isDoubleTap) {
-  if (screen.selectMode == 0 && inputScreenNavigation(keys, isDoubleTap)) return 1;
-  return screenInput(&screen, isKeyDown, keys, isDoubleTap);
+static int onInput(int isKeyDown, int keys, int tapCount) {
+  if (screen.selectMode == 0 && inputScreenNavigation(keys, tapCount)) return 1;
+  return screenInput(&screen, isKeyDown, keys, tapCount);
 }
 
 const AppScreen screenChain = {

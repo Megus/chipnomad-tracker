@@ -60,10 +60,10 @@ int editCharacter(enum CellEditAction action, char* str, int idx, int maxLen) {
 * @brief Handle input for character selection screen
 *
 * @param keys Currently pressed keys
-* @param isDoubleTap Is it a double tap?
+* @param tapCount Tap count
 * @return char Selected character (0 if no selection made)
 */
-char charEditInput(int keys, int isDoubleTap, char* str, int idx, int maxLen) {
+char charEditInput(int keys, int tapCount, char* str, int idx, int maxLen) {
   // Handle Shift key to toggle between uppercase and lowercase
   if (keys & keyShift) {
     isUppercase = !isUppercase;

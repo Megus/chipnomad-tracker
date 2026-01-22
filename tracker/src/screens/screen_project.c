@@ -369,7 +369,7 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
 // Input handling
 //
 
-static int inputScreenNavigation(int keys, int isDoubleTap) {
+static int inputScreenNavigation(int keys, int tapCount) {
   if (keys == (keyDown | keyShift)) {
     screenSetup(&screenSong, 0);
     return 1;
@@ -377,10 +377,10 @@ static int inputScreenNavigation(int keys, int isDoubleTap) {
   return 0;
 }
 
-static int onInput(int isKeyDown, int keys, int isDoubleTap) {
+static int onInput(int isKeyDown, int keys, int tapCount) {
   if (isCharEdit) {
     ScreenData* screen = projectScreen();
-    char result = charEditInput(keys, isDoubleTap, editingString, screen->cursorCol, editingStringLength);
+    char result = charEditInput(keys, tapCount, editingString, screen->cursorCol, editingStringLength);
 
     if (result) {
       isCharEdit = 0;
@@ -390,10 +390,10 @@ static int onInput(int isKeyDown, int keys, int isDoubleTap) {
       fullRedraw();
     }
   } else {
-    if (inputScreenNavigation(keys, isDoubleTap)) return 1;
+    if (inputScreenNavigation(keys, tapCount)) return 1;
 
     ScreenData* screen = projectScreen();
-    if (screenInput(screen, isKeyDown, keys, isDoubleTap)) return 1;
+    if (screenInput(screen, isKeyDown, keys, tapCount)) return 1;
   }
   return 0;
 }
