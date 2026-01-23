@@ -126,6 +126,7 @@ typedef struct InstrumentAY {
   uint8_t veR;
   uint8_t autoEnvN; // 0 - no auto-env
   uint8_t autoEnvD;
+  uint8_t defaultMixer; // Low nibble: mixer, high nibble: envelope shape
 } InstrumentAY;
 
 typedef union InstrumentChipData {

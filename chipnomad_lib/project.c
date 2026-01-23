@@ -315,39 +315,31 @@ static int projectLoadPhrases(int fileId, Project* p) {
 }
 
 static int loadInstrument(int fileId, Instrument* instrument, Project* p) {
-  // Read name
-  READ_STRING;
-  if (!strncmp(lpstr, "- Name:", 7)) {
-    if (sscanf(lpstr, "- Name: %[^\n]", instrument->name) != 1) {
-      instrument->name[0] = 0; // Empty instrument name
+  instrumentClear(instrument);
+  
+  while (1) {
+    READ_STRING;
+    if (lpstr[0] == '#') return 0;
+    
+    if (strncmp(lpstr, "- Name: ", 8) == 0) {
+      sscanf(lpstr, "- Name: %[^\n]", instrument->name);
+    } else if (strncmp(lpstr, "- Type: ", 8) == 0) {
+      sscanf(lpstr, "- Type: %hhd", &instrument->type);
+    } else if (strncmp(lpstr, "- Table speed: ", 15) == 0) {
+      sscanf(lpstr, "- Table speed: %hhu", &instrument->tableSpeed);
+    } else if (strncmp(lpstr, "- Transpose: ", 13) == 0) {
+      sscanf(lpstr, "- Transpose: %hhu", &instrument->transposeEnabled);
+    } else if (strncmp(lpstr, "- Volume envelope: ", 19) == 0) {
+      sscanf(lpstr, "- Volume envelope: %hhu,%hhu,%hhu,%hhu",
+        &instrument->chip.ay.veA, &instrument->chip.ay.veD,
+        &instrument->chip.ay.veS, &instrument->chip.ay.veR);
+    } else if (strncmp(lpstr, "- Auto envelope: ", 17) == 0) {
+      sscanf(lpstr, "- Auto envelope: %hhu,%hhu",
+        &instrument->chip.ay.autoEnvN, &instrument->chip.ay.autoEnvD);
+    } else if (strncmp(lpstr, "- Default mixer: ", 17) == 0) {
+      sscanf(lpstr, "- Default mixer: %hhX", &instrument->chip.ay.defaultMixer);
     }
   }
-
-  // Read type
-  READ_STRING;
-  if (sscanf(lpstr, "- Type: %hhd", &instrument->type) != 1) return 1;
-
-  // Read table speed
-  READ_STRING;
-  if (sscanf(lpstr, "- Table speed: %hhu", &instrument->tableSpeed) != 1) return 1;
-
-  // Read transpose enabled
-  READ_STRING;
-  if (sscanf(lpstr, "- Transpose: %hhu", &instrument->transposeEnabled) != 1) return 1;
-
-  if (instrument->type == instAY) {
-    // Read volume envelope
-    READ_STRING;
-    if (sscanf(lpstr, "- Volume envelope: %hhu,%hhu,%hhu,%hhu",
-      &instrument->chip.ay.veA, &instrument->chip.ay.veD,
-      &instrument->chip.ay.veS, &instrument->chip.ay.veR) != 4) return 1;
-
-    // Read auto envelope
-    READ_STRING;
-    if (sscanf(lpstr, "- Auto envelope: %hhu,%hhu",
-      &instrument->chip.ay.autoEnvN, &instrument->chip.ay.autoEnvD) != 2) return 1;
-  }
-  return 0;
 }
 
 static int projectLoadInstruments(int fileId, Project* p) {
@@ -355,9 +347,8 @@ static int projectLoadInstruments(int fileId, Project* p) {
 
   if (strcmp(lpstr, "## Instruments")) return 1;
 
-  while (1) {
-    READ_STRING;
-    if (strncmp(lpstr, "### Instrument", 13)) break;
+  READ_STRING;
+  while (strncmp(lpstr, "### Instrument", 14) == 0) {
     if (sscanf(lpstr, "### Instrument %X", &idx) != 1) return 1;
     if (loadInstrument(fileId, &p->instruments[idx], p)) return 1;
   }
@@ -663,6 +654,7 @@ static int saveInstrument(int fileId, int idx, Instrument* instrument) {
       instrument->chip.ay.veS, instrument->chip.ay.veR);
     filePrintf(fileId, "- Auto envelope: %hhd,%hhd\n",
       instrument->chip.ay.autoEnvN, instrument->chip.ay.autoEnvD);
+    filePrintf(fileId, "- Default mixer: %02X\n", instrument->chip.ay.defaultMixer);
   }
   return 0;
 }
@@ -907,6 +899,7 @@ void chainClear(Chain* chain) {
 void instrumentClear(Instrument* instrument) {
   instrument->type = instNone;
   instrument->name[0] = 0;
+  instrument->chip.ay.defaultMixer = 0x01; // Default to tone only
 }
 
 // Clear a single table with proper initialization
