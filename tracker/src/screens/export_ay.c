@@ -16,13 +16,13 @@ static int getColumnCount(int row) {
 static void drawStatic(void) {
   exportCommonDrawStatic();
   gfxSetFgColor(appSettings.colorScheme.textValue);
-  gfxPrint(0, 6, "PSG");
+  gfxPrint(0, 8, "PSG");
 }
 
 static void drawCursor(int col, int row) {
   if (row < SCR_EXPORT_ROWS) return exportCommonDrawCursor(col, row);
   if (row == SCR_EXPORT_ROWS) {
-    gfxCursor(13, 6, 6); // Export
+    gfxCursor(13, 8, 6);
   }
 }
 
@@ -32,7 +32,7 @@ static void drawField(int col, int row, int state) {
   gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
 
   if (row == SCR_EXPORT_ROWS) {
-    gfxPrint(13, 6, "Export");
+    gfxPrint(13, 8, "Export");
   }
 }
 
@@ -49,7 +49,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     generatePSGExportPath(exportPath, sizeof(exportPath));
     strcat(exportPath, ".psg");
 
-    currentExporter = createPSGExporter(exportPath, &chipnomadState->project, 0);
+    currentExporter = createPSGExporter(exportPath, &chipnomadState->project, startRow);
     if (currentExporter) {
       // Set mix volume from app settings
       currentExporter->chipnomadState->mixVolume = appSettings.mixVolume;
@@ -72,7 +72,7 @@ static void drawColHeader(int col, int state) {}
 static void drawSelection(int col1, int row1, int col2, int row2) {}
 
 ScreenData screenExportAY = {
-  .rows = 4,
+  .rows = 5,
   .cursorRow = 0,
   .cursorCol = 0,
   .selectMode = -1,

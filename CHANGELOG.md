@@ -22,6 +22,7 @@
 - AY/YM emulator filter quality setting (lower quality - lower CPU load)
 - Looping cursor in the file browser
 - Color theme edit, load, and save
+- Stems export and starting row for export
 - *FIX*: Chip settings were not initialized when loading a project
 - *FIX*: UI was monochrome in RG35xx build
 - *FIX*: All saved values are correctly reset on loading or creating a new project now

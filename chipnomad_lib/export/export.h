@@ -16,6 +16,7 @@ typedef struct Exporter {
 
 // Export factory functions
 Exporter* createWAVExporter(const char* filename, Project* project, int startRow, int sampleRate, int bitDepth);
+Exporter* createWAVStemsExporter(const char* basePath, Project* project, int startRow, int sampleRate, int bitDepth);
 Exporter* createPSGExporter(const char* filename, Project* project, int startRow);
 
 #endif

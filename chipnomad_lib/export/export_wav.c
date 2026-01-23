@@ -22,6 +22,20 @@ typedef struct {
   char filename[1024];
 } WAVExporterData;
 
+// WAV Stems implementation data
+typedef struct {
+  int* fileIds;
+  int trackCount;
+  int currentTrack;
+  int sampleRate;
+  int channels;
+  int bitDepth;
+  int totalSamples;
+  int allTracksStopped;
+  int renderedSeconds;
+  char basePath[512];
+} WAVStemsExporterData;
+
 typedef struct {
   char riff[4];
   uint32_t fileSize;
@@ -182,6 +196,149 @@ Exporter* createWAVExporter(const char* filename, Project* project, int startRow
   exporter->next = wavNext;
   exporter->finish = wavFinish;
   exporter->cancel = wavCancel;
+
+  return exporter;
+}
+
+// WAV Stems exporter methods
+static int wavStemsNext(Exporter* self) {
+  WAVStemsExporterData* data = (WAVStemsExporterData*)self->data;
+  if (data->allTracksStopped) return -1;
+
+  float buffer[data->sampleRate * 2];
+  int samplesRendered = chipnomadRender(self->chipnomadState, buffer, data->sampleRate);
+
+  if (samplesRendered > 0) {
+    wavExportWrite((WAVExporterData*)&(WAVExporterData){
+      .fileId = data->fileIds[data->currentTrack],
+      .sampleRate = data->sampleRate,
+      .channels = data->channels,
+      .bitDepth = data->bitDepth,
+      .totalSamples = 0
+    }, buffer, samplesRendered);
+    data->totalSamples += samplesRendered;
+  }
+
+  if (samplesRendered < data->sampleRate) {
+    data->currentTrack++;
+    if (data->currentTrack >= data->trackCount) {
+      data->allTracksStopped = 1;
+      return -1;
+    }
+
+    playbackStartSong(&self->chipnomadState->playbackState, 0, 0, 0);
+    for (int t = 0; t < PROJECT_MAX_TRACKS; t++) {
+      self->chipnomadState->playbackState.trackEnabled[t] = (t == data->currentTrack) ? 1 : 0;
+    }
+    data->totalSamples = 0;
+  }
+
+  return ++data->renderedSeconds;
+}
+
+static int wavStemsFinish(Exporter* self) {
+  WAVStemsExporterData* data = (WAVStemsExporterData*)self->data;
+
+  for (int i = 0; i < data->trackCount; i++) {
+    int dataSize = data->totalSamples * data->channels * (data->bitDepth / 8);
+    fileSeek(data->fileIds[i], 0, 0);
+    writeWAVHeader(data->fileIds[i], data->sampleRate, data->channels, data->bitDepth, dataSize);
+    fileClose(data->fileIds[i]);
+  }
+
+  chipnomadDestroy(self->chipnomadState);
+  free(data->fileIds);
+  free(data);
+  free(self);
+  return 0;
+}
+
+static void wavStemsCancel(Exporter* self) {
+  WAVStemsExporterData* data = (WAVStemsExporterData*)self->data;
+
+  for (int i = 0; i < data->trackCount; i++) {
+    fileClose(data->fileIds[i]);
+    char filename[1024];
+    snprintf(filename, sizeof(filename), "%s-%02d.wav", data->basePath, i + 1);
+    fileDelete(filename);
+  }
+
+  chipnomadDestroy(self->chipnomadState);
+  free(data->fileIds);
+  free(data);
+  free(self);
+}
+
+Exporter* createWAVStemsExporter(const char* basePath, Project* project, int startRow, int sampleRate, int bitDepth) {
+  Exporter* exporter = malloc(sizeof(Exporter));
+  if (!exporter) return NULL;
+
+  WAVStemsExporterData* data = malloc(sizeof(WAVStemsExporterData));
+  if (!data) {
+    free(exporter);
+    return NULL;
+  }
+
+  int trackCount = project->chipsCount * 3;
+  data->fileIds = malloc(sizeof(int) * trackCount);
+  if (!data->fileIds) {
+    free(data);
+    free(exporter);
+    return NULL;
+  }
+
+  for (int i = 0; i < trackCount; i++) {
+    char filename[1024];
+    snprintf(filename, sizeof(filename), "%s-%02d.wav", basePath, i + 1);
+    data->fileIds[i] = fileOpen(filename, 1);
+    if (data->fileIds[i] == -1) {
+      for (int j = 0; j < i; j++) {
+        fileClose(data->fileIds[j]);
+      }
+      free(data->fileIds);
+      free(data);
+      free(exporter);
+      return NULL;
+    }
+    writeWAVHeader(data->fileIds[i], sampleRate, 2, bitDepth, 0);
+  }
+
+  data->trackCount = trackCount;
+  data->currentTrack = 0;
+  data->sampleRate = sampleRate;
+  data->channels = 2;
+  data->bitDepth = bitDepth;
+  data->totalSamples = 0;
+  data->allTracksStopped = 0;
+  data->renderedSeconds = 0;
+  strncpy(data->basePath, basePath, sizeof(data->basePath) - 1);
+  data->basePath[sizeof(data->basePath) - 1] = 0;
+
+  exporter->chipnomadState = chipnomadCreate();
+  if (!exporter->chipnomadState) {
+    for (int i = 0; i < trackCount; i++) {
+      fileClose(data->fileIds[i]);
+    }
+    free(data->fileIds);
+    free(data);
+    free(exporter);
+    return NULL;
+  }
+
+  exporter->chipnomadState->project = *project;
+  playbackInit(&exporter->chipnomadState->playbackState, &exporter->chipnomadState->project);
+  chipnomadInitChips(exporter->chipnomadState, sampleRate, NULL);
+  chipnomadSetQuality(exporter->chipnomadState, CHIPNOMAD_QUALITY_BEST);
+
+  playbackStartSong(&exporter->chipnomadState->playbackState, startRow, 0, 0);
+  for (int t = 0; t < PROJECT_MAX_TRACKS; t++) {
+    exporter->chipnomadState->playbackState.trackEnabled[t] = (t == 0) ? 1 : 0;
+  }
+
+  exporter->data = data;
+  exporter->next = wavStemsNext;
+  exporter->finish = wavStemsFinish;
+  exporter->cancel = wavStemsCancel;
 
   return exporter;
 }
