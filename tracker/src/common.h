@@ -47,7 +47,6 @@ typedef struct AppSettings {
   int doubleTapFrames;
   int keyRepeatDelay;
   int keyRepeatSpeed;
-  float volume;
   float mixVolume;
   int quality;
   int pitchConflictWarning;

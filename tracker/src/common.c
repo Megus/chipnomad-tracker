@@ -8,12 +8,6 @@
 #include <unistd.h>
 #endif
 
-#if defined(DESKTOP_BUILD) || defined(PORTMASTER_BUILD)
-#define DEFAULT_VOLUME (1.0)
-#else
-#define DEFAULT_VOLUME (0.5)
-#endif
-
 #define SETTINGS_FILENAME "settings.txt"
 
 AppSettings appSettings = {
@@ -24,7 +18,6 @@ AppSettings appSettings = {
   .doubleTapFrames = 20,
   .keyRepeatDelay = 16,
   .keyRepeatSpeed = 2,
-  .volume = DEFAULT_VOLUME,
   .mixVolume = 20000.0f / 32767.0f,
   .quality = CHIPNOMAD_QUALITY_MEDIUM,
   .pitchConflictWarning = 0,
@@ -92,14 +85,12 @@ int settingsSave(void) {
   filePrintf(fileId, "doubleTapFrames: %d\n", appSettings.doubleTapFrames);
   filePrintf(fileId, "keyRepeatDelay: %d\n", appSettings.keyRepeatDelay);
   filePrintf(fileId, "keyRepeatSpeed: %d\n", appSettings.keyRepeatSpeed);
-  filePrintf(fileId, "volume: %f\n", appSettings.volume);
   filePrintf(fileId, "mixVolume: %f\n", appSettings.mixVolume);
   filePrintf(fileId, "quality: %d\n", appSettings.quality);
   filePrintf(fileId, "pitchConflictWarning: %d\n", appSettings.pitchConflictWarning);
   filePrintf(fileId, "gamepadSwapAB: %d\n", appSettings.gamepadSwapAB);
 
   // Save key mappings
-  /*
   filePrintf(fileId, "keyUp: %d,%d,%d\n", appSettings.keyMapping.keyUp[0], appSettings.keyMapping.keyUp[1], appSettings.keyMapping.keyUp[2]);
   filePrintf(fileId, "keyDown: %d,%d,%d\n", appSettings.keyMapping.keyDown[0], appSettings.keyMapping.keyDown[1], appSettings.keyMapping.keyDown[2]);
   filePrintf(fileId, "keyLeft: %d,%d,%d\n", appSettings.keyMapping.keyLeft[0], appSettings.keyMapping.keyLeft[1], appSettings.keyMapping.keyLeft[2]);
@@ -108,7 +99,6 @@ int settingsSave(void) {
   filePrintf(fileId, "keyOpt: %d,%d,%d\n", appSettings.keyMapping.keyOpt[0], appSettings.keyMapping.keyOpt[1], appSettings.keyMapping.keyOpt[2]);
   filePrintf(fileId, "keyPlay: %d,%d,%d\n", appSettings.keyMapping.keyPlay[0], appSettings.keyMapping.keyPlay[1], appSettings.keyMapping.keyPlay[2]);
   filePrintf(fileId, "keyShift: %d,%d,%d\n", appSettings.keyMapping.keyShift[0], appSettings.keyMapping.keyShift[1], appSettings.keyMapping.keyShift[2]);
-  */
 
   filePrintf(fileId, "colorBackground: 0x%06x\n", appSettings.colorScheme.background);
   filePrintf(fileId, "colorTextEmpty: 0x%06x\n", appSettings.colorScheme.textEmpty);
@@ -157,8 +147,6 @@ int settingsLoad(void) {
       sscanf(line + 16, "%d", &appSettings.keyRepeatDelay);
     } else if (strncmp(line, "keyRepeatSpeed: ", 16) == 0) {
       sscanf(line + 16, "%d", &appSettings.keyRepeatSpeed);
-    } else if (strncmp(line, "volume: ", 8) == 0) {
-      sscanf(line + 8, "%f", &appSettings.volume);
     } else if (strncmp(line, "mixVolume: ", 11) == 0) {
       sscanf(line + 11, "%f", &appSettings.mixVolume);
     } else if (strncmp(line, "quality: ", 9) == 0) {

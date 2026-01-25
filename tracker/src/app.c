@@ -79,20 +79,16 @@ static int inputPlayback(int keys, int tapCount) {
 * @param tapCount number of taps
 */
 static void appInput(int isKeyDown, int keys, int tapCount) {
-  int volumeChanged = 0;
-
   // Volume control (only on key down)
   if (isKeyDown) {
     if (keys == keyVolumeUp) {
-      if (appSettings.volume < 1.0) appSettings.volume += 0.1;
-      volumeChanged = 1;
+      if (appSettings.mixVolume < 1.0) appSettings.mixVolume += 0.1;
+      if (appSettings.mixVolume > 1.0) appSettings.mixVolume = 1.0;
+      if (chipnomadState) chipnomadState->mixVolume = appSettings.mixVolume;
     } else if (keys == keyVolumeDown) {
-      if (appSettings.volume > 0.0) appSettings.volume -= 0.1;
-      volumeChanged = 1;
-    }
-    if (volumeChanged) {
-      if (appSettings.volume < 0.0) appSettings.volume = 0;
-      if (appSettings.volume > 1.0) appSettings.volume = 1.0;
+      if (appSettings.mixVolume > 0.0) appSettings.mixVolume -= 0.1;
+      if (appSettings.mixVolume < 0.0) appSettings.mixVolume = 0.0;
+      if (chipnomadState) chipnomadState->mixVolume = appSettings.mixVolume;
     }
   }
 

@@ -108,7 +108,11 @@ static void drawField(int col, int row, int state) {
       } else {
         gfxSetFgColor(appSettings.colorScheme.textDefault);
       }
-      gfxPrint(11 + col * 8, row + 2, inputGetKeyName(*slot));
+      const char* keyName = inputGetKeyName(*slot);
+      char trimmed[8];
+      strncpy(trimmed, keyName, 7);
+      trimmed[7] = '\0';
+      gfxPrint(11 + col * 8, row + 2, trimmed);
     }
   } else if (row == 8) {
     gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);

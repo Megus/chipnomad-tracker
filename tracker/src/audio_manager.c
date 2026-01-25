@@ -39,9 +39,9 @@ static void audioCallback(int16_t* buffer, int stereoSamples) {
 
   chipnomadRender(chipnomadState, floatBuffer, stereoSamples);
 
-  // Convert float to int16_t with volume
+  // Convert float to int16_t
   for (int i = 0; i < stereoSamples * 2; i++) {
-    int sample = floatBuffer[i] * appSettings.volume * 32767;
+    int sample = floatBuffer[i] * 32767;
     if (sample > 32767) sample = 32767;
     if (sample < -32768) sample = -32768;
     buffer[i] = sample;
