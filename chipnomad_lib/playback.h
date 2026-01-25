@@ -132,11 +132,23 @@ typedef struct PlaybackChipState {
   PlaybackAYChipState ay;
 } PlaybackChipState;
 
+typedef struct LoopRange {
+  int enabled;
+  int level; // 0 = song, 1 = chain, 2 = phrase
+  int startSongRow;
+  int startChainRow;
+  int startPhraseRow;
+  int endSongRow;
+  int endChainRow;
+  int endPhraseRow;
+} LoopRange;
+
 typedef struct PlaybackState {
   Project* p;
   PlaybackTrackState tracks[PROJECT_MAX_TRACKS];
   PlaybackChipState chips[PROJECT_MAX_CHIPS];
   uint8_t trackEnabled[PROJECT_MAX_TRACKS];
+  LoopRange loopRange;
 } PlaybackState;
 
 
@@ -234,6 +246,21 @@ void playbackPreviewNote(PlaybackState* state, int trackIdx, uint8_t note, uint8
  * @param trackIdx Index of the track to stop preview on
  */
 void playbackStopPreview(PlaybackState* state, int trackIdx);
+
+/**
+ * Sets a loop range for playback
+ *
+ * @param state Pointer to the playback state
+ * @param range Loop range configuration
+ */
+void playbackSetLoopRange(PlaybackState* state, LoopRange range);
+
+/**
+ * Clears the loop range, disabling ranged loop
+ *
+ * @param state Pointer to the playback state
+ */
+void playbackClearLoopRange(PlaybackState* state);
 
 /**
  * Advances playback by one frame

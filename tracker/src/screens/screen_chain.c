@@ -19,6 +19,7 @@ static void drawColHeader(int col, int state);
 static void drawCursor(int col, int row);
 static void drawSelection(int col1, int row1, int col2, int row2);
 static int onEdit(int col, int row, enum CellEditAction action);
+static LoopRange getLoopRange(void);
 
 static ScreenData screen = {
   .rows = 16,
@@ -38,6 +39,7 @@ static ScreenData screen = {
   .drawColHeader = drawColHeader,
   .drawField = drawField,
   .onEdit = onEdit,
+  .getLoopRange = getLoopRange,
 };
 
 static void init(void) {
@@ -294,6 +296,23 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   return screenInput(&screen, isKeyDown, keys, tapCount);
 }
 
+static LoopRange getLoopRange(void) {
+  LoopRange range = {0};
+  if (screen.selectMode == 1) {
+    int startCol, startRow, endCol, endRow;
+    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    range.enabled = 1;
+    range.level = 1;
+    range.startSongRow = *pSongRow;
+    range.startChainRow = startRow;
+    range.startPhraseRow = 0;
+    range.endSongRow = *pSongRow;
+    range.endChainRow = endRow;
+    range.endPhraseRow = 15;
+  }
+  return range;
+}
+
 const AppScreen screenChain = {
   .setup = setup,
   .fullRedraw = fullRedraw,
@@ -301,3 +320,7 @@ const AppScreen screenChain = {
   .onInput = onInput,
   .init = init
 };
+
+LoopRange chainScreenGetLoopRange(void) {
+  return getLoopRange();
+}

@@ -435,6 +435,16 @@ static int moveToNextPhraseRow(PlaybackState* state, int trackIdx) {
   struct Project *p = state->p;
   PlaybackTrackState* track = &state->tracks[trackIdx];
 
+  // Check phrase-level loop before incrementing
+  if (state->loopRange.enabled && state->loopRange.level == 2 && track->loop &&
+      track->songRow == state->loopRange.endSongRow &&
+      track->chainRow == state->loopRange.endChainRow &&
+      track->phraseRow == state->loopRange.endPhraseRow) {
+    track->phraseRow = state->loopRange.startPhraseRow;
+    resetTrackFXAuxState(state, trackIdx);
+    return stopped;
+  }
+
   track->phraseRow++;
 
   // Reset OFF/KIL/DEL FX
@@ -446,6 +456,17 @@ static int moveToNextPhraseRow(PlaybackState* state, int trackIdx) {
 
   if (track->phraseRow >= 16) {
     track->phraseRow = 0;
+    
+    // Check chain-level loop after phrase overflow
+    if (state->loopRange.enabled && state->loopRange.level == 1 && track->loop &&
+        track->songRow == state->loopRange.endSongRow &&
+        track->chainRow == state->loopRange.endChainRow) {
+      track->chainRow = state->loopRange.startChainRow;
+      track->phraseRow = state->loopRange.startPhraseRow;
+      resetTrackFXAuxState(state, trackIdx);
+      return stopped;
+    }
+    
     // Play mode logic:
     // Song playback
     if (track->mode == playbackModeSong) {
@@ -454,6 +475,16 @@ static int moveToNextPhraseRow(PlaybackState* state, int trackIdx) {
       if (chain != EMPTY_VALUE_16) {
         int chainRow = track->chainRow + 1;
         if (chainRow >= 16 || p->chains[chain].rows[chainRow].phrase == EMPTY_VALUE_16) {
+          // Check song-level loop before advancing song row
+          if (state->loopRange.enabled && state->loopRange.level == 0 && track->loop &&
+              track->songRow == state->loopRange.endSongRow) {
+            track->songRow = state->loopRange.startSongRow;
+            track->chainRow = state->loopRange.startChainRow;
+            track->phraseRow = state->loopRange.startPhraseRow;
+            resetTrackFXAuxState(state, trackIdx);
+            return stopped;
+          }
+          
           // Next song row
           int songRow = track->songRow + 1;
           track->chainRow = 0;
@@ -550,6 +581,9 @@ void playbackInit(PlaybackState* state, Project* project) {
     state->trackEnabled[c] = 1;
   }
 
+  // Initialize loop range as disabled
+  state->loopRange.enabled = 0;
+
   // TODO: Properly initialize other global chip states, but for now it's AY only
   for (int c = 0; c < PROJECT_MAX_CHIPS; c++) {
     state->chips[c].ay.envShape = 0;
@@ -623,6 +657,8 @@ void playbackQueuePhrase(PlaybackState* state, int trackIdx, int songRow, int ch
   PlaybackTrackState* track = &state->tracks[trackIdx];
   if (track->mode != playbackModePhrase) return;
   if (track->songRow != songRow) return;
+  // Ignore queued phrases when ranged loop is enabled
+  if (state->loopRange.enabled) return;
   track->queue.mode = playbackModePhrase;
   track->queue.songRow = songRow;
   track->queue.chainRow = chainRow;
@@ -744,4 +780,12 @@ void playbackStopPreview(PlaybackState* state, int trackIdx) {
   if (state->tracks[trackIdx].mode == playbackModePhraseRow) {
     resetTrack(state, trackIdx);
   }
+}
+
+void playbackSetLoopRange(PlaybackState* state, LoopRange range) {
+  state->loopRange = range;
+}
+
+void playbackClearLoopRange(PlaybackState* state) {
+  state->loopRange.enabled = 0;
 }

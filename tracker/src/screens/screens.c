@@ -534,3 +534,20 @@ int isSingleColumnSelection(ScreenData* screen) {
   getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
   return startCol == endCol;
 }
+
+LoopRange screenGetLoopRange(const AppScreen* screen) {
+  extern LoopRange songScreenGetLoopRange(void);
+  extern LoopRange chainScreenGetLoopRange(void);
+  extern LoopRange phraseScreenGetLoopRange(void);
+  
+  if (screen == &screenSong) {
+    return songScreenGetLoopRange();
+  } else if (screen == &screenChain) {
+    return chainScreenGetLoopRange();
+  } else if (screen == &screenPhrase) {
+    return phraseScreenGetLoopRange();
+  }
+  
+  LoopRange range = {0};
+  return range;
+}

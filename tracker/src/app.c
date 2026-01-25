@@ -32,6 +32,15 @@ static int keyRepeatCount;
 * @param tapCount number of taps
 * @return int 0 - input not handled, 1 - input handled
 */
+static void applyLoopRange(void) {
+  LoopRange range = screenGetLoopRange(currentScreen);
+  if (range.enabled) {
+    playbackSetLoopRange(&chipnomadState->playbackState, range);
+  } else {
+    playbackClearLoopRange(&chipnomadState->playbackState);
+  }
+}
+
 static int inputPlayback(int keys, int tapCount) {
   if (!chipnomadState) return 0;
 
@@ -39,28 +48,35 @@ static int inputPlayback(int keys, int tapCount) {
 
   // Play song/chain/phrase depending on the current screen
   if (!isPlaying && keys == keyPlay) {
-    // Stop any preview first
     playbackStop(&chipnomadState->playbackState);
+    LoopRange range = screenGetLoopRange(currentScreen);
     if (currentScreen == &screenSong || currentScreen == &screenProject) {
-      playbackStartSong(&chipnomadState->playbackState, *pSongRow, 0, 1);
+      int startRow = range.enabled ? range.startSongRow : *pSongRow;
+      playbackStartSong(&chipnomadState->playbackState, startRow, 0, 1);
+      applyLoopRange();
     } else if (currentScreen == &screenChain) {
-      playbackStartChain(&chipnomadState->playbackState, *pSongTrack, *pSongRow, *pChainRow, 1);
+      int startRow = range.enabled ? range.startChainRow : *pChainRow;
+      playbackStartChain(&chipnomadState->playbackState, *pSongTrack, *pSongRow, startRow, 1);
+      applyLoopRange();
     } else if (currentScreen == &screenPhrase || currentScreen == &screenTable || currentScreen == &screenInstrument) {
       playbackStartPhrase(&chipnomadState->playbackState, *pSongTrack, *pSongRow, *pChainRow, 1);
+      applyLoopRange();
     }
-    // Other screens don't support playback
     return 1;
   }
   // Play song from music screens
   else if (!isPlaying && keys == (keyPlay | keyShift)) {
-    // Stop any preview first
     playbackStop(&chipnomadState->playbackState);
+    LoopRange range = screenGetLoopRange(currentScreen);
     if (currentScreen == &screenSong || currentScreen == &screenProject) {
-      playbackStartSong(&chipnomadState->playbackState, *pSongRow, 0, 1);
+      int startRow = range.enabled ? range.startSongRow : *pSongRow;
+      playbackStartSong(&chipnomadState->playbackState, startRow, 0, 1);
+      applyLoopRange();
     } else if (currentScreen == &screenChain || currentScreen == &screenPhrase || currentScreen == &screenTable || currentScreen == &screenInstrument) {
-      playbackStartSong(&chipnomadState->playbackState, *pSongRow, *pChainRow, 1);
+      int startChainRow = range.enabled ? range.startChainRow : *pChainRow;
+      playbackStartSong(&chipnomadState->playbackState, *pSongRow, startChainRow, 1);
+      applyLoopRange();
     }
-    // Other screens don't support playback
     return 1;
   }
   // Stop playback
