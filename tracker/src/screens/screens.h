@@ -57,6 +57,8 @@ typedef struct ScreenData {
   void (*drawColHeader)(int col, int state);
   void (*drawField)(int col, int row, int state);
   int (*onEdit)(int col, int row, enum CellEditAction action);
+  int (*onKey)(enum Key key, int isDown);  // Optional: handle keys before standard processing
+  int (*onRawInput)(int keyCode, int isKeyboard, int isDown);  // Optional: capture raw SDL input
 } ScreenData;
 
 extern const AppScreen screenProject;
@@ -77,6 +79,7 @@ extern const AppScreen screenExport;
 extern const AppScreen screenManage;
 extern const AppScreen screenSettings;
 extern const AppScreen screenColorTheme;
+extern const AppScreen screenKeyMapping;
 
 extern const AppScreen* currentScreen;
 

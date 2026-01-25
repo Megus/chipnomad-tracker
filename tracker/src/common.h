@@ -25,13 +25,19 @@ typedef struct ColorScheme {
   int warning;
 } ColorScheme;
 
-typedef enum {
-  KEYBOARD_LAYOUT_AUTO = 0,
-  KEYBOARD_LAYOUT_QWERTY = 1,
-  KEYBOARD_LAYOUT_QWERTZ = 2,
-  KEYBOARD_LAYOUT_AZERTY = 3,
-  KEYBOARD_LAYOUT_DVORAK = 4
-} KeyboardLayout;
+// Key mapping: 8 buttons × 3 keys each
+// Stored as SDL keycodes (keyboard) or button IDs (controller)
+// 0 = unmapped
+typedef struct KeyMapping {
+  int32_t keyUp[3];
+  int32_t keyDown[3];
+  int32_t keyLeft[3];
+  int32_t keyRight[3];
+  int32_t keyEdit[3];   // A button
+  int32_t keyOpt[3];    // B button
+  int32_t keyPlay[3];   // Start
+  int32_t keyShift[3];  // Select
+} KeyMapping;
 
 typedef struct AppSettings {
   int screenWidth;
@@ -46,7 +52,7 @@ typedef struct AppSettings {
   int quality;
   int pitchConflictWarning;
   int gamepadSwapAB;
-  KeyboardLayout keyboardLayout;
+  KeyMapping keyMapping;
   ColorScheme colorScheme;
   char themeName[THEME_NAME_LENGTH + 1];
   char projectFilename[FILENAME_LENGTH + 1];
@@ -69,6 +75,8 @@ int settingsLoad(void);
 int saveTheme(const char* path);
 int loadTheme(const char* path);
 void resetToDefaultColors(void);
+void initDefaultKeyMapping(void);
+void resetKeyMappingToDefaults(void);
 
 // Utility functions
 void extractFilenameWithoutExtension(const char* path, char* output, int maxLength);

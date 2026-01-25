@@ -2,8 +2,8 @@
 #include <stdint.h>
 #include <SDL2/SDL.h>
 #include "corelib_gfx.h"
+#include "corelib_input.h"
 #include "common.h"
-#include "keyboard_layout.h"
 
 #define FPS 60
 
@@ -24,9 +24,8 @@ static SDL_GameController* gameController = NULL;
 #define BTN_DOWN        (SDLK_DOWN)
 #define BTN_LEFT        (SDLK_LEFT)
 #define BTN_RIGHT       (SDLK_RIGHT)
-#define BTN_A           (SDLK_x)
-#define BTN_B1          (SDLK_y)
-#define BTN_B2          (SDLK_z)
+#define BTN_A           (SDLK_z)
+#define BTN_B           (SDLK_x)
 #define BTN_X           (SDLK_c)
 #define BTN_Y           (SDLK_a)
 #define BTN_L1          (SDLK_LSHIFT)
@@ -64,73 +63,63 @@ static SDL_GameController* gameController = NULL;
 #endif
 
 static int decodeKey(int sym) {
-  // If a key is not recognized, return zero
+  // Check custom key mappings first
+  if (sym != 0) {
+    for (int i = 0; i < 3; i++) {
+      if (sym == appSettings.keyMapping.keyUp[i]) return keyUp;
+      if (sym == appSettings.keyMapping.keyDown[i]) return keyDown;
+      if (sym == appSettings.keyMapping.keyLeft[i]) return keyLeft;
+      if (sym == appSettings.keyMapping.keyRight[i]) return keyRight;
+      if (sym == appSettings.keyMapping.keyEdit[i]) return keyEdit;
+      if (sym == appSettings.keyMapping.keyOpt[i]) return keyOpt;
+      if (sym == appSettings.keyMapping.keyPlay[i]) return keyPlay;
+      if (sym == appSettings.keyMapping.keyShift[i]) return keyShift;
+    }
+  }
+
+  // Fallback to hardcoded mappings for unmapped keys
   if (sym == BTN_UP) return keyUp;
   if (sym == BTN_DOWN) return keyDown;
   if (sym == BTN_LEFT) return keyLeft;
   if (sym == BTN_RIGHT) return keyRight;
   if (sym == BTN_A) return keyEdit;
-  
-  // Handle keyboard layout for B button mapping
-  // This ensures proper B button mapping based on current keyboard layout setting
-#if defined(DESKTOP_BUILD) || defined(PORTMASTER_BUILD)
-  switch (appSettings.keyboardLayout) {
-    case KEYBOARD_LAYOUT_QWERTY:
-      // QWERTY: Use Z key for B button (BTN_B2 is SDLK_z)
-      if (sym == BTN_B2) return keyOpt;
-      break;
-    case KEYBOARD_LAYOUT_QWERTZ:
-      // QWERTZ: Use Y key for B button (BTN_B1 is SDLK_y)
-      if (sym == BTN_B1) return keyOpt;
-      break;
-    case KEYBOARD_LAYOUT_AZERTY:
-      // AZERTY: Both Y and Z should work for compatibility
-      if (sym == BTN_B1 || sym == BTN_B2) return keyOpt;
-      break;
-    case KEYBOARD_LAYOUT_DVORAK:
-      // DVORAK: Both Y and Z should work for compatibility
-      if (sym == BTN_B1 || sym == BTN_B2) return keyOpt;
-      break;
-    default: // AUTO
-      // AUTO mode: Map both Y and Z keys to keyOpt for maximum compatibility
-      if (sym == BTN_B1 || sym == BTN_B2) return keyOpt;
-      break;
-  }
-#else
-  switch (appSettings.keyboardLayout) {
-    case KEYBOARD_LAYOUT_QWERTY:
-    case KEYBOARD_LAYOUT_QWERTZ:
-    case KEYBOARD_LAYOUT_AZERTY:
-    case KEYBOARD_LAYOUT_DVORAK:
-      // RG35xx: Single B key maps to keyOpt
-      if (sym == BTN_B) return keyOpt;
-      break;
-    default: // AUTO
-      // RG35xx: Single B key maps to keyOpt
-      if (sym == BTN_B) return keyOpt;
-      break;
-  }
-#endif
-  
+  if (sym == BTN_B) return keyOpt;
   if (sym == BTN_START) return keyPlay;
   if (sym == BTN_SELECT || sym == BTN_R1 || sym == BTN_L1) return keyShift;
+
   if (sym == BTN_VOLUME_UP) return keyVolumeUp;
   if (sym == BTN_VOLUME_DOWN) return keyVolumeDown;
-  
+
   return 0;
 }
 
 #ifdef GAMEPAD_SUPPORT
 static int decodeGamepadButton(int button) {
+  // Convert button to negative value for key mapping lookup
+  int mappedButton = -button;
+
+  // Check custom key mappings first
+  for (int i = 0; i < 3; i++) {
+    if (mappedButton == appSettings.keyMapping.keyUp[i]) return keyUp;
+    if (mappedButton == appSettings.keyMapping.keyDown[i]) return keyDown;
+    if (mappedButton == appSettings.keyMapping.keyLeft[i]) return keyLeft;
+    if (mappedButton == appSettings.keyMapping.keyRight[i]) return keyRight;
+    if (mappedButton == appSettings.keyMapping.keyEdit[i]) return keyEdit;
+    if (mappedButton == appSettings.keyMapping.keyOpt[i]) return keyOpt;
+    if (mappedButton == appSettings.keyMapping.keyPlay[i]) return keyPlay;
+    if (mappedButton == appSettings.keyMapping.keyShift[i]) return keyShift;
+  }
+
+  // Fallback to default gamepad mappings
   switch (button) {
     case SDL_CONTROLLER_BUTTON_DPAD_UP: return keyUp;
     case SDL_CONTROLLER_BUTTON_DPAD_DOWN: return keyDown;
     case SDL_CONTROLLER_BUTTON_DPAD_LEFT: return keyLeft;
     case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: return keyRight;
-    case SDL_CONTROLLER_BUTTON_A: return keyEdit;  // Steam Deck: A button
-    case SDL_CONTROLLER_BUTTON_B: return keyOpt;   // Steam Deck: B button
-    case SDL_CONTROLLER_BUTTON_START: return keyPlay;  // Steam Deck: Menu button
-    case SDL_CONTROLLER_BUTTON_BACK:  // Steam Deck: View button
+    case SDL_CONTROLLER_BUTTON_A: return keyEdit;
+    case SDL_CONTROLLER_BUTTON_B: return keyOpt;
+    case SDL_CONTROLLER_BUTTON_START: return keyPlay;
+    case SDL_CONTROLLER_BUTTON_BACK:
     case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
     case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: return keyShift;
     default: return 0;
@@ -172,11 +161,21 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(enum MainLoopEvent event, i
         if (event.key.keysym.sym == BTN_MENU) {
           menu = event.type == SDL_KEYDOWN;
         } else {
+          // Raw input callback for key mapping screen
+          if (inputRawCallback) {
+            inputRawCallback(event.key.keysym.sym, event.type == SDL_KEYDOWN);
+          }
+
           enum Key key = decodeKey(event.key.keysym.sym);
           if (key != -1 ) onEvent(event.type == SDL_KEYDOWN ? eventKeyDown : eventKeyUp, key, NULL);
         }
 #ifdef GAMEPAD_SUPPORT
       } else if (event.type == SDL_CONTROLLERBUTTONDOWN || event.type == SDL_CONTROLLERBUTTONUP) {
+        // Raw input callback for key mapping screen (negative for controller)
+        if (inputRawCallback) {
+          inputRawCallback(-event.cbutton.button, event.type == SDL_CONTROLLERBUTTONDOWN);
+        }
+
         enum Key key = decodeGamepadButton(event.cbutton.button);
         if (key != 0) {
           onEvent(event.type == SDL_CONTROLLERBUTTONDOWN ? eventKeyDown : eventKeyUp, key, NULL);

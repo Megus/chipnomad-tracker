@@ -6,8 +6,11 @@
 #include "screens.h"
 #include "chipnomad_lib.h"
 #include "project_utils.h"
-#include "keyboard_layout.h"
 #include "waveform_display.h"
+
+#if defined(DESKTOP_BUILD) || defined(PORTMASTER_BUILD)
+#include "../platforms/sdl2/corelib_input.h"
+#endif
 
 // Input handling vars:
 
@@ -115,8 +118,12 @@ static void appInput(int isKeyDown, int keys, int tapCount) {
 * @brief Initialize the application: setup audio system, load auto-saved project, show the first screen
 */
 void appSetup(void) {
-  // Initialize keyboard layout system
-  initKeyboardLayout();
+  // Initialize default key mappings if not loaded from settings
+#if defined(DESKTOP_BUILD) || defined(PORTMASTER_BUILD)
+  if (appSettings.keyMapping.keyUp[0] == 0) {
+    inputInitDefaultKeyMapping();
+  }
+#endif
 
   // Keyboard input reset
   pressedButtons = 0;
