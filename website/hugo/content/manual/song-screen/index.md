@@ -14,7 +14,7 @@ You can have multiple sub-songs in a project by creating "islands" — sections 
 
 ## Controls
 
-In addition to the [common controls](/manual#common-controls) the following controls are available:
+In addition to the [common controls](/manual/#common-controls) the following controls are available:
 
 - **OPT** + \[**UP** or **DOWN**\]: jump 16 positions up/down
 - Select range, then **SHIFT** + **EDIT**: clone chains

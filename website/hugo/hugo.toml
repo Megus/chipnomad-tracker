@@ -23,7 +23,7 @@ enableEmoji = true
   weight = 10
 [[menu.main]]
   name = 'Manual'
-  pageRef = '/manual'
+  pageRef = '/manual/'
   weight = 20
 [[menu.main]]
   name = 'Discord'

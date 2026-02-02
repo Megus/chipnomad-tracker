@@ -1,11 +1,10 @@
 exports.handler = (event, context, callback) => {
     const request = event.Records[0].cf.request;
     const uri = request.uri;
-    
-    // Check whether the URI is missing a file extension.
-    if (!uri.includes('.')) {
-        request.uri += '/index.html';
-    }
-    
-    callback(null, request);
+
+    // Match any '/' that occurs at the end of a URI. Replace it with a default index
+    var newuri = uri.replace(/\/$/, '\/index.html');
+    request.uri = newuri;
+
+    return callback(null, request);
 };

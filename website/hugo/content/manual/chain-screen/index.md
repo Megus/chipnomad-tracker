@@ -14,7 +14,7 @@ If the chain is used in the project multiple times, then there will be an asteri
 
 ## Controls
 
-In addition to the [common controls](/manual#common-controls) the following controls are available:
+In addition to the [common controls](/manual/#common-controls) the following controls are available:
 
 - **OPT** + \[**LEFT** or **RIGHT**\]: navigate between tracks
 - **OPT** + \[**UP** or **DOWN**\]: navigate between chains in the current track

@@ -11,17 +11,17 @@ layout: single
 ChipNomad currently supports only [AY-3-8910/YM2149F](https://en.wikipedia.org/wiki/General_Instrument_AY-3-8910) chips with more chips coming in the future.
 
 - [Introduction](#introduction)
-- [Installation](installation)
+- [Installation](installation/)
 - [Common Controls](#common-controls)
-- [Song Screen](song-screen)
-- [Chain Screen](chain-screen)
-- [Phrase Screen](phrase-screen)
-- [Groove Screen](groove-screen)
-- [Instrument Screen](instrument-screen)
-- [Table Screen](table-screen)
-- [Project Screen](project-screen)
-- [Settings Screen](settings-screen)
-- [Tracker FX reference](tracker-fx)
+- [Song Screen](song-screen/)
+- [Chain Screen](chain-screen/)
+- [Phrase Screen](phrase-screen/)
+- [Groove Screen](groove-screen/)
+- [Instrument Screen](instrument-screen/)
+- [Table Screen](table-screen/)
+- [Project Screen](project-screen/)
+- [Settings Screen](settings-screen/)
+- [Tracker FX reference](tracker-fx/)
 
 ## Introduction
 
@@ -35,14 +35,14 @@ SCPIT
 S  P
 ```
 
-- [**P**roject](project-screen) settings (chip type, tick rate, etc)
-- [**S**ong](song-screen) sequencing
-- [**S**ettings](settings-screen)
-- [**C**hain](chain-screen) editor
-- [**P**hrase](phrase-screen) editor
-- [**I**nstrument](instrument-screen) editor and Instrument **P**ool
-- [**T**able](table-screen) editor
-- [**G**roove](groove-screen) editor
+- [**P**roject](project-screen/) settings (chip type, tick rate, etc)
+- [**S**ong](song-screen/) sequencing
+- [**S**ettings](settings-screen/)
+- [**C**hain](chain-screen/) editor
+- [**P**hrase](phrase-screen/) editor
+- [**I**nstrument](instrument-screen/) editor and Instrument **P**ool
+- [**T**able](table-screen/) editor
+- [**G**roove](groove-screen/) editor
 
 ## Common controls
 

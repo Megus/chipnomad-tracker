@@ -16,7 +16,7 @@ If the phrase is used in the project multiple times, then there will be an aster
 
 ## Controls
 
-In addition to the [common controls](/manual#common-controls) the following controls are available:
+In addition to the [common controls](/manual/#common-controls) the following controls are available:
 
 - **OPT** + **EDIT** on an empty note: insert note off
 - **EDIT** + \[**UP** or **DOWN**\] on an FX name column: open FX select screen

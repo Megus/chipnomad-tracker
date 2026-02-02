@@ -22,7 +22,7 @@ Tables 00-7F are reserved for default instrument tables, tables 80-FE can be use
 
 ## Controls
 
-In addition to the [common controls](/manual#common-controls) the following controls are available:
+In addition to the [common controls](/manual/#common-controls) the following controls are available:
 
 - **EDIT** + \[**UP** or **DOWN**\] on an FX name column: open FX select screen
 - **OPT** + **DIRECTION**: navigate between tables
