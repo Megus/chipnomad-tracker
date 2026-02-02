@@ -4,6 +4,7 @@
 
 $base-font-family: 'PT Sans', sans-serif;
 $header-font-family: 'PT Sans Caption', sans-serif;
+$code-font-family: 'PT Mono', monospace;
 $base-font-size:   18px !default;
 $base-font-weight: 400 !default;
 $small-font-size:  $base-font-size * 0.875 !default;
@@ -12,8 +13,11 @@ $base-line-height: 1.5 !default;
 $spacing-unit:     30px !default;
 
 $text-color:       #b7d3d9 !default;
+$link-color:       #4bcbe8 !default;
+$link-under-color: #5f3dbb !default;
 $background-color: #051326 !default;
 $brand-color:      #a7c3c9 !default;
+$code-background:  #000 !default;
 
 $background-dark:   darken($background-color, 2%) !default;
 

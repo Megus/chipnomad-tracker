@@ -191,6 +191,48 @@
   }
 }
 
+.breadcrumbs {
+  margin-bottom: 1.5rem;
+  margin-top: 1rem;
+  font-size: 1rem;
+
+  .separator {
+    margin: 0 0.5rem;
+  }
+
+  .current {
+    color: #666;
+  }
+}
+
+.manual-content {
+  img {
+    width: 75%;
+    display: block;
+    margin: $spacing-unit auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    background-color: rgba(0, 0, 0, 0.1);
+
+    @include media-query($on-palm) {
+      width: 100%;
+      box-shadow: none;
+    }
+  }
+
+  table {
+    border-collapse: collapse;
+    margin: $spacing-unit 0;
+
+    th, td {
+      border: 1px solid $grey-color;
+      padding: 8px 12px;
+    }
+
+    th {
+      background-color: rgba(0, 0, 0, 0.3);
+    }
+  }
+}
 
 
 .youtube {
@@ -203,21 +245,4 @@
 
 .youtube iframe {
   position: absolute; width: 100%; height: 100%; top: 0; left: 0; border: 0;
-}
-
-/**
- * Page background image (for About)
- */
-.about-bg {
-  transform: translateZ(0);
-  position: absolute;
-  top: 0;
-  bottom: -$spacing-unit * 2;
-  left: 0;
-  right: 0;
-  z-index: -1;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
-  opacity: 0.2;
 }

@@ -98,24 +98,32 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
 }
 
+/**
+* Bold text
+*/
+strong, b {
+  color: $grey-color-light;
+}
+
 
 
 /**
 * Links
 */
 a {
-  color: $text-color;
+  color: $link-color;
   text-decoration: underline;
-
-  color: $grey-color-light;
+  text-decoration-color: $link-under-color;
 
   &:visited {
-    color: $grey-color;
+    color: $link-color;
+    text-decoration-color: $link-under-color;
   }
 
   &:hover {
     color: $grey-color-light;
     text-decoration: underline;
+    text-decoration-color: $link-under-color;
   }
 
   .social-media-list &:hover {
@@ -139,7 +147,6 @@ blockquote {
   margin-bottom: $spacing-unit;
   @include relative-font-size(1.125);
   letter-spacing: -1px;
-  font-style: italic;
 
   > :last-child {
     margin-bottom: 0;
@@ -149,14 +156,25 @@ blockquote {
 
 
 pre {
-  padding: 8px 12px;
+  padding: $spacing-unit * 0.75;
   overflow-x: auto;
+  background-color: $code-background;
+  border-radius: 16px;
+  display: inline-block;
 
   > code {
     @include relative-font-size(0.75);
     padding-right: 0;
     padding-left: 0;
+    font-family: $code-font-family;
   }
+}
+
+code {
+  font-family: $code-font-family;
+  background-color: $code-background;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 

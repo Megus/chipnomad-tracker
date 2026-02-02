@@ -16,9 +16,6 @@ enableEmoji = true
   title = 'ChipNomad'
   images = ['site-cover.jpg']
 
-[social]
-  twitter = 'megus_music'
-
 [menu]
 [[menu.main]]
   name = 'Download'

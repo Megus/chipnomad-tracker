@@ -1,0 +1,10 @@
+{{ define "title" }}
+   {{ .Title }} — {{ .Site.Title }}
+{{ end }}
+{{ define "main" }}
+  <main class="page-content" aria-role="main">
+    <div class="home">
+      {{ .Content }}
+    </div>
+  </main>
+{{ end }}

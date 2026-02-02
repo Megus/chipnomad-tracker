@@ -133,21 +133,21 @@ B-8 14
 06 07 08
 0B 09 0A
 1F 1E 20
-0C 22 21
+0C*22*21*
 0F 22 0E
 10 0D 11
 24 25 23
-12 13 14
+12*13*14*
 15 16 17
 26 27 28
 29 2A 2B
 0B 2D 0A
 1F 2F 20
-0C 40 30
+0C*40*30*
 0F 40 31
 10 43 42
 24 37 3E
-1B 19 1D
+1B*19*1D*
 1C 1A 32
 33 2C 34
 2E 36 35
@@ -155,11 +155,11 @@ B-8 14
 39 3B 32
 3C 3D 34
 3F 41 44
-45 46 49
+45*46*49*
 48 4A 47
 4B 4C 4D
 4E 4F 50
-51 52 53
+51*52*53*
 56 55 54
 57 58 59
 5C 5B 5A
@@ -7342,6 +7342,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,0,15,0
 - Auto envelope: 1,1
+- Default mixer: 01
 
 ### Instrument 1
 
@@ -7351,6 +7352,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,0,15,0
 - Auto envelope: 1,4
+- Default mixer: 01
 
 ### Instrument 2
 
@@ -7360,6 +7362,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,32,10,0
 - Auto envelope: 1,1
+- Default mixer: 01
 
 ### Instrument 3
 
@@ -7369,6 +7372,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,0,15,0
 - Auto envelope: 1,1
+- Default mixer: 01
 
 ### Instrument 4
 
@@ -7378,6 +7382,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,0,15,0
 - Auto envelope: 1,4
+- Default mixer: 01
 
 ### Instrument 5
 
@@ -7387,6 +7392,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,0,15,0
 - Auto envelope: 0,0
+- Default mixer: 01
 
 ### Instrument 6
 
@@ -7396,6 +7402,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,11,7,5
 - Auto envelope: 0,0
+- Default mixer: 01
 
 ### Instrument 7
 
@@ -7405,6 +7412,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,0,15,0
 - Auto envelope: 1,1
+- Default mixer: 01
 
 ### Instrument 8
 
@@ -7414,6 +7422,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,0,15,0
 - Auto envelope: 1,4
+- Default mixer: 01
 
 ### Instrument 9
 
@@ -7423,6 +7432,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,32,10,0
 - Auto envelope: 0,0
+- Default mixer: 01
 
 ### Instrument A
 
@@ -7432,6 +7442,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 0
 - Volume envelope: 0,0,15,0
 - Auto envelope: 0,0
+- Default mixer: 01
 
 ### Instrument B
 
@@ -7441,6 +7452,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,0,15,0
 - Auto envelope: 0,0
+- Default mixer: 01
 
 ### Instrument C
 
@@ -7450,6 +7462,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,0,15,0
 - Auto envelope: 1,1
+- Default mixer: 01
 
 ### Instrument E
 
@@ -7459,6 +7472,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,0,15,0
 - Auto envelope: 0,0
+- Default mixer: 01
 
 ### Instrument F
 
@@ -7468,6 +7482,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,10,0,0
 - Auto envelope: 0,0
+- Default mixer: 01
 
 ### Instrument 10
 
@@ -7477,6 +7492,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,0,15,0
 - Auto envelope: 0,0
+- Default mixer: 01
 
 ### Instrument 11
 
@@ -7486,6 +7502,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,80,0,35
 - Auto envelope: 0,0
+- Default mixer: 01
 
 ### Instrument 12
 
@@ -7495,6 +7512,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,80,0,35
 - Auto envelope: 0,0
+- Default mixer: 01
 
 ### Instrument 13
 
@@ -7504,6 +7522,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,0,15,0
 - Auto envelope: 0,0
+- Default mixer: 01
 
 ### Instrument 14
 
@@ -7513,6 +7532,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,25,11,32
 - Auto envelope: 0,0
+- Default mixer: 01
 
 ### Instrument 15
 
@@ -7522,6 +7542,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,10,0,0
 - Auto envelope: 0,0
+- Default mixer: 01
 
 ### Instrument 16
 
@@ -7531,6 +7552,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,0,15,0
 - Auto envelope: 1,1
+- Default mixer: 01
 
 ### Instrument 17
 
@@ -7540,6 +7562,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,16,11,4
 - Auto envelope: 0,0
+- Default mixer: 01
 
 ### Instrument 18
 
@@ -7549,6 +7572,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,32,10,16
 - Auto envelope: 0,0
+- Default mixer: 01
 
 ### Instrument 19
 
@@ -7558,6 +7582,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,16,12,8
 - Auto envelope: 0,0
+- Default mixer: 01
 
 ### Instrument 1A
 
@@ -7567,6 +7592,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,8,0,0
 - Auto envelope: 0,0
+- Default mixer: 01
 
 ### Instrument 1B
 
@@ -7576,6 +7602,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 10,0,15,0
 - Auto envelope: 0,0
+- Default mixer: 01
 
 ### Instrument 1C
 
@@ -7585,6 +7612,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 10,0,15,0
 - Auto envelope: 0,0
+- Default mixer: 01
 
 ### Instrument 1D
 
@@ -7594,6 +7622,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,0,15,0
 - Auto envelope: 0,0
+- Default mixer: 01
 
 ### Instrument 1E
 
@@ -7603,6 +7632,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,0,15,0
 - Auto envelope: 0,0
+- Default mixer: 01
 
 ### Instrument 1F
 
@@ -7612,6 +7642,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,0,15,0
 - Auto envelope: 1,1
+- Default mixer: 01
 
 ### Instrument 20
 
@@ -7621,6 +7652,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,0,15,0
 - Auto envelope: 0,0
+- Default mixer: 01
 
 ### Instrument 21
 
@@ -7630,6 +7662,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,0,15,0
 - Auto envelope: 0,0
+- Default mixer: 01
 
 ### Instrument 23
 
@@ -7639,6 +7672,7 @@ G-1 07 0D --- 00 --- 00 --- 00
 - Transpose: 1
 - Volume envelope: 0,0,15,0
 - Auto envelope: 2,1
+- Default mixer: 01
 
 ## Tables
 

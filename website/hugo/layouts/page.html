@@ -4,10 +4,6 @@
 {{ define "main" }}
   <main class="page-content" aria-role="main">
     <div class="home">
-      {{ if eq .Title "Manual" }}
-        <h2>Table of Contents</h2>
-        {{ .TableOfContents }}
-      {{ end }}
       {{ .Content }}
     </div>
   </main>

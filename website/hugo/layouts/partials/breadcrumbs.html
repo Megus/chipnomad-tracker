@@ -1,0 +1,7 @@
+<nav class="breadcrumbs">
+  {{ with .CurrentSection }}
+    <a href="{{ .RelPermalink }}">{{ .Title }}</a>
+  {{ end }}
+  <span class="separator">›</span>
+  <span class="current">{{ .Title }}</span>
+</nav>
