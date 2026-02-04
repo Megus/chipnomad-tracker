@@ -60,7 +60,7 @@ int edit16withLimit(enum CellEditAction action, uint16_t* value, uint16_t* lastV
       break;
   }
 
-  if (handled && *value != EMPTY_VALUE_16 && *value < max) {
+  if (handled && *value != EMPTY_VALUE_16 && *value <= max) {
     *lastValue = *value;
   }
 
