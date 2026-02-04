@@ -5,6 +5,7 @@
 #include "chipnomad_lib.h"
 #include "corelib_gfx.h"
 #include "common.h"
+#include "misc.h"
 
 char* helpFXHint(uint8_t* fx, int isTable) {
   static char buffer[41]; // Max length of a hint string
@@ -109,7 +110,7 @@ char* helpFXHint(uint8_t* fx, int isTable) {
     // AY-specific FX
     case fxAYM: // AY Mixer settting
       if (fx[1] & 0xf0) {
-        sprintf(buffer, "Mix %c%c, env %hhX", (fx[1] & 0x1) ? 'T' : '-', (fx[1] & 0x2) ? 'N' : '-', (fx[1] & 0xf0) >> 4);
+        sprintf(buffer, "Mix %c%c, env %hhX %s", (fx[1] & 0x1) ? 'T' : '-', (fx[1] & 0x2) ? 'N' : '-', (fx[1] & 0xf0) >> 4, getEnvelopeShapeASCII((fx[1] & 0xf0) >> 4));
       } else {
         sprintf(buffer, "Mix %c%c", (fx[1] & 0x1) ? 'T' : '-', (fx[1] & 0x2) ? 'N' : '-');
       }
