@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include "version.h"
 #include "corelib_gfx.h"
+#include "corelib_font.h"
 
 #define WINDOW_WIDTH (640)
 #define WINDOW_HEIGHT (480)
@@ -24,40 +25,24 @@ static char printBuffer[PRINT_BUFFER_SIZE];
 static int fontH;
 static int fontW;
 static int isDirty;
+static const FontResolution* currentResolution = NULL;
 
 // Font surface optimization
 static SDL_Surface* charSurfaces[95]; // ASCII 32-126
 
 static char charBuffer[80];
 
-int gfxSetup(int *screenWidth, int *screenHeight) {
-  // Currently, SDL1.2 build is only for pre-2024 RG35xx which has 640x480 screen
-  // So I ignore passed screenWidth and screenHeight
+static void createCharSurfaces(void) {
+  if (!currentResolution || !currentResolution->data) return;
 
-  if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
-    printf("SDL2 Initialization Error: %s\n", SDL_GetError());
-    return 1;
-  }
-
-  sdlScreen = SDL_SetVideoMode(WINDOW_WIDTH, WINDOW_HEIGHT, 32, SDL_HWSURFACE);
-  if (!sdlScreen) {
-    printf("SDL1.2 Set Video Mode Error: %s\n", SDL_GetError());
-    SDL_Quit();
-    return 1;
-  }
-
-
-  sprintf(charBuffer, "%s v%s (%s)", appTitle, appVersion, appBuild);
-  SDL_WM_SetCaption(charBuffer, NULL);
-
-  font = font16x24;
-  fontW = 2; // In bytes
-  fontH = 24;
+  font = currentResolution->data;
+  fontW = (currentResolution->charWidth + 7) / 8;
+  fontH = currentResolution->charHeight;
 
   // Create 8-bit character surfaces
   for (int ch = 0; ch < 95; ch++) {
     charSurfaces[ch] = SDL_CreateRGBSurface(SDL_SWSURFACE, fontW * 8, fontH, 8, 0, 0, 0, 0);
-    SDL_SetColorKey(charSurfaces[ch], SDL_SRCCOLORKEY, 0); // Index 0 = transparent
+    SDL_SetColorKey(charSurfaces[ch], SDL_SRCCOLORKEY, 0);
 
     for (int l = 0; l < fontH; l++) {
       for (int c = 0; c < fontW; c++) {
@@ -71,7 +56,30 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
       }
     }
   }
+}
 
+int gfxSetup(int *screenWidth, int *screenHeight) {
+  if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
+    printf("SDL2 Initialization Error: %s\n", SDL_GetError());
+    return 1;
+  }
+
+  sdlScreen = SDL_SetVideoMode(WINDOW_WIDTH, WINDOW_HEIGHT, 32, SDL_HWSURFACE);
+  if (!sdlScreen) {
+    printf("SDL1.2 Set Video Mode Error: %s\n", SDL_GetError());
+    SDL_Quit();
+    return 1;
+  }
+
+  sprintf(charBuffer, "%s v%s (%s)", appTitle, appVersion, appBuild);
+  SDL_WM_SetCaption(charBuffer, NULL);
+
+  currentResolution = fontSelectResolution(fontGetCurrent(), WINDOW_WIDTH, WINDOW_HEIGHT);
+  if (!currentResolution) {
+    currentResolution = &fontGetDefault()->resolutions[1]; // Use 16x24
+  }
+
+  createCharSurfaces();
   isDirty = 1;
 
   return 0;
@@ -245,4 +253,21 @@ int gfxGetCharWidth(void) {
 
 int gfxGetCharHeight(void) {
   return fontH;
+}
+
+void gfxReloadFont(void) {
+  for (int i = 0; i < 95; i++) {
+    if (charSurfaces[i]) {
+      SDL_FreeSurface(charSurfaces[i]);
+      charSurfaces[i] = NULL;
+    }
+  }
+
+  currentResolution = fontSelectResolution(fontGetCurrent(), WINDOW_WIDTH, WINDOW_HEIGHT);
+  if (!currentResolution) {
+    currentResolution = &fontGetDefault()->resolutions[1];
+  }
+
+  createCharSurfaces();
+  isDirty = 1;
 }
