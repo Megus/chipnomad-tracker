@@ -76,37 +76,38 @@ static void stop() {
 }
 
 static void toggleTrackMute(int trackIdx) {
-  if (trackIdx < 0 || trackIdx >= PROJECT_MAX_TRACKS) return;
+  if (trackIdx >= 0 && trackIdx < PROJECT_MAX_TRACKS) {
+    // Clear all solos when switching to mute mode
+    for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
+      if (audioManager.trackStates[i] == TRACK_SOLO) {
+        audioManager.trackStates[i] = TRACK_NORMAL;
+      }
+    }
 
-  // Clear all solos when switching to mute mode
-  for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
-    if (audioManager.trackStates[i] == TRACK_SOLO) {
-      audioManager.trackStates[i] = TRACK_NORMAL;
+    if (audioManager.trackStates[trackIdx] == TRACK_MUTED) {
+      audioManager.trackStates[trackIdx] = TRACK_NORMAL;
+    } else {
+      audioManager.trackStates[trackIdx] = TRACK_MUTED;
     }
   }
 
-  if (audioManager.trackStates[trackIdx] == TRACK_MUTED) {
-    audioManager.trackStates[trackIdx] = TRACK_NORMAL;
-  } else {
-    audioManager.trackStates[trackIdx] = TRACK_MUTED;
-  }
   updatePlaybackMuteFlags();
 }
 
 static void toggleTrackSolo(int trackIdx) {
-  if (trackIdx < 0 || trackIdx >= PROJECT_MAX_TRACKS) return;
-
-  // Clear all mutes when switching to solo mode
-  for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
-    if (audioManager.trackStates[i] == TRACK_MUTED) {
-      audioManager.trackStates[i] = TRACK_NORMAL;
+  if (trackIdx >= 0 && trackIdx < PROJECT_MAX_TRACKS) {
+    // Clear all mutes when switching to solo mode
+    for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
+      if (audioManager.trackStates[i] == TRACK_MUTED) {
+        audioManager.trackStates[i] = TRACK_NORMAL;
+      }
     }
-  }
 
-  if (audioManager.trackStates[trackIdx] == TRACK_SOLO) {
-    audioManager.trackStates[trackIdx] = TRACK_NORMAL;
-  } else {
-    audioManager.trackStates[trackIdx] = TRACK_SOLO;
+    if (audioManager.trackStates[trackIdx] == TRACK_SOLO) {
+      audioManager.trackStates[trackIdx] = TRACK_NORMAL;
+    } else {
+      audioManager.trackStates[trackIdx] = TRACK_SOLO;
+    }
   }
 
   updatePlaybackMuteFlags();

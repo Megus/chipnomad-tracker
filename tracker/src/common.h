@@ -59,6 +59,8 @@ typedef struct AppSettings {
   char pitchTablePath[PATH_LENGTH + 1];
   char instrumentPath[PATH_LENGTH + 1];
   char themePath[PATH_LENGTH + 1];
+  char fontPath[PATH_LENGTH + 1];
+  char fontFolderPath[PATH_LENGTH + 1];
 } AppSettings;
 
 extern AppSettings appSettings;

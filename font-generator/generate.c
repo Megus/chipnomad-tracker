@@ -57,15 +57,9 @@ void generate_preview_image(FT_Face face) {
   printf("Generated font_preview.png\n");
 }
 
-void generate_font_file(FT_Face face, FontSize size) {
-  char filename[64];
-  snprintf(filename, sizeof(filename), "font%dx%d.c", size.width, size.height);
-  
-  FILE* f = fopen(filename, "w");
-  if (!f) return;
-  
-  fprintf(f, "#include <stdint.h>\n\n");
-  fprintf(f, "const uint8_t font%dx%d[] = {\n", size.width, size.height);
+void generate_font_file(FT_Face face, FontSize size, FILE* out, int is_first) {
+  if (!is_first) fprintf(out, "\n");
+  fprintf(out, "resolution: %dx%d\n", size.width, size.height);
   
   FT_Set_Pixel_Sizes(face, 0, size.height);
   
@@ -75,14 +69,11 @@ void generate_font_file(FT_Face face, FontSize size) {
       FT_Bitmap* bitmap = &face->glyph->bitmap;
       int bytes_per_row = (size.width + 7) / 8;
       
-      fprintf(f, "    // Character '%c'\n", c);
-      
-      int baseline = size.height * 4 / 5; // Place baseline at 80% of font height
+      int baseline = size.height * 4 / 5;
       int glyph_top = baseline - face->glyph->bitmap_top;
-      int glyph_left = (size.width - (int)bitmap->width) / 2; // Center horizontally
+      int glyph_left = (size.width - (int)bitmap->width) / 2;
       
       for (int y = 0; y < size.height; y++) {
-      fprintf(f, "    ");
       for (int byte_x = 0; byte_x < bytes_per_row; byte_x++) {
           uint8_t byte_val = 0;
           for (int bit = 0; bit < 8; bit++) {
@@ -97,22 +88,17 @@ void generate_font_file(FT_Face face, FontSize size) {
             }
         }
           }
-          fprintf(f, "0x%02X", byte_val);
-          if (byte_x < bytes_per_row - 1) fprintf(f, ", ");
+          fprintf(out, "%02X", byte_val);
+          if (byte_x < bytes_per_row - 1 || y < size.height - 1) fprintf(out, " ");
       }
-      if (y < size.height - 1 || c < 126) fprintf(f, ",");
-      fprintf(f, "\n");
       }
+      fprintf(out, "\n");
   }
-  
-  fprintf(f, "};\n");
-  fclose(f);
-  printf("Generated %s\n", filename);
 }
 
 int main(int argc, char* argv[]) {
-  if (argc != 2) {
-      printf("Usage: %s <font.ttf>\n", argv[0]);
+  if (argc != 3) {
+      printf("Usage: %s <font.ttf> <output.cnfont>\n", argv[0]);
       return 1;
   }
   
@@ -130,9 +116,23 @@ int main(int argc, char* argv[]) {
       return 1;
   }
   
-  for (int i = 0; i < num_sizes; i++) {
-      generate_font_file(face, sizes[i]);
+  FILE* out = fopen(argv[2], "w");
+  if (!out) {
+      printf("Failed to create output file: %s\n", argv[2]);
+      FT_Done_Face(face);
+      FT_Done_FreeType(library);
+      return 1;
   }
+  
+  fprintf(out, "# Generated from %s\n\n", argv[1]);
+  fprintf(out, "name: %s\n", face->family_name);
+  
+  for (int i = 0; i < num_sizes; i++) {
+      generate_font_file(face, sizes[i], out, i == 0);
+  }
+  
+  fclose(out);
+  printf("Generated %s\n", argv[2]);
   
   generate_preview_image(face);
   

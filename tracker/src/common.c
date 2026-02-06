@@ -116,6 +116,8 @@ int settingsSave(void) {
   filePrintf(fileId, "pitchTablePath: %s\n", appSettings.pitchTablePath);
   filePrintf(fileId, "instrumentPath: %s\n", appSettings.instrumentPath);
   filePrintf(fileId, "themePath: %s\n", appSettings.themePath);
+  filePrintf(fileId, "fontPath: %s\n", appSettings.fontPath);
+  filePrintf(fileId, "fontFolderPath: %s\n", appSettings.fontFolderPath);
 
   fileClose(fileId);
   return 0;
@@ -209,6 +211,12 @@ int settingsLoad(void) {
     } else if (strncmp(line, "themePath: ", 11) == 0) {
       strncpy(appSettings.themePath, line + 11, PATH_LENGTH);
       appSettings.themePath[PATH_LENGTH] = 0;
+    } else if (strncmp(line, "fontPath: ", 10) == 0) {
+      strncpy(appSettings.fontPath, line + 10, PATH_LENGTH);
+      appSettings.fontPath[PATH_LENGTH] = 0;
+    } else if (strncmp(line, "fontFolderPath: ", 16) == 0) {
+      strncpy(appSettings.fontFolderPath, line + 16, PATH_LENGTH);
+      appSettings.fontFolderPath[PATH_LENGTH] = 0;
     }
   }
 

@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include "version.h"
 #include "corelib_gfx.h"
+#include "corelib_font.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -9,8 +10,8 @@
 #define TEXT_COLS (40)
 #define TEXT_ROWS (20)
 
-#define CHAR_X(x) ((x) * fontPixelW + offsetX)
-#define CHAR_Y(y) ((y) * fontH + offsetY)
+#define CHAR_X(x) ((x) * charW + offsetX)
+#define CHAR_Y(y) ((y) * charH + offsetY)
 
 extern uint8_t font12x16[];
 extern uint8_t font16x24[];
@@ -24,16 +25,15 @@ SDL_Renderer * renderer = NULL;
 static uint32_t fgColor = 0;
 static uint32_t bgColor = 0;
 static uint32_t cursorColor = 0;
-static uint8_t* font = NULL;
 static char printBuffer[PRINT_BUFFER_SIZE];
 static int screenW;
 static int screenH;
-static int fontH;
-static int fontW;
-static int fontPixelW;
+static int charW;  // Current character width
+static int charH;  // Current character height
 static int offsetX;
 static int offsetY;
 static int isDirty;
+static const FontResolution* currentResolution = NULL;
 
 // Font texture optimization
 static SDL_Texture* fontTexture = NULL;
@@ -41,32 +41,13 @@ static SDL_Rect charRects[95]; // ASCII 32-126
 
 static char charBuffer[80];
 
-static void selectFont(void) {
-  if (screenW >= TEXT_COLS * 48 && screenH >= TEXT_ROWS * 54) {
-    font = font48x54;
-    fontW = 6; fontPixelW = 48;
-    fontH = 54;
-  } else if (screenW >= TEXT_COLS * 32 && screenH >= TEXT_ROWS * 48) {
-    font = font32x48;
-    fontW = 4; fontPixelW = 32;
-    fontH = 48;
-  } else if (screenW >= TEXT_COLS * 24 && screenH >= TEXT_ROWS * 36) {
-    font = font24x36;
-    fontW = 3; fontPixelW = 24;
-    fontH = 36;
-  } else if (screenW >= TEXT_COLS * 16 && screenH >= TEXT_ROWS * 24) {
-    font = font16x24;
-    fontW = 2; fontPixelW = 16;
-    fontH = 24;
-  } else {
-    font = font12x16;
-    fontW = 2; fontPixelW = 12;
-    fontH = 16;
-  }
-}
-
 static void createFontTexture(void) {
-  fontTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, fontPixelW * 95, fontH);
+  if (!currentResolution || !currentResolution->data) return;
+
+  int fontW = (currentResolution->charWidth + 7) / 8;  // Bytes per row
+  uint8_t* fontData = currentResolution->data;
+
+  fontTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, charW * 95, charH);
   SDL_SetTextureBlendMode(fontTexture, SDL_BLENDMODE_BLEND);
 
   SDL_SetRenderTarget(renderer, fontTexture);
@@ -74,13 +55,13 @@ static void createFontTexture(void) {
   SDL_RenderClear(renderer);
 
   for (int ch = 0; ch < 95; ch++) {
-    int charX = ch * fontPixelW;
-    charRects[ch] = (SDL_Rect){charX, 0, fontPixelW, fontH};
+    int charX = ch * charW;
+    charRects[ch] = (SDL_Rect){charX, 0, charW, charH};
 
-    for (int l = 0; l < fontH; l++) {
+    for (int l = 0; l < charH; l++) {
       for (int c = 0; c < fontW; c++) {
-        uint8_t fontByte = font[ch * fontW * fontH + l * fontW + c];
-        int bitsToDraw = (c == fontW - 1 && fontPixelW % 8 != 0) ? fontPixelW % 8 : 8;
+        uint8_t fontByte = fontData[ch * fontW * charH + l * fontW + c];
+        int bitsToDraw = (c == fontW - 1 && charW % 8 != 0) ? charW % 8 : 8;
         uint8_t mask = 0x80;
 
         for (int b = 0; b < bitsToDraw; b++) {
@@ -161,11 +142,19 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
       screenH = drawableH;
     }
 
-    selectFont();
+    currentResolution = fontSelectResolution(fontGetCurrent(), screenW, screenH);
+    if (currentResolution) {
+      charW = currentResolution->charWidth;
+      charH = currentResolution->charHeight;
+    } else {
+      // Fallback
+      charW = 12;
+      charH = 16;
+    }
 
     // Center the text window
-    int textWindowW = TEXT_COLS * fontPixelW;
-    int textWindowH = TEXT_ROWS * fontH;
+    int textWindowW = TEXT_COLS * charW;
+    int textWindowH = TEXT_ROWS * charH;
     offsetX = (screenW - textWindowW) / 2;
     offsetY = (screenH - textWindowH) / 2;
 
@@ -210,7 +199,7 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
   }
 
   void gfxClearRect(int x, int y, int w, int h) {
-    SDL_Rect rect = { CHAR_X(x), CHAR_Y(y), w * fontPixelW, h * fontH };
+    SDL_Rect rect = { CHAR_X(x), CHAR_Y(y), w * charW, h * charH };
     setColor(bgColor);
     SDL_RenderFillRect(renderer, &rect);
     isDirty = 1;
@@ -229,15 +218,15 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
       if (text[i] == '\r' && text[i + 1] == '\n') {
         i++;
         cx = CHAR_X(x);
-        cy += fontH;
+        cy += charH;
         continue;
       }
-      SDL_Rect bgRect = {cx, cy, fontPixelW, fontH};
+      SDL_Rect bgRect = {cx, cy, charW, charH};
       SDL_RenderFillRect(renderer, &bgRect);
-      cx += fontPixelW;
-      if (cx >= offsetX + TEXT_COLS * fontPixelW) {
+      cx += charW;
+      if (cx >= offsetX + TEXT_COLS * charW) {
         cx = CHAR_X(x);
-        cy += fontH;
+        cy += charH;
       }
     }
 
@@ -251,22 +240,22 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
       if (C == '\r' && text[i + 1] == '\n') {
         i++;
         cx = CHAR_X(x);
-        cy += fontH;
-        if (cy >= offsetY + TEXT_ROWS * fontH) {
+        cy += charH;
+        if (cy >= offsetY + TEXT_ROWS * charH) {
           cy = CHAR_Y(y);
         }
         continue;
       }
 
       if (C >= 32 && C <= 126) {
-        SDL_Rect dstRect = {cx, cy, fontPixelW, fontH};
+        SDL_Rect dstRect = {cx, cy, charW, charH};
         SDL_RenderCopy(renderer, fontTexture, &charRects[C - 32], &dstRect);
       }
 
-      cx += fontPixelW;
-      if (cx >= offsetX + TEXT_COLS * fontPixelW) {
+      cx += charW;
+      if (cx >= offsetX + TEXT_COLS * charW) {
         cx = CHAR_X(x);
-        cy += fontH;
+        cy += charH;
       }
     }
     isDirty = 1;
@@ -281,7 +270,7 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
   }
 
   void gfxCursor(int x, int y, int w) {
-    SDL_Rect rect = { CHAR_X(x), CHAR_Y(y) + fontH - 1, w * fontPixelW, 1 };
+    SDL_Rect rect = { CHAR_X(x), CHAR_Y(y) + charH - 1, w * charW, 1 };
     setColor(cursorColor);
     SDL_RenderFillRect(renderer, &rect);
     isDirty = 1;
@@ -290,8 +279,8 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
   void gfxRect(int x, int y, int w, int h) {
     int cx = CHAR_X(x);
     int cy = CHAR_Y(y);
-    int cw = w * fontPixelW;
-    int ch = h * fontH;
+    int cw = w * charW;
+    int ch = h * charH;
     setColor(fgColor);
 
     SDL_Rect rects[4] = {
@@ -322,9 +311,9 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
     uint8_t bgG = (bgColor >> 8) & 0xFF;
     uint8_t bgB = bgColor & 0xFF;
     
-    for (int y = 0; y < fontH; y++) {
-      for (int x = 0; x < fontPixelW; x++) {
-        uint8_t alpha = bitmap[y * fontPixelW + x];
+    for (int y = 0; y < charH; y++) {
+      for (int x = 0; x < charW; x++) {
+        uint8_t alpha = bitmap[y * charW + x];
         uint8_t r = bgR + ((fgR - bgR) * alpha) / 255;
         uint8_t g = bgG + ((fgG - bgG) * alpha) / 255;
         uint8_t b = bgB + ((fgB - bgB) * alpha) / 255;
@@ -336,9 +325,30 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
   }
 
   int gfxGetCharWidth(void) {
-    return fontPixelW;
+    return charW;
   }
 
   int gfxGetCharHeight(void) {
-    return fontH;
+    return charH;
+  }
+
+  void gfxReloadFont(void) {
+    if (fontTexture) {
+      SDL_DestroyTexture(fontTexture);
+      fontTexture = NULL;
+    }
+
+    currentResolution = fontSelectResolution(fontGetCurrent(), screenW, screenH);
+    if (currentResolution) {
+      charW = currentResolution->charWidth;
+      charH = currentResolution->charHeight;
+    }
+
+    int textWindowW = TEXT_COLS * charW;
+    int textWindowH = TEXT_ROWS * charH;
+    offsetX = (screenW - textWindowW) / 2;
+    offsetY = (screenH - textWindowH) / 2;
+
+    createFontTexture();
+    isDirty = 1;
   }

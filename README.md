@@ -2,7 +2,7 @@
 
 ChipNomad is a multi-platform tracker with LSDJ-like interface designed for creating chiptune music. Primary target platforms are handheld game consoles like Anbernic RG35xx.
 
-[ChipNomad manual](https://chipnomad.org/manual)
+[ChipNomad manual](https://chipnomad.org/manual/)
 
 [Join ChipNomad Discord server](https://discord.gg/PJarAn2QCW)
 

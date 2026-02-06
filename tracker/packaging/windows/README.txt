@@ -12,6 +12,6 @@ IMPORTANT:
 - Keep SDL2.dll in the same folder as chipnomad.exe
 - The pitch-tables, projects, and instruments folders contain essential data
 
-For more information, visit: https://github.com/megus/chipnomad
+For more information, visit: https://github.com/megus/chipnomad-tracker
 
-Controls and manual: See docs/manual.md in the source repository
+Controls and manual: https://chipnomad.org/manual/

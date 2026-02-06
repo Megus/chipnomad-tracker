@@ -1,10 +1,14 @@
 #include "screen_settings.h"
 #include "screen_color_theme.h"
 #include "screen_keymapping.h"
+#include "file_browser.h"
 #include "common.h"
 #include "corelib_gfx.h"
 #include "corelib_mainloop.h"
+#include "corelib_font.h"
+#include "corelib_file.h"
 #include "screens.h"
+#include <string.h>
 
 // Forward declarations
 static int settingsColumnCount(int row);
@@ -16,7 +20,7 @@ static void settingsDrawField(int col, int row, int state);
 static int settingsOnEdit(int col, int row, enum CellEditAction action);
 
 static ScreenData screenSettingsData = {
-  .rows = 7,
+  .rows = 8,
   .cursorRow = 0,
   .cursorCol = 0,
   .selectMode = -1,
@@ -30,6 +34,35 @@ static ScreenData screenSettingsData = {
 };
 
 static void setup(int input) {
+}
+
+static void fontLoadCallback(const char* path) {
+  Font* font = fontLoad(path);
+  if (font) {
+    fontSetCurrent(font);
+    gfxReloadFont();
+    strncpy(appSettings.fontPath, path, PATH_LENGTH);
+    appSettings.fontPath[PATH_LENGTH] = 0;
+    
+    // Extract folder path
+    char* lastSeparator = strrchr(path, PATH_SEPARATOR);
+    if (lastSeparator) {
+      int pathLen = lastSeparator - path;
+      if (pathLen > 0 && pathLen < PATH_LENGTH) {
+        strncpy(appSettings.fontFolderPath, path, pathLen);
+        appSettings.fontFolderPath[pathLen] = '\0';
+      }
+    }
+    
+    screenMessage(MESSAGE_TIME, "Loaded: %s", font->name);
+  } else {
+    screenMessage(MESSAGE_TIME, "Failed to load font");
+  }
+  screenSetup(&screenSettings, 0);
+}
+
+static void fontCancelCallback(void) {
+  screenSetup(&screenSettings, 0);
 }
 
 static void fullRedraw(void) {
@@ -62,8 +95,10 @@ void settingsDrawCursor(int col, int row) {
   } else if (row == 4 && col == 0) {
     gfxCursor(0, 6, 11);
   } else if (row == 5 && col == 0) {
-    gfxCursor(0, 7, 16);
+    gfxCursor(0, 7, 9);
   } else if (row == 6 && col == 0) {
+    gfxCursor(0, 8, 16);
+  } else if (row == 7 && col == 0) {
     gfxCursor(0, 17, 14);
   }
 }
@@ -102,8 +137,11 @@ void settingsDrawField(int col, int row, int state) {
     gfxPrint(0, 6, "Key mapping");
   } else if (row == 5 && col == 0) {
     gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(0, 7, "Edit color theme");
+    gfxPrint(0, 7, "Load font");
   } else if (row == 6 && col == 0) {
+    gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    gfxPrint(0, 8, "Edit color theme");
+  } else if (row == 7 && col == 0) {
     gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     gfxPrint(0, 17, "Quit ChipNomad");
   }
@@ -144,9 +182,15 @@ int settingsOnEdit(int col, int row, enum CellEditAction action) {
 #endif
     return 0;
   } else if (row == 5 && col == 0 && action == editTap) {
-    screenSetup(&screenColorTheme, 0);
+    fileBrowserSetup("LOAD FONT", ".cnfont", appSettings.fontFolderPath, 
+      (void (*)(const char*))fontLoadCallback, 
+      (void (*)(void))fontCancelCallback);
+    screenSetup(&screenFileBrowser, 0);
     return 0;
   } else if (row == 6 && col == 0 && action == editTap) {
+    screenSetup(&screenColorTheme, 0);
+    return 0;
+  } else if (row == 7 && col == 0 && action == editTap) {
     // Trigger exit event
     mainLoopTriggerQuit();
     return 1;

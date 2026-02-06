@@ -1,6 +1,6 @@
 # FreeType Font Generator
 
-TTF to bitmap font converter using FreeType library.
+TTF to ChipNomad bitmap font converter using FreeType library.
 
 ## Build
 
@@ -11,9 +11,10 @@ make
 ## Usage
 
 ```bash
-./generate font.ttf
+./generate font.ttf output.cnfont
 ```
 
 ## Output
 
-Generates C files: `font_12x16.c`, `font_16x24.c`, etc.
+Generates a `.cnfont` file with 5 resolutions: 12x16, 16x24, 24x36, 32x48, 48x54.
+Also generates `font_preview.png` showing all resolutions.

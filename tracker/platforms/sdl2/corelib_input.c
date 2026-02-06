@@ -84,18 +84,18 @@ void inputInitDefaultKeyMapping(void) {
   appSettings.keyMapping.keyRight[0] = SDLK_RIGHT;
   appSettings.keyMapping.keyRight[1] = 0;
   appSettings.keyMapping.keyRight[2] = 0;
-  appSettings.keyMapping.keyEdit[0] = (layout == LAYOUT_QWERTZ) ? SDLK_y : SDLK_z;
-  appSettings.keyMapping.keyEdit[1] = 0;
-  appSettings.keyMapping.keyEdit[2] = 0;
+  appSettings.keyMapping.keyOpt[0] = (layout == LAYOUT_QWERTZ) ? SDLK_y : SDLK_z;
+  appSettings.keyMapping.keyOpt[1] = 0;
+  appSettings.keyMapping.keyOpt[2] = 0;
   appSettings.keyMapping.keyPlay[0] = SDLK_SPACE;
   appSettings.keyMapping.keyPlay[1] = 0;
   appSettings.keyMapping.keyPlay[2] = 0;
   appSettings.keyMapping.keyShift[0] = SDLK_LSHIFT;
   appSettings.keyMapping.keyShift[1] = 0;
   appSettings.keyMapping.keyShift[2] = 0;
-  appSettings.keyMapping.keyOpt[0] = SDLK_x;
-  appSettings.keyMapping.keyOpt[1] = 0;
-  appSettings.keyMapping.keyOpt[2] = 0;
+  appSettings.keyMapping.keyEdit[0] = SDLK_x;
+  appSettings.keyMapping.keyEdit[1] = 0;
+  appSettings.keyMapping.keyEdit[2] = 0;
 #else
   memset(&appSettings.keyMapping, 0, sizeof(KeyMapping));
 #endif

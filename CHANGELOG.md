@@ -1,6 +1,12 @@
 # ChipNomad changelog
 
-## v0.1.0b
+## v1.0.0 (not yet released)
+
+- Press Opt+Left/Right at the Song screen to solo all tracks to the left/right
+- Custom font loading
+- *FIX*: THO behavior in tables now match M8
+
+## v0.1.0b (January 25, 2026)
 
 - *PLATFORM*: Linux x86_64 package for Linux desktops and Steam Deck
 - *BREAKING CHANGE*: PIT now sets offset in semitones. New FIN command sets fine pitch offset

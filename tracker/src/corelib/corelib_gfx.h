@@ -82,4 +82,9 @@ int gfxGetCharWidth(void);
  */
 int gfxGetCharHeight(void);
 
+/**
+ * @brief Reload font (recreate font texture after font change)
+ */
+void gfxReloadFont(void);
+
 #endif

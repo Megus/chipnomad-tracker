@@ -7,9 +7,6 @@ b = z
 x = c
 y = a
 
-l1 = leftshift
-r1 = leftshift
-
 up = up
 down = down
 left = left

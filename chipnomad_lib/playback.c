@@ -118,68 +118,99 @@ static void tableProgress(PlaybackState* state, int trackIdx, struct PlaybackTab
 
     if (table->counters[i] >= table->speed[i]) {
       table->counters[i] = 0;
-
-      uint8_t fxType = p->tables[table->tableIdx].rows[table->rows[i]].fx[i][0];
-      uint8_t fxValue = p->tables[table->tableIdx].rows[table->rows[i]].fx[i][1];
-
-      // Special case for THO/HOP pointing to the same row - we may not progress further
-      int shouldProgress = 1;
-
-      if (fxType == fxTHO && (fxValue & 0xf) == table->rows[i]) {
-        // THO: Stay on the same row
-        hopToTableRow(state, trackIdx, table, fxValue & 0xf);
-        break;
+      uint8_t row = table->rows[i];
+      
+      // Check if any column has THO on current row
+      int thoTarget = -1;
+      for (int col = 0; col < 4; col++) {
+        if (p->tables[table->tableIdx].rows[row].fx[col][0] == fxTHO) {
+          thoTarget = p->tables[table->tableIdx].rows[row].fx[col][1] & 0xf;
+          break;
+        }
       }
-      if (fxType == fxHOP && (fxValue & 0xf) == table->rows[i]) {
-        // HOP: Loop if needed
+      
+      if (thoTarget >= 0 && thoTarget == row) {
+        // THO pointing to same row - stay here
+        tableReadFX(state, trackIdx, table, i, 0);
+        continue;
+      }
+      
+      // Check HOP on current row pointing to same row
+      uint8_t fxType = p->tables[table->tableIdx].rows[row].fx[i][0];
+      uint8_t fxValue = p->tables[table->tableIdx].rows[row].fx[i][1];
+      
+      if (fxType == fxHOP && (fxValue & 0xf) == row) {
         if (fxValue & 0xf0) {
           // Loop counter
-          table->fxAuxState[table->rows[i]][i]++;
-          if (table->fxAuxState[table->rows[i]][i] <= ((fxValue & 0xf0) >> 4)) {
-            shouldProgress = 0;
+          table->fxAuxState[row][i]++;
+          if (table->fxAuxState[row][i] <= ((fxValue & 0xf0) >> 4)) {
+            tableReadFX(state, trackIdx, table, i, 0);
+            continue;
           }
         } else {
-          // Unconditional loop on same row
-          shouldProgress = 0;
+          // Unconditional hop to same row - stay here
+          tableReadFX(state, trackIdx, table, i, 0);
+          continue;
         }
       }
-
-      if (shouldProgress) {
-        // Progres further in the table
-        table->rows[i] = (table->rows[i] + 1) & 15;
-        uint8_t row = table->rows[i];
-
-        if (row == 0) {
-          // Reset all loop counters
-          for (int c = 0; c < 16; c++) {
-            table->fxAuxState[c][i] = 0;
-          }
+      
+      // Progress to next row
+      table->rows[i] = (row + 1) & 15;
+      
+      if (table->rows[i] == 0) {
+        // Reset all loop counters for this column
+        for (int c = 0; c < 16; c++) {
+          table->fxAuxState[c][i] = 0;
         }
+      }
+      
+      row = table->rows[i];
 
-        // Handle THO and HOP table FX
-        fxType = p->tables[table->tableIdx].rows[row].fx[i][0];
-        fxValue = p->tables[table->tableIdx].rows[row].fx[i][1];
-        if (fxType == fxTHO) {
-          // THO: Hop on all FX lanes
-          hopToTableRow(state, trackIdx, table, fxValue & 0xf);
+      // Check if any column has THO on new row
+      thoTarget = -1;
+      for (int col = 0; col < 4; col++) {
+        if (p->tables[table->tableIdx].rows[row].fx[col][0] == fxTHO) {
+          thoTarget = p->tables[table->tableIdx].rows[row].fx[col][1] & 0xf;
           break;
-        } else if (fxType == fxHOP) {
-          // HOP: Hop only on the current lane
-          if (fxValue & 0xf0) {
-            // Loop counter
-            table->fxAuxState[table->rows[i]][i]++;
-            if (table->fxAuxState[table->rows[i]][i] <= ((fxValue & 0xf0) >> 4)) {
-              // Reset "nested" loops. Works only when hopping back
-              for (int c = fxValue & 0xf; c < table->rows[i]; c++) {
+        }
+      }
+      
+      if (thoTarget >= 0) {
+        // THO found - hop this column
+        table->rows[i] = thoTarget;
+        tableReadFX(state, trackIdx, table, i, 0);
+        continue;
+      }
+
+      // Check HOP on new row
+      fxType = p->tables[table->tableIdx].rows[row].fx[i][0];
+      fxValue = p->tables[table->tableIdx].rows[row].fx[i][1];
+      
+      if (fxType == fxHOP) {
+        uint8_t hopTarget = fxValue & 0xf;
+        if (fxValue & 0xf0) {
+          // Loop counter
+          table->fxAuxState[row][i]++;
+          if (table->fxAuxState[row][i] <= ((fxValue & 0xf0) >> 4)) {
+            // Reset "nested" loops when hopping back
+            if (hopTarget < row) {
+              for (int c = hopTarget; c < row; c++) {
                 table->fxAuxState[c][i] = 0;
               }
-              table->rows[i] = fxValue & 0xf;
             }
-          } else {
-            table->rows[i] = fxValue & 0xf;
+            table->rows[i] = hopTarget;
+            tableReadFX(state, trackIdx, table, i, 0);
+            continue;
           }
+        } else {
+          // Unconditional hop
+          table->rows[i] = hopTarget;
+          tableReadFX(state, trackIdx, table, i, 0);
+          continue;
         }
       }
+      
+      // No hop - read FX from current row
       tableReadFX(state, trackIdx, table, i, 0);
     }
   }
