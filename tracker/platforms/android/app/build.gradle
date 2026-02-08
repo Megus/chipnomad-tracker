@@ -1,0 +1,83 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Custom task to build native code using external makefiles and copy the results
+task buildNativeArm64(type: Exec) {
+    def multiplatformProjectRoot = rootProject.projectDir.parentFile.parentFile
+    workingDir multiplatformProjectRoot
+    commandLine 'make', 'android', 'ARCH=arm64-v8a'
+    environment 'ANDROID_NDK_ROOT', System.getenv('ANDROID_NDK_ROOT') ?: "${System.getenv('ANDROID_HOME')}/ndk/29.0.14206865"
+}
+
+task buildNativeArm32(type: Exec) {
+    def multiplatformProjectRoot = rootProject.projectDir.parentFile.parentFile
+    workingDir multiplatformProjectRoot
+    commandLine 'make', 'android', 'ARCH=armeabi-v7a'
+    environment 'ANDROID_NDK_ROOT', System.getenv('ANDROID_NDK_ROOT') ?: "${System.getenv('ANDROID_HOME')}/ndk/29.0.14206865"
+}
+
+task copyNativeLibs(type: Copy) {
+    dependsOn buildNativeArm64, buildNativeArm32
+    
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    
+    def multiplatformProjectRoot = rootProject.projectDir.parentFile.parentFile
+    
+    from(new File(multiplatformProjectRoot, 'build/android-arm64')) {
+        into 'arm64-v8a'
+        include 'libchipnomad.so'
+    }
+    from(new File(multiplatformProjectRoot, 'build/android-arm32')) {
+        into 'armeabi-v7a'
+        include 'libchipnomad.so'
+    }
+    
+    into new File(project.projectDir, 'src/main/jniLibs')
+}
+
+// Make the build process depend on our custom task
+preBuild.dependsOn copyNativeLibs
+
+android {
+    namespace 'org.chipnomad.tracker'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "org.chipnomad.tracker"
+        minSdk 33
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        debug {
+            debuggable true
+            jniDebuggable true
+        }
+        release {
+            minifyEnabled false
+        }
+    }
+    
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    
+    lintOptions {
+        abortOnError false
+    }
+    
+    // This tells Gradle where to find the .so files after we copy them
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['src/main/jniLibs']
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+}

@@ -5,6 +5,7 @@
 - Press Opt+Left/Right at the Song screen to solo all tracks to the left/right
 - Custom font loading
 - *FIX*: THO behavior in tables now match M8
+- *FIX*: Env shape display was incorrect at the instrument screen
 
 ## v0.1.0b (January 25, 2026)
 

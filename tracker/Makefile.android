@@ -1,0 +1,49 @@
+# Android makefile using NDK
+
+# Android platform identifier
+PLATFORM = android
+
+include Makefile.common
+
+# Android-specific settings
+LIBS = $(COMMON_LIBS) platforms/android
+OUTPUT_EXT = 
+
+# NDK settings
+NDK_PATH ?= $(ANDROID_NDK_ROOT)
+TOOLCHAIN = $(NDK_PATH)/toolchains/llvm/prebuilt/darwin-x86_64
+API_LEVEL = 33
+
+# SDL2 paths
+SDL2_INCLUDE = build/sdl2-android/include
+SDL2_LIB = build/sdl2-android/libs
+
+# Target architectures
+ARCH ?= arm64-v8a
+ifeq ($(ARCH),arm64-v8a)
+TARGET = aarch64-linux-android$(API_LEVEL)
+BUILD_DIR = $(BUILD_BASE)/android-arm64
+else ifeq ($(ARCH),armeabi-v7a)
+TARGET = armv7a-linux-androideabi$(API_LEVEL)
+BUILD_DIR = $(BUILD_BASE)/android-arm32
+endif
+
+# Compiler setup
+CC = $(TOOLCHAIN)/bin/$(TARGET)-clang
+AR = $(TOOLCHAIN)/bin/llvm-ar
+STRIP = $(TOOLCHAIN)/bin/llvm-strip
+
+# Android-specific flags
+XTRA_CFLAGS = -DANDROID_BUILD -fPIC -I$(SDL2_INCLUDE)
+XTRA_LIBS = -L$(SDL2_LIB)/$(ARCH) -lSDL2 -lm -llog -landroid
+
+CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(XTRA_CFLAGS)
+OUTPUT = -o $(BUILD_DIR)/libchipnomad.so
+
+.PHONY: android android-lib
+android: android-lib
+
+android-lib:
+	mkdir -p $(BUILD_DIR)
+	$(CC) -shared $(CFLAGS) $(XTRA_LIBS) $(OUTPUT)
+	$(STRIP) $(BUILD_DIR)/libchipnomad.so
