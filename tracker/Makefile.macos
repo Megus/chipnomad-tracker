@@ -32,7 +32,7 @@ macOS-app-bundle: macOS
 	@cp -r packaging/common/* $(BUILD)/
 	@iconutil -c icns packaging/macos/ChipNomad.iconset -o $(BUILD)/$(APP_BUNDLE)/Contents/Resources/ChipNomad.icns 2>/dev/null || echo "Warning: Icon generation failed"
 	@cp /opt/homebrew/lib/libSDL2-2.0.0.dylib $(BUILD)/$(APP_BUNDLE)/Contents/Frameworks/ || echo "Warning: SDL2 library not found"
-	@install_name_tool -change /opt/homebrew/lib/libSDL2-2.0.0.dylib @executable_path/../Frameworks/libSDL2-2.0.0.dylib $(BUILD)/$(APP_BUNDLE)/Contents/MacOS/chipnomad 2>/dev/null || true
+	@install_name_tool -change /opt/homebrew/opt/sdl2/lib/libSDL2-2.0.0.dylib @executable_path/../Frameworks/libSDL2-2.0.0.dylib $(BUILD)/$(APP_BUNDLE)/Contents/MacOS/chipnomad 2>/dev/null || true
 	@cp packaging/macos/Info.plist $(BUILD)/$(APP_BUNDLE)/Contents/
 	@sed -i '' "s/VERSION_PLACEHOLDER/$$(grep 'appVersion.*=' src/version.c | cut -d'"' -f2)/g" $(BUILD)/$(APP_BUNDLE)/Contents/Info.plist
 	@echo ".app bundle created at $(BUILD)/$(APP_BUNDLE)"
