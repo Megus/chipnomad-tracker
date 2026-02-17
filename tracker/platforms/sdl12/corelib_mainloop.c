@@ -30,6 +30,28 @@
 #define BTN_VOLUME_DOWN 45
 #define BTN_POWER       0
 #define BTN_EXIT        0
+#elif defined(MIYOOPORTS_BUILD)
+// MIYOO_PORTS mapping (SDL keycodes)
+#define BTN_UP          SDLK_UP
+#define BTN_DOWN        SDLK_DOWN
+#define BTN_LEFT        SDLK_LEFT
+#define BTN_RIGHT       SDLK_RIGHT
+#define BTN_A           SDLK_SPACE
+#define BTN_B           SDLK_LCTRL
+#define BTN_X           SDLK_LSHIFT
+#define BTN_Y           SDLK_LALT
+#define BTN_Z           SDLK_z
+#define BTN_L1          SDLK_e
+#define BTN_R1          SDLK_t
+#define BTN_L2          SDLK_TAB
+#define BTN_R2          SDLK_BACKSPACE
+#define BTN_SELECT      SDLK_RCTRL
+#define BTN_START       SDLK_RETURN
+#define BTN_MENU        0
+#define BTN_VOLUME_UP   0
+#define BTN_VOLUME_DOWN 0
+#define BTN_POWER       0
+#define BTN_EXIT        0
 #else
 // RG35xx mapping
 #define BTN_UP          119
