@@ -34,6 +34,10 @@ RG35xx RG35xx-deploy:
 PortMaster PortMaster-deploy:
 	$(MAKE) -f Makefile.portmaster $@
 
+.PHONY: MiyooPorts MiyooPorts-deploy
+MiyooPorts MiyooPorts-deploy:
+	$(MAKE) -f Makefile.miyooports $@
+
 .PHONY: macOS macOS-deploy
 macOS macOS-deploy:
 	$(MAKE) -f Makefile.macos $@
@@ -72,6 +76,9 @@ clean-rg35xx:
 
 clean-portmaster:
 	rm -rf build/portmaster
+
+clean-miyooports:
+	rm -rf build/miyoports
 
 clean-macOS:
 	rm -rf build/macos
