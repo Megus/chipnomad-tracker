@@ -58,18 +58,33 @@ static void createCharSurfaces(void) {
   }
 }
 
+#ifdef MIYOOPORTS_BUILD
+static SDL_Surface* offscreenSurface = NULL;
+#endif
+
 int gfxSetup(int *screenWidth, int *screenHeight) {
-  if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
-    printf("SDL2 Initialization Error: %s\n", SDL_GetError());
+#ifdef MIYOOPORTS_BUILD
+  sdlScreen = SDL_SetVideoMode(WINDOW_WIDTH, WINDOW_HEIGHT, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
+  if (!sdlScreen) {
+    printf("SDL1.2 Set Video Mode Error: %s\n", SDL_GetError());
+    SDL_Quit();
     return 1;
   }
-
+  offscreenSurface = SDL_CreateRGBSurface(SDL_SWSURFACE, WINDOW_WIDTH, WINDOW_HEIGHT, 32,
+    sdlScreen->format->Rmask, sdlScreen->format->Gmask, sdlScreen->format->Bmask, sdlScreen->format->Amask);
+  if (!offscreenSurface) {
+    printf("Failed to create offscreen surface: %s\n", SDL_GetError());
+    SDL_Quit();
+    return 1;
+  }
+#else
   sdlScreen = SDL_SetVideoMode(WINDOW_WIDTH, WINDOW_HEIGHT, 32, SDL_HWSURFACE);
   if (!sdlScreen) {
     printf("SDL1.2 Set Video Mode Error: %s\n", SDL_GetError());
     SDL_Quit();
     return 1;
   }
+#endif
 
   sprintf(charBuffer, "%s v%s (%s)", appTitle, appVersion, appBuild);
   SDL_WM_SetCaption(charBuffer, NULL);
@@ -90,6 +105,12 @@ void gfxCleanup(void) {
     if (charSurfaces[i]) SDL_FreeSurface(charSurfaces[i]);
   }
   SDL_FreeSurface(sdlScreen);
+#ifdef MIYOOPORTS_BUILD
+  if (offscreenSurface) {
+    SDL_FreeSurface(offscreenSurface);
+    offscreenSurface = NULL;
+  }
+#endif
 }
 
 void gfxSetFgColor(int rgb) {
@@ -114,18 +135,30 @@ void gfxSetCursorColor(int rgb) {
 }
 
 void gfxClear(void) {
+#ifdef MIYOOPORTS_BUILD
+  SDL_FillRect(offscreenSurface, NULL, bgColor);
+#else
   SDL_FillRect(sdlScreen, NULL, bgColor);
+#endif
   isDirty = 1;
 }
 
 void gfxPoint(int x, int y, uint32_t color) {
+#ifdef MIYOOPORTS_BUILD
+  ((Uint32 *)offscreenSurface->pixels)[y * offscreenSurface->w + x] = color;
+#else
   ((Uint32 *)sdlScreen->pixels)[y * sdlScreen->w + x] = color;
+#endif
   isDirty = 1;
 }
 
 void gfxClearRect(int x, int y, int w, int h) {
   SDL_Rect rect = { CHAR_X(x), CHAR_Y(y), CHAR_X(w), CHAR_Y(h) };
+#ifdef MIYOOPORTS_BUILD
+  SDL_FillRect(offscreenSurface, &rect, bgColor);
+#else
   SDL_FillRect(sdlScreen, &rect, bgColor);
+#endif
   isDirty = 1;
 }
 
@@ -145,7 +178,11 @@ void gfxPrint(int x, int y, const char* text) {
       continue;
     }
     SDL_Rect bgRect = {cx, cy, fontW * 8, fontH};
+#ifdef MIYOOPORTS_BUILD
+    SDL_FillRect(offscreenSurface, &bgRect, bgColor);
+#else
     SDL_FillRect(sdlScreen, &bgRect, bgColor);
+#endif
     cx += fontW * 8;
     if (cx > WINDOW_WIDTH) {
       cx = CHAR_X(x);
@@ -177,7 +214,11 @@ void gfxPrint(int x, int y, const char* text) {
       SDL_SetColors(charSurfaces[C - 32], colors, 0, 2);
 
       SDL_Rect dstRect = {cx, cy, fontW * 8, fontH};
+#ifdef MIYOOPORTS_BUILD
+      SDL_BlitSurface(charSurfaces[C - 32], NULL, offscreenSurface, &dstRect);
+#else
       SDL_BlitSurface(charSurfaces[C - 32], NULL, sdlScreen, &dstRect);
+#endif
     }
 
     cx += fontW * 8;
@@ -199,7 +240,11 @@ void gfxPrintf(int x, int y, const char* format, ...) {
 
 void gfxCursor(int x, int y, int w) {
   SDL_Rect rect = { CHAR_X(x), CHAR_Y(y) + fontH - 1, CHAR_X(w), 1 };
+#ifdef MIYOOPORTS_BUILD
+  SDL_FillRect(offscreenSurface, &rect, cursorColor);
+#else
   SDL_FillRect(sdlScreen, &rect, cursorColor);
+#endif
   isDirty = 1;
 }
 
@@ -216,24 +261,61 @@ void gfxRect(int x, int y, int w, int h) {
     {cx + cw - 1, cy, 1, ch}  // right
   };
 
+#ifdef MIYOOPORTS_BUILD
+  for (int i = 0; i < 4; i++) {
+    SDL_FillRect(offscreenSurface, &rects[i], fgColor);
+  }
+#else
   for (int i = 0; i < 4; i++) {
     SDL_FillRect(sdlScreen, &rects[i], fgColor);
   }
+#endif
   isDirty = 1;
 }
 
 void gfxUpdateScreen(void) {
+#ifdef MIYOOPORTS_BUILD
+  if (isDirty && offscreenSurface) {
+    SDL_LockSurface(offscreenSurface);
+    SDL_LockSurface(sdlScreen);
+    int w = offscreenSurface->w;
+    int h = offscreenSurface->h;
+    Uint32* src = (Uint32*)offscreenSurface->pixels;
+    Uint32* dst = (Uint32*)sdlScreen->pixels;
+    for (int y = 0; y < h; ++y) {
+      for (int x = 0; x < w; ++x) {
+        dst[(h - 1 - y) * w + (w - 1 - x)] = src[y * w + x];
+      }
+    }
+    SDL_UnlockSurface(offscreenSurface);
+    SDL_UnlockSurface(sdlScreen);
+    SDL_Flip(sdlScreen);
+    isDirty = 0;
+  }
+#else
   if (isDirty) {
     SDL_UpdateRect(sdlScreen, 0, 0, 0, 0);
+    isDirty = 0;
   }
-  isDirty = 0;
+#endif
 }
 
 void gfxDrawCharBitmap(uint8_t* bitmap, int col, int row) {
   int cx = CHAR_X(col);
   int cy = CHAR_Y(row);
   int charW = fontW * 8;
-  
+#ifdef MIYOOPORTS_BUILD
+  for (int y = 0; y < fontH; y++) {
+    for (int x = 0; x < charW; x++) {
+      uint8_t alpha = bitmap[y * charW + x];
+      uint8_t r = bgR + ((fgR - bgR) * alpha) / 255;
+      uint8_t g = bgG + ((fgG - bgG) * alpha) / 255;
+      uint8_t b = bgB + ((fgB - bgB) * alpha) / 255;
+      uint32_t color = SDL_MapRGB(offscreenSurface->format, r, g, b);
+      ((Uint32 *)offscreenSurface->pixels)[(cy + y) * offscreenSurface->w + (cx + x)] = color;
+    }
+  }
+#else
   for (int y = 0; y < fontH; y++) {
     for (int x = 0; x < charW; x++) {
       uint8_t alpha = bitmap[y * charW + x];
@@ -244,6 +326,7 @@ void gfxDrawCharBitmap(uint8_t* bitmap, int col, int row) {
       ((Uint32 *)sdlScreen->pixels)[(cy + y) * sdlScreen->w + (cx + x)] = color;
     }
   }
+#endif
   isDirty = 1;
 }
 
