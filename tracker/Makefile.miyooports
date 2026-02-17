@@ -31,11 +31,13 @@ MiyooPorts-deploy: MiyooPorts
 	@echo "Creating MiyooPorts deployment package..."
 	@mkdir -p ../../releases
 	@rm -rf /tmp/chipnomad-miyooports-package
-	@mkdir -p /tmp/chipnomad-miyooports-package/chipnomad
-	@cp $(BUILD)/chipnomad.armhf /tmp/chipnomad-miyooports-package/chipnomad/
-	@cp -r packaging/portmaster/* /tmp/chipnomad-miyooports-package/
-	@cp -r packaging/common/* /tmp/chipnomad-miyooports-package/chipnomad/
-	@sed -i '' "s/BUILD_DATE_PLACEHOLDER/$$(date +%Y%m%dT%H%M%S)/g" /tmp/chipnomad-miyooports-package/gameinfo.xml
+	@mkdir -p /tmp/chipnomad-miyooports-package/Roms/PORTS/Games/ChipNomad
+	@mkdir -p /tmp/chipnomad-miyooports-package/Roms/PORTS/Imgs
+	@mkdir -p /tmp/chipnomad-miyooports-package/Roms/PORTS/Shortcuts/ChipNomad
+	@cp $(BUILD)/chipnomad.armhf /tmp/chipnomad-miyooports-package/Roms/PORTS/Games/ChipNomad/
+	@cp -r packaging/common/* /tmp/chipnomad-miyooports-package/Roms/PORTS/Games/ChipNomad/
+	@mv /tmp/chipnomad-miyooports-package/Roms/PORTS/Games/ChipNomad/chipnomad-icon.png /tmp/chipnomad-miyooports-package/Roms/PORTS/Imgs/ChipNomad.png
+	@cp -r packaging/miyoo_ports/* /tmp/chipnomad-miyooports-package/Roms/PORTS/Shortcuts/ChipNomad
 	$(eval VERSION := $(shell grep 'appVersion.*=' src/version.c | cut -d'"' -f2))
 	@cd /tmp/chipnomad-miyooports-package && zip -r ChipNomad-$$(date +%Y-%m-%d)-$(VERSION)-MiyooPorts.zip .
 	@mv /tmp/chipnomad-miyooports-package/ChipNomad-*-MiyooPorts.zip ../../releases/
