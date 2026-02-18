@@ -3,11 +3,6 @@
 #include "corelib/corelib_gfx.h"
 #include <string.h>
 
-#ifdef MACOS_BUILD
-#include <sys/stat.h>
-#include <unistd.h>
-#endif
-
 #define SETTINGS_FILENAME "settings.txt"
 
 AppSettings appSettings = {
@@ -46,36 +41,8 @@ int* pSongTrack;
 int* pChainRow;
 ChipNomadState* chipnomadState;
 
-#ifdef MACOS_BUILD
-static char userDataPath[PATH_LENGTH] = "";
-
-static const char* getUserDataPath(void) {
-  if (userDataPath[0] == '\0') {
-    const char* home = getenv("HOME");
-    if (home) {
-      snprintf(userDataPath, PATH_LENGTH, "%s/Library/Application Support/ChipNomad", home);
-      // Create directory if it doesn't exist
-      mkdir(userDataPath, 0755);
-    } else {
-      strcpy(userDataPath, ".");
-    }
-  }
-  return userDataPath;
-}
-
-static void getFullPath(const char* filename, char* fullPath, int maxLength) {
-  snprintf(fullPath, maxLength, "%s/%s", getUserDataPath(), filename);
-}
-#endif
-
 int settingsSave(void) {
-  #ifdef MACOS_BUILD
-  char fullPath[PATH_LENGTH];
-  getFullPath(SETTINGS_FILENAME, fullPath, PATH_LENGTH);
-  int fileId = fileOpen(fullPath, 1);
-  #else
   int fileId = fileOpen(SETTINGS_FILENAME, 1);
-  #endif
   if (fileId == -1) return 1;
 
   filePrintf(fileId, "screenWidth: %d\n", appSettings.screenWidth);
@@ -124,13 +91,7 @@ int settingsSave(void) {
 }
 
 int settingsLoad(void) {
-  #ifdef MACOS_BUILD
-  char fullPath[PATH_LENGTH];
-  getFullPath(SETTINGS_FILENAME, fullPath, PATH_LENGTH);
-  int fileId = fileOpen(fullPath, 0);
-  #else
   int fileId = fileOpen(SETTINGS_FILENAME, 0);
-  #endif
   if (fileId == -1) return 1;
 
   char* line;
@@ -293,13 +254,7 @@ int loadTheme(const char* path) {
 }
 
 const char* getAutosavePath(void) {
-  #ifdef MACOS_BUILD
-  static char autosavePath[PATH_LENGTH];
-  getFullPath(AUTOSAVE_FILENAME, autosavePath, PATH_LENGTH);
-  return autosavePath;
-  #else
   return AUTOSAVE_FILENAME;
-  #endif
 }
 
 void extractFilenameWithoutExtension(const char* path, char* output, int maxLength) {

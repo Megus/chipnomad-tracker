@@ -45,11 +45,22 @@ android {
 
     defaultConfig {
         applicationId "org.chipnomad.tracker"
-        minSdk 33
+        minSdk 26
         targetSdk 34
         versionCode 1
         versionName "1.0"
     }
+
+    // Copy ChipNomad data files to assets
+    task copyChipNomadAssets(type: Copy) {
+        from '../../../packaging/common'  // Use existing packaging folder
+        into 'src/main/assets/chipnomad_data'
+        include '**/*'
+        exclude '**/.git*'
+    }
+
+    // Make sure assets are copied before building
+    preBuild.dependsOn copyChipNomadAssets
 
     buildTypes {
         debug {

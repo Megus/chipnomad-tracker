@@ -5,14 +5,14 @@ PLATFORM = android
 
 include Makefile.common
 
-# Android-specific settings
+# Android-specific settings - use common libs + android platform
 LIBS = $(COMMON_LIBS) platforms/android
-OUTPUT_EXT = 
+OUTPUT_EXT =  
 
 # NDK settings
 NDK_PATH ?= $(ANDROID_NDK_ROOT)
 TOOLCHAIN = $(NDK_PATH)/toolchains/llvm/prebuilt/darwin-x86_64
-API_LEVEL = 33
+API_LEVEL = 26
 
 # SDL2 paths
 SDL2_INCLUDE = build/sdl2-android/include

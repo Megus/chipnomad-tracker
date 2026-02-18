@@ -5,6 +5,7 @@
 #include "corelib_gfx.h"
 #include "corelib_font.h"
 #include "button_icons.h"
+#include "asset_bundling.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

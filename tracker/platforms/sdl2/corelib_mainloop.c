@@ -7,6 +7,11 @@
 
 #define FPS 60
 
+// Platform-specific file operations initialization
+#ifdef MACOS_BUILD
+extern void fileOpsInitPlatform(void);
+#endif
+
 // Enable gamepad support for desktop builds
 #ifdef DESKTOP_BUILD
 #define GAMEPAD_SUPPORT
@@ -133,6 +138,11 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(enum MainLoopEvent event, i
   uint32_t busytime = 0;
   SDL_Event event;
   int menu = 0;
+
+#ifdef MACOS_BUILD
+  // Initialize platform-specific file operations
+  fileOpsInitPlatform();
+#endif
 
 #ifdef GAMEPAD_SUPPORT
   // Initialize gamepad support

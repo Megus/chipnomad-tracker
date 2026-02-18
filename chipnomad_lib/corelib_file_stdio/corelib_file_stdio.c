@@ -13,7 +13,7 @@ static FILE* files[CORELIB_MAX_OPEN_FILES];
 static int currentFileId = 0;
 static char stringBuffer[1024];
 
-int fileOpen(const char* path, int isWriting) {
+static int fileOpenStdio(const char* path, int isWriting) {
   int fileId = currentFileId;
 
   FILE* file = fopen(path, isWriting ? "wb" : "rb");
@@ -31,16 +31,16 @@ int fileOpen(const char* path, int isWriting) {
   return fileId;
 }
 
-int fileClose(int fileId) {
+static int fileCloseStdio(int fileId) {
   fclose(files[fileId]);
   return 0;
 }
 
-int fileRead(int fileId, void* buffer, int maxLength) {
+static int fileReadStdio(int fileId, void* buffer, int maxLength) {
   return fread(buffer, 1, maxLength, files[fileId]);
 }
 
-char* fileReadString(int fileId) {
+static char* fileReadStringStdio(int fileId) {
   char* r = fgets(stringBuffer, 1024, files[fileId]);
 
   if (r == NULL) return NULL;
@@ -55,11 +55,11 @@ char* fileReadString(int fileId) {
   return stringBuffer;
 }
 
-int fileWrite(int fileId, void* data, int length) {
+static int fileWriteStdio(int fileId, void* data, int length) {
   return fwrite(data, 1, length, files[fileId]);
 }
 
-int filePrintf(int fileId, const char* format, ...) {
+static int filePrintfStdio(int fileId, const char* format, ...) {
   static char writeBuffer[1024];
 
   va_list args;
@@ -67,14 +67,14 @@ int filePrintf(int fileId, const char* format, ...) {
   vsnprintf(writeBuffer, 1024, format, args);
   va_end(args);
 
-  return fileWrite(fileId, writeBuffer, strlen(writeBuffer));
+  return fileWriteStdio(fileId, writeBuffer, strlen(writeBuffer));
 }
 
-int fileSeek(int fileId, long offset, int whence) {
+static int fileSeekStdio(int fileId, long offset, int whence) {
   return fseek(files[fileId], offset, whence);
 }
 
-FileEntry* fileListDirectory(const char* path, const char* extension, int* entryCount) {
+static FileEntry* fileListDirectoryStdio(const char* path, const char* extension, int* entryCount) {
   DIR* dir = opendir(path);
   if (!dir) {
     *entryCount = 0;
@@ -149,23 +149,39 @@ FileEntry* fileListDirectory(const char* path, const char* extension, int* entry
   return entries;
 }
 
-int fileGetCurrentDirectory(char* buffer, int bufferSize) {
+static int fileGetDefaultDirectoryStdio(char* buffer, int bufferSize) {
   return getcwd(buffer, bufferSize) ? 0 : -1;
 }
 
-int fileDirectoryExists(const char* path) {
+static int fileDirectoryExistsStdio(const char* path) {
   struct stat statBuf;
   return (stat(path, &statBuf) == 0 && S_ISDIR(statBuf.st_mode)) ? 1 : 0;
 }
 
-int fileDelete(const char* path) {
+static int fileDeleteStdio(const char* path) {
   return remove(path) == 0 ? 0 : -1;
 }
 
-int fileCreateDirectory(const char* path) {
+static int fileCreateDirectoryStdio(const char* path) {
   #ifdef _WIN32
   return mkdir(path) == 0 ? 0 : -1;
   #else
   return mkdir(path, 0755) == 0 ? 0 : -1;
   #endif
 }
+
+// Global file operations instance with stdio implementations
+FileOps fileOps = {
+  .open = fileOpenStdio,
+  .close = fileCloseStdio,
+  .read = fileReadStdio,
+  .readString = fileReadStringStdio,
+  .write = fileWriteStdio,
+  .printf = filePrintfStdio,
+  .seek = fileSeekStdio,
+  .delete = fileDeleteStdio,
+  .createDirectory = fileCreateDirectoryStdio,
+  .listDirectory = fileListDirectoryStdio,
+  .getDefaultDirectory = fileGetDefaultDirectoryStdio,
+  .directoryExists = fileDirectoryExistsStdio
+};

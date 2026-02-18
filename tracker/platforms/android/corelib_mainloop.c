@@ -4,9 +4,13 @@
 #include <SDL2/SDL.h>
 #include "corelib_gfx.h"
 #include "../sdl2/corelib_input.h"
+#include "asset_bundling.h"
 #include "common.h"
 
 #define FPS 60
+
+// Platform-specific file operations initialization
+extern void fileOpsInitPlatform(void);
 
 // Virtual gamepad state (shared with input and graphics)
 extern int vpadEnabled;
@@ -53,6 +57,14 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(enum MainLoopEvent event, i
   uint32_t start;
   uint32_t busytime = 0;
   SDL_Event event;
+
+  // Initialize platform-specific file operations
+  fileOpsInitPlatform();
+
+  // Initialize asset system
+  if (assetsInit() != 0) {
+    // Continue anyway - app can still work without bundled assets
+  }
 
   typedef struct {
     SDL_FingerID fingerId;
