@@ -92,56 +92,67 @@ static FileEntry* fileListDirectoryStdio(const char* path, const char* extension
     return NULL;
   }
 
-  while ((entry = readdir(dir))) {
-    // Skip hidden files and current directory
-    if (entry->d_name[0] == '.') {
-      // Allow ".." for parent directory
-      if (strcmp(entry->d_name, "..") != 0) continue;
-    }
+  // Check first entry - if it's neither "." nor "..", insert ".." (unless at root)
+  entry = readdir(dir);
+  if (entry && strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0 && strcmp(path, "/") != 0) {
+    strcpy(entries[0].name, "..");
+    entries[0].isDirectory = 1;
+    count = 1;
+  }
 
-    char fullPath[2048];
-    snprintf(fullPath, sizeof(fullPath), "%s%s%s", path, PATH_SEPARATOR_STR, entry->d_name);
+  // Process entries using do-while to handle first entry
+  if (entry) {
+    do {
+      // Skip hidden files and current directory
+      if (entry->d_name[0] == '.') {
+        // Allow ".." for parent directory
+        if (strcmp(entry->d_name, "..") != 0) continue;
+      }
 
-    struct stat statBuf;
-    if (stat(fullPath, &statBuf) != 0) continue;
+      char fullPath[2048];
+      snprintf(fullPath, sizeof(fullPath), "%s%s%s", path, PATH_SEPARATOR_STR, entry->d_name);
 
-    int isDir = S_ISDIR(statBuf.st_mode);
+      struct stat statBuf;
+      if (stat(fullPath, &statBuf) != 0) continue;
 
-    if (!isDir && extension && extension[0] != '\0') {
-      char* dot = strrchr(entry->d_name, '.');
-      if (!dot) continue;
+      int isDir = S_ISDIR(statBuf.st_mode);
 
-      int match = 0;
-      const char* pos = extension;
-      while (pos) {
-        if (strcasecmp(pos, dot) == 0 ||
-        (strncasecmp(pos, dot, strlen(dot)) == 0 && pos[strlen(dot)] == ',')) {
-          match = 1;
-          break;
+      if (!isDir && extension && extension[0] != '\0') {
+        char* dot = strrchr(entry->d_name, '.');
+        if (!dot) continue;
+
+        int match = 0;
+        const char* pos = extension;
+        while (pos) {
+          if (strcasecmp(pos, dot) == 0 ||
+          (strncasecmp(pos, dot, strlen(dot)) == 0 && pos[strlen(dot)] == ',')) {
+            match = 1;
+            break;
+          }
+          pos = strchr(pos, ',');
+          if (pos) pos++;
         }
-        pos = strchr(pos, ',');
-        if (pos) pos++;
+        if (!match) continue;
       }
-      if (!match) continue;
-    }
 
-    // Resize array if needed
-    if (count >= capacity) {
-      capacity *= 2;
-      FileEntry* newEntries = realloc(entries, capacity * sizeof(FileEntry));
-      if (!newEntries) {
-        free(entries);
-        closedir(dir);
-        *entryCount = 0;
-        return NULL;
+      // Resize array if needed
+      if (count >= capacity) {
+        capacity *= 2;
+        FileEntry* newEntries = realloc(entries, capacity * sizeof(FileEntry));
+        if (!newEntries) {
+          free(entries);
+          closedir(dir);
+          *entryCount = 0;
+          return NULL;
+        }
+        entries = newEntries;
       }
-      entries = newEntries;
-    }
 
-    strncpy(entries[count].name, entry->d_name, 255);
-    entries[count].name[255] = 0;
-    entries[count].isDirectory = isDir;
-    count++;
+      strncpy(entries[count].name, entry->d_name, 255);
+      entries[count].name[255] = 0;
+      entries[count].isDirectory = isDir;
+      count++;
+    } while ((entry = readdir(dir)));
   }
 
   closedir(dir);

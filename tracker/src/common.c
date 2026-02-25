@@ -3,7 +3,8 @@
 #include "corelib/corelib_gfx.h"
 #include <string.h>
 
-#define SETTINGS_FILENAME "settings.txt"
+static char settingsPath[PATH_LENGTH + 32];
+static char autosavePath[PATH_LENGTH + 32];
 
 AppSettings appSettings = {
   .screenWidth = 0, // 0 to auto-detect resolution
@@ -42,7 +43,11 @@ int* pChainRow;
 ChipNomadState* chipnomadState;
 
 int settingsSave(void) {
-  int fileId = fileOpen(SETTINGS_FILENAME, 1);
+  char defaultDir[PATH_LENGTH];
+  if (fileGetDefaultDirectory(defaultDir, PATH_LENGTH) != 0) return 1;
+  snprintf(settingsPath, sizeof(settingsPath), "%s%ssettings.txt", defaultDir, PATH_SEPARATOR_STR);
+  
+  int fileId = fileOpen(settingsPath, 1);
   if (fileId == -1) return 1;
 
   filePrintf(fileId, "screenWidth: %d\n", appSettings.screenWidth);
@@ -91,7 +96,11 @@ int settingsSave(void) {
 }
 
 int settingsLoad(void) {
-  int fileId = fileOpen(SETTINGS_FILENAME, 0);
+  char defaultDir[PATH_LENGTH];
+  if (fileGetDefaultDirectory(defaultDir, PATH_LENGTH) != 0) return 1;
+  snprintf(settingsPath, sizeof(settingsPath), "%s%ssettings.txt", defaultDir, PATH_SEPARATOR_STR);
+  
+  int fileId = fileOpen(settingsPath, 0);
   if (fileId == -1) return 1;
 
   char* line;
@@ -254,7 +263,10 @@ int loadTheme(const char* path) {
 }
 
 const char* getAutosavePath(void) {
-  return AUTOSAVE_FILENAME;
+  char defaultDir[PATH_LENGTH];
+  if (fileGetDefaultDirectory(defaultDir, PATH_LENGTH) != 0) return AUTOSAVE_FILENAME;
+  snprintf(autosavePath, sizeof(autosavePath), "%s%s%s", defaultDir, PATH_SEPARATOR_STR, AUTOSAVE_FILENAME);
+  return autosavePath;
 }
 
 void extractFilenameWithoutExtension(const char* path, char* output, int maxLength) {

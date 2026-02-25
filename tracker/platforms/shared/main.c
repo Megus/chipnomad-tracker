@@ -8,7 +8,15 @@
 #include "app.h"
 #include "common.h"
 
+#if defined(__ANDROID__) || defined(MACOS_BUILD)
+extern void fileOpsInitPlatform(void);
+#endif
+
 int main(int argv, char** args) {
+#if defined(__ANDROID__) || defined(MACOS_BUILD)
+  fileOpsInitPlatform();
+#endif
+
   settingsLoad();
 
   // Load custom font before gfxSetup so it uses the correct font

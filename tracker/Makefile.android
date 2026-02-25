@@ -14,9 +14,9 @@ NDK_PATH ?= $(ANDROID_NDK_ROOT)
 TOOLCHAIN = $(NDK_PATH)/toolchains/llvm/prebuilt/darwin-x86_64
 API_LEVEL = 26
 
-# SDL2 paths
+# SDL2 paths - use libraries from jniLibs
 SDL2_INCLUDE = build/sdl2-android/include
-SDL2_LIB = build/sdl2-android/libs
+SDL2_LIB = platforms/android/app/src/main/jniLibs
 
 # Target architectures
 ARCH ?= arm64-v8a

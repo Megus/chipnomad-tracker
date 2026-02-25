@@ -9,9 +9,6 @@
 
 #define FPS 60
 
-// Platform-specific file operations initialization
-extern void fileOpsInitPlatform(void);
-
 // Virtual gamepad state (shared with input and graphics)
 extern int vpadEnabled;
 extern SDL_Rect dpadRect, aButtonRect, bButtonRect, startButtonRect, selectButtonRect;
@@ -57,9 +54,6 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(enum MainLoopEvent event, i
   uint32_t start;
   uint32_t busytime = 0;
   SDL_Event event;
-
-  // Initialize platform-specific file operations
-  fileOpsInitPlatform();
 
   // Initialize asset system
   if (assetsInit() != 0) {
