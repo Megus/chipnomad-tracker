@@ -6,6 +6,9 @@ enum MainLoopEvent {
   eventKeyDown,
   eventKeyUp,
   eventExit,
+  eventSleep,
+  eventWake,
+  eventFullRedraw,
 };
 
 enum Key {

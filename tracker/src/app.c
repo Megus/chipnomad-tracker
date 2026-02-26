@@ -342,5 +342,30 @@ void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
     // Save settings on exit
     settingsSave();
     break;
+  case eventSleep:
+    // Pause audio when app goes to background
+    audioManager.pause();
+    if (chipnomadState) {
+      // Stop playback to avoid state issues
+      playbackStop(&chipnomadState->playbackState);
+      // Auto-save project
+      projectSave(&chipnomadState->project, getAutosavePath());
+    }
+    // Save settings
+    settingsSave();
+    break;
+  case eventWake:
+    // Resume audio when app comes back to foreground
+    audioManager.resume();
+    break;
+  case eventFullRedraw:
+    // Force full screen redraw
+    gfxSetBgColor(appSettings.colorScheme.background);
+    gfxClear();
+    if (currentScreen) {
+      currentScreen->fullRedraw();
+      drawScreenMap();
+    }
+    break;
   }
 }

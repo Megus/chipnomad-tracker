@@ -6,6 +6,7 @@
 #include "../sdl2/corelib_input.h"
 #include "asset_bundling.h"
 #include "common.h"
+#include "../../../chipnomad_lib/corelib/corelib_file.h"
 
 #define FPS 60
 
@@ -54,6 +55,7 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(enum MainLoopEvent event, i
   uint32_t start;
   uint32_t busytime = 0;
   SDL_Event event;
+  int wakeRedrawFrames = 0;
 
   // Initialize asset system
   if (assetsInit() != 0) {
@@ -78,6 +80,19 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(enum MainLoopEvent event, i
       if (event.type == SDL_QUIT) {
         onEvent(eventExit, 0, NULL);
         return;
+      } else if (event.type == SDL_APP_WILLENTERBACKGROUND) {
+        onEvent(eventSleep, 0, NULL);
+      } else if (event.type == SDL_APP_DIDENTERFOREGROUND) {
+        onEvent(eventWake, 0, NULL);
+        wakeRedrawFrames = FPS; // Redraw for 1 second
+      } else if (event.type == SDL_RENDER_TARGETS_RESET || event.type == SDL_RENDER_DEVICE_RESET) {
+        wakeRedrawFrames = FPS;
+      } else if (event.type == SDL_WINDOWEVENT) {
+        if (event.window.event == SDL_WINDOWEVENT_RESTORED || 
+            event.window.event == SDL_WINDOWEVENT_EXPOSED ||
+            event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
+          wakeRedrawFrames = FPS;
+        }
       } else if (event.type == SDL_FINGERDOWN) {
         int x, y;
         SDL_GetWindowSize(SDL_GetWindowFromID(event.tfinger.windowID), &x, &y);
@@ -107,6 +122,12 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(enum MainLoopEvent event, i
           }
         }
       }
+    }
+
+    // Trigger full redraw for multiple frames after app returns to foreground
+    if (wakeRedrawFrames > 0) {
+      onEvent(eventFullRedraw, 0, NULL);
+      wakeRedrawFrames--;
     }
 
     onEvent(eventTick, 0, NULL);
