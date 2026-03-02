@@ -3,12 +3,14 @@
 #include <stdint.h>
 #include <SDL2/SDL.h>
 #include "corelib_gfx.h"
-#include "../sdl2/corelib_input.h"
+#include "corelib_input.h"
 #include "asset_bundling.h"
 #include "common.h"
 #include "../../../chipnomad_lib/corelib/corelib_file.h"
 
 #define FPS 60
+
+static SDL_GameController* gameController = NULL;
 
 // Virtual gamepad state (shared with input and graphics)
 extern int vpadEnabled;
@@ -50,6 +52,35 @@ static int getTouchButton(int x, int y) {
   return -1;
 }
 
+static int decodeGamepadButton(int button) {
+  switch (button) {
+    case SDL_CONTROLLER_BUTTON_DPAD_UP: return keyUp;
+    case SDL_CONTROLLER_BUTTON_DPAD_DOWN: return keyDown;
+    case SDL_CONTROLLER_BUTTON_DPAD_LEFT: return keyLeft;
+    case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: return keyRight;
+    case SDL_CONTROLLER_BUTTON_A: return keyEdit;
+    case SDL_CONTROLLER_BUTTON_B: return keyOpt;
+    case SDL_CONTROLLER_BUTTON_START: return keyPlay;
+    case SDL_CONTROLLER_BUTTON_BACK:
+    case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+    case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: return keyShift;
+    default: return 0;
+  }
+}
+
+static void initGamepad(void) {
+  vpadEnabled = 1; // Enable touch controls by default
+  for (int i = 0; i < SDL_NumJoysticks(); i++) {
+    if (SDL_IsGameController(i)) {
+      gameController = SDL_GameControllerOpen(i);
+      if (gameController) {
+        vpadEnabled = 0; // Hide touch controls when gamepad found
+        break;
+      }
+    }
+  }
+}
+
 void mainLoopRun(void (*draw)(void), void (*onEvent)(enum MainLoopEvent event, int value, void* userdata)) {
   uint32_t delay = 1000 / FPS;
   uint32_t start;
@@ -61,6 +92,9 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(enum MainLoopEvent event, i
   if (assetsInit() != 0) {
     // Continue anyway - app can still work without bundled assets
   }
+
+  // Find and open first valid game controller (skip accelerometers)
+  initGamepad();
 
   typedef struct {
     SDL_FingerID fingerId;
@@ -79,16 +113,34 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(enum MainLoopEvent event, i
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT) {
         onEvent(eventExit, 0, NULL);
+        if (gameController) {
+          SDL_GameControllerClose(gameController);
+          gameController = NULL;
+        }
         return;
+      } else if (event.type == SDL_APP_TERMINATING) {
+        if (gameController) {
+          SDL_GameControllerClose(gameController);
+          gameController = NULL;
+        }
       } else if (event.type == SDL_APP_WILLENTERBACKGROUND) {
         onEvent(eventSleep, 0, NULL);
       } else if (event.type == SDL_APP_DIDENTERFOREGROUND) {
         onEvent(eventWake, 0, NULL);
         wakeRedrawFrames = FPS; // Redraw for 1 second
+        // Health check: verify controller is still connected
+        if (gameController && !SDL_GameControllerGetAttached(gameController)) {
+          SDL_GameControllerClose(gameController);
+          gameController = NULL;
+        }
+        // Check for gamepad on wake (user may have connected controller)
+        if (!gameController) {
+          initGamepad();
+        }
       } else if (event.type == SDL_RENDER_TARGETS_RESET || event.type == SDL_RENDER_DEVICE_RESET) {
         wakeRedrawFrames = FPS;
       } else if (event.type == SDL_WINDOWEVENT) {
-        if (event.window.event == SDL_WINDOWEVENT_RESTORED || 
+        if (event.window.event == SDL_WINDOWEVENT_RESTORED ||
             event.window.event == SDL_WINDOWEVENT_EXPOSED ||
             event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
           wakeRedrawFrames = FPS;
@@ -120,6 +172,28 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(enum MainLoopEvent event, i
             numActiveFingers--;
             break;
           }
+        }
+      }
+      else if (event.type == SDL_CONTROLLERBUTTONDOWN || event.type == SDL_CONTROLLERBUTTONUP) {
+        if (inputRawCallback) {
+          inputRawCallback((InputCode){inputGamepad, event.cbutton.button}, event.type == SDL_CONTROLLERBUTTONDOWN);
+        }
+
+        enum Key key = decodeGamepadButton(event.cbutton.button);
+        if (key != 0) {
+          onEvent(event.type == SDL_CONTROLLERBUTTONDOWN ? eventKeyDown : eventKeyUp, key, NULL);
+        }
+      }
+      else if (event.type == SDL_CONTROLLERDEVICEADDED) {
+        if (!gameController) {
+          initGamepad();
+        }
+      }
+      else if (event.type == SDL_CONTROLLERDEVICEREMOVED) {
+        if (gameController && event.cdevice.which == SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(gameController))) {
+          SDL_GameControllerClose(gameController);
+          gameController = NULL;
+          vpadEnabled = 1; // Show touch controls
         }
       }
     }

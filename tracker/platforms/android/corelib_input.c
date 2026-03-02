@@ -1,10 +1,10 @@
-#include "../sdl2/corelib_input.h"
+#include "corelib_input.h"
 #include "corelib_mainloop.h"
 #include <SDL2/SDL.h>
 #include <stdio.h>
 
 // Callback for raw input capture (required by SDL2 input system)
-void (*inputRawCallback)(int32_t keyCode, int isDown) = NULL;
+void (*inputRawCallback)(InputCode input, int isDown) = NULL;
 
 // Virtual gamepad state (shared with graphics)
 int vpadEnabled = 1;
@@ -153,7 +153,7 @@ void inputInitDefaultKeyMapping(void) {
   // Android uses touch controls, no key mapping needed
 }
 
-const char* inputGetKeyName(int32_t keyCode) {
-  if (keyCode == 0) return "---";
+const char* inputGetKeyName(InputCode input) {
+  if (input.deviceType == inputNone || input.code == 0) return "---";
   return "Touch";
 }

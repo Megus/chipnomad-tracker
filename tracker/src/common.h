@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "chipnomad_lib.h"
+#include "corelib/corelib_input.h"
 #include "corelib_mainloop.h"
 
 #define AUTOSAVE_FILENAME "autosave.cnm"
@@ -26,17 +27,15 @@ typedef struct ColorScheme {
 } ColorScheme;
 
 // Key mapping: 8 buttons × 3 keys each
-// Stored as SDL keycodes (keyboard) or button IDs (controller)
-// 0 = unmapped
 typedef struct KeyMapping {
-  int32_t keyUp[3];
-  int32_t keyDown[3];
-  int32_t keyLeft[3];
-  int32_t keyRight[3];
-  int32_t keyEdit[3];   // A button
-  int32_t keyOpt[3];    // B button
-  int32_t keyPlay[3];   // Start
-  int32_t keyShift[3];  // Select
+  InputCode keyUp[3];
+  InputCode keyDown[3];
+  InputCode keyLeft[3];
+  InputCode keyRight[3];
+  InputCode keyEdit[3];
+  InputCode keyOpt[3];
+  InputCode keyPlay[3];
+  InputCode keyShift[3];
 } KeyMapping;
 
 typedef struct AppSettings {
@@ -50,7 +49,6 @@ typedef struct AppSettings {
   float mixVolume;
   int quality;
   int pitchConflictWarning;
-  int gamepadSwapAB;
   KeyMapping keyMapping;
   ColorScheme colorScheme;
   char themeName[THEME_NAME_LENGTH + 1];

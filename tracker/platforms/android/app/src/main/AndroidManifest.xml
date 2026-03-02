@@ -18,7 +18,7 @@
         
         <activity android:name="ChipNomadActivity"
             android:label="ChipNomad"
-            android:screenOrientation="portrait"
+            android:screenOrientation="fullSensor"
             android:configChanges="keyboardHidden|orientation|screenSize"
             android:exported="true">
             <intent-filter>

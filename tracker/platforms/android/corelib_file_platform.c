@@ -12,7 +12,7 @@ static void createDirectoryRecursive(const char* path) {
     snprintf(tmp, sizeof(tmp), "%s", path);
     len = strlen(tmp);
     if (tmp[len - 1] == '/') tmp[len - 1] = 0;
-    
+
     for (p = tmp + 1; *p; p++) {
         if (*p == '/') {
             *p = 0;
@@ -28,7 +28,7 @@ static int fileGetDefaultDirectoryAndroid(char* buffer, int bufferSize) {
     const char* dataPath = assetsGetDataPath();
     createDirectoryRecursive(dataPath);
     snprintf(buffer, bufferSize, "%s", dataPath);
-    LOGD("Default directory: %s", buffer);
+    //LOGD("Default directory: %s", buffer);
     return 0;
 }
 

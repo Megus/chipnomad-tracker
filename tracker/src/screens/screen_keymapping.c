@@ -3,7 +3,7 @@
 #include "corelib_gfx.h"
 #include "common.h"
 #include "screens.h"
-#include "../platforms/sdl2/corelib_input.h"
+#include "corelib_input.h"
 #include <string.h>
 
 typedef enum {
@@ -21,7 +21,7 @@ static const char* buttonNames[] = {
   "Up", "Down", "Left", "Right", "Edit (A)", "Opt (B)", "Play", "Shift"
 };
 
-static int32_t* getKeySlot(int row, int col) {
+static InputCode* getKeySlot(int row, int col) {
   switch (row) {
     case 0: return &appSettings.keyMapping.keyUp[col];
     case 1: return &appSettings.keyMapping.keyDown[col];
@@ -35,27 +35,28 @@ static int32_t* getKeySlot(int row, int col) {
   return NULL;
 }
 
-static void clearConflicts(int32_t keyCode, int skipRow, int skipCol) {
-  if (keyCode == 0) return;
+static void clearConflicts(InputCode keyCode, int skipRow, int skipCol) {
+  if (keyCode.deviceType == inputNone || keyCode.code == 0) return;
 
   for (int row = 0; row < 8; row++) {
     for (int col = 0; col < 3; col++) {
       if (row == skipRow && col == skipCol) continue;
-      int32_t* slot = getKeySlot(row, col);
-      if (slot && *slot == keyCode) {
-        *slot = 0;
+      InputCode* slot = getKeySlot(row, col);
+      if (slot && slot->deviceType == keyCode.deviceType && slot->code == keyCode.code) {
+        slot->deviceType = inputNone;
+        slot->code = 0;
       }
     }
   }
 }
 
-static void onRawInput(int32_t keyCode, int isDown) {
+static void onRawInput(InputCode input, int isDown) {
   if (!isDown) return;
 
-  int32_t* slot = getKeySlot(captureRow, captureCol);
+  InputCode* slot = getKeySlot(captureRow, captureCol);
   if (slot) {
-    clearConflicts(keyCode, captureRow, captureCol);
-    *slot = keyCode;
+    clearConflicts(input, captureRow, captureCol);
+    *slot = input;
   }
 
   inputRawCallback = NULL;
@@ -85,7 +86,7 @@ static void drawStatic(void) {
 
 static void drawCursor(int col, int row) {
   if (row < 8) {
-    int32_t* slot = getKeySlot(row, col);
+    InputCode* slot = getKeySlot(row, col);
     int width = slot ? strlen(inputGetKeyName(*slot)) : 3;
     gfxCursor(11 + col * 8, row + 2, width);
   } else if (row == 8) {
@@ -98,9 +99,9 @@ static void drawCursor(int col, int row) {
 static void drawField(int col, int row, int state) {
   if (row < 8) {
     gfxClearRect(11 + col * 8, row + 2, 7, 1);
-    int32_t* slot = getKeySlot(row, col);
+    InputCode* slot = getKeySlot(row, col);
     if (slot) {
-      int isEmpty = (*slot == 0);
+      int isEmpty = (slot->deviceType == inputNone || slot->code == 0);
       if (state == stateFocus) {
         gfxSetFgColor(appSettings.colorScheme.textValue);
       } else if (isEmpty) {
@@ -139,8 +140,11 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       fullRedraw();
       return 1;
     } else if (action == editClear) {
-      int32_t* slot = getKeySlot(row, col);
-      if (slot) *slot = 0;
+      InputCode* slot = getKeySlot(row, col);
+      if (slot) {
+        slot->deviceType = inputNone;
+        slot->code = 0;
+      }
       return 1;
     }
   } else if (row == 8 && action == editTap) {

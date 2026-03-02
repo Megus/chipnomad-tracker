@@ -10,7 +10,7 @@
 #include "waveform_display.h"
 
 #if defined(DESKTOP_BUILD) || defined(PORTMASTER_BUILD)
-#include "../platforms/sdl2/corelib_input.h"
+#include "corelib_input.h"
 #endif
 
 // Input handling vars:
@@ -133,7 +133,7 @@ static void appInput(int isKeyDown, int keys, int tapCount) {
 void appSetup(void) {
   // Initialize default key mappings if not loaded from settings
 #if defined(DESKTOP_BUILD) || defined(PORTMASTER_BUILD)
-  if (appSettings.keyMapping.keyUp[0] == 0) {
+  if (appSettings.keyMapping.keyUp[0].deviceType == inputNone && appSettings.keyMapping.keyUp[0].code == 0) {
     inputInitDefaultKeyMapping();
   }
 #endif
@@ -250,21 +250,6 @@ void appDraw(void) {
 void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
   static int dPadMask = keyLeft | keyRight | keyUp | keyDown;
   static int doubleTapMask = keyEdit | keyOpt;
-  static int cachedGamepadSwapAB = 0;
-
-  // Update gamepad swap setting only when no keys are pressed
-  if (pressedButtons == 0) {
-    cachedGamepadSwapAB = appSettings.gamepadSwapAB;
-  }
-
-  // Handle gamepad A/B button swap
-  if (cachedGamepadSwapAB) {
-    if (value == keyEdit) {
-      value = keyOpt;
-    } else if (value == keyOpt) {
-      value = keyEdit;
-    }
-  }
 
   switch (event) {
   case eventKeyDown:

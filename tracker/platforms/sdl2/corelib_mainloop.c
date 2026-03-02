@@ -66,14 +66,14 @@ static int decodeKey(int sym) {
   // Check custom key mappings first
   if (sym != 0) {
     for (int i = 0; i < 3; i++) {
-      if (sym == appSettings.keyMapping.keyUp[i]) return keyUp;
-      if (sym == appSettings.keyMapping.keyDown[i]) return keyDown;
-      if (sym == appSettings.keyMapping.keyLeft[i]) return keyLeft;
-      if (sym == appSettings.keyMapping.keyRight[i]) return keyRight;
-      if (sym == appSettings.keyMapping.keyEdit[i]) return keyEdit;
-      if (sym == appSettings.keyMapping.keyOpt[i]) return keyOpt;
-      if (sym == appSettings.keyMapping.keyPlay[i]) return keyPlay;
-      if (sym == appSettings.keyMapping.keyShift[i]) return keyShift;
+      if (appSettings.keyMapping.keyUp[i].deviceType == inputKeyboard && sym == appSettings.keyMapping.keyUp[i].code) return keyUp;
+      if (appSettings.keyMapping.keyDown[i].deviceType == inputKeyboard && sym == appSettings.keyMapping.keyDown[i].code) return keyDown;
+      if (appSettings.keyMapping.keyLeft[i].deviceType == inputKeyboard && sym == appSettings.keyMapping.keyLeft[i].code) return keyLeft;
+      if (appSettings.keyMapping.keyRight[i].deviceType == inputKeyboard && sym == appSettings.keyMapping.keyRight[i].code) return keyRight;
+      if (appSettings.keyMapping.keyEdit[i].deviceType == inputKeyboard && sym == appSettings.keyMapping.keyEdit[i].code) return keyEdit;
+      if (appSettings.keyMapping.keyOpt[i].deviceType == inputKeyboard && sym == appSettings.keyMapping.keyOpt[i].code) return keyOpt;
+      if (appSettings.keyMapping.keyPlay[i].deviceType == inputKeyboard && sym == appSettings.keyMapping.keyPlay[i].code) return keyPlay;
+      if (appSettings.keyMapping.keyShift[i].deviceType == inputKeyboard && sym == appSettings.keyMapping.keyShift[i].code) return keyShift;
     }
   }
 
@@ -95,19 +95,16 @@ static int decodeKey(int sym) {
 
 #ifdef GAMEPAD_SUPPORT
 static int decodeGamepadButton(int button) {
-  // Convert button to negative value for key mapping lookup
-  int mappedButton = -button;
-
   // Check custom key mappings first
   for (int i = 0; i < 3; i++) {
-    if (mappedButton == appSettings.keyMapping.keyUp[i]) return keyUp;
-    if (mappedButton == appSettings.keyMapping.keyDown[i]) return keyDown;
-    if (mappedButton == appSettings.keyMapping.keyLeft[i]) return keyLeft;
-    if (mappedButton == appSettings.keyMapping.keyRight[i]) return keyRight;
-    if (mappedButton == appSettings.keyMapping.keyEdit[i]) return keyEdit;
-    if (mappedButton == appSettings.keyMapping.keyOpt[i]) return keyOpt;
-    if (mappedButton == appSettings.keyMapping.keyPlay[i]) return keyPlay;
-    if (mappedButton == appSettings.keyMapping.keyShift[i]) return keyShift;
+    if (appSettings.keyMapping.keyUp[i].deviceType == inputGamepad && button == appSettings.keyMapping.keyUp[i].code) return keyUp;
+    if (appSettings.keyMapping.keyDown[i].deviceType == inputGamepad && button == appSettings.keyMapping.keyDown[i].code) return keyDown;
+    if (appSettings.keyMapping.keyLeft[i].deviceType == inputGamepad && button == appSettings.keyMapping.keyLeft[i].code) return keyLeft;
+    if (appSettings.keyMapping.keyRight[i].deviceType == inputGamepad && button == appSettings.keyMapping.keyRight[i].code) return keyRight;
+    if (appSettings.keyMapping.keyEdit[i].deviceType == inputGamepad && button == appSettings.keyMapping.keyEdit[i].code) return keyEdit;
+    if (appSettings.keyMapping.keyOpt[i].deviceType == inputGamepad && button == appSettings.keyMapping.keyOpt[i].code) return keyOpt;
+    if (appSettings.keyMapping.keyPlay[i].deviceType == inputGamepad && button == appSettings.keyMapping.keyPlay[i].code) return keyPlay;
+    if (appSettings.keyMapping.keyShift[i].deviceType == inputGamepad && button == appSettings.keyMapping.keyShift[i].code) return keyShift;
   }
 
   // Fallback to default gamepad mappings
@@ -163,7 +160,7 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(enum MainLoopEvent event, i
         } else {
           // Raw input callback for key mapping screen
           if (inputRawCallback) {
-            inputRawCallback(event.key.keysym.sym, event.type == SDL_KEYDOWN);
+            inputRawCallback((InputCode){inputKeyboard, event.key.keysym.sym}, event.type == SDL_KEYDOWN);
           }
 
           enum Key key = decodeKey(event.key.keysym.sym);
@@ -173,7 +170,7 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(enum MainLoopEvent event, i
       } else if (event.type == SDL_CONTROLLERBUTTONDOWN || event.type == SDL_CONTROLLERBUTTONUP) {
         // Raw input callback for key mapping screen (negative for controller)
         if (inputRawCallback) {
-          inputRawCallback(-event.cbutton.button, event.type == SDL_CONTROLLERBUTTONDOWN);
+          inputRawCallback((InputCode){inputGamepad, event.cbutton.button}, event.type == SDL_CONTROLLERBUTTONDOWN);
         }
 
         enum Key key = decodeGamepadButton(event.cbutton.button);
