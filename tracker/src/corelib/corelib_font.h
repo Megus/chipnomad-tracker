@@ -13,7 +13,7 @@ typedef struct {
 // Font with multiple resolutions
 typedef struct {
   char name[16];
-  FontResolution resolutions[5];  // Up to 5 resolutions
+  FontResolution resolutions[6];  // Up to 6 resolutions
   int resolutionCount;
 } Font;
 
