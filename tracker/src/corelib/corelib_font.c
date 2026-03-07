@@ -9,6 +9,7 @@
 #define TEXT_COLS 40
 #define TEXT_ROWS 20
 
+extern uint8_t font6x8[];
 extern uint8_t font12x16[];
 extern uint8_t font16x24[];
 extern uint8_t font24x36[];
@@ -18,13 +19,14 @@ extern uint8_t font48x54[];
 static const Font defaultFont = {
   .name = "Default",
   .resolutions = {
+    {6, 8, font6x8},
     {12, 16, font12x16},
     {16, 24, font16x24},
     {24, 36, font24x36},
     {32, 48, font32x48},
     {48, 54, font48x54}
   },
-  .resolutionCount = 5
+  .resolutionCount = 6
 };
 
 static const Font* currentFont = &defaultFont;
