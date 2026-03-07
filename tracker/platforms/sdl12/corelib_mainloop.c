@@ -30,6 +30,29 @@
 #define BTN_VOLUME_DOWN 45
 #define BTN_POWER       0
 #define BTN_EXIT        0
+#elif FUNKEY_BUILD
+// Funkey S/RG Nano mapping
+#define BTN_UP          SDLK_u
+#define BTN_DOWN        SDLK_d
+#define BTN_LEFT        SDLK_l
+#define BTN_RIGHT       SDLK_r
+#define BTN_A           SDLK_a
+#define BTN_B           SDLK_b
+#define BTN_X           SDLK_x
+#define BTN_Y           SDLK_y
+#define BTN_Z           0
+#define BTN_L1          0
+#define BTN_R1          0
+#define BTN_L2          0
+#define BTN_R2          0
+#define BTN_SELECT      SDLK_m
+#define BTN_START       SDLK_s
+#define BTN_MENU        306
+#define BTN_VOLUME_UP   61
+#define BTN_VOLUME_DOWN 45
+#define BTN_POWER       0
+#define BTN_EXIT        0
+
 #else
 // RG35xx mapping
 #define BTN_UP          119
