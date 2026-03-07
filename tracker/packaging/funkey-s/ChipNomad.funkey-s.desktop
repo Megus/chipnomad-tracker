@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=ChipNomad
 Comment=A multi-platform tracker with LSDJ-like interface
-Exec=chipnomad
+Exec=chipnomad.funkey.elf
 Icon=chipnomad
 Categories=applications

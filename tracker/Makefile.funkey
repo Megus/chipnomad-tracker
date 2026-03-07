@@ -1,0 +1,39 @@
+# Funkey S / RG Nano makefile
+
+# Funkey S platform identifier
+PLATFORM = funkey
+
+include Makefile.common
+
+# funkey-specific settings
+LIBS = $(COMMON_LIBS) platforms/sdl12
+OUTPUT_EXT =
+# DOCKER = docker run --platform linux/amd64 --rm --user $$(id -u):$$(id -g) -v`pwd`/..:/src -w/src/tracker
+
+#XTRA_CFLAGS = -I${SYSROOT}/usr/include -L${SYSROOT}/usr/lib
+XTRA_CFLAGS= -DFUNKEY_BUILD
+XTRA_LIBS = -lSDL
+CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(XTRA_CFLAGS)
+
+.PHONY: .funkey.elf
+.funkey.elf:
+	mkdir -p $(BUILD)
+	$(CC) $(CFLAGS) $(XTRA_LIBS) -o $(BUILD)/chipnomad.funkey.elf
+
+#.PHONY: funkey
+#funkey:
+#	$(DOCKER) nfriedly/miyoo-toolchain:steward make -f Makefile.funkey .funkey CC=gcc
+
+# funkey deployment
+APP := ChipNomad
+
+.PHONY: funkey-deploy
+funkey-deploy: .funkey.elf
+	echo TODO actual deploy
+	cp packaging/funkey-s/ChipNomad.funkey-s.desktop $(BUILD)/
+	cp packaging/funkey-s/chipnomad.png $(BUILD)/
+	mksquashfs $(BUILD)/ $(BUILD)/chipnomad.opk
+
+.PHONY: clean
+clean:
+	rm -rf $(BUILD)
