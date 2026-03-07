@@ -4,8 +4,16 @@
 #include "corelib_gfx.h"
 #include "corelib_font.h"
 
+#ifdef FUNKEY_BUILD
+#define WINDOW_WIDTH (240)
+#define WINDOW_HEIGHT (240)
+#define WINDOW_BPP (16)
+#else
 #define WINDOW_WIDTH (640)
 #define WINDOW_HEIGHT (480)
+#define WINDOW_BPP (32)
+#endif
+
 #define PRINT_BUFFER_SIZE (256)
 
 #define CHAR_X(x) ((x) * fontW * 8)
@@ -64,7 +72,7 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
     return 1;
   }
 
-  sdlScreen = SDL_SetVideoMode(WINDOW_WIDTH, WINDOW_HEIGHT, 32, SDL_HWSURFACE);
+  sdlScreen = SDL_SetVideoMode(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_BPP, SDL_HWSURFACE);
   if (!sdlScreen) {
     printf("SDL1.2 Set Video Mode Error: %s\n", SDL_GetError());
     SDL_Quit();
