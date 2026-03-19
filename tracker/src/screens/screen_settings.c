@@ -43,7 +43,7 @@ static void fontLoadCallback(const char* path) {
     gfxReloadFont();
     strncpy(appSettings.fontPath, path, PATH_LENGTH);
     appSettings.fontPath[PATH_LENGTH] = 0;
-    
+
     // Extract folder path
     char* lastSeparator = strrchr(path, PATH_SEPARATOR);
     if (lastSeparator) {
@@ -53,7 +53,7 @@ static void fontLoadCallback(const char* path) {
         appSettings.fontFolderPath[pathLen] = '\0';
       }
     }
-    
+
     screenMessage(MESSAGE_TIME, "Loaded: %s", font->name);
   } else {
     screenMessage(MESSAGE_TIME, "Failed to load font");
@@ -166,13 +166,11 @@ int settingsOnEdit(int col, int row, enum CellEditAction action) {
     }
     return handled;
   } else if (row == 3 && col == 0 && action == editTap) {
-#if defined(DESKTOP_BUILD) || defined(PORTMASTER_BUILD)
     screenSetup(&screenKeyMapping, 0);
-#endif
     return 0;
   } else if (row == 4 && col == 0 && action == editTap) {
-    fileBrowserSetup("LOAD FONT", ".cnfont", appSettings.fontFolderPath, 
-      (void (*)(const char*))fontLoadCallback, 
+    fileBrowserSetup("LOAD FONT", ".cnfont", appSettings.fontFolderPath,
+      (void (*)(const char*))fontLoadCallback,
       (void (*)(void))fontCancelCallback);
     screenSetup(&screenFileBrowser, 0);
     return 0;

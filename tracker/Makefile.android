@@ -5,8 +5,9 @@ PLATFORM = android
 
 include Makefile.common
 
-# Android-specific settings - use common libs + android platform
-LIBS = $(COMMON_LIBS) platforms/android
+# Android-specific settings - use common libs + sdl2 platform with mobile features
+LIBS = $(COMMON_LIBS) platforms/sdl2
+ANDROID_SOURCES = platforms/android/corelib_assets.c
 OUTPUT_EXT =  
 
 # NDK settings
@@ -14,8 +15,8 @@ NDK_PATH ?= $(ANDROID_NDK_ROOT)
 TOOLCHAIN = $(NDK_PATH)/toolchains/llvm/prebuilt/darwin-x86_64
 API_LEVEL = 26
 
-# SDL2 paths - use libraries from jniLibs
-SDL2_INCLUDE = build/sdl2-android/include
+# SDL2 paths
+SDL2_INCLUDE = /opt/homebrew/include
 SDL2_LIB = platforms/android/app/src/main/jniLibs
 
 # Target architectures
@@ -34,10 +35,10 @@ AR = $(TOOLCHAIN)/bin/llvm-ar
 STRIP = $(TOOLCHAIN)/bin/llvm-strip
 
 # Android-specific flags
-XTRA_CFLAGS = -DANDROID_BUILD -fPIC -I$(SDL2_INCLUDE)
+XTRA_CFLAGS = -DANDROID_BUILD -DMOBILE_BUILD -DMOBILE_LIFECYCLE -DTOUCH_INPUT -DGAMEPAD_SUPPORT -fPIC -I$(SDL2_INCLUDE)
 XTRA_LIBS = -L$(SDL2_LIB)/$(ARCH) -lSDL2 -lm -llog -landroid
 
-CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(XTRA_CFLAGS)
+CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(ANDROID_SOURCES) $(XTRA_CFLAGS)
 OUTPUT = -o $(BUILD_DIR)/libchipnomad.so
 
 .PHONY: android android-lib

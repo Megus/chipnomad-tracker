@@ -13,7 +13,7 @@ static FILE* files[CORELIB_MAX_OPEN_FILES];
 static int currentFileId = 0;
 static char stringBuffer[1024];
 
-static int fileOpenStdio(const char* path, int isWriting) {
+int fileOpen(const char* path, int isWriting) {
   int fileId = currentFileId;
 
   FILE* file = fopen(path, isWriting ? "wb" : "rb");
@@ -31,16 +31,16 @@ static int fileOpenStdio(const char* path, int isWriting) {
   return fileId;
 }
 
-static int fileCloseStdio(int fileId) {
+int fileClose(int fileId) {
   fclose(files[fileId]);
   return 0;
 }
 
-static int fileReadStdio(int fileId, void* buffer, int maxLength) {
+int fileRead(int fileId, void* buffer, int maxLength) {
   return fread(buffer, 1, maxLength, files[fileId]);
 }
 
-static char* fileReadStringStdio(int fileId) {
+char* fileReadString(int fileId) {
   char* r = fgets(stringBuffer, 1024, files[fileId]);
 
   if (r == NULL) return NULL;
@@ -55,11 +55,11 @@ static char* fileReadStringStdio(int fileId) {
   return stringBuffer;
 }
 
-static int fileWriteStdio(int fileId, void* data, int length) {
+int fileWrite(int fileId, void* data, int length) {
   return fwrite(data, 1, length, files[fileId]);
 }
 
-static int filePrintfStdio(int fileId, const char* format, ...) {
+int filePrintf(int fileId, const char* format, ...) {
   static char writeBuffer[1024];
 
   va_list args;
@@ -67,14 +67,14 @@ static int filePrintfStdio(int fileId, const char* format, ...) {
   vsnprintf(writeBuffer, 1024, format, args);
   va_end(args);
 
-  return fileWriteStdio(fileId, writeBuffer, strlen(writeBuffer));
+  return fileWrite(fileId, writeBuffer, strlen(writeBuffer));
 }
 
-static int fileSeekStdio(int fileId, long offset, int whence) {
+int fileSeek(int fileId, long offset, int whence) {
   return fseek(files[fileId], offset, whence);
 }
 
-static FileEntry* fileListDirectoryStdio(const char* path, const char* extension, int* entryCount) {
+FileEntry* fileListDirectory(const char* path, const char* extension, int* entryCount) {
   DIR* dir = opendir(path);
   if (!dir) {
     *entryCount = 0;
@@ -160,20 +160,16 @@ static FileEntry* fileListDirectoryStdio(const char* path, const char* extension
   return entries;
 }
 
-static int fileGetDefaultDirectoryStdio(char* buffer, int bufferSize) {
-  return getcwd(buffer, bufferSize) ? 0 : -1;
-}
-
-static int fileDirectoryExistsStdio(const char* path) {
+int fileDirectoryExists(const char* path) {
   struct stat statBuf;
   return (stat(path, &statBuf) == 0 && S_ISDIR(statBuf.st_mode)) ? 1 : 0;
 }
 
-static int fileDeleteStdio(const char* path) {
+int fileDelete(const char* path) {
   return remove(path) == 0 ? 0 : -1;
 }
 
-static int fileCreateDirectoryStdio(const char* path) {
+int fileCreateDirectory(const char* path) {
   #ifdef _WIN32
   return mkdir(path) == 0 ? 0 : -1;
   #else
@@ -181,18 +177,41 @@ static int fileCreateDirectoryStdio(const char* path) {
   #endif
 }
 
-// Global file operations instance with stdio implementations
-FileOps fileOps = {
-  .open = fileOpenStdio,
-  .close = fileCloseStdio,
-  .read = fileReadStdio,
-  .readString = fileReadStringStdio,
-  .write = fileWriteStdio,
-  .printf = filePrintfStdio,
-  .seek = fileSeekStdio,
-  .delete = fileDeleteStdio,
-  .createDirectory = fileCreateDirectoryStdio,
-  .listDirectory = fileListDirectoryStdio,
-  .getDefaultDirectory = fileGetDefaultDirectoryStdio,
-  .directoryExists = fileDirectoryExistsStdio
-};
+static void createDirectoryRecursive(const char* path) {
+  char tmp[4096];
+  char* p = NULL;
+  size_t len;
+
+  snprintf(tmp, sizeof(tmp), "%s", path);
+  len = strlen(tmp);
+  if (tmp[len - 1] == '/') tmp[len - 1] = 0;
+
+  for (p = tmp + 1; *p; p++) {
+    if (*p == '/') {
+      *p = 0;
+      mkdir(tmp, 0755);
+      *p = '/';
+    }
+  }
+  mkdir(tmp, 0755);
+}
+
+int fileGetDefaultDirectory(char* buffer, int bufferSize) {
+#ifdef ANDROID_BUILD
+  const char* dataPath = "/storage/emulated/0/Documents/ChipNomad";
+  createDirectoryRecursive(dataPath);
+  snprintf(buffer, bufferSize, "%s", dataPath);
+  return 0;
+#elif defined(MACOS_BUILD)
+  const char* home = getenv("HOME");
+  if (home) {
+    snprintf(buffer, bufferSize, "%s/Library/Application Support/ChipNomad", home);
+    createDirectoryRecursive(buffer);
+  } else {
+    snprintf(buffer, bufferSize, ".");
+  }
+  return 0;
+#else
+  return getcwd(buffer, bufferSize) ? 0 : -1;
+#endif
+}

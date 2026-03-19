@@ -5,6 +5,11 @@
 #include "corelib_font.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
+
+#ifdef TOUCH_INPUT
+#include "button_icons.h"
+#endif
 
 #define PRINT_BUFFER_SIZE (256)
 #define TEXT_COLS (40)
@@ -12,6 +17,11 @@
 
 #define CHAR_X(x) ((x) * charW + offsetX)
 #define CHAR_Y(y) ((y) * charH + offsetY)
+
+#ifdef TOUCH_INPUT
+#define VPAD_BUTTON_SIZE 110
+#define VPAD_MARGIN 30
+#endif
 
 extern uint8_t font12x16[];
 extern uint8_t font16x24[];
@@ -28,12 +38,16 @@ static uint32_t cursorColor = 0;
 static char printBuffer[PRINT_BUFFER_SIZE];
 static int screenW;
 static int screenH;
-static int charW;  // Current character width
-static int charH;  // Current character height
+static int charW;
+static int charH;
 static int offsetX;
 static int offsetY;
 static int isDirty;
 static const FontResolution* currentResolution = NULL;
+
+#ifdef TOUCH_INPUT
+static int buttonPressed[8] = {0};
+#endif
 
 // Font texture optimization
 static SDL_Texture* fontTexture = NULL;
@@ -160,6 +174,37 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
 
     createFontTexture();
     isDirty = 1;
+
+#ifdef TOUCH_INPUT
+    // Setup virtual gamepad layout
+    extern int vpadEnabled;
+    extern SDL_Rect dpadUpRect, dpadDownRect, dpadLeftRect, dpadRightRect;
+    extern SDL_Rect aButtonRect, bButtonRect, startButtonRect, selectButtonRect;
+    extern SDL_Rect dpadRect;
+
+    int buttonGap = 15;
+    int dpadX = VPAD_MARGIN;
+    int dpadY = screenH - (VPAD_BUTTON_SIZE + VPAD_MARGIN) * 4;
+
+    dpadUpRect = (SDL_Rect){dpadX + VPAD_BUTTON_SIZE + buttonGap, dpadY, VPAD_BUTTON_SIZE, VPAD_BUTTON_SIZE};
+    dpadDownRect = (SDL_Rect){dpadX + VPAD_BUTTON_SIZE + buttonGap, dpadY + VPAD_BUTTON_SIZE + buttonGap, VPAD_BUTTON_SIZE, VPAD_BUTTON_SIZE};
+    dpadLeftRect = (SDL_Rect){dpadX, dpadY + VPAD_BUTTON_SIZE + buttonGap, VPAD_BUTTON_SIZE, VPAD_BUTTON_SIZE};
+    dpadRightRect = (SDL_Rect){dpadX + (VPAD_BUTTON_SIZE + buttonGap) * 2, dpadY + VPAD_BUTTON_SIZE + buttonGap, VPAD_BUTTON_SIZE, VPAD_BUTTON_SIZE};
+
+    int rightX = screenW - VPAD_MARGIN - VPAD_BUTTON_SIZE;
+    int rightY = dpadY + VPAD_BUTTON_SIZE + buttonGap;
+
+    bButtonRect = (SDL_Rect){rightX - VPAD_BUTTON_SIZE - buttonGap, rightY, VPAD_BUTTON_SIZE, VPAD_BUTTON_SIZE};
+    aButtonRect = (SDL_Rect){rightX, rightY, VPAD_BUTTON_SIZE, VPAD_BUTTON_SIZE};
+
+    int centerX = screenW / 2;
+    int bottomY = screenH - VPAD_BUTTON_SIZE - VPAD_MARGIN;
+
+    selectButtonRect = (SDL_Rect){centerX - VPAD_BUTTON_SIZE - buttonGap, bottomY, VPAD_BUTTON_SIZE, VPAD_BUTTON_SIZE};
+    startButtonRect = (SDL_Rect){centerX + buttonGap, bottomY, VPAD_BUTTON_SIZE, VPAD_BUTTON_SIZE};
+
+    dpadRect = (SDL_Rect){dpadX, dpadY, VPAD_BUTTON_SIZE * 3 + buttonGap * 2, VPAD_BUTTON_SIZE * 2 + buttonGap};
+#endif
 
     return 0;
   }
@@ -295,6 +340,7 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
 
   void gfxUpdateScreen(void) {
     if (isDirty) {
+      gfxDrawHUD();
       SDL_RenderPresent(renderer);
     }
     isDirty = 0;
@@ -351,4 +397,57 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
 
     createFontTexture();
     isDirty = 1;
+  }
+
+#ifdef TOUCH_INPUT
+  static void drawButton(SDL_Rect* rect, const uint8_t* iconData, int btnIndex) {
+    int bg = buttonPressed[btnIndex] ? 120 : 80;
+    SDL_SetRenderDrawColor(renderer, bg, bg, bg, 255);
+    SDL_RenderFillRect(renderer, rect);
+    SDL_SetRenderDrawColor(renderer, 120, 120, 120, 255);
+    SDL_RenderDrawRect(renderer, rect);
+
+    if (iconData) {
+      int iconX = rect->x + (rect->w - ICON_WIDTH) / 2;
+      int iconY = rect->y + (rect->h - ICON_HEIGHT) / 2;
+      SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+      for (int y = 0; y < ICON_HEIGHT; y++) {
+        for (int x = 0; x < ICON_WIDTH; x++) {
+          int byteIndex = y * ICON_BYTES_PER_ROW + x / 8;
+          int bitIndex = 7 - (x % 8);
+          if (iconData[byteIndex] & (1 << bitIndex)) {
+            SDL_RenderDrawPoint(renderer, iconX + x, iconY + y);
+          }
+        }
+      }
+    }
+  }
+#endif
+
+  void gfxDrawHUD(void) {
+#ifdef TOUCH_INPUT
+    extern int vpadEnabled;
+    extern SDL_Rect dpadUpRect, dpadDownRect, dpadLeftRect, dpadRightRect;
+    extern SDL_Rect aButtonRect, bButtonRect, startButtonRect, selectButtonRect;
+
+    if (!vpadEnabled) return;
+
+    drawButton(&dpadUpRect, icon_arrow_up, 0);
+    drawButton(&dpadDownRect, icon_arrow_down, 1);
+    drawButton(&dpadLeftRect, icon_arrow_left, 2);
+    drawButton(&dpadRightRect, icon_arrow_right, 3);
+    drawButton(&aButtonRect, icon_edit, 4);
+    drawButton(&bButtonRect, icon_opt, 5);
+    drawButton(&startButtonRect, icon_play, 6);
+    drawButton(&selectButtonRect, icon_shift, 7);
+#endif
+  }
+
+  void gfxSetButtonPressed(int buttonIndex, int pressed) {
+#ifdef TOUCH_INPUT
+    if (buttonIndex >= 0 && buttonIndex < 8) {
+      buttonPressed[buttonIndex] = pressed;
+      isDirty = 1;
+    }
+#endif
   }

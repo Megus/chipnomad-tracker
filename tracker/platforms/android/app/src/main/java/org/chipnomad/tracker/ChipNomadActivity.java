@@ -13,20 +13,11 @@ public class ChipNomadActivity extends SDLActivity {
             "chipnomad"
         };
     }
-    
+
     @Override
     protected void onCreate(android.os.Bundle savedInstanceState) {
         Log.d(TAG, "onCreate: before super.onCreate()");
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate: after super.onCreate()");
-
-        // Copy bundled assets on first run
-        copyAssets();
-        Log.d(TAG, "onCreate: after copyAssets()");
-    }
-    
-    private void copyAssets() {
-        // TODO: Implement asset copying for bundled content
-        // This will copy fonts, sample projects, etc. to app storage
     }
 }

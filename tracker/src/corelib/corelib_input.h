@@ -5,8 +5,9 @@
 
 enum InputDeviceType {
   inputNone = 0,
-  inputKeyboard = 1,
-  inputGamepad = 2,
+  inputLogical = 1,
+  inputKeyboard = 2,
+  inputGamepad = 3,
 };
 
 typedef struct {
@@ -14,14 +15,24 @@ typedef struct {
   int32_t code;
 } InputCode;
 
+enum Key {
+  keyLeft = 0x1,
+  keyRight = 0x2,
+  keyUp = 0x4,
+  keyDown = 0x8,
+  keyEdit = 0x10,
+  keyOpt = 0x20,
+  keyPlay = 0x40,
+  keyShift = 0x80,
+  keyVolumeUp = 0x100,
+  keyVolumeDown = 0x200,
+  keyUnmapped = 0x400,
+};
+
 // Initialize default key mappings based on platform/keyboard layout
 void inputInitDefaultKeyMapping(void);
 
 // Convert input code to human-readable name
 const char* inputGetKeyName(InputCode input);
-
-// Callback for raw input capture (used by key mapping screen)
-// Set to NULL when not capturing
-extern void (*inputRawCallback)(InputCode input, int isDown);
 
 #endif

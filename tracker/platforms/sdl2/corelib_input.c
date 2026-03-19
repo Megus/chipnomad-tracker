@@ -10,8 +10,54 @@
 #include <windows.h>
 #endif
 
-// Callback for raw input capture
-void (*inputRawCallback)(InputCode input, int isDown) = NULL;
+/*
+
+// Keyboard mapping
+#if defined(DESKTOP_BUILD) || defined(PORTMASTER_BUILD)
+// Desktop and PortMaster mapping
+#define BTN_UP          (SDLK_UP)
+#define BTN_DOWN        (SDLK_DOWN)
+#define BTN_LEFT        (SDLK_LEFT)
+#define BTN_RIGHT       (SDLK_RIGHT)
+#define BTN_A           (SDLK_z)
+#define BTN_B           (SDLK_x)
+#define BTN_X           (SDLK_c)
+#define BTN_Y           (SDLK_a)
+#define BTN_L1          (SDLK_LSHIFT)
+#define BTN_R1          (SDLK_LSHIFT)
+#define BTN_L2          0
+#define BTN_R2          0
+#define BTN_SELECT      (SDLK_LSHIFT)
+#define BTN_START       (SDLK_SPACE)
+#define BTN_MENU        (SDLK_LCTRL)
+#define BTN_VOLUME_UP   0
+#define BTN_VOLUME_DOWN 0
+#define BTN_POWER       0
+#define BTN_EXIT        0
+#else
+// RG35xx (old) mapping
+#define BTN_UP          119
+#define BTN_DOWN        115
+#define BTN_LEFT        113
+#define BTN_RIGHT       100
+#define BTN_A           97
+#define BTN_B           98
+#define BTN_X           120
+#define BTN_Y           121
+#define BTN_L1          104
+#define BTN_R1          108
+#define BTN_L2          106
+#define BTN_R2          107
+#define BTN_SELECT      110
+#define BTN_START       109
+#define BTN_MENU        117
+#define BTN_VOLUME_UP   114
+#define BTN_VOLUME_DOWN 116
+#define BTN_POWER       0
+#define BTN_EXIT        0
+#endif
+
+ */
 
 // Keyboard layout detection (only used for first-launch default key mapping)
 typedef enum {
@@ -69,40 +115,53 @@ static KeyboardLayout detectKeyboardLayout(void) {
 }
 
 void inputInitDefaultKeyMapping(void) {
-#if defined(DESKTOP_BUILD) || defined(PORTMASTER_BUILD)
   KeyboardLayout layout = detectKeyboardLayout();
 
+  // Keyboard mappings (all platforms)
   appSettings.keyMapping.keyUp[0] = (InputCode){inputKeyboard, SDLK_UP};
-  appSettings.keyMapping.keyUp[1] = (InputCode){inputNone, 0};
-  appSettings.keyMapping.keyUp[2] = (InputCode){inputNone, 0};
   appSettings.keyMapping.keyDown[0] = (InputCode){inputKeyboard, SDLK_DOWN};
-  appSettings.keyMapping.keyDown[1] = (InputCode){inputNone, 0};
-  appSettings.keyMapping.keyDown[2] = (InputCode){inputNone, 0};
   appSettings.keyMapping.keyLeft[0] = (InputCode){inputKeyboard, SDLK_LEFT};
-  appSettings.keyMapping.keyLeft[1] = (InputCode){inputNone, 0};
-  appSettings.keyMapping.keyLeft[2] = (InputCode){inputNone, 0};
   appSettings.keyMapping.keyRight[0] = (InputCode){inputKeyboard, SDLK_RIGHT};
-  appSettings.keyMapping.keyRight[1] = (InputCode){inputNone, 0};
-  appSettings.keyMapping.keyRight[2] = (InputCode){inputNone, 0};
   appSettings.keyMapping.keyOpt[0] = (InputCode){inputKeyboard, (layout == LAYOUT_QWERTZ) ? SDLK_y : SDLK_z};
-  appSettings.keyMapping.keyOpt[1] = (InputCode){inputNone, 0};
-  appSettings.keyMapping.keyOpt[2] = (InputCode){inputNone, 0};
   appSettings.keyMapping.keyPlay[0] = (InputCode){inputKeyboard, SDLK_SPACE};
-  appSettings.keyMapping.keyPlay[1] = (InputCode){inputNone, 0};
-  appSettings.keyMapping.keyPlay[2] = (InputCode){inputNone, 0};
   appSettings.keyMapping.keyShift[0] = (InputCode){inputKeyboard, SDLK_LSHIFT};
-  appSettings.keyMapping.keyShift[1] = (InputCode){inputNone, 0};
-  appSettings.keyMapping.keyShift[2] = (InputCode){inputNone, 0};
   appSettings.keyMapping.keyEdit[0] = (InputCode){inputKeyboard, SDLK_x};
-  appSettings.keyMapping.keyEdit[1] = (InputCode){inputNone, 0};
-  appSettings.keyMapping.keyEdit[2] = (InputCode){inputNone, 0};
+
+#if defined(DESKTOP_BUILD) || defined(ANDROID_BUILD)
+  // Gamepad mappings (Desktop and Android only)
+  appSettings.keyMapping.keyUp[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_DPAD_UP};
+  appSettings.keyMapping.keyDown[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_DPAD_DOWN};
+  appSettings.keyMapping.keyLeft[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_DPAD_LEFT};
+  appSettings.keyMapping.keyRight[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_DPAD_RIGHT};
+  appSettings.keyMapping.keyEdit[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_A};
+  appSettings.keyMapping.keyOpt[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_B};
+  appSettings.keyMapping.keyPlay[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_START};
+  appSettings.keyMapping.keyShift[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_BACK};
 #else
-  memset(&appSettings.keyMapping, 0, sizeof(KeyMapping));
+  // PortMaster: keyboard only
+  appSettings.keyMapping.keyUp[1] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyDown[1] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyLeft[1] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyRight[1] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyEdit[1] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyOpt[1] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyPlay[1] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyShift[1] = (InputCode){inputNone, 0};
 #endif
+
+  // Slot 2 empty for all platforms
+  appSettings.keyMapping.keyUp[2] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyDown[2] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyLeft[2] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyRight[2] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyEdit[2] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyOpt[2] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyPlay[2] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyShift[2] = (InputCode){inputNone, 0};
 }
 
 const char* inputGetKeyName(InputCode input) {
-  if (input.deviceType == inputNone || input.code == 0) return "---";
+  if (input.deviceType == inputNone) return "---";
 
   if (input.deviceType == inputGamepad) {
     switch (input.code) {

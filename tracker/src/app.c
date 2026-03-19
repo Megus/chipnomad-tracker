@@ -8,10 +8,10 @@
 #include "chipnomad_lib.h"
 #include "project_utils.h"
 #include "waveform_display.h"
-
-#if defined(DESKTOP_BUILD) || defined(PORTMASTER_BUILD)
 #include "corelib_input.h"
-#endif
+
+// Raw input callback for key mapping screen
+void (*inputRawCallback)(InputCode input, int isDown) = NULL;
 
 // Input handling vars:
 
@@ -25,6 +25,34 @@ static int tapButton;
 static int tapCount;
 /** Frame counter for key repeats */
 static int keyRepeatCount;
+
+/**
+* @brief Convert InputCode to Key enum value
+*
+* @param input Input code
+* @return Key value or 0 if not recognized
+*/
+static int inputCodeToKey(InputCode input) {
+  // Logical buttons are not remappable
+  if (input.deviceType == inputLogical) {
+    return input.code;
+  }
+
+  // Check key mapping for keyboard and gamepad inputs
+  for (int i = 0; i < 3; i++) {
+    if (appSettings.keyMapping.keyUp[i].deviceType == input.deviceType && appSettings.keyMapping.keyUp[i].code == input.code) return keyUp;
+    if (appSettings.keyMapping.keyDown[i].deviceType == input.deviceType && appSettings.keyMapping.keyDown[i].code == input.code) return keyDown;
+    if (appSettings.keyMapping.keyLeft[i].deviceType == input.deviceType && appSettings.keyMapping.keyLeft[i].code == input.code) return keyLeft;
+    if (appSettings.keyMapping.keyRight[i].deviceType == input.deviceType && appSettings.keyMapping.keyRight[i].code == input.code) return keyRight;
+    if (appSettings.keyMapping.keyEdit[i].deviceType == input.deviceType && appSettings.keyMapping.keyEdit[i].code == input.code) return keyEdit;
+    if (appSettings.keyMapping.keyOpt[i].deviceType == input.deviceType && appSettings.keyMapping.keyOpt[i].code == input.code) return keyOpt;
+    if (appSettings.keyMapping.keyPlay[i].deviceType == input.deviceType && appSettings.keyMapping.keyPlay[i].code == input.code) return keyPlay;
+    if (appSettings.keyMapping.keyShift[i].deviceType == input.deviceType && appSettings.keyMapping.keyShift[i].code == input.code) return keyShift;
+  }
+
+  // Return keyUnmapped for any input that doesn't match a mapping
+  return keyUnmapped;
+}
 
 /**
 * @brief Handle play/stop key commands
@@ -132,11 +160,9 @@ static void appInput(int isKeyDown, int keys, int tapCount) {
 */
 void appSetup(void) {
   // Initialize default key mappings if not loaded from settings
-#if defined(DESKTOP_BUILD) || defined(PORTMASTER_BUILD)
-  if (appSettings.keyMapping.keyUp[0].deviceType == inputNone && appSettings.keyMapping.keyUp[0].code == 0) {
+  if (appSettings.keyMapping.keyUp[0].deviceType == inputNone) {
     inputInitDefaultKeyMapping();
   }
-#endif
 
   // Keyboard input reset
   pressedButtons = 0;
@@ -247,12 +273,19 @@ void appDraw(void) {
 * @param value Event value
 * @param userdata Arbitraty event data
 */
-void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
+void appOnEvent(MainLoopEventData eventData) {
   static int dPadMask = keyLeft | keyRight | keyUp | keyDown;
-  static int doubleTapMask = keyEdit | keyOpt;
+  static int doubleTapMask = keyEdit | keyOpt | keyUnmapped;
 
-  switch (event) {
-  case eventKeyDown:
+  switch (eventData.type) {
+  case eventKeyDown: {
+    int value = inputCodeToKey(eventData.data.input);
+    
+    // Call raw input callback if set (for key mapping screen)
+    if (inputRawCallback) {
+      inputRawCallback(eventData.data.input, 1);
+    }
+    
     if (value == keyEdit || value == keyOpt || value == keyShift) {
       // Edit/Opt/Shift "override" d-pad buttons
       pressedButtons = (pressedButtons & (~dPadMask)) | value;
@@ -276,7 +309,15 @@ void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
     }
     appInput(1, pressedButtons, currentTapCount);
     break;
-  case eventKeyUp:
+  }
+  case eventKeyUp: {
+    int value = inputCodeToKey(eventData.data.input);
+    
+    // Call raw input callback if set (for key mapping screen)
+    if (inputRawCallback) {
+      inputRawCallback(eventData.data.input, 0);
+    }
+    
     pressedButtons &= ~value;
     // Set tap timer
     if (value & doubleTapMask) {
@@ -298,6 +339,7 @@ void appOnEvent(enum MainLoopEvent event, int value, void* userdata) {
       screenMessage(0, "");
     }
     break;
+  }
   case eventTick:
     if (tapTimerCount > 0) {
       tapTimerCount--;
