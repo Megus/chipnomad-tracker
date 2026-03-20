@@ -151,7 +151,6 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
     int drawableW, drawableH;
     SDL_GL_GetDrawableSize(window, &drawableW, &drawableH);
     if (drawableW != screenW || drawableH != screenH) {
-      // High-DPI display detected, use drawable size for font selection
       screenW = drawableW;
       screenH = drawableH;
     }
@@ -170,40 +169,53 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
     int textWindowW = TEXT_COLS * charW;
     int textWindowH = TEXT_ROWS * charH;
     offsetX = (screenW - textWindowW) / 2;
+#ifdef MOBILE_BUILD
+    offsetY = 0;
+#else
     offsetY = (screenH - textWindowH) / 2;
+#endif
 
     createFontTexture();
     isDirty = 1;
 
 #ifdef TOUCH_INPUT
-    // Setup virtual gamepad layout
+    // Setup virtual gamepad layout using window coordinates
     extern int vpadEnabled;
     extern SDL_Rect dpadUpRect, dpadDownRect, dpadLeftRect, dpadRightRect;
     extern SDL_Rect aButtonRect, bButtonRect, startButtonRect, selectButtonRect;
     extern SDL_Rect dpadRect;
 
-    int buttonGap = 15;
-    int dpadX = VPAD_MARGIN;
-    int dpadY = screenH - (VPAD_BUTTON_SIZE + VPAD_MARGIN) * 4;
+    int winW, winH;
+    SDL_GetWindowSize(window, &winW, &winH);
+    float dpiScale = (float)screenW / winW;
+    int btnSize = (int)(VPAD_BUTTON_SIZE * dpiScale);
+    int margin = (int)(VPAD_MARGIN * dpiScale);
+    int buttonGap = (int)(15 * dpiScale);
 
-    dpadUpRect = (SDL_Rect){dpadX + VPAD_BUTTON_SIZE + buttonGap, dpadY, VPAD_BUTTON_SIZE, VPAD_BUTTON_SIZE};
-    dpadDownRect = (SDL_Rect){dpadX + VPAD_BUTTON_SIZE + buttonGap, dpadY + VPAD_BUTTON_SIZE + buttonGap, VPAD_BUTTON_SIZE, VPAD_BUTTON_SIZE};
-    dpadLeftRect = (SDL_Rect){dpadX, dpadY + VPAD_BUTTON_SIZE + buttonGap, VPAD_BUTTON_SIZE, VPAD_BUTTON_SIZE};
-    dpadRightRect = (SDL_Rect){dpadX + (VPAD_BUTTON_SIZE + buttonGap) * 2, dpadY + VPAD_BUTTON_SIZE + buttonGap, VPAD_BUTTON_SIZE, VPAD_BUTTON_SIZE};
+    // D-pad: cross layout (UP top-center, LEFT/RIGHT middle, DOWN bottom-center)
+    int dpadX = margin;
+    int dpadY = screenH - (btnSize + buttonGap) * 3 - margin;
 
-    int rightX = screenW - VPAD_MARGIN - VPAD_BUTTON_SIZE;
-    int rightY = dpadY + VPAD_BUTTON_SIZE + buttonGap;
+    dpadUpRect = (SDL_Rect){dpadX + btnSize + buttonGap, dpadY, btnSize, btnSize};
+    dpadLeftRect = (SDL_Rect){dpadX, dpadY + btnSize + buttonGap, btnSize, btnSize};
+    dpadRightRect = (SDL_Rect){dpadX + (btnSize + buttonGap) * 2, dpadY + btnSize + buttonGap, btnSize, btnSize};
+    dpadDownRect = (SDL_Rect){dpadX + btnSize + buttonGap, dpadY + (btnSize + buttonGap) * 2, btnSize, btnSize};
 
-    bButtonRect = (SDL_Rect){rightX - VPAD_BUTTON_SIZE - buttonGap, rightY, VPAD_BUTTON_SIZE, VPAD_BUTTON_SIZE};
-    aButtonRect = (SDL_Rect){rightX, rightY, VPAD_BUTTON_SIZE, VPAD_BUTTON_SIZE};
+    // EDIT and OPT on same level as UP
+    int rightX = screenW - margin - btnSize;
+    int rightY = dpadY;
 
+    aButtonRect = (SDL_Rect){rightX, rightY, btnSize, btnSize};
+    bButtonRect = (SDL_Rect){rightX - btnSize - buttonGap, rightY, btnSize, btnSize};
+
+    // START and SELECT at bottom center
     int centerX = screenW / 2;
-    int bottomY = screenH - VPAD_BUTTON_SIZE - VPAD_MARGIN;
+    int bottomY = screenH - btnSize - margin;
 
-    selectButtonRect = (SDL_Rect){centerX - VPAD_BUTTON_SIZE - buttonGap, bottomY, VPAD_BUTTON_SIZE, VPAD_BUTTON_SIZE};
-    startButtonRect = (SDL_Rect){centerX + buttonGap, bottomY, VPAD_BUTTON_SIZE, VPAD_BUTTON_SIZE};
+    selectButtonRect = (SDL_Rect){centerX - btnSize - buttonGap, bottomY, btnSize, btnSize};
+    startButtonRect = (SDL_Rect){centerX + buttonGap, bottomY, btnSize, btnSize};
 
-    dpadRect = (SDL_Rect){dpadX, dpadY, VPAD_BUTTON_SIZE * 3 + buttonGap * 2, VPAD_BUTTON_SIZE * 2 + buttonGap};
+    dpadRect = (SDL_Rect){dpadX, dpadY, btnSize * 3 + buttonGap * 2, (btnSize + buttonGap) * 3 - buttonGap};
 #endif
 
     return 0;
@@ -393,7 +405,11 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
     int textWindowW = TEXT_COLS * charW;
     int textWindowH = TEXT_ROWS * charH;
     offsetX = (screenW - textWindowW) / 2;
+#ifdef MOBILE_BUILD
+    offsetY = 0;
+#else
     offsetY = (screenH - textWindowH) / 2;
+#endif
 
     createFontTexture();
     isDirty = 1;

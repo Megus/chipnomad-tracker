@@ -209,10 +209,12 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(MainLoopEventData eventData
 #endif
 #ifdef TOUCH_INPUT
       else if (event.type == SDL_FINGERDOWN) {
-        int x, y;
-        SDL_GetWindowSize(SDL_GetWindowFromID(event.tfinger.windowID), &x, &y);
-        x = (int)(event.tfinger.x * x);
-        y = (int)(event.tfinger.y * y);
+        int wx, wy;
+        SDL_GetWindowSize(SDL_GetWindowFromID(event.tfinger.windowID), &wx, &wy);
+        int dx, dy;
+        SDL_GL_GetDrawableSize(SDL_GetWindowFromID(event.tfinger.windowID), &dx, &dy);
+        int x = (int)(event.tfinger.x * dx);
+        int y = (int)(event.tfinger.y * dy);
 
         int buttonIndex = getTouchButton(x, y);
         if (buttonIndex >= 0 && numActiveFingers < 10) {
