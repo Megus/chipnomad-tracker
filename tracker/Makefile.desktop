@@ -12,10 +12,10 @@ OUTPUT_EXT =
 # Platform-specific flags
 ifeq ($(shell uname),Darwin)
 # macOS
-XTRA_CFLAGS = -I/opt/homebrew/include -L/opt/homebrew/lib -DDESKTOP_BUILD
+XTRA_CFLAGS = -I/opt/homebrew/include -L/opt/homebrew/lib -DDESKTOP_BUILD -DMACOS_BUILD -DGAMEPAD_SUPPORT
 else
 # Linux
-XTRA_CFLAGS = -I/usr/include -L/usr/lib -DDESKTOP_BUILD
+XTRA_CFLAGS = -I/usr/include -L/usr/lib -DDESKTOP_BUILD -DGAMEPAD_SUPPORT
 endif
 
 XTRA_LIBS = -lSDL2 -lm

@@ -89,6 +89,7 @@ void screenSetup(const AppScreen* screen, int input);
 void screenDraw(void);
 void screenMessage(int time, const char* format, ...);
 void screensInitAll(void);
+void drawScreenMap(void);
 
 // Spreadsheet functions
 void screenFullRedraw(ScreenData* screen);

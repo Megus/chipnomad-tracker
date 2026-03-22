@@ -4,14 +4,12 @@
 #include <string.h>
 #include <locale.h>
 #include <ctype.h>
+#include "corelib_keymap.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
-
-// Callback for raw input capture
-void (*inputRawCallback)(int32_t keyCode, int isDown) = NULL;
 
 // Keyboard layout detection (only used for first-launch default key mapping)
 typedef enum {
@@ -69,43 +67,56 @@ static KeyboardLayout detectKeyboardLayout(void) {
 }
 
 void inputInitDefaultKeyMapping(void) {
-#if defined(DESKTOP_BUILD) || defined(PORTMASTER_BUILD)
   KeyboardLayout layout = detectKeyboardLayout();
 
-  appSettings.keyMapping.keyUp[0] = SDLK_UP;
-  appSettings.keyMapping.keyUp[1] = 0;
-  appSettings.keyMapping.keyUp[2] = 0;
-  appSettings.keyMapping.keyDown[0] = SDLK_DOWN;
-  appSettings.keyMapping.keyDown[1] = 0;
-  appSettings.keyMapping.keyDown[2] = 0;
-  appSettings.keyMapping.keyLeft[0] = SDLK_LEFT;
-  appSettings.keyMapping.keyLeft[1] = 0;
-  appSettings.keyMapping.keyLeft[2] = 0;
-  appSettings.keyMapping.keyRight[0] = SDLK_RIGHT;
-  appSettings.keyMapping.keyRight[1] = 0;
-  appSettings.keyMapping.keyRight[2] = 0;
-  appSettings.keyMapping.keyOpt[0] = (layout == LAYOUT_QWERTZ) ? SDLK_y : SDLK_z;
-  appSettings.keyMapping.keyOpt[1] = 0;
-  appSettings.keyMapping.keyOpt[2] = 0;
-  appSettings.keyMapping.keyPlay[0] = SDLK_SPACE;
-  appSettings.keyMapping.keyPlay[1] = 0;
-  appSettings.keyMapping.keyPlay[2] = 0;
-  appSettings.keyMapping.keyShift[0] = SDLK_LSHIFT;
-  appSettings.keyMapping.keyShift[1] = 0;
-  appSettings.keyMapping.keyShift[2] = 0;
-  appSettings.keyMapping.keyEdit[0] = SDLK_x;
-  appSettings.keyMapping.keyEdit[1] = 0;
-  appSettings.keyMapping.keyEdit[2] = 0;
+  // Keyboard mappings (all platforms)
+  appSettings.keyMapping.keyUp[0] = (InputCode){inputKeyboard, BTN_UP};
+  appSettings.keyMapping.keyDown[0] = (InputCode){inputKeyboard, BTN_DOWN};
+  appSettings.keyMapping.keyLeft[0] = (InputCode){inputKeyboard, BTN_LEFT};
+  appSettings.keyMapping.keyRight[0] = (InputCode){inputKeyboard, BTN_RIGHT};
+  appSettings.keyMapping.keyOpt[0] = (InputCode){inputKeyboard, (layout == LAYOUT_QWERTZ) ? SDLK_y : BTN_B};
+  appSettings.keyMapping.keyPlay[0] = (InputCode){inputKeyboard, BTN_START};
+  appSettings.keyMapping.keyShift[0] = (InputCode){inputKeyboard, BTN_SELECT};
+  appSettings.keyMapping.keyEdit[0] = (InputCode){inputKeyboard, BTN_A};
+
+#if defined(DESKTOP_BUILD) || defined(ANDROID_BUILD)
+  // Gamepad mappings (Desktop and Android only)
+  appSettings.keyMapping.keyUp[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_DPAD_UP};
+  appSettings.keyMapping.keyDown[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_DPAD_DOWN};
+  appSettings.keyMapping.keyLeft[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_DPAD_LEFT};
+  appSettings.keyMapping.keyRight[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_DPAD_RIGHT};
+  appSettings.keyMapping.keyEdit[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_A};
+  appSettings.keyMapping.keyOpt[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_B};
+  appSettings.keyMapping.keyPlay[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_START};
+  appSettings.keyMapping.keyShift[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_BACK};
 #else
-  memset(&appSettings.keyMapping, 0, sizeof(KeyMapping));
+  // PortMaster: keyboard only
+  appSettings.keyMapping.keyUp[1] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyDown[1] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyLeft[1] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyRight[1] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyEdit[1] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyOpt[1] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyPlay[1] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyShift[1] = (InputCode){inputNone, 0};
 #endif
+
+  // Slot 2 empty for all platforms
+  appSettings.keyMapping.keyUp[2] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyDown[2] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyLeft[2] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyRight[2] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyEdit[2] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyOpt[2] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyPlay[2] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyShift[2] = (InputCode){inputNone, 0};
 }
 
-const char* inputGetKeyName(int32_t keyCode) {
-  if (keyCode == 0) return "---";
+const char* inputGetKeyName(InputCode input) {
+  if (input.deviceType == inputNone) return "---";
 
-  if (keyCode < 0) {
-    switch (-keyCode) {
+  if (input.deviceType == inputGamepad) {
+    switch (input.code) {
       case SDL_CONTROLLER_BUTTON_A: return "Pad A";
       case SDL_CONTROLLER_BUTTON_B: return "Pad B";
       case SDL_CONTROLLER_BUTTON_X: return "Pad X";
@@ -122,8 +133,32 @@ const char* inputGetKeyName(int32_t keyCode) {
     }
   }
 
+  #if defined(PORTMASTER_BUILD)
+  // PortMaster: use custom names for all keys
+  switch (input.code) {
+    case BTN_UP: return "Up";
+    case BTN_DOWN: return "Down";
+    case BTN_LEFT: return "Left";
+    case BTN_RIGHT: return "Right";
+    case BTN_A: return "A";
+    case BTN_B: return "B";
+    case BTN_X: return "X";
+    case BTN_Y: return "Y";
+    case BTN_L1: return "L1";
+    case BTN_R1: return "R1";
+    case BTN_L2: return "L2";
+    case BTN_R2: return "R2";
+    case BTN_SELECT: return "Select";
+    case BTN_START: return "Start";
+    default: {
+      static char buf[8];
+      snprintf(buf, sizeof(buf), "K%d", input.code);
+      return buf;
+    }
+  }
+  #else
   // Keyboard - custom short names for common keys
-  switch (keyCode) {
+  switch (input.code) {
     case SDLK_LSHIFT: return "LShift";
     case SDLK_RSHIFT: return "RShift";
     case SDLK_LCTRL: return "LCtrl";
@@ -136,8 +171,9 @@ const char* inputGetKeyName(int32_t keyCode) {
     case SDLK_ESCAPE: return "Escape";
   }
 
-  const char* name = SDL_GetKeyName(keyCode);
+  const char* name = SDL_GetKeyName(input.code);
   if (name && name[0]) return name;
+  #endif
 
   return "???";
 }

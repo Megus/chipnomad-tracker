@@ -27,10 +27,9 @@ CONTENTS:
 - instruments/: Sample instruments
 - pitch-tables/: Pitch table files
 - projects/: Demo projects
-- chipnomad-icon.png: Application icon
 
 For more information, visit: https://chipnomad.org
 Join our Discord: https://discord.gg/PJarAn2QCW
 
-This build works on most Linux distributions including Ubuntu, Debian, 
+This build works on most Linux distributions including Ubuntu, Debian,
 Fedora, Arch Linux, and Steam Deck (Desktop Mode).

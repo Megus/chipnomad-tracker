@@ -4,8 +4,13 @@ guide = leftctrl
 
 a = x
 b = z
-x = c
+x = s
 y = a
+
+l1 = q
+l2 = w
+r1 = r
+r2 = e
 
 up = up
 down = down

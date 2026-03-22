@@ -3,12 +3,8 @@
 #include "corelib/corelib_gfx.h"
 #include <string.h>
 
-#ifdef MACOS_BUILD
-#include <sys/stat.h>
-#include <unistd.h>
-#endif
-
-#define SETTINGS_FILENAME "settings.txt"
+static char settingsPath[PATH_LENGTH + 32];
+static char autosavePath[PATH_LENGTH + 32];
 
 AppSettings appSettings = {
   .screenWidth = 0, // 0 to auto-detect resolution
@@ -21,7 +17,6 @@ AppSettings appSettings = {
   .mixVolume = 20000.0f / 32767.0f,
   .quality = CHIPNOMAD_QUALITY_MEDIUM,
   .pitchConflictWarning = 0,
-  .gamepadSwapAB = 0,
   .colorScheme = {
     .background = 0x000f1a,
     .textEmpty = 0x002638,
@@ -46,36 +41,12 @@ int* pSongTrack;
 int* pChainRow;
 ChipNomadState* chipnomadState;
 
-#ifdef MACOS_BUILD
-static char userDataPath[PATH_LENGTH] = "";
-
-static const char* getUserDataPath(void) {
-  if (userDataPath[0] == '\0') {
-    const char* home = getenv("HOME");
-    if (home) {
-      snprintf(userDataPath, PATH_LENGTH, "%s/Library/Application Support/ChipNomad", home);
-      // Create directory if it doesn't exist
-      mkdir(userDataPath, 0755);
-    } else {
-      strcpy(userDataPath, ".");
-    }
-  }
-  return userDataPath;
-}
-
-static void getFullPath(const char* filename, char* fullPath, int maxLength) {
-  snprintf(fullPath, maxLength, "%s/%s", getUserDataPath(), filename);
-}
-#endif
-
 int settingsSave(void) {
-  #ifdef MACOS_BUILD
-  char fullPath[PATH_LENGTH];
-  getFullPath(SETTINGS_FILENAME, fullPath, PATH_LENGTH);
-  int fileId = fileOpen(fullPath, 1);
-  #else
-  int fileId = fileOpen(SETTINGS_FILENAME, 1);
-  #endif
+  char defaultDir[PATH_LENGTH];
+  if (fileGetDefaultDirectory(defaultDir, PATH_LENGTH) != 0) return 1;
+  snprintf(settingsPath, sizeof(settingsPath), "%s%ssettings.txt", defaultDir, PATH_SEPARATOR_STR);
+
+  int fileId = fileOpen(settingsPath, 1);
   if (fileId == -1) return 1;
 
   filePrintf(fileId, "screenWidth: %d\n", appSettings.screenWidth);
@@ -88,17 +59,26 @@ int settingsSave(void) {
   filePrintf(fileId, "mixVolume: %f\n", appSettings.mixVolume);
   filePrintf(fileId, "quality: %d\n", appSettings.quality);
   filePrintf(fileId, "pitchConflictWarning: %d\n", appSettings.pitchConflictWarning);
-  filePrintf(fileId, "gamepadSwapAB: %d\n", appSettings.gamepadSwapAB);
 
-  // Save key mappings
-  filePrintf(fileId, "keyUp: %d,%d,%d\n", appSettings.keyMapping.keyUp[0], appSettings.keyMapping.keyUp[1], appSettings.keyMapping.keyUp[2]);
-  filePrintf(fileId, "keyDown: %d,%d,%d\n", appSettings.keyMapping.keyDown[0], appSettings.keyMapping.keyDown[1], appSettings.keyMapping.keyDown[2]);
-  filePrintf(fileId, "keyLeft: %d,%d,%d\n", appSettings.keyMapping.keyLeft[0], appSettings.keyMapping.keyLeft[1], appSettings.keyMapping.keyLeft[2]);
-  filePrintf(fileId, "keyRight: %d,%d,%d\n", appSettings.keyMapping.keyRight[0], appSettings.keyMapping.keyRight[1], appSettings.keyMapping.keyRight[2]);
-  filePrintf(fileId, "keyEdit: %d,%d,%d\n", appSettings.keyMapping.keyEdit[0], appSettings.keyMapping.keyEdit[1], appSettings.keyMapping.keyEdit[2]);
-  filePrintf(fileId, "keyOpt: %d,%d,%d\n", appSettings.keyMapping.keyOpt[0], appSettings.keyMapping.keyOpt[1], appSettings.keyMapping.keyOpt[2]);
-  filePrintf(fileId, "keyPlay: %d,%d,%d\n", appSettings.keyMapping.keyPlay[0], appSettings.keyMapping.keyPlay[1], appSettings.keyMapping.keyPlay[2]);
-  filePrintf(fileId, "keyShift: %d,%d,%d\n", appSettings.keyMapping.keyShift[0], appSettings.keyMapping.keyShift[1], appSettings.keyMapping.keyShift[2]);
+  // Save key mapping codes
+  filePrintf(fileId, "keyUp: %d,%d,%d\n", appSettings.keyMapping.keyUp[0].code, appSettings.keyMapping.keyUp[1].code, appSettings.keyMapping.keyUp[2].code);
+  filePrintf(fileId, "keyDown: %d,%d,%d\n", appSettings.keyMapping.keyDown[0].code, appSettings.keyMapping.keyDown[1].code, appSettings.keyMapping.keyDown[2].code);
+  filePrintf(fileId, "keyLeft: %d,%d,%d\n", appSettings.keyMapping.keyLeft[0].code, appSettings.keyMapping.keyLeft[1].code, appSettings.keyMapping.keyLeft[2].code);
+  filePrintf(fileId, "keyRight: %d,%d,%d\n", appSettings.keyMapping.keyRight[0].code, appSettings.keyMapping.keyRight[1].code, appSettings.keyMapping.keyRight[2].code);
+  filePrintf(fileId, "keyEdit: %d,%d,%d\n", appSettings.keyMapping.keyEdit[0].code, appSettings.keyMapping.keyEdit[1].code, appSettings.keyMapping.keyEdit[2].code);
+  filePrintf(fileId, "keyOpt: %d,%d,%d\n", appSettings.keyMapping.keyOpt[0].code, appSettings.keyMapping.keyOpt[1].code, appSettings.keyMapping.keyOpt[2].code);
+  filePrintf(fileId, "keyPlay: %d,%d,%d\n", appSettings.keyMapping.keyPlay[0].code, appSettings.keyMapping.keyPlay[1].code, appSettings.keyMapping.keyPlay[2].code);
+  filePrintf(fileId, "keyShift: %d,%d,%d\n", appSettings.keyMapping.keyShift[0].code, appSettings.keyMapping.keyShift[1].code, appSettings.keyMapping.keyShift[2].code);
+
+  // Save key mapping device types
+  filePrintf(fileId, "keyUpType: %d,%d,%d\n", appSettings.keyMapping.keyUp[0].deviceType, appSettings.keyMapping.keyUp[1].deviceType, appSettings.keyMapping.keyUp[2].deviceType);
+  filePrintf(fileId, "keyDownType: %d,%d,%d\n", appSettings.keyMapping.keyDown[0].deviceType, appSettings.keyMapping.keyDown[1].deviceType, appSettings.keyMapping.keyDown[2].deviceType);
+  filePrintf(fileId, "keyLeftType: %d,%d,%d\n", appSettings.keyMapping.keyLeft[0].deviceType, appSettings.keyMapping.keyLeft[1].deviceType, appSettings.keyMapping.keyLeft[2].deviceType);
+  filePrintf(fileId, "keyRightType: %d,%d,%d\n", appSettings.keyMapping.keyRight[0].deviceType, appSettings.keyMapping.keyRight[1].deviceType, appSettings.keyMapping.keyRight[2].deviceType);
+  filePrintf(fileId, "keyEditType: %d,%d,%d\n", appSettings.keyMapping.keyEdit[0].deviceType, appSettings.keyMapping.keyEdit[1].deviceType, appSettings.keyMapping.keyEdit[2].deviceType);
+  filePrintf(fileId, "keyOptType: %d,%d,%d\n", appSettings.keyMapping.keyOpt[0].deviceType, appSettings.keyMapping.keyOpt[1].deviceType, appSettings.keyMapping.keyOpt[2].deviceType);
+  filePrintf(fileId, "keyPlayType: %d,%d,%d\n", appSettings.keyMapping.keyPlay[0].deviceType, appSettings.keyMapping.keyPlay[1].deviceType, appSettings.keyMapping.keyPlay[2].deviceType);
+  filePrintf(fileId, "keyShiftType: %d,%d,%d\n", appSettings.keyMapping.keyShift[0].deviceType, appSettings.keyMapping.keyShift[1].deviceType, appSettings.keyMapping.keyShift[2].deviceType);
 
   filePrintf(fileId, "colorBackground: 0x%06x\n", appSettings.colorScheme.background);
   filePrintf(fileId, "colorTextEmpty: 0x%06x\n", appSettings.colorScheme.textEmpty);
@@ -124,13 +104,11 @@ int settingsSave(void) {
 }
 
 int settingsLoad(void) {
-  #ifdef MACOS_BUILD
-  char fullPath[PATH_LENGTH];
-  getFullPath(SETTINGS_FILENAME, fullPath, PATH_LENGTH);
-  int fileId = fileOpen(fullPath, 0);
-  #else
-  int fileId = fileOpen(SETTINGS_FILENAME, 0);
-  #endif
+  char defaultDir[PATH_LENGTH];
+  if (fileGetDefaultDirectory(defaultDir, PATH_LENGTH) != 0) return 1;
+  snprintf(settingsPath, sizeof(settingsPath), "%s%ssettings.txt", defaultDir, PATH_SEPARATOR_STR);
+
+  int fileId = fileOpen(settingsPath, 0);
   if (fileId == -1) return 1;
 
   char* line;
@@ -155,24 +133,38 @@ int settingsLoad(void) {
       sscanf(line + 9, "%d", &appSettings.quality);
     } else if (strncmp(line, "pitchConflictWarning: ", 22) == 0) {
       sscanf(line + 22, "%d", &appSettings.pitchConflictWarning);
-    } else if (strncmp(line, "gamepadSwapAB: ", 15) == 0) {
-      sscanf(line + 15, "%d", &appSettings.gamepadSwapAB);
     } else if (strncmp(line, "keyUp: ", 7) == 0) {
-      sscanf(line + 7, "%d,%d,%d", &appSettings.keyMapping.keyUp[0], &appSettings.keyMapping.keyUp[1], &appSettings.keyMapping.keyUp[2]);
+      sscanf(line + 7, "%d,%d,%d", &appSettings.keyMapping.keyUp[0].code, &appSettings.keyMapping.keyUp[1].code, &appSettings.keyMapping.keyUp[2].code);
     } else if (strncmp(line, "keyDown: ", 9) == 0) {
-      sscanf(line + 9, "%d,%d,%d", &appSettings.keyMapping.keyDown[0], &appSettings.keyMapping.keyDown[1], &appSettings.keyMapping.keyDown[2]);
+      sscanf(line + 9, "%d,%d,%d", &appSettings.keyMapping.keyDown[0].code, &appSettings.keyMapping.keyDown[1].code, &appSettings.keyMapping.keyDown[2].code);
     } else if (strncmp(line, "keyLeft: ", 9) == 0) {
-      sscanf(line + 9, "%d,%d,%d", &appSettings.keyMapping.keyLeft[0], &appSettings.keyMapping.keyLeft[1], &appSettings.keyMapping.keyLeft[2]);
+      sscanf(line + 9, "%d,%d,%d", &appSettings.keyMapping.keyLeft[0].code, &appSettings.keyMapping.keyLeft[1].code, &appSettings.keyMapping.keyLeft[2].code);
     } else if (strncmp(line, "keyRight: ", 10) == 0) {
-      sscanf(line + 10, "%d,%d,%d", &appSettings.keyMapping.keyRight[0], &appSettings.keyMapping.keyRight[1], &appSettings.keyMapping.keyRight[2]);
+      sscanf(line + 10, "%d,%d,%d", &appSettings.keyMapping.keyRight[0].code, &appSettings.keyMapping.keyRight[1].code, &appSettings.keyMapping.keyRight[2].code);
     } else if (strncmp(line, "keyEdit: ", 9) == 0) {
-      sscanf(line + 9, "%d,%d,%d", &appSettings.keyMapping.keyEdit[0], &appSettings.keyMapping.keyEdit[1], &appSettings.keyMapping.keyEdit[2]);
+      sscanf(line + 9, "%d,%d,%d", &appSettings.keyMapping.keyEdit[0].code, &appSettings.keyMapping.keyEdit[1].code, &appSettings.keyMapping.keyEdit[2].code);
     } else if (strncmp(line, "keyOpt: ", 8) == 0) {
-      sscanf(line + 8, "%d,%d,%d", &appSettings.keyMapping.keyOpt[0], &appSettings.keyMapping.keyOpt[1], &appSettings.keyMapping.keyOpt[2]);
+      sscanf(line + 8, "%d,%d,%d", &appSettings.keyMapping.keyOpt[0].code, &appSettings.keyMapping.keyOpt[1].code, &appSettings.keyMapping.keyOpt[2].code);
     } else if (strncmp(line, "keyPlay: ", 9) == 0) {
-      sscanf(line + 9, "%d,%d,%d", &appSettings.keyMapping.keyPlay[0], &appSettings.keyMapping.keyPlay[1], &appSettings.keyMapping.keyPlay[2]);
+      sscanf(line + 9, "%d,%d,%d", &appSettings.keyMapping.keyPlay[0].code, &appSettings.keyMapping.keyPlay[1].code, &appSettings.keyMapping.keyPlay[2].code);
     } else if (strncmp(line, "keyShift: ", 10) == 0) {
-      sscanf(line + 10, "%d,%d,%d", &appSettings.keyMapping.keyShift[0], &appSettings.keyMapping.keyShift[1], &appSettings.keyMapping.keyShift[2]);
+      sscanf(line + 10, "%d,%d,%d", &appSettings.keyMapping.keyShift[0].code, &appSettings.keyMapping.keyShift[1].code, &appSettings.keyMapping.keyShift[2].code);
+    } else if (strncmp(line, "keyUpType: ", 11) == 0) {
+      sscanf(line + 11, "%d,%d,%d", (int *)&appSettings.keyMapping.keyUp[0].deviceType, (int *)&appSettings.keyMapping.keyUp[1].deviceType, (int *)&appSettings.keyMapping.keyUp[2].deviceType);
+    } else if (strncmp(line, "keyDownType: ", 13) == 0) {
+      sscanf(line + 13, "%d,%d,%d", (int *)&appSettings.keyMapping.keyDown[0].deviceType, (int *)&appSettings.keyMapping.keyDown[1].deviceType, (int *)&appSettings.keyMapping.keyDown[2].deviceType);
+    } else if (strncmp(line, "keyLeftType: ", 13) == 0) {
+      sscanf(line + 13, "%d,%d,%d", (int *)&appSettings.keyMapping.keyLeft[0].deviceType, (int *)&appSettings.keyMapping.keyLeft[1].deviceType, (int *)&appSettings.keyMapping.keyLeft[2].deviceType);
+    } else if (strncmp(line, "keyRightType: ", 14) == 0) {
+      sscanf(line + 14, "%d,%d,%d", (int *)&appSettings.keyMapping.keyRight[0].deviceType, (int *)&appSettings.keyMapping.keyRight[1].deviceType, (int *)&appSettings.keyMapping.keyRight[2].deviceType);
+    } else if (strncmp(line, "keyEditType: ", 13) == 0) {
+      sscanf(line + 13, "%d,%d,%d", (int *)&appSettings.keyMapping.keyEdit[0].deviceType, (int *)&appSettings.keyMapping.keyEdit[1].deviceType, (int *)&appSettings.keyMapping.keyEdit[2].deviceType);
+    } else if (strncmp(line, "keyOptType: ", 12) == 0) {
+      sscanf(line + 12, "%d,%d,%d", (int *)&appSettings.keyMapping.keyOpt[0].deviceType, (int *)&appSettings.keyMapping.keyOpt[1].deviceType, (int *)&appSettings.keyMapping.keyOpt[2].deviceType);
+    } else if (strncmp(line, "keyPlayType: ", 13) == 0) {
+      sscanf(line + 13, "%d,%d,%d", (int *)&appSettings.keyMapping.keyPlay[0].deviceType, (int *)&appSettings.keyMapping.keyPlay[1].deviceType, (int *)&appSettings.keyMapping.keyPlay[2].deviceType);
+    } else if (strncmp(line, "keyShiftType: ", 14) == 0) {
+      sscanf(line + 14, "%d,%d,%d", (int *)&appSettings.keyMapping.keyShift[0].deviceType, (int *)&appSettings.keyMapping.keyShift[1].deviceType, (int *)&appSettings.keyMapping.keyShift[2].deviceType);
     } else if (strncmp(line, "colorBackground: ", 17) == 0) {
       sscanf(line + 17, "0x%x", &appSettings.colorScheme.background);
     } else if (strncmp(line, "colorTextEmpty: ", 16) == 0) {
@@ -293,13 +285,10 @@ int loadTheme(const char* path) {
 }
 
 const char* getAutosavePath(void) {
-  #ifdef MACOS_BUILD
-  static char autosavePath[PATH_LENGTH];
-  getFullPath(AUTOSAVE_FILENAME, autosavePath, PATH_LENGTH);
+  char defaultDir[PATH_LENGTH];
+  if (fileGetDefaultDirectory(defaultDir, PATH_LENGTH) != 0) return AUTOSAVE_FILENAME;
+  snprintf(autosavePath, sizeof(autosavePath), "%s%s%s", defaultDir, PATH_SEPARATOR_STR, AUTOSAVE_FILENAME);
   return autosavePath;
-  #else
-  return AUTOSAVE_FILENAME;
-  #endif
 }
 
 void extractFilenameWithoutExtension(const char* path, char* output, int maxLength) {

@@ -1,5 +1,7 @@
 #include <SDL/SDL.h>
 #include <stdint.h>
+#include <string.h>
+#include <stdarg.h>
 #include "version.h"
 #include "corelib_gfx.h"
 #include "corelib_font.h"
@@ -353,4 +355,11 @@ void gfxReloadFont(void) {
 
   createCharSurfaces();
   isDirty = 1;
+}
+
+void gfxDrawHUD(void) {}
+
+void gfxSetButtonPressed(int buttonIndex, int pressed) {
+  (void)buttonIndex;
+  (void)pressed;
 }

@@ -87,4 +87,10 @@ int gfxGetCharHeight(void);
  */
 void gfxReloadFont(void);
 
+/**
+ * @brief Draw HUD overlay (e.g. virtual gamepad on touch devices)
+ */
+void gfxDrawHUD(void);
+void gfxSetButtonPressed(int buttonIndex, int pressed);
+
 #endif

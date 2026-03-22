@@ -120,7 +120,7 @@ void fileBrowserSetup(const char* title, const char* extension, const char* star
     strncpy(currentPath, startPath, sizeof(currentPath) - 1);
     currentPath[sizeof(currentPath) - 1] = 0;
   } else {
-    fileGetCurrentDirectory(currentPath, sizeof(currentPath));
+    fileGetDefaultDirectory(currentPath, sizeof(currentPath));
   }
   fileBrowserRefresh();
 }
@@ -141,7 +141,7 @@ void fileBrowserSetupFolderMode(const char* title, const char* startPath, const 
     strncpy(currentPath, startPath, sizeof(currentPath) - 1);
     currentPath[sizeof(currentPath) - 1] = 0;
   } else {
-    fileGetCurrentDirectory(currentPath, sizeof(currentPath));
+    fileGetDefaultDirectory(currentPath, sizeof(currentPath));
   }
   fileBrowserRefresh();
 }
