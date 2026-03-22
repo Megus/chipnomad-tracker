@@ -1,0 +1,45 @@
+# MiyooPorts makefile
+
+# MiyooPorts platform identifier
+PLATFORM = miyooports
+
+include Makefile.common
+
+# MiyooPorts-specific settings
+LIBS = $(COMMON_LIBS) platforms/sdl12
+OUTPUT_EXT =
+DOCKER32 = docker run --privileged --platform=linux/armhf --rm --user $$(id -u):$$(id -g) -v`pwd`/..:/src -w/src/tracker
+
+# MiyooPorts build settings
+XTRA_CFLAGS = -DMIYOOPORTS_BUILD -I${SYSROOT}/usr/include -L${SYSROOT}/usr/lib
+XTRA_LIBS = -lSDL -lm
+CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(XTRA_CFLAGS)
+
+.PHONY: .MiyooPorts
+.MiyooPorts:
+	mkdir -p $(BUILD)
+	$(CROSS_COMPILE)$(CC) $(CFLAGS) $(XTRA_LIBS) -o $(BUILD)/chipnomad.armhf
+	chmod +x $(BUILD)/chipnomad.armhf
+
+.PHONY: MiyooPorts
+MiyooPorts:
+	@./check-docker.sh || exit 1
+	$(DOCKER32) monkeyx/retro_builder:arm32 make -f Makefile.miyooports .MiyooPorts CC=gcc CPU=armhf
+
+.PHONY: MiyooPorts-deploy
+MiyooPorts-deploy: MiyooPorts
+	@echo "Creating MiyooPorts deployment package..."
+	@mkdir -p ../../releases
+	@rm -rf /tmp/chipnomad-miyooports-package
+	@mkdir -p /tmp/chipnomad-miyooports-package/Roms/PORTS/Games/ChipNomad
+	@mkdir -p /tmp/chipnomad-miyooports-package/Roms/PORTS/Imgs
+	@mkdir -p /tmp/chipnomad-miyooports-package/Roms/PORTS/Shortcuts/ChipNomad
+	@cp $(BUILD)/chipnomad.armhf /tmp/chipnomad-miyooports-package/Roms/PORTS/Games/ChipNomad/
+	@cp -r packaging/common/* /tmp/chipnomad-miyooports-package/Roms/PORTS/Games/ChipNomad/
+	@mv /tmp/chipnomad-miyooports-package/Roms/PORTS/Games/ChipNomad/chipnomad-icon.png /tmp/chipnomad-miyooports-package/Roms/PORTS/Imgs/ChipNomad.png
+	@cp -r packaging/miyoo_ports/* /tmp/chipnomad-miyooports-package/Roms/PORTS/Shortcuts/ChipNomad
+	$(eval VERSION := $(shell grep 'appVersion.*=' src/version.c | cut -d'"' -f2))
+	@cd /tmp/chipnomad-miyooports-package && zip -r ChipNomad-$$(date +%Y-%m-%d)-$(VERSION)-MiyooPorts.zip .
+	@mv /tmp/chipnomad-miyooports-package/ChipNomad-*-MiyooPorts.zip ../../releases/
+	@rm -rf /tmp/chipnomad-miyooports-package
+	@echo "MiyooPorts package created in ../../releases/"

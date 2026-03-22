@@ -32,6 +32,10 @@ echo "Building PortMaster release..."
 make PortMaster-deploy
 
 echo ""
+echo "Building MiyooPorts release..."
+make MiyooPorts-deploy
+
+echo ""
 echo "Building RG35xx release..."
 make RG35xx-deploy
 
