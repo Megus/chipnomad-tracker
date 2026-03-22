@@ -4,60 +4,12 @@
 #include <string.h>
 #include <locale.h>
 #include <ctype.h>
+#include "corelib_keymap.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
-
-/*
-
-// Keyboard mapping
-#if defined(DESKTOP_BUILD) || defined(PORTMASTER_BUILD)
-// Desktop and PortMaster mapping
-#define BTN_UP          (SDLK_UP)
-#define BTN_DOWN        (SDLK_DOWN)
-#define BTN_LEFT        (SDLK_LEFT)
-#define BTN_RIGHT       (SDLK_RIGHT)
-#define BTN_A           (SDLK_z)
-#define BTN_B           (SDLK_x)
-#define BTN_X           (SDLK_c)
-#define BTN_Y           (SDLK_a)
-#define BTN_L1          (SDLK_LSHIFT)
-#define BTN_R1          (SDLK_LSHIFT)
-#define BTN_L2          0
-#define BTN_R2          0
-#define BTN_SELECT      (SDLK_LSHIFT)
-#define BTN_START       (SDLK_SPACE)
-#define BTN_MENU        (SDLK_LCTRL)
-#define BTN_VOLUME_UP   0
-#define BTN_VOLUME_DOWN 0
-#define BTN_POWER       0
-#define BTN_EXIT        0
-#else
-// RG35xx (old) mapping
-#define BTN_UP          119
-#define BTN_DOWN        115
-#define BTN_LEFT        113
-#define BTN_RIGHT       100
-#define BTN_A           97
-#define BTN_B           98
-#define BTN_X           120
-#define BTN_Y           121
-#define BTN_L1          104
-#define BTN_R1          108
-#define BTN_L2          106
-#define BTN_R2          107
-#define BTN_SELECT      110
-#define BTN_START       109
-#define BTN_MENU        117
-#define BTN_VOLUME_UP   114
-#define BTN_VOLUME_DOWN 116
-#define BTN_POWER       0
-#define BTN_EXIT        0
-#endif
-
- */
 
 // Keyboard layout detection (only used for first-launch default key mapping)
 typedef enum {
@@ -118,14 +70,14 @@ void inputInitDefaultKeyMapping(void) {
   KeyboardLayout layout = detectKeyboardLayout();
 
   // Keyboard mappings (all platforms)
-  appSettings.keyMapping.keyUp[0] = (InputCode){inputKeyboard, SDLK_UP};
-  appSettings.keyMapping.keyDown[0] = (InputCode){inputKeyboard, SDLK_DOWN};
-  appSettings.keyMapping.keyLeft[0] = (InputCode){inputKeyboard, SDLK_LEFT};
-  appSettings.keyMapping.keyRight[0] = (InputCode){inputKeyboard, SDLK_RIGHT};
-  appSettings.keyMapping.keyOpt[0] = (InputCode){inputKeyboard, (layout == LAYOUT_QWERTZ) ? SDLK_y : SDLK_z};
-  appSettings.keyMapping.keyPlay[0] = (InputCode){inputKeyboard, SDLK_SPACE};
-  appSettings.keyMapping.keyShift[0] = (InputCode){inputKeyboard, SDLK_LSHIFT};
-  appSettings.keyMapping.keyEdit[0] = (InputCode){inputKeyboard, SDLK_x};
+  appSettings.keyMapping.keyUp[0] = (InputCode){inputKeyboard, BTN_UP};
+  appSettings.keyMapping.keyDown[0] = (InputCode){inputKeyboard, BTN_DOWN};
+  appSettings.keyMapping.keyLeft[0] = (InputCode){inputKeyboard, BTN_LEFT};
+  appSettings.keyMapping.keyRight[0] = (InputCode){inputKeyboard, BTN_RIGHT};
+  appSettings.keyMapping.keyOpt[0] = (InputCode){inputKeyboard, (layout == LAYOUT_QWERTZ) ? SDLK_y : BTN_B};
+  appSettings.keyMapping.keyPlay[0] = (InputCode){inputKeyboard, BTN_START};
+  appSettings.keyMapping.keyShift[0] = (InputCode){inputKeyboard, BTN_SELECT};
+  appSettings.keyMapping.keyEdit[0] = (InputCode){inputKeyboard, BTN_A};
 
 #if defined(DESKTOP_BUILD) || defined(ANDROID_BUILD)
   // Gamepad mappings (Desktop and Android only)
@@ -181,6 +133,30 @@ const char* inputGetKeyName(InputCode input) {
     }
   }
 
+  #if defined(PORTMASTER_BUILD)
+  // PortMaster: use custom names for all keys
+  switch (input.code) {
+    case BTN_UP: return "Up";
+    case BTN_DOWN: return "Down";
+    case BTN_LEFT: return "Left";
+    case BTN_RIGHT: return "Right";
+    case BTN_A: return "A";
+    case BTN_B: return "B";
+    case BTN_X: return "X";
+    case BTN_Y: return "Y";
+    case BTN_L1: return "L1";
+    case BTN_R1: return "R1";
+    case BTN_L2: return "L2";
+    case BTN_R2: return "R2";
+    case BTN_SELECT: return "Select";
+    case BTN_START: return "Start";
+    default: {
+      static char buf[8];
+      snprintf(buf, sizeof(buf), "K%d", input.code);
+      return buf;
+    }
+  }
+  #else
   // Keyboard - custom short names for common keys
   switch (input.code) {
     case SDLK_LSHIFT: return "LShift";
@@ -197,6 +173,7 @@ const char* inputGetKeyName(InputCode input) {
 
   const char* name = SDL_GetKeyName(input.code);
   if (name && name[0]) return name;
+  #endif
 
   return "???";
 }

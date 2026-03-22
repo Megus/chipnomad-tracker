@@ -56,8 +56,8 @@ ChipNomad uses 8 logical buttons. The default mapping on consoles and desktops:
 | **RIGHT**  | D-Pad Right | Cursor Right |
 | **UP**     | D-Pad Up    | Cursor Up    |
 | **DOWN**   | D-Pad Down  | Cursor Down  |
-| **EDIT**   | A           | Z            |
-| **OPT**    | B           | X            |
+| **EDIT**   | A           | X            |
+| **OPT**    | B           | Z            |
 | **PLAY**   | Start       | Space        |
 | **SHIFT**  | Select      | Shift        |
 

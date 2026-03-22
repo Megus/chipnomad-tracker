@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <SDL2/SDL.h>
 #include "corelib_gfx.h"
+#include "corelib_keymap.h"
 #include "corelib_input.h"
 #include "../../src/corelib/corelib_assets.h"
 
@@ -69,19 +70,6 @@ static int getTouchButton(int x, int y) {
 }
 #endif
 
-// Keyboard mapping
-#if defined(DESKTOP_BUILD) || defined(PORTMASTER_BUILD)
-// Desktop and PortMaster mapping
-#define BTN_MENU        (SDLK_LCTRL)
-#define BTN_POWER       0
-#define BTN_EXIT        0
-#else
-// RG35xx (old) mapping
-#define BTN_MENU        117
-#define BTN_POWER       0
-#define BTN_EXIT        0
-#endif
-
 void mainLoopRun(void (*draw)(void), void (*onEvent)(MainLoopEventData eventData)) {
   uint32_t delay = 1000 / FPS;
   uint32_t start;
@@ -119,9 +107,7 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(MainLoopEventData eventData
 
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT || (event.type == SDL_KEYDOWN && (
-        (event.key.keysym.sym == BTN_POWER) ||
-        (event.key.keysym.sym == BTN_EXIT) ||
-        (menu && event.key.keysym.sym == SDLK_x)))) {
+        (menu && event.key.keysym.sym == BTN_X)))) {
         eventData.type = eventExit;
         eventData.data.value = 0;
         onEvent(eventData);
@@ -181,8 +167,9 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(MainLoopEventData eventData
           eventData.data.input = (InputCode){inputKeyboard, event.key.keysym.sym};
           onEvent(eventData);
         }
+      }
 #ifdef GAMEPAD_SUPPORT
-      } else if (event.type == SDL_CONTROLLERBUTTONDOWN || event.type == SDL_CONTROLLERBUTTONUP) {
+      if (event.type == SDL_CONTROLLERBUTTONDOWN || event.type == SDL_CONTROLLERBUTTONUP) {
         eventData.type = event.type == SDL_CONTROLLERBUTTONDOWN ? eventKeyDown : eventKeyUp;
         eventData.data.input = (InputCode){inputGamepad, event.cbutton.button};
         onEvent(eventData);
@@ -208,7 +195,7 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(MainLoopEventData eventData
       }
 #endif
 #ifdef TOUCH_INPUT
-      else if (event.type == SDL_FINGERDOWN) {
+      if (event.type == SDL_FINGERDOWN) {
         int wx, wy;
         SDL_GetWindowSize(SDL_GetWindowFromID(event.tfinger.windowID), &wx, &wy);
         int dx, dy;

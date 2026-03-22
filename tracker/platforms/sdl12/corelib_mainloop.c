@@ -3,11 +3,10 @@
 #include <SDL/SDL.h>
 
 #include "corelib_gfx.h"
+#include "corelib_keymap.h"
 #include "../../src/corelib/corelib_assets.h"
 
 #define FPS 60
-
-#define BTN_MENU 117
 
 void mainLoopRun(void (*draw)(void), void (*onEvent)(MainLoopEventData eventData)) {
   uint32_t delay = 1000 / FPS;
@@ -31,7 +30,7 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(MainLoopEventData eventData
       } else if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
         if (event.key.keysym.sym == BTN_MENU) {
           menu = event.type == SDL_KEYDOWN;
-        } else if (menu && event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_x) {
+        } else if (menu && event.type == SDL_KEYDOWN && event.key.keysym.sym == BTN_X) {
           eventData.type = eventExit;
           eventData.data.value = 0;
           onEvent(eventData);

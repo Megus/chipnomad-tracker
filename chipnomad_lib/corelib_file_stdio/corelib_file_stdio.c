@@ -177,6 +177,7 @@ int fileCreateDirectory(const char* path) {
   #endif
 }
 
+#if defined(ANDROID_BUILD) || defined(MACOS_BUILD)
 static void createDirectoryRecursive(const char* path) {
   char tmp[4096];
   char* p = NULL;
@@ -195,6 +196,7 @@ static void createDirectoryRecursive(const char* path) {
   }
   mkdir(tmp, 0755);
 }
+#endif
 
 int fileGetDefaultDirectory(char* buffer, int bufferSize) {
 #ifdef ANDROID_BUILD
