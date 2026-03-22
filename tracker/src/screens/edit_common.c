@@ -9,6 +9,10 @@ enum CellEditAction convertMultiAction(enum CellEditAction action) {
   return action;
 }
 
+int isMultiAction(enum CellEditAction action) {
+  return action == editMultiIncrease || action == editMultiDecrease || action == editMultiIncreaseBig || action == editMultiDecreaseBig;
+}
+
 int applyMultiEdit(ScreenData* screen, enum CellEditAction action, int (*editFunc)(int col, int row, enum CellEditAction action)) {
   if (action != editMultiIncrease && action != editMultiDecrease &&
     action != editMultiIncreaseBig && action != editMultiDecreaseBig) return 0;
@@ -26,6 +30,7 @@ int applyMultiEdit(ScreenData* screen, enum CellEditAction action, int (*editFun
 
 int edit16withLimit(enum CellEditAction action, uint16_t* value, uint16_t* lastValue, uint16_t bigStep, uint16_t max) {
   int handled = 0;
+  int isNotMultiAction = !isMultiAction(action);
   action = convertMultiAction(action);
 
   switch (action) {
@@ -60,7 +65,7 @@ int edit16withLimit(enum CellEditAction action, uint16_t* value, uint16_t* lastV
       break;
   }
 
-  if (handled && *value != EMPTY_VALUE_16 && *value <= max) {
+  if (isNotMultiAction && handled && *value != EMPTY_VALUE_16 && *value <= max) {
     *lastValue = *value;
   }
 
@@ -91,7 +96,7 @@ int edit8noLast(enum CellEditAction action, uint8_t* value, uint8_t bigStep, uin
       return 1;
       break;
     case editClear:
-      *value = 0;
+      *value = min;
       return 1;
       break;
     case editIncrease:
@@ -119,6 +124,7 @@ int edit8noLast(enum CellEditAction action, uint8_t* value, uint8_t bigStep, uin
 
 int edit8noLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep) {
   int handled = 0;
+  int isNotMultiAction = !isMultiAction(action);
   action = convertMultiAction(action);
 
   switch (action) {
@@ -153,7 +159,7 @@ int edit8noLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue,
       break;
   }
 
-  if (handled) {
+  if (isNotMultiAction && handled) {
     *lastValue = *value;
   }
 

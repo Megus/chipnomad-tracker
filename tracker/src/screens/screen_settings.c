@@ -143,8 +143,7 @@ void settingsDrawField(int col, int row, int state) {
 int settingsOnEdit(int col, int row, enum CellEditAction action) {
   if (row == 0 && col == 0) {
     // Pitch conflict warning (0/1)
-    static uint8_t lastValue = 0;
-    return edit8withLimit(action, (uint8_t*)&appSettings.pitchConflictWarning, &lastValue, 1, 1);
+    return edit8noLast(action, (uint8_t*)&appSettings.pitchConflictWarning, 1, 0, 1);
   } else if (row == 1 && col == 0) {
     // Mix volume (1-100%)
     int mixVolumePercent = (int)(appSettings.mixVolume * 100.0f + 0.5f);
@@ -159,9 +158,8 @@ int settingsOnEdit(int col, int row, enum CellEditAction action) {
     return handled;
   } else if (row == 2 && col == 0) {
     // Quality (0-3)
-    static uint8_t lastValue = 0;
-    int handled = edit8withLimit(action, (uint8_t*)&appSettings.quality, &lastValue, 1, 3);
-    if (handled && chipnomadState) {
+    int handled = edit8noLast(action, (uint8_t*)&appSettings.quality, 1, 0, 3);
+    if (handled) {
       chipnomadSetQuality(chipnomadState, appSettings.quality);
     }
     return handled;

@@ -123,11 +123,11 @@ static void drawField(int col, int row, int state) {
     if (!isAutoEnvEnabled) gfxPrint(26, 8, "   ");
   } else if (row == 5 && col == 1) {
     if (isAutoEnvEnabled) {
-      gfxPrintf(26, 8, "%hhd:", chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvN);
+      gfxPrintf(26, 8, "%hhX:", chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvN);
     }
   } else if ((row == 4 || row == 5) && col == 2) {
     if (isAutoEnvEnabled) {
-      gfxPrintf(28, 8, "%hhd", chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvD);
+      gfxPrintf(28, 8, "%hhX", chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvD);
     }
   }
 }
@@ -181,10 +181,10 @@ static int onEdit(int col, int row, enum CellEditAction action) {
         chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvD = 0;
       }
     } else if (row == 5) {
-      handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvN, 16, 1, 8);
+      handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvN, 16, 1, 15);
     }
   } else if (col == 2 && (row == 4 || row == 5)) {
-    handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvD, 16, 1, 8);
+    handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvD, 16, 1, 15);
   }
 
   return handled;

@@ -12,6 +12,9 @@ const AppScreen* currentScreen = NULL;
 static int messageTimer = -1;
 static char messageBuffer[42] = "";
 
+static AppScreen const* pendingScreen;
+static int pendingScreenInput;
+
 void drawScreenMap() {
   const static int smY = 15;
 
@@ -63,16 +66,24 @@ void drawScreenMap() {
 void screenSetup(const AppScreen* screen, int input) {
   projectSave(&chipnomadState->project, getAutosavePath()); // Temporary measure against random crashes
 
-  currentScreen = screen;
-  currentScreen->setup(input);
-  gfxSetBgColor(appSettings.colorScheme.background);
-  gfxSetCursorColor(appSettings.colorScheme.cursor);
-  gfxClearRect(0, 0, 40, 20);
-  currentScreen->fullRedraw();
-  drawScreenMap();
+  pendingScreen = screen;
+  pendingScreenInput = input;
 }
 
 void screenDraw() {
+  if (pendingScreen != NULL) {
+
+    currentScreen = pendingScreen;
+    currentScreen->setup(pendingScreenInput);
+    gfxSetBgColor(appSettings.colorScheme.background);
+    gfxSetCursorColor(appSettings.colorScheme.cursor);
+    gfxClearRect(0, 0, 40, 20);
+    currentScreen->fullRedraw();
+    drawScreenMap();
+
+    pendingScreen = NULL;
+  }
+
   currentScreen->draw();
 
   // Draw cached message
@@ -539,7 +550,7 @@ LoopRange screenGetLoopRange(const AppScreen* screen) {
   extern LoopRange songScreenGetLoopRange(void);
   extern LoopRange chainScreenGetLoopRange(void);
   extern LoopRange phraseScreenGetLoopRange(void);
-  
+
   if (screen == &screenSong) {
     return songScreenGetLoopRange();
   } else if (screen == &screenChain) {
@@ -547,7 +558,7 @@ LoopRange screenGetLoopRange(const AppScreen* screen) {
   } else if (screen == &screenPhrase) {
     return phraseScreenGetLoopRange();
   }
-  
+
   LoopRange range = {0};
   return range;
 }

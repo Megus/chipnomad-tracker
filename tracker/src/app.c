@@ -54,13 +54,6 @@ static int inputCodeToKey(InputCode input) {
   return keyUnmapped;
 }
 
-/**
-* @brief Handle play/stop key commands
-*
-* @param keys Pressed keys
-* @param tapCount number of taps
-* @return int 0 - input not handled, 1 - input handled
-*/
 static void applyLoopRange(void) {
   LoopRange range = screenGetLoopRange(currentScreen);
   if (range.enabled) {
@@ -70,6 +63,13 @@ static void applyLoopRange(void) {
   }
 }
 
+/**
+* @brief Handle play/stop key commands
+*
+* @param keys Pressed keys
+* @param tapCount number of taps
+* @return int 0 - input not handled, 1 - input handled
+*/
 static int inputPlayback(int keys, int tapCount) {
   if (!chipnomadState) return 0;
 
@@ -280,12 +280,12 @@ void appOnEvent(MainLoopEventData eventData) {
   switch (eventData.type) {
   case eventKeyDown: {
     int value = inputCodeToKey(eventData.data.input);
-    
+
     // Call raw input callback if set (for key mapping screen)
     if (inputRawCallback) {
       inputRawCallback(eventData.data.input, 1);
     }
-    
+
     if (value == keyEdit || value == keyOpt || value == keyShift) {
       // Edit/Opt/Shift "override" d-pad buttons
       pressedButtons = (pressedButtons & (~dPadMask)) | value;
@@ -312,12 +312,12 @@ void appOnEvent(MainLoopEventData eventData) {
   }
   case eventKeyUp: {
     int value = inputCodeToKey(eventData.data.input);
-    
+
     // Call raw input callback if set (for key mapping screen)
     if (inputRawCallback) {
       inputRawCallback(eventData.data.input, 0);
     }
-    
+
     pressedButtons &= ~value;
     // Set tap timer
     if (value & doubleTapMask) {

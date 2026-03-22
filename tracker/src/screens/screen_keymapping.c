@@ -160,6 +160,10 @@ static ScreenData screenKeyMappingData = {
 };
 
 static void setup(int input) {
+  screenKeyMappingData.cursorRow = 0;
+  screenKeyMappingData.cursorCol = 0;
+  captureState = STATE_NAVIGATION;
+  inputRawCallback = NULL;
 }
 
 static void fullRedraw(void) {
@@ -191,7 +195,6 @@ static void applyPendingCapture(void) {
 }
 
 static int onInput(int isKeyDown, int keys, int tapCount) {
-  LOGD("KeyMapping onInput: isKeyDown=%d, keys=%d, tapCount=%d, captureState=%d", isKeyDown, keys, tapCount, captureState);
   if (captureState == STATE_CAPTURING) return 1;
   if (captureState == STATE_CAPTURE_DONE) {
     if (!isKeyDown) {

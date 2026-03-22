@@ -31,12 +31,12 @@ void setupInstrumentAY(PlaybackState* state, int trackIdx) {
   track->note.chip.ay.envOffsetAcc = 0;
   track->note.chip.ay.noiseBase = EMPTY_VALUE_8;
   track->note.chip.ay.noiseOffsetAcc = 0;
-  
+
   uint8_t defaultMixer = p->instruments[track->note.instrument].chip.ay.defaultMixer;
   uint8_t mixerValue = ~(defaultMixer & 0x0F);
   track->note.chip.ay.mixer = (mixerValue & 0x1) + ((mixerValue & 0x2) << 2);
   track->note.chip.ay.envShape = (defaultMixer >> 4) & 0x0F;
-  
+
   track->note.chip.ay.adsrStep = 0; // ADSR: Attack
   track->note.chip.ay.adsrFrom = 1;
   track->note.chip.ay.adsrTo = 15;
@@ -156,6 +156,7 @@ void outputRegistersAY(PlaybackState* state, int trackIdx, int chipIdx, SoundChi
           // 1. Auto envelope
           int n = track->note.chip.ay.envAutoN;
           int d = track->note.chip.ay.envAutoD;
+          if (d == 0) d = 1; // Just in case, to avoid division by zero
           int tempPeriod = period * n / d;
           envPeriod = ((tempPeriod & 0xf) >= 8) ? (tempPeriod >> 4) + 1 : (tempPeriod >> 4);
         } else {
