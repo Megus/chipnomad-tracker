@@ -45,7 +45,7 @@ int settingsSave(void) {
   char defaultDir[PATH_LENGTH];
   if (fileGetDefaultDirectory(defaultDir, PATH_LENGTH) != 0) return 1;
   snprintf(settingsPath, sizeof(settingsPath), "%s%ssettings.txt", defaultDir, PATH_SEPARATOR_STR);
-  
+
   int fileId = fileOpen(settingsPath, 1);
   if (fileId == -1) return 1;
 
@@ -107,7 +107,7 @@ int settingsLoad(void) {
   char defaultDir[PATH_LENGTH];
   if (fileGetDefaultDirectory(defaultDir, PATH_LENGTH) != 0) return 1;
   snprintf(settingsPath, sizeof(settingsPath), "%s%ssettings.txt", defaultDir, PATH_SEPARATOR_STR);
-  
+
   int fileId = fileOpen(settingsPath, 0);
   if (fileId == -1) return 1;
 
@@ -150,21 +150,21 @@ int settingsLoad(void) {
     } else if (strncmp(line, "keyShift: ", 10) == 0) {
       sscanf(line + 10, "%d,%d,%d", &appSettings.keyMapping.keyShift[0].code, &appSettings.keyMapping.keyShift[1].code, &appSettings.keyMapping.keyShift[2].code);
     } else if (strncmp(line, "keyUpType: ", 11) == 0) {
-      sscanf(line + 11, "%d,%d,%d", &appSettings.keyMapping.keyUp[0].deviceType, &appSettings.keyMapping.keyUp[1].deviceType, &appSettings.keyMapping.keyUp[2].deviceType);
+      sscanf(line + 11, "%d,%d,%d", (int *)&appSettings.keyMapping.keyUp[0].deviceType, (int *)&appSettings.keyMapping.keyUp[1].deviceType, (int *)&appSettings.keyMapping.keyUp[2].deviceType);
     } else if (strncmp(line, "keyDownType: ", 13) == 0) {
-      sscanf(line + 13, "%d,%d,%d", &appSettings.keyMapping.keyDown[0].deviceType, &appSettings.keyMapping.keyDown[1].deviceType, &appSettings.keyMapping.keyDown[2].deviceType);
+      sscanf(line + 13, "%d,%d,%d", (int *)&appSettings.keyMapping.keyDown[0].deviceType, (int *)&appSettings.keyMapping.keyDown[1].deviceType, (int *)&appSettings.keyMapping.keyDown[2].deviceType);
     } else if (strncmp(line, "keyLeftType: ", 13) == 0) {
-      sscanf(line + 13, "%d,%d,%d", &appSettings.keyMapping.keyLeft[0].deviceType, &appSettings.keyMapping.keyLeft[1].deviceType, &appSettings.keyMapping.keyLeft[2].deviceType);
+      sscanf(line + 13, "%d,%d,%d", (int *)&appSettings.keyMapping.keyLeft[0].deviceType, (int *)&appSettings.keyMapping.keyLeft[1].deviceType, (int *)&appSettings.keyMapping.keyLeft[2].deviceType);
     } else if (strncmp(line, "keyRightType: ", 14) == 0) {
-      sscanf(line + 14, "%d,%d,%d", &appSettings.keyMapping.keyRight[0].deviceType, &appSettings.keyMapping.keyRight[1].deviceType, &appSettings.keyMapping.keyRight[2].deviceType);
+      sscanf(line + 14, "%d,%d,%d", (int *)&appSettings.keyMapping.keyRight[0].deviceType, (int *)&appSettings.keyMapping.keyRight[1].deviceType, (int *)&appSettings.keyMapping.keyRight[2].deviceType);
     } else if (strncmp(line, "keyEditType: ", 13) == 0) {
-      sscanf(line + 13, "%d,%d,%d", &appSettings.keyMapping.keyEdit[0].deviceType, &appSettings.keyMapping.keyEdit[1].deviceType, &appSettings.keyMapping.keyEdit[2].deviceType);
+      sscanf(line + 13, "%d,%d,%d", (int *)&appSettings.keyMapping.keyEdit[0].deviceType, (int *)&appSettings.keyMapping.keyEdit[1].deviceType, (int *)&appSettings.keyMapping.keyEdit[2].deviceType);
     } else if (strncmp(line, "keyOptType: ", 12) == 0) {
-      sscanf(line + 12, "%d,%d,%d", &appSettings.keyMapping.keyOpt[0].deviceType, &appSettings.keyMapping.keyOpt[1].deviceType, &appSettings.keyMapping.keyOpt[2].deviceType);
+      sscanf(line + 12, "%d,%d,%d", (int *)&appSettings.keyMapping.keyOpt[0].deviceType, (int *)&appSettings.keyMapping.keyOpt[1].deviceType, (int *)&appSettings.keyMapping.keyOpt[2].deviceType);
     } else if (strncmp(line, "keyPlayType: ", 13) == 0) {
-      sscanf(line + 13, "%d,%d,%d", &appSettings.keyMapping.keyPlay[0].deviceType, &appSettings.keyMapping.keyPlay[1].deviceType, &appSettings.keyMapping.keyPlay[2].deviceType);
+      sscanf(line + 13, "%d,%d,%d", (int *)&appSettings.keyMapping.keyPlay[0].deviceType, (int *)&appSettings.keyMapping.keyPlay[1].deviceType, (int *)&appSettings.keyMapping.keyPlay[2].deviceType);
     } else if (strncmp(line, "keyShiftType: ", 14) == 0) {
-      sscanf(line + 14, "%d,%d,%d", &appSettings.keyMapping.keyShift[0].deviceType, &appSettings.keyMapping.keyShift[1].deviceType, &appSettings.keyMapping.keyShift[2].deviceType);
+      sscanf(line + 14, "%d,%d,%d", (int *)&appSettings.keyMapping.keyShift[0].deviceType, (int *)&appSettings.keyMapping.keyShift[1].deviceType, (int *)&appSettings.keyMapping.keyShift[2].deviceType);
     } else if (strncmp(line, "colorBackground: ", 17) == 0) {
       sscanf(line + 17, "0x%x", &appSettings.colorScheme.background);
     } else if (strncmp(line, "colorTextEmpty: ", 16) == 0) {
