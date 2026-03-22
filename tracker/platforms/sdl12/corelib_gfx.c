@@ -65,6 +65,11 @@ static SDL_Surface* offscreenSurface = NULL;
 #endif
 
 int gfxSetup(int *screenWidth, int *screenHeight) {
+  if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
+    printf("SDL2 Initialization Error: %s\n", SDL_GetError());
+    return 1;
+  }
+
 #ifdef MIYOOPORTS_BUILD
   sdlScreen = SDL_SetVideoMode(WINDOW_WIDTH, WINDOW_HEIGHT, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
   if (!sdlScreen) {
