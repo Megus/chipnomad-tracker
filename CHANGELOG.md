@@ -1,11 +1,14 @@
 # ChipNomad changelog
 
-## v1.0.0 (not yet released)
+## v0.2.0b (not yet released)
 
+- *PLATFORM*: Android (phones, tablets, handhelds), MiyooPorts
 - Press Opt+Left/Right at the Song screen to solo all tracks to the left/right
 - Custom font loading
 - *FIX*: THO behavior in tables now match M8
 - *FIX*: Env shape display was incorrect at the instrument screen
+- *FIX*: Unexpected behavior when "cutting" values at screens other than Phrase and Table
+- *FIX*: Division by zero in auto envelope logic
 
 ## v0.1.0b (January 25, 2026)
 
