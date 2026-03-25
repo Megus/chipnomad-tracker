@@ -20,7 +20,6 @@ typedef struct PlaybackTableState {
   uint8_t rows[4];
   uint8_t counters[4];
   uint8_t speed[4];
-  PlaybackFXState fx[4];
   uint8_t fxAuxState[16][4];
 } PlaybackTableState;
 
@@ -41,7 +40,7 @@ typedef struct PlaybackAYNoteState {
   int8_t noiseOffsetAcc;
 } PlaybackAYNoteState;
 
-typedef struct PlaybackChipNoteState {
+typedef union PlaybackChipNoteState {
   PlaybackAYNoteState ay;
 } PlaybackChipNoteState;
 
@@ -63,7 +62,9 @@ typedef struct PlaybackNoteState {
 
   PlaybackTableState instrumentTable;
   PlaybackTableState auxTable;
-  PlaybackFXState fx[3];
+
+  PlaybackCommonFXState commonFX;
+  PlaybackChipFXState chipFX;
 
   PlaybackChipNoteState chip;
 } PlaybackNoteState;
@@ -75,26 +76,6 @@ typedef struct PlaybackTrackQueue {
   int phraseRow;
   int loop;
 } PlaybackTrackQueue;
-
-enum PlaybackArpType {
-  arpTypeUp,
-  arpTypeDown,
-  arpTypeUpDown,
-  arpTypeUp1Oct,
-  arpTypeDown1Oct,
-  arpTypeUpDown1Oct,
-  arpTypeUp2Oct,
-  arpTypeDown2Oct,
-  arpTypeUpDown2Oct,
-  arpTypeUp3Oct,
-  arpTypeDown3Oct,
-  arpTypeUpDown3Oct,
-  arpTypeUp4Oct,
-  arpTypeDown4Oct,
-  arpTypeUpDown4Oct,
-  arpTypeUp5Oct,
-  arpTypeMax,
-};
 
 typedef struct PlaybackTrackState {
   PlaybackTrackQueue queue;
@@ -113,14 +94,14 @@ typedef struct PlaybackTrackState {
 
   int frameCounter;
 
-  int arpSpeed;
+  int arpSpeed; // To move to ARP effect data
   enum PlaybackArpType arpType;
 
   // Currently playing note
   PlaybackNoteState note;
   // Cached phrase row data
   PhraseRow currentPhraseRow;
-  // FX auxillary state data
+  // FX auxillary state data for the phrase (used by HOP)
   uint8_t fxAuxState[16][3];
 } PlaybackTrackState;
 
@@ -128,7 +109,7 @@ typedef struct PlaybackAYChipState {
   uint8_t envShape;
 } PlaybackAYChipState;
 
-typedef struct PlaybackChipState {
+typedef union PlaybackChipState {
   PlaybackAYChipState ay;
 } PlaybackChipState;
 
@@ -236,8 +217,6 @@ void playbackStop(PlaybackState* state);
  * @param instrument Instrument to use
  */
 void playbackPreviewNote(PlaybackState* state, int trackIdx, uint8_t note, uint8_t instrument);
-
-
 
 /**
  * Stops preview playback on a specific track

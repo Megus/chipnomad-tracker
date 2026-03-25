@@ -79,7 +79,7 @@ static int inputPlayback(int keys, int tapCount) {
   if (!isPlaying && keys == keyPlay) {
     playbackStop(&chipnomadState->playbackState);
     LoopRange range = screenGetLoopRange(currentScreen);
-    if (currentScreen == &screenSong || currentScreen == &screenProject) {
+    if (currentScreen == &screenSong || currentScreen == &screenProject || currentScreen == &screenSettings) {
       int startRow = range.enabled ? range.startSongRow : *pSongRow;
       playbackStartSong(&chipnomadState->playbackState, startRow, 0, 1);
       applyLoopRange();
@@ -97,11 +97,12 @@ static int inputPlayback(int keys, int tapCount) {
   else if (!isPlaying && keys == (keyPlay | keyShift)) {
     playbackStop(&chipnomadState->playbackState);
     LoopRange range = screenGetLoopRange(currentScreen);
-    if (currentScreen == &screenSong || currentScreen == &screenProject) {
+    if (currentScreen == &screenSong || currentScreen == &screenProject || currentScreen == &screenSettings) {
       int startRow = range.enabled ? range.startSongRow : *pSongRow;
       playbackStartSong(&chipnomadState->playbackState, startRow, 0, 1);
       applyLoopRange();
-    } else if (currentScreen == &screenChain || currentScreen == &screenPhrase || currentScreen == &screenTable || currentScreen == &screenInstrument) {
+    } else if (currentScreen == &screenChain || currentScreen == &screenPhrase || currentScreen == &screenTable ||
+      currentScreen == &screenInstrument || currentScreen == &screenInstrumentPool) {
       int startChainRow = range.enabled ? range.startChainRow : *pChainRow;
       playbackStartSong(&chipnomadState->playbackState, *pSongRow, startChainRow, 1);
       applyLoopRange();

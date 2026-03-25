@@ -358,8 +358,9 @@ static int inputScreenNavigation(int keys, int tapCount) {
       // If we currently on the table command, go to this table
       int fxIdx = (screen.cursorCol - 3) / 2;
       uint8_t fxType = phraseRows[screen.cursorRow].fx[fxIdx][0];
-      if (fxType == fxTBL || fxType == fxTBX) {
-        table = phraseRows[screen.cursorRow].fx[fxIdx][1];
+      uint8_t fxValue = phraseRows[screen.cursorRow].fx[fxIdx][1];
+      if ((fxType == fxTBL || fxType == fxTBX) && fxValue != 0xff) {
+        table = fxValue;
       }
     }
 

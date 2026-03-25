@@ -70,11 +70,11 @@ Set table speed to XX ticks per row.
 
 ### `TBL XX` – Set instrument table
 
-Replace the instrument table with a different table.
+Replace the instrument table with a different table. Value FF stops table.
 
 ### `TBX XX` – Set aux table
 
-Set aux table. Aux table plays together with the instrument table.
+Set aux table. Aux table plays together with the instrument table. Value FF stops aux table.
 
 ### `THO XX` – Hop all table columns
 

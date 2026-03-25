@@ -9,6 +9,7 @@
 - *FIX*: Env shape display was incorrect at the instrument screen
 - *FIX*: Unexpected behavior when "cutting" values at screens other than Phrase and Table
 - *FIX*: Division by zero in auto envelope logic
+- *FIX*: You could open table FF for editing which led to unexpected behavior
 
 ## v0.1.0b (January 25, 2026)
 
