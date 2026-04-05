@@ -1,27 +1,22 @@
-#include "../external/unity/unity.h"
-#include "../src/project.h"
+#include "unity.h"
+#include "project.h"
+
+static Project testProject;
 
 void setUp(void) {
-  // Setup before each test
+  projectInit(&testProject);
 }
 
 void tearDown(void) {
-  // Cleanup after each test
 }
 
 void test_instrumentIsEmpty_should_return_true_for_none_type(void) {
-  struct Project testProject;
-  projectInit(&testProject);
-
-  TEST_ASSERT_TRUE(instrumentIsEmpty(0));
+  TEST_ASSERT_TRUE(instrumentIsEmpty(&testProject, 0));
 }
 
 void test_instrumentIsEmpty_should_return_false_for_ay_type(void) {
-  struct Project testProject;
-  projectInit(&testProject);
   testProject.instruments[0].type = instAY;
-
-  TEST_ASSERT_FALSE(instrumentIsEmpty(0));
+  TEST_ASSERT_FALSE(instrumentIsEmpty(&testProject, 0));
 }
 
 int main(void) {

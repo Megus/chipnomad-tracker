@@ -8,17 +8,18 @@ FXName fxNames[256];
 
 // FX Names (in the order as they appear in FX select screen)
 FXName fxNamesCommon[] = {
-  {fxARP, "ARP"}, {fxARC, "ARC"}, {fxPVB, "PVB"}, {fxPBN, "PBN"}, {fxPSL, "PSL"}, {fxPIT, "PIT"}, {fxFIN, "FIN"}, {fxPRD, "PRD"},
-  {fxVOL, "VOL"}, {fxRET, "RET"}, {fxDEL, "DEL"}, {fxOFF, "OFF"}, {fxKIL, "KIL"},
-  {fxTIC, "TIC"}, {fxTBL, "TBL"}, {fxTBX, "TBX"}, {fxTHO, "THO"}, {fxTXH, "TXH"},
-  {fxGRV, "GRV"}, {fxGGR, "GGR"}, {fxHOP, "HOP"}, {fxSNG, "SNG"}
+  {fxARP, "ARP"}, {fxARC, "ARC"}, {fxPVB, "PVB"}, {fxPBN, "PBN"}, {fxPSL, "PSL"},
+  {fxPIT, "PIT"}, {fxFIN, "FIN"}, {fxPRD, "PRD"}, {fxVOL, "VOL"}, {fxRET, "RET"},
+  {fxDEL, "DEL"}, {fxOFF, "OFF"}, {fxKIL, "KIL"}, {fxTIC, "TIC"}, {fxTBL, "TBL"},
+  {fxTBX, "TBX"}, {fxTHO, "THO"}, {fxTXH, "TXH"}, {fxGRV, "GRV"}, {fxGGR, "GGR"},
+  {fxHOP, "HOP"}, {fxSNG, "SNG"}
 };
 int fxCommonCount = sizeof(fxNamesCommon) / sizeof(FXName);
 
 FXName fxNamesAY[] = {
-  {fxAYM, "AYM"}, {fxERT, "ERT"}, {fxNOI, "NOI"}, {fxNOA, "NOA"},
-  {fxEAU, "EAU"}, {fxEVB, "EVB"}, {fxEBN, "EBN"}, {fxESL, "ESL"},
-  {fxENT, "ENT"}, {fxEPT, "EPT"}, {fxEPL, "EPL"}, {fxEPH, "EPH"},
+  {fxAYM, "AYM"}, {fxERT, "ERT"}, {fxNOI, "NOI"}, {fxNOA, "NOA"}, {fxEAU, "EAU"},
+  {fxEVB, "EVB"}, {fxEBN, "EBN"}, {fxESL, "ESL"}, {fxENT, "ENT"}, {fxEPT, "EPT"},
+  {fxEPL, "EPL"}, {fxEPH, "EPH"},
 };
 int fxAYCount = sizeof(fxNamesAY) / sizeof(FXName);
 
@@ -316,11 +317,11 @@ static int projectLoadPhrases(int fileId, Project* p) {
 
 static int loadInstrument(int fileId, Instrument* instrument, Project* p) {
   instrumentClear(instrument);
-  
+
   while (1) {
     READ_STRING;
     if (lpstr[0] == '#') return 0;
-    
+
     if (strncmp(lpstr, "- Name: ", 8) == 0) {
       sscanf(lpstr, "- Name: %[^\n]", instrument->name);
     } else if (strncmp(lpstr, "- Type: ", 8) == 0) {

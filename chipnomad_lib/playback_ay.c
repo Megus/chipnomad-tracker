@@ -2,6 +2,7 @@
 #include "playback_internal.h"
 #include "utils.h"
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -12,12 +13,8 @@
 void resetTrackAY(PlaybackState* state, int trackIdx) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
 
-  track->note.chip.ay.mixer = 0; // All disabled
+  memset(&track->note.chip.ay, 0, sizeof(track->note.chip.ay));
   track->note.chip.ay.noiseBase = EMPTY_VALUE_8;
-  track->note.chip.ay.noiseOffsetAcc = 0;
-  track->note.chip.ay.envShape = 0;
-  track->note.chip.ay.envBase = 0;
-  track->note.chip.ay.envOffsetAcc = 0;
 }
 
 void setupInstrumentAY(PlaybackState* state, int trackIdx) {
@@ -28,9 +25,9 @@ void setupInstrumentAY(PlaybackState* state, int trackIdx) {
   track->note.chip.ay.envAutoN = p->instruments[track->note.instrument].chip.ay.autoEnvN;
   track->note.chip.ay.envAutoD = p->instruments[track->note.instrument].chip.ay.autoEnvD;
   track->note.chip.ay.envBase = 0;
-  track->note.chip.ay.envOffsetAcc = 0;
+  track->note.chip.ay.envOffset = 0;
   track->note.chip.ay.noiseBase = EMPTY_VALUE_8;
-  track->note.chip.ay.noiseOffsetAcc = 0;
+  track->note.chip.ay.noiseOffset = 0;
 
   uint8_t defaultMixer = p->instruments[track->note.instrument].chip.ay.defaultMixer;
   uint8_t mixerValue = ~(defaultMixer & 0x0F);
@@ -130,15 +127,15 @@ void outputRegistersAY(PlaybackState* state, int trackIdx, int chipIdx, SoundChi
       int16_t period;
       if (p->linearPitch) {
         // Linear pitch mode: convert cents to frequency, then to period
-        int cents = p->pitchTable.values[track->note.noteFinal] + track->note.pitchOffset + track->note.pitchOffsetAcc;
+        int cents = p->pitchTable.values[track->note.noteFinal] + track->note.pitchOffset;
         float frequency = centsToFrequency(cents);
         period = frequencyToAYPeriod(frequency, p->chipSetup.ay.clock);
-        // Apply period offset (with different sign for convenience)
-        period -= track->note.periodOffsetAcc;
       } else {
         // Traditional period mode
-        period = p->pitchTable.values[track->note.noteFinal] - track->note.pitchOffset - track->note.pitchOffsetAcc - track->note.periodOffsetAcc;
+        period = p->pitchTable.values[track->note.noteFinal] - track->note.pitchOffset;
       }
+      period -= track->note.periodOffset;
+
       // Clamp period to valid AY range
       if (period < 1) period = 1;
       if (period > 4095) period = 4095;
@@ -165,12 +162,12 @@ void outputRegistersAY(PlaybackState* state, int trackIdx, int chipIdx, SoundChi
         }
 
         // Envelope period modification
-        envPeriod -= track->note.chip.ay.envOffsetAcc + track->note.chip.ay.envOffset;
+        envPeriod -= track->note.chip.ay.envOffset;
 
         volume = 16;
       } else {
         // Envelope off
-        volume = track->note.volume + track->note.volumeOffsetAcc;
+        volume = track->note.volume + track->note.volumeOffset;
         if (volume < 0) volume = 0;
         if (volume > 15) volume = 15;
         volume *= track->note.chip.ay.adsrVolume;
@@ -202,7 +199,7 @@ void outputRegistersAY(PlaybackState* state, int trackIdx, int chipIdx, SoundChi
 
       // Noise
       if ((track->note.chip.ay.mixer & 8) == 0 && track->note.chip.ay.noiseBase != EMPTY_VALUE_8) {
-        noise = track->note.chip.ay.noiseBase + track->note.chip.ay.noiseOffsetAcc;
+        noise = track->note.chip.ay.noiseBase + track->note.chip.ay.noiseOffset;
       }
 
       // Mixer
@@ -228,18 +225,18 @@ void outputRegistersAY(PlaybackState* state, int trackIdx, int chipIdx, SoundChi
   chip->setRegister(chip, 7, mixer);
 }
 
-// Convert frequency to AY period with optimal accuracy
+// Convert frequency to AY period
 int frequencyToAYPeriod(float frequency, int clockHz) {
   if (frequency <= 0.0f) return 4095; // Avoid division by zero
 
   float periodf = (float)clockHz / (16.0f * frequency);
-
   float freqL = (float)clockHz / (16.0f * floorf(periodf));
   float freqH = (float)clockHz / (16.0f * ceilf(periodf));
 
   int period = (fabsf(freqL - frequency) < fabsf(freqH - frequency)) ? floorf(periodf) : ceilf(periodf);
-  if (period > 4095) period = 4095; // AY only has 12 bits for period
-  if (period < 1) period = 1; // Avoid zero period
+  // Clamp to AY period range
+  if (period > 4095) period = 4095;
+  if (period < 0) period = 0;
 
   return period;
 }

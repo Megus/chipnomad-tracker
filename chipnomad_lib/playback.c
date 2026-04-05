@@ -12,24 +12,26 @@ static int moveToNextPhraseRow(PlaybackState* state, int trackIdx);
 
 static void resetTrackFXAuxState(PlaybackState* state, int trackIdx) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
-  for (int c = 0; c < 16; c++) {
-    for (int d = 0; d < 3; d++) {
-      track->fxAuxState[c][d] = 0;
-    }
-  }
+  memset(track->fxAuxState, 0, sizeof(track->fxAuxState));
 }
 
 static void resetTableFXAuxState(PlaybackTableState* tableState) {
-  for (int c = 0; c < 16; c++) {
-    for (int d = 0; d < 4; d++) {
-      tableState->fxAuxState[c][d] = 0;
-    }
+  memset(tableState->fxAuxState, 0, sizeof(tableState->fxAuxState));
+}
+
+static void resetNoteFX(PlaybackState* state, int trackIdx) {
+  PlaybackTrackState* track = &state->tracks[trackIdx];
+  for (int i = 0; i < fxTotalCount; i++) {
+    track->note.fx[i].isOn = 0;
+    track->note.fx[i].counter = 0;
+    track->note.fx[i].acc = 0;
   }
 }
 
 static void resetTrack(PlaybackState* state, int trackIdx) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
 
+  // Set specific values that shouldn't be zero
   track->songRow = EMPTY_VALUE_16;
   track->chainRow = 0;
   track->phraseRow = 0;
@@ -37,26 +39,23 @@ static void resetTrack(PlaybackState* state, int trackIdx) {
   track->grooveIdx = 0;
   track->grooveRow = 0;
   track->pendingGrooveIdx = 0;
+
   track->note.noteBase = EMPTY_VALUE_8;
   track->note.noteFinal = EMPTY_VALUE_8;
   track->note.noteOffset = 0;
-  track->note.noteOffsetAcc = 0;
   track->note.pitchOffset = 0;
-  track->note.pitchOffsetAcc = 0;
-  track->note.periodOffsetAcc = 0;
   track->note.instrument = EMPTY_VALUE_8;
   track->note.volume = 0;
-  track->note.volumeOffsetAcc = 0;
   track->note.volume1 = 0;
   track->note.volume2 = 0;
   track->note.volume3 = 0;
+
+  track->note.instrument = EMPTY_VALUE_8;
   track->note.instrumentTable.tableIdx = EMPTY_VALUE_8;
   track->note.auxTable.tableIdx = EMPTY_VALUE_8;
   track->mode = playbackModeStopped;
 
-  for (int i = 0; i < 3; i++) {
-    track->note.fx[i].fx = EMPTY_VALUE_8;
-  }
+  resetNoteFX(state, trackIdx);
 
   resetTrackFXAuxState(state, trackIdx);
   resetTableFXAuxState(&track->note.instrumentTable);
@@ -105,7 +104,7 @@ void tableReadFX(PlaybackState* state, int trackIdx, struct PlaybackTableState* 
 
   int tableRow = table->rows[fxIdx];
   if (forceRead || p->tables[tableIdx].rows[tableRow].fx[fxIdx][0] != EMPTY_VALUE_8) {
-    initFX(state, trackIdx, p->tables[tableIdx].rows[tableRow].fx[fxIdx], &table->fx[fxIdx], 0);
+    initFX(state, trackIdx, p->tables[tableIdx].rows[tableRow].fx[fxIdx], 0);
   }
 }
 
@@ -119,7 +118,7 @@ static void tableProgress(PlaybackState* state, int trackIdx, struct PlaybackTab
     if (table->counters[i] >= table->speed[i]) {
       table->counters[i] = 0;
       uint8_t row = table->rows[i];
-      
+
       // Check if any column has THO on current row
       int thoTarget = -1;
       for (int col = 0; col < 4; col++) {
@@ -128,17 +127,17 @@ static void tableProgress(PlaybackState* state, int trackIdx, struct PlaybackTab
           break;
         }
       }
-      
+
       if (thoTarget >= 0 && thoTarget == row) {
         // THO pointing to same row - stay here
         tableReadFX(state, trackIdx, table, i, 0);
         continue;
       }
-      
+
       // Check HOP on current row pointing to same row
       uint8_t fxType = p->tables[table->tableIdx].rows[row].fx[i][0];
       uint8_t fxValue = p->tables[table->tableIdx].rows[row].fx[i][1];
-      
+
       if (fxType == fxHOP && (fxValue & 0xf) == row) {
         if (fxValue & 0xf0) {
           // Loop counter
@@ -153,17 +152,17 @@ static void tableProgress(PlaybackState* state, int trackIdx, struct PlaybackTab
           continue;
         }
       }
-      
+
       // Progress to next row
       table->rows[i] = (row + 1) & 15;
-      
+
       if (table->rows[i] == 0) {
         // Reset all loop counters for this column
         for (int c = 0; c < 16; c++) {
           table->fxAuxState[c][i] = 0;
         }
       }
-      
+
       row = table->rows[i];
 
       // Check if any column has THO on new row
@@ -174,7 +173,7 @@ static void tableProgress(PlaybackState* state, int trackIdx, struct PlaybackTab
           break;
         }
       }
-      
+
       if (thoTarget >= 0) {
         // THO found - hop this column
         table->rows[i] = thoTarget;
@@ -185,7 +184,7 @@ static void tableProgress(PlaybackState* state, int trackIdx, struct PlaybackTab
       // Check HOP on new row
       fxType = p->tables[table->tableIdx].rows[row].fx[i][0];
       fxValue = p->tables[table->tableIdx].rows[row].fx[i][1];
-      
+
       if (fxType == fxHOP) {
         uint8_t hopTarget = fxValue & 0xf;
         if (fxValue & 0xf0) {
@@ -209,7 +208,7 @@ static void tableProgress(PlaybackState* state, int trackIdx, struct PlaybackTab
           continue;
         }
       }
-      
+
       // No hop - read FX from current row
       tableReadFX(state, trackIdx, table, i, 0);
     }
@@ -224,6 +223,8 @@ void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRo
   PlaybackTrackState* track = &state->tracks[trackIdx];
   Project* p = state->p;
   uint8_t note = phraseRow->note;
+  uint8_t instrument = phraseRow->instrument;
+  uint8_t volume = phraseRow->volume;
 
   // Check for pending groove change
   if (track->pendingGrooveIdx != track->grooveIdx) {
@@ -236,17 +237,11 @@ void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRo
   if (!skipDelCheck) {
     for (int i = 0; i < 3; i++) {
       if (phraseRow->fx[i][0] == fxDEL && phraseRow->fx[i][1] != 0) {
-        track->note.fx[i].fx = fxDEL;
-        track->note.fx[i].value = phraseRow->fx[i][1];
+        track->note.fx[fxDEL].isOn = 1;
+        track->note.fx[fxDEL].fxValue = phraseRow->fx[i][1];
+        track->note.fx[fxDEL].counter = 0;
         return;
       }
-    }
-  }
-
-  // FX
-  for (int i = 0; i < 3; i++) {
-    if (phraseRow->fx[i][0] != EMPTY_VALUE_8 || (note != EMPTY_VALUE_8 && note != NOTE_OFF)) {
-      initFX(state, trackIdx, phraseRow->fx[i], &track->note.fx[i], (note != EMPTY_VALUE_8 && note != NOTE_OFF));
     }
   }
 
@@ -255,26 +250,56 @@ void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRo
     if (note == NOTE_OFF) {
       handleNoteOff(state, trackIdx);
     } else {
+      // Set base note, reset offsets
       track->note.noteBase = note;
-      track->note.pitchOffsetAcc = 0;
-      track->note.periodOffsetAcc = 0;
-      track->note.noteOffsetAcc = 0;
-      track->note.volumeOffsetAcc = 0;
+      track->note.noteOffset = 0;
+      track->note.pitchOffset = 0;
+      track->note.periodOffset = 0;
+      track->note.volumeOffset = 0;
+
+      if (instrument != EMPTY_VALUE_8) {
+        // Restart FX on empty instrument
+
+      } else {
+        // Turn off all FX on a new instrument
+        resetNoteFX(state, trackIdx);
+      }
+
+      // Reset AUX table
       tableInit(state, trackIdx, &track->note.auxTable, EMPTY_VALUE_8, 1);
     }
   }
 
+  // FX
+  // Handle some priority fx:
+  // if (fx->fx == fxTBX || fx->fx == fxTBL || fx->fx == fxTHO || fx->fx == fxTXH) {
+
+  for (int i = 0; i < 3; i++) {
+    if (phraseRow->fx[i][0] != EMPTY_VALUE_8 || (note != EMPTY_VALUE_8 && note != NOTE_OFF)) {
+      initFX(state, trackIdx, phraseRow->fx[i], (note != EMPTY_VALUE_8 && note != NOTE_OFF));
+    }
+  }
+
   // Instrument
-  uint8_t instrument = phraseRow->instrument;
   if (instrument != EMPTY_VALUE_8) {
     track->note.instrument = instrument;
     setupInstrumentAY(state, trackIdx);
     tableInit(state, trackIdx, &track->note.instrumentTable, instrument, p->instruments[instrument].tableSpeed);
   }
 
+  // Apply chain transpose (if the instrument allows it)
+  if (note != EMPTY_VALUE_8 && note != NOTE_OFF && track->mode != playbackModePhraseRow) {
+    uint16_t chainIdx = p->song[track->songRow][trackIdx];
+    if (chainIdx != EMPTY_VALUE_16) {
+      int8_t transpose = p->chains[chainIdx].rows[track->chainRow].transpose;
+      if (p->instruments[track->note.instrument].transposeEnabled) {
+        track->note.noteBase += transpose;
+      }
+    }
+  }
+
   // Volume
-  uint8_t volume = phraseRow->volume;
-  if (phraseRow->volume != EMPTY_VALUE_8) {
+  if (volume != EMPTY_VALUE_8) {
     track->note.volume = volume;
   }
 }
@@ -299,20 +324,20 @@ void readPhraseRow(PlaybackState* state, int trackIdx, int skipDelCheck) {
       int phraseRow = track->phraseRow;
       Phrase* phrase = &p->phrases[phraseIdx];
       PhraseRow* currentRow = &phrase->rows[phraseRow];
-      
+
       // Check for SNG command in Song mode
       if (track->mode == playbackModeSong) {
         for (int i = 0; i < 3; i++) {
           if (currentRow->fx[i][0] == fxSNG && currentRow->fx[i][1] != 0) {
             int8_t offset = (int8_t)currentRow->fx[i][1];
             int newSongRow = track->songRow + offset;
-            
+
             // Check if jump is negative and loop is disabled
             if (offset < 0 && !track->loop) {
               resetTrack(state, trackIdx);
               return;
             }
-            
+
             // Validate target song position
             if (newSongRow >= 0 && newSongRow < PROJECT_MAX_LENGTH) {
               uint16_t targetChainIdx = p->song[newSongRow][trackIdx];
@@ -334,21 +359,21 @@ void readPhraseRow(PlaybackState* state, int trackIdx, int skipDelCheck) {
           }
         }
       }
-      
+
       // Check for HOP command
       for (int i = 0; i < 3; i++) {
         if (currentRow->fx[i][0] == fxHOP) {
           uint8_t hopValue = currentRow->fx[i][1];
-          
+
           // 0xFF = stop track
           if (hopValue == 0xFF) {
             resetTrack(state, trackIdx);
             return;
           }
-          
+
           uint8_t targetRow = hopValue & 0x0F;
           uint8_t loopCount = (hopValue & 0xF0) >> 4;
-          
+
           if (loopCount == 0) {
             // Unconditional jump to next phrase
             track->phraseRow = 15;
@@ -376,7 +401,7 @@ void readPhraseRow(PlaybackState* state, int trackIdx, int skipDelCheck) {
           break;
         }
       }
-      
+
       readPhraseRowDirect(state, trackIdx, currentRow, skipDelCheck);
     } else {
       // Safeguard for phrase in chain
@@ -401,7 +426,12 @@ static void nextFrame(PlaybackState* state, int trackIdx, int chipIdx) {
   // Clear re-calculated fields
   track->note.noteOffset = 0;
   track->note.pitchOffset = 0;
+  track->note.periodOffset = 0;
+  track->note.volumeOffset = 0;
+
+  // TODO: Encapsulate chip-specific offset resets
   track->note.chip.ay.envOffset = 0;
+  track->note.chip.ay.noiseOffset = 0;
 
   // FX
   handleFX(state, trackIdx, chipIdx);
@@ -442,21 +472,12 @@ static void nextFrame(PlaybackState* state, int trackIdx, int chipIdx) {
       }
     }
 
-    // Phrase transpose
-    if (track->note.instrument != EMPTY_VALUE_8 && p->instruments[track->note.instrument].transposeEnabled) {
-      uint16_t chainIdx = p->song[track->songRow][trackIdx];
-      if (chainIdx != EMPTY_VALUE_16) {
-        note += (int8_t)p->chains[chainIdx].rows[track->chainRow].transpose;
-      }
-    }
-
     // Offset from FX
     note += track->note.noteOffset;
-    note += track->note.noteOffsetAcc;
 
-    // TODO: Design decision: allow note overflow or not. Can it be a setting?
     if (note < 0) note = p->pitchTable.length + (note % p->pitchTable.length);
     if (note >= p->pitchTable.length) note = note % p->pitchTable.length;
+
     track->note.noteFinal = note;
   }
 }
@@ -479,15 +500,13 @@ static int moveToNextPhraseRow(PlaybackState* state, int trackIdx) {
   track->phraseRow++;
 
   // Reset OFF/KIL/DEL FX
-  for (int c = 0; c < 3; c++) {
-    if (track->note.fx[c].fx == fxOFF || track->note.fx[c].fx == fxKIL || track->note.fx[c].fx == fxDEL) {
-      track->note.fx[c].fx = EMPTY_VALUE_8;
-    }
-  }
+  track->note.fx[fxOFF].isOn = 0;
+  track->note.fx[fxKIL].isOn = 0;
+  track->note.fx[fxDEL].isOn = 0;
 
   if (track->phraseRow >= 16) {
     track->phraseRow = 0;
-    
+
     // Check chain-level loop after phrase overflow
     if (state->loopRange.enabled && state->loopRange.level == 1 && track->loop &&
         track->songRow == state->loopRange.endSongRow &&
@@ -497,7 +516,7 @@ static int moveToNextPhraseRow(PlaybackState* state, int trackIdx) {
       resetTrackFXAuxState(state, trackIdx);
       return stopped;
     }
-    
+
     // Play mode logic:
     // Song playback
     if (track->mode == playbackModeSong) {
@@ -515,7 +534,7 @@ static int moveToNextPhraseRow(PlaybackState* state, int trackIdx) {
             resetTrackFXAuxState(state, trackIdx);
             return stopped;
           }
-          
+
           // Next song row
           int songRow = track->songRow + 1;
           track->chainRow = 0;
@@ -628,6 +647,14 @@ int playbackIsPlaying(PlaybackState* state) {
   return 0;
 }
 
+void playbackSetLoopRange(PlaybackState* state, LoopRange range) {
+  state->loopRange = range;
+}
+
+void playbackClearLoopRange(PlaybackState* state) {
+  state->loopRange.enabled = 0;
+}
+
 void playbackStartSong(PlaybackState* state, int songRow, int chainRow, int loop) {
   if (playbackIsPlaying(state)) return;
 
@@ -697,6 +724,23 @@ void playbackQueuePhrase(PlaybackState* state, int trackIdx, int songRow, int ch
   track->queue.loop = track->loop;
 }
 
+void playbackPreviewNote(PlaybackState* state, int trackIdx, uint8_t note, uint8_t instrument) {
+  // Create a phrase row for preview
+  PhraseRow phraseRow = {0};
+  phraseRow.note = note;
+  phraseRow.instrument = instrument;
+  phraseRow.volume = 15;
+
+  // Set up empty FX
+  for (int i = 0; i < 3; i++) {
+    phraseRow.fx[i][0] = EMPTY_VALUE_8;
+    phraseRow.fx[i][1] = EMPTY_VALUE_8;
+  }
+
+  // Use unified phrase row playback
+  playbackStartPhraseRow(state, trackIdx, &phraseRow);
+}
+
 void playbackStop(PlaybackState* state) {
   for (int c = 0; c < PROJECT_MAX_TRACKS; c++) {
     resetTrack(state, c);
@@ -708,6 +752,12 @@ void playbackStop(PlaybackState* state) {
   }
 }
 
+void playbackStopPreview(PlaybackState* state, int trackIdx) {
+  if (state->tracks[trackIdx].mode == playbackModePhraseRow) {
+    resetTrack(state, trackIdx);
+  }
+}
+
 int playbackNextFrame(PlaybackState* state, SoundChip* chips) {
   Project* p = state->p;
   int hasActiveTracks = 0;
@@ -716,7 +766,9 @@ int playbackNextFrame(PlaybackState* state, SoundChip* chips) {
   int chipTracksCount = projectGetChipTracks(p, chipIdx);
   int nextChipTrackIdx = chipTracksCount;
 
+  // Process all tracker left to right
   for (int trackIdx = 0; trackIdx < state->p->tracksCount; trackIdx++) {
+    // Track chip index
     if (trackIdx >= nextChipTrackIdx) {
       chipIdx++;
       chipTracksCount = projectGetChipTracks(p, chipIdx);
@@ -734,7 +786,7 @@ int playbackNextFrame(PlaybackState* state, SoundChip* chips) {
       track->phraseRow = track->queue.phraseRow;
       track->loop = track->queue.loop;
 
-      // "Consume" queued event
+      // Consume queued event
       track->queue.mode = playbackModeNone;
 
       skipZeroGrooveRows(state, trackIdx);
@@ -790,33 +842,3 @@ int playbackNextFrame(PlaybackState* state, SoundChip* chips) {
   return !hasActiveTracks;
 }
 
-void playbackPreviewNote(PlaybackState* state, int trackIdx, uint8_t note, uint8_t instrument) {
-  // Create a phrase row for preview
-  PhraseRow phraseRow = {0};
-  phraseRow.note = note;
-  phraseRow.instrument = instrument;
-  phraseRow.volume = 15;
-
-  // Set up empty FX
-  for (int i = 0; i < 3; i++) {
-    phraseRow.fx[i][0] = EMPTY_VALUE_8;
-    phraseRow.fx[i][1] = EMPTY_VALUE_8;
-  }
-
-  // Use unified phrase row playback
-  playbackStartPhraseRow(state, trackIdx, &phraseRow);
-}
-
-void playbackStopPreview(PlaybackState* state, int trackIdx) {
-  if (state->tracks[trackIdx].mode == playbackModePhraseRow) {
-    resetTrack(state, trackIdx);
-  }
-}
-
-void playbackSetLoopRange(PlaybackState* state, LoopRange range) {
-  state->loopRange = range;
-}
-
-void playbackClearLoopRange(PlaybackState* state) {
-  state->loopRange.enabled = 0;
-}

@@ -21,43 +21,36 @@ enum PlaybackArpType {
   arpTypeMax,
 };
 
-typedef struct PlaybackFXData_PBN {
-  uint8_t fxValue;
-  int value;
-  uint8_t lowByte;
-} PlaybackFXData_PBN;
+typedef struct PlaybackFXData_Bend {
+  int speed;
+} PlaybackFXData_Bend;
 
-typedef struct PlaybackFXData_CountFX {
-  uint8_t fxValue;
-  uint8_t counter;
-} PlaybackFXData_CountFX;
-
-typedef struct PlaybackFXData_PSL {
-  uint8_t fxValue;
+typedef struct PlaybackFXData_Slide {
   int16_t startPeriod;
   int16_t endPeriod;
-  uint8_t counter;
-} PlaybackFXData_PSL;
+} PlaybackFXData_Slide;
 
-typedef struct PlaybackCommonFXState {
-  PlaybackFXData_CountFX fxARP; // Arpeggio
-  PlaybackFXData_CountFX fxPVB; // Pitch vibrato
-  PlaybackFXData_PBN fxPBN; // Pitch bend
-  PlaybackFXData_PSL fxPSL; // Pitch slide (portamento)
-  PlaybackFXData_CountFX fxRET; // Retrigger
-  PlaybackFXData_CountFX fxDEL; // Delay
-  PlaybackFXData_CountFX fxOFF; // Off
-  PlaybackFXData_CountFX fxKIL; // Kill note
-} PlaybackCommonFXState;
+typedef struct PlaybackFXData_Arpeggio {
+  int speed;
+  enum PlaybackArpType type;
+} PlaybackFXData_Arpeggio;
 
-typedef struct PlaybackAYFXState {
-  PlaybackFXData_CountFX fxEVB; // Envelope vibrato
-  PlaybackFXData_PBN fxEBN; // Envelope bend
-  PlaybackFXData_PSL fxESL; // Envelope slide (portamento)
-} PlaybackAYFXState;
+typedef struct PlaybackFXData_Retrigger {
+  PhraseRow row;
+  int counter;
+} PlaybackFXData_Retrigger;
 
-typedef union PlaybackChipFXState {
-  PlaybackAYFXState ay;
-} PlaybackChipFXState;
+typedef struct PlaybackFXState {
+  uint8_t isOn;
+  uint8_t fxValue;
+  int counter;
+  int acc;
+  union {
+    PlaybackFXData_Bend bend;
+    PlaybackFXData_Slide slide;
+    PlaybackFXData_Arpeggio arpeggio;
+    PlaybackFXData_Retrigger retrigger;
+  } d;
+} PlaybackFXState;
 
 #endif

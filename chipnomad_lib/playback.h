@@ -35,9 +35,8 @@ typedef struct PlaybackAYNoteState {
   uint8_t envShape;
   uint16_t envBase;
   int16_t envOffset;
-  int16_t envOffsetAcc;
   uint8_t noiseBase;
-  int8_t noiseOffsetAcc;
+  int8_t noiseOffset;
 } PlaybackAYNoteState;
 
 typedef union PlaybackChipNoteState {
@@ -50,21 +49,17 @@ typedef struct PlaybackNoteState {
   uint8_t volume;
 
   uint8_t noteFinal; // Calculated value
-  int8_t noteOffset; // Re-calculated each frame
-  int8_t noteOffsetAcc; // Accumulated over time
-  int16_t pitchOffset; // Re-calculated each frame
-  int16_t pitchOffsetAcc; // Accumulated over time
-  int16_t periodOffsetAcc; // Accumulated period offset
+  int8_t noteOffset; // Note offset
+  int16_t pitchOffset; // Pitch offset
+  int16_t periodOffset; // Period offset
   uint8_t volume1; // Instrument volume
   uint8_t volume2; // Instrument table volume
   uint8_t volume3; // Aux table volume
-  int8_t volumeOffsetAcc; // Accumulated over time
+  int8_t volumeOffset; // Volume offset
 
   PlaybackTableState instrumentTable;
   PlaybackTableState auxTable;
-
-  PlaybackCommonFXState commonFX;
-  PlaybackChipFXState chipFX;
+  PlaybackFXState fx[256]; // Active FX on this note, indexed by FX enum
 
   PlaybackChipNoteState chip;
 } PlaybackNoteState;
@@ -93,9 +88,6 @@ typedef struct PlaybackTrackState {
   uint8_t pendingGrooveIdx; // For GGR synchronization
 
   int frameCounter;
-
-  int arpSpeed; // To move to ARP effect data
-  enum PlaybackArpType arpType;
 
   // Currently playing note
   PlaybackNoteState note;
@@ -132,6 +124,29 @@ typedef struct PlaybackState {
   LoopRange loopRange;
 } PlaybackState;
 
+// FX typedefs
+typedef void (*PlaybackFXInitFunc)(
+  PlaybackState* state,
+  PlaybackTrackState* track,
+  int trackIdx,
+  PlaybackFXState* fx,
+  PlaybackTableState* tableState,
+  int tableFXColumn,
+  PhraseRow* phraseRow,
+  int forceCleanState
+);
+typedef void (*PlaybackFXHandleFunc)(
+  PlaybackState* state,
+  PlaybackTrackState* track,
+  int trackIdx,
+  int chipIdx,
+  PlaybackFXState* fx
+);
+
+typedef struct PlaybackFXHandler {
+  PlaybackFXInitFunc init;
+  PlaybackFXHandleFunc handle;
+} PlaybackFXHandler;
 
 /**
  * Initializes the playback state with the given project

@@ -1,42 +1,67 @@
 # Test makefile
-CC = gcc
-CFLAGS = -std=c99 -Wall -g -I../src -I../external/ayumi -I../external/unity -I../src/corelib -I../src/screens -I../src/playback -I../platforms/shared
-TESTDIR = tests
-SRCDIR = ../src
+CC = cc
+CFLAGS = -std=c99 -Wall -g
 
-# Test sources
-TEST_SOURCES = $(wildcard $(TESTDIR)/test_*.c)
-TEST_OBJECTS = $(TEST_SOURCES:.c=.o)
-TEST_EXECUTABLES = $(TEST_SOURCES:.c=)
+# Directories
+LIB_DIR = ../chipnomad_lib
+TRACKER_DIR = src
+UNITY_DIR = external/unity
+MOCK_DIR = tests/mocks
 
-# Project sources (excluding main.c and corelib)
-PROJECT_SOURCES = $(filter-out $(SRCDIR)/corelib/%, $(wildcard $(SRCDIR)/*.c $(SRCDIR)/*/*.c))
-PROJECT_SOURCES := $(filter-out %/main.c, $(PROJECT_SOURCES))
-PROJECT_OBJECTS = $(PROJECT_SOURCES:.c=.o)
+# Include paths
+INCLUDES = -I$(UNITY_DIR) \
+           -I$(LIB_DIR) \
+           -I$(LIB_DIR)/corelib \
+           -I$(TRACKER_DIR) \
+           -I$(TRACKER_DIR)/corelib \
+           -I$(TRACKER_DIR)/screens \
+           -Iplatforms/shared
+
+# Unity
+UNITY_SRC = $(UNITY_DIR)/unity.c
 
 # Mock sources
-MOCK_SOURCES = $(wildcard $(TESTDIR)/mocks/*.c)
-MOCK_OBJECTS = $(MOCK_SOURCES:.c=.o)
+MOCK_SRC = $(wildcard $(MOCK_DIR)/*.c)
 
-# Unity framework
-UNITY_SOURCES = ../external/unity/unity.c
-UNITY_OBJECTS = $(UNITY_SOURCES:.c=.o)
+# Library sources needed by tests
+LIB_SRC = $(LIB_DIR)/project.c \
+          $(LIB_DIR)/utils.c
 
-all: $(TEST_EXECUTABLES)
+# Tracker sources needed by tracker tests
+TRACKER_SRC = $(TRACKER_DIR)/project_utils.c
 
-$(TESTDIR)/test_%: $(TESTDIR)/test_%.o $(PROJECT_OBJECTS) $(MOCK_OBJECTS) $(UNITY_OBJECTS)
-	$(CC) $(CFLAGS) -o $@ $^
+# Build directory
+BUILD = build/test
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+# Discover tests from both locations
+LIB_TESTS = $(wildcard $(LIB_DIR)/tests/test_*.c)
+TRACKER_TESTS = $(wildcard tests/test_*.c)
+
+# Test executables
+LIB_TEST_BINS = $(patsubst $(LIB_DIR)/tests/test_%.c,$(BUILD)/test_lib_%,$(LIB_TESTS))
+TRACKER_TEST_BINS = $(patsubst tests/test_%.c,$(BUILD)/test_%,$(TRACKER_TESTS))
+ALL_BINS = $(LIB_TEST_BINS) $(TRACKER_TEST_BINS)
+
+all: $(ALL_BINS)
+
+# Library tests: lib sources + unity + mocks
+$(BUILD)/test_lib_%: $(LIB_DIR)/tests/test_%.c $(LIB_SRC) $(UNITY_SRC) $(MOCK_SRC) | $(BUILD)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIB_SRC) $(UNITY_SRC) $(MOCK_SRC) -lm
+
+# Tracker tests: lib + tracker sources + unity + mocks
+$(BUILD)/test_%: tests/test_%.c $(LIB_SRC) $(TRACKER_SRC) $(UNITY_SRC) $(MOCK_SRC) | $(BUILD)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIB_SRC) $(TRACKER_SRC) $(UNITY_SRC) $(MOCK_SRC) -lm
+
+$(BUILD):
+	mkdir -p $(BUILD)
 
 clean:
-	rm -f $(TEST_OBJECTS) $(PROJECT_OBJECTS) $(MOCK_OBJECTS) $(UNITY_OBJECTS) $(TEST_EXECUTABLES)
+	rm -rf $(BUILD)
 
 run: all
-	@for test in $(TEST_EXECUTABLES); do \
+	@for test in $(ALL_BINS); do \
 		echo "Running $$test..."; \
-		./$$test; \
+		./$$test || exit 1; \
 	done
 
 .PHONY: all clean run

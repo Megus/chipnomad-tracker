@@ -4,52 +4,58 @@
 #include <stdio.h>
 
 // AYM - AY Mixer
-static void handleFX_AYM(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  fx->fx = EMPTY_VALUE_8;
-  uint8_t value = fx->value;
+static void handleFX_AYM(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  fx->isOn = 0; // Atomic effect
+  uint8_t value = fx->fxValue;
   value = ~value; // Invert mixer bits to match AY behavior
   track->note.chip.ay.mixer = (value & 0x1) + ((value & 0x2) << 2);
-  track->note.chip.ay.envShape = (fx->value & 0xf0) >> 4;
+  track->note.chip.ay.envShape = (fx->fxValue & 0xf0) >> 4;
 }
 
 // NOA - Absolute noise period value
-static void handleFX_NOA(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  fx->fx = EMPTY_VALUE_8;
-  if (fx->value == EMPTY_VALUE_8) {
+static void handleFX_NOA(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  fx->isOn = 0; // Atomic effect
+  if (fx->fxValue == EMPTY_VALUE_8) {
     track->note.chip.ay.noiseBase = EMPTY_VALUE_8;
   } else {
-    track->note.chip.ay.noiseBase = fx->value & 0x1f;
+    track->note.chip.ay.noiseBase = fx->fxValue & 0x1f;
   }
 }
 
 // NOI - Relative noise period value
-static void handleFX_NOI(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  fx->fx = EMPTY_VALUE_8;
+static void initFX_NOI(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn, PhraseRow* phraseRow, int forceCleanState) {
+  if (forceCleanState) fx->acc = 0;
   if (track->note.chip.ay.noiseBase == EMPTY_VALUE_8) track->note.chip.ay.noiseBase = 0;
-  track->note.chip.ay.noiseOffsetAcc += (int8_t)fx->value;
+  fx->acc += fx->fxValue;
+}
+
+static void handleFX_NOI(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  track->note.chip.ay.noiseOffset += fx->acc;
 }
 
 // ERT - Envelope retrigger
-static void handleFX_ERT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  fx->fx = EMPTY_VALUE_8;
+static void handleFX_ERT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  fx->isOn = 0; // Atomic effect
   state->chips[chipIdx].ay.envShape = 0;
 }
 
 // EAU - Auto-env settings
-static void handleFX_EAU(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  fx->fx = EMPTY_VALUE_8;
-  uint8_t n = (fx->value & 0xf0) >> 4;
-  uint8_t d = (fx->value & 0x0f);
+static void handleFX_EAU(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  fx->isOn = 0; // Atomic effect
+  uint8_t n = (fx->fxValue & 0xf0) >> 4;
+  uint8_t d = (fx->fxValue & 0x0f);
+  if (n == 0) n = 1;
   if (d == 0) d = 1;
   track->note.chip.ay.envAutoN = n;
   track->note.chip.ay.envAutoD = d;
 }
 
-// ENT - Envelope not
-static void handleFX_ENT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
+// ENT - Envelope note
+static void handleFX_ENT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  fx->isOn = 0; // Atomic effect
+
   struct Project *p = state->p;
-  fx->fx = EMPTY_VALUE_8;
-  int note = fx->value + p->pitchTable.octaveSize * 4;
+  int note = fx->fxValue + p->pitchTable.octaveSize * 4;  // AY env period is 4 octaves lower
   if (note >= p->pitchTable.length) note = p->pitchTable.length - 1;
 
   if (p->linearPitch) {
@@ -64,79 +70,89 @@ static void handleFX_ENT(PlaybackState* state, PlaybackTrackState* track, int tr
 }
 
 // EPT - Envelope period offset
-static void handleFX_EPT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  fx->fx = EMPTY_VALUE_8;
-  track->note.chip.ay.envOffsetAcc += (int8_t)fx->value;
+static void initFX_EPT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn, PhraseRow* phraseRow, int forceCleanState) {
+  if (forceCleanState) fx->acc = 0;
+  fx->acc += (int8_t)fx->fxValue;
+}
+
+static void handleFX_EPT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  track->note.chip.ay.envOffset += fx->acc;
 }
 
 // EPL - Envelope period Low
-static void handleFX_EPL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  fx->fx = EMPTY_VALUE_8;
-  track->note.chip.ay.envBase = (track->note.chip.ay.envBase & 0xff00) + fx->value;
+static void handleFX_EPL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  fx->isOn = 0; // Atomic effect
+  track->note.chip.ay.envBase = (track->note.chip.ay.envBase & 0xff00) + fx->fxValue;
 }
 
 // EPH - Envelope period High
-static void handleFX_EPH(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  fx->fx = EMPTY_VALUE_8;
-  track->note.chip.ay.envBase = (track->note.chip.ay.envBase & 0x00ff) + (fx->value << 8);
+static void handleFX_EPH(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  fx->isOn = 0; // Atomic effect
+  track->note.chip.ay.envBase = (track->note.chip.ay.envBase & 0x00ff) + (fx->fxValue << 8);
 }
 
 // EBN - Envelope pitch bend
-static void handleFX_EBN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  if (fx->data.pbn.value == 0) {
-    // Calculate per-frame change
-    int speed = 1;
-    if (tableState != NULL) {
-      speed = tableState->speed[fx - tableState->fx];
-    } else {
-      speed = state->p->grooves[track->grooveIdx].speed[track->grooveRow];
-    }
-    if (speed == 0) speed = 1;
-    int value = (int8_t)(fx->value) << 8; // Use 24.8 fixed point math
-    fx->data.pbn.value = value / speed;
-    fx->data.pbn.lowByte = 0;
+static void initFX_EBN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn, PhraseRow* phraseRow, int forceCleanState) {
+  // Calculate per-frame change
+  int speed = 1;
+  if (tableFXColumn >= 0) {
+    speed = tableState->speed[tableFXColumn];
+  } else {
+    speed = state->p->grooves[track->grooveIdx].speed[track->grooveRow];
   }
-  int value = (track->note.chip.ay.envOffsetAcc << 8) + fx->data.pbn.lowByte;
-  value += fx->data.pbn.value;
-  track->note.chip.ay.envOffsetAcc = value >> 8;
-  fx->data.pbn.lowByte = value & 0xff;
+  if (speed == 0) speed = 1;
+  int value = (int8_t)(fx->fxValue) << 8; // Use 24.8 fixed point math
+  fx->d.bend.speed = value / speed;
+  if (forceCleanState) fx->acc = 0;
+}
+
+static void handleFX_EBN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  fx->acc += fx->d.bend.speed;
+  track->note.chip.ay.envOffset += fx->acc >> 8;
 }
 
 // EVB - Envelope vibrato
-static void handleFX_EVB(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
+static void initFX_EVB(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn, PhraseRow* phraseRow,int forceCleanState) {
+  if (forceCleanState) fx->acc = 0;
+}
+
+static void handleFX_EVB(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   track->note.chip.ay.envOffset += vibratoCommonLogic(fx, 1);
 }
 
 // ESL - Pitch slide (portamento
-static void handleFX_ESL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  if (fx->data.psl.startPeriod == 0 || (fx->data.psl.counter == 0 && track->note.chip.ay.envBase == 0) || fx->data.psl.counter >= fx->value) {
-    fx->fx = EMPTY_VALUE_8;
-    return;
-  } else if (fx->data.psl.counter == 0) {
-    fx->data.psl.endPeriod = track->note.chip.ay.envBase;
+static void initFX_ESL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn, PhraseRow* phraseRow,int forceCleanState) {
+  if (forceCleanState) fx->counter = 0;
+  if (track->note.chip.ay.envBase != 0) {
+    fx->d.slide.startPeriod = track->note.chip.ay.envBase;
+  } else {
+    fx->isOn = 0;
   }
-  int distance = fx->data.psl.endPeriod - fx->data.psl.startPeriod;
-  int offset = (distance * fx->data.psl.counter) / fx->value;
-  track->note.chip.ay.envOffset += distance - offset;
-
-  fx->data.psl.counter++;
 }
 
-int handleFX_AY(PlaybackState* state, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  PlaybackTrackState* track = &state->tracks[trackIdx];
+static void handleFX_ESL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  if (fx->d.slide.startPeriod == 0 || fx->counter >= fx->fxValue) {
+    fx->isOn = 0; // Reached the end or no valid start, turn off FX
+    return;
+  } else if (fx->counter == 0) {
+    fx->d.slide.endPeriod = track->note.chip.ay.envBase;
+  }
+  int distance = fx->d.slide.endPeriod - fx->d.slide.startPeriod;
+  int offset = (distance * fx->counter) / fx->fxValue;
+  track->note.chip.ay.envOffset += distance - offset;
+}
 
-  if (fx->fx == fxAYM) handleFX_AYM(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxNOA) handleFX_NOA(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxNOI) handleFX_NOI(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxERT) handleFX_ERT(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxEAU) handleFX_EAU(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxENT) handleFX_ENT(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxEPT) handleFX_EPT(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxEPL) handleFX_EPL(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxEPH) handleFX_EPH(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxEBN) handleFX_EBN(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxEVB) handleFX_EVB(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxESL) handleFX_ESL(state, track, trackIdx, chipIdx, fx, tableState);
-
-  return 0;
+void registerFXHandlers_AY(void) {
+  fxHandlers[fxAYM] = (PlaybackFXHandler){NULL, handleFX_AYM};
+  fxHandlers[fxNOA] = (PlaybackFXHandler){NULL, handleFX_NOA};
+  fxHandlers[fxNOI] = (PlaybackFXHandler){initFX_NOI, handleFX_NOI};
+  fxHandlers[fxERT] = (PlaybackFXHandler){NULL, handleFX_ERT};
+  fxHandlers[fxEAU] = (PlaybackFXHandler){NULL, handleFX_EAU};
+  fxHandlers[fxENT] = (PlaybackFXHandler){NULL, handleFX_ENT};
+  fxHandlers[fxEPT] = (PlaybackFXHandler){initFX_EPT, handleFX_EPT};
+  fxHandlers[fxEPL] = (PlaybackFXHandler){NULL, handleFX_EPL};
+  fxHandlers[fxEPH] = (PlaybackFXHandler){NULL, handleFX_EPH};
+  fxHandlers[fxEBN] = (PlaybackFXHandler){initFX_EBN, handleFX_EBN};
+  fxHandlers[fxEVB] = (PlaybackFXHandler){initFX_EVB, handleFX_EVB};
+  fxHandlers[fxESL] = (PlaybackFXHandler){initFX_ESL, handleFX_ESL};
 }

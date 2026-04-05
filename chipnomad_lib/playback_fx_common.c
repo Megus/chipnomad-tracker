@@ -3,19 +3,17 @@
 #include <stdio.h>
 #include <string.h>
 
-static int handleFXInternal(PlaybackState* state, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState);
-static int handleAllTableFX(PlaybackState* state, int trackIdx, int chipIdx);
+PlaybackFXHandler fxHandlers[fxTotalCount] = {0};
 
 static int iabs(int v) {
   return (v < 0) ? -v : v;
 }
 
 int vibratoCommonLogic(PlaybackFXState *fx, int scale) {
-  int period = 32 - ((fx->value & 0xf0) >> 3);
-  int depth = (fx->value & 0xf) * scale;
-  int x = (fx->data.count_fx.counter + period / 4) % period;
+  int period = 32 - ((fx->fxValue & 0xf0) >> 3);
+  int depth = (fx->fxValue & 0xf) * scale;
+  int x = (fx->counter + period / 4) % period;
   int value = depth - (4 * depth * iabs(x - period / 2)) / period;
-  fx->data.count_fx.counter++;
   return value;
 }
 
@@ -111,147 +109,149 @@ static int8_t calculateArpModeOffset(uint8_t arp[3], const uint8_t period, const
 //
 
 // PBN - pitch bend
-static void handleFX_PBN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  if (fx->data.pbn.value == 0) {
-    // Calculate per-frame change
-    int speed = 1;
-    if (tableState != NULL) {
-      speed = tableState->speed[fx - tableState->fx];
-    } else {
-      speed = state->p->grooves[track->grooveIdx].speed[track->grooveRow];
-    }
-    if (speed == 0) speed = 1;
-    int value = (int8_t)(fx->value) << 8; // Use 24.8 fixed point math
-    if (state->p->linearPitch) {
-      // Linear pitch mode: multiply by 25 for cents
-      value *= 25;
-    }
-    fx->data.pbn.value = value / speed;
-    fx->data.pbn.lowByte = 0;
+static void initFX_PBN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn, PhraseRow* phraseRow, int forceCleanState) {
+  // Calculate per-frame change
+  int speed = 1;
+  if (tableFXColumn >= 0) {
+    speed = tableState->speed[tableFXColumn];
+  } else {
+    speed = state->p->grooves[track->grooveIdx].speed[track->grooveRow];
   }
-  int value = (track->note.pitchOffsetAcc << 8) + fx->data.pbn.lowByte;
-  value += fx->data.pbn.value;
-  track->note.pitchOffsetAcc = value >> 8;
-  fx->data.pbn.lowByte = value & 0xff;
+  if (speed == 0) speed = 1;
+  int value = (int8_t)(fx->fxValue) << 8; // Use 24.8 fixed point math
+  if (state->p->linearPitch) {
+    // Linear pitch mode: multiply by 25 for cents
+    value *= 25;
+  }
+  fx->d.bend.speed = value / speed;
+  if (forceCleanState) fx->acc = 0;
+}
+
+static void handleFX_PBN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  fx->acc += fx->d.bend.speed;
+  track->note.pitchOffset += fx->acc >> 8;
 }
 
 // ARP - arpeggio
-static void handleFX_ARP(struct PlaybackState *state, PlaybackTrackState *track, int trackIdx, int chipIdx, PlaybackFXState *fx, PlaybackTableState *tableState) {
-  uint8_t arp[3] = {0, (fx->value & 0xF0) >> 4, fx->value & 0x0F};
-  const uint8_t period = fx->data.count_fx.counter / track->arpSpeed % 3;
-  const uint8_t cycles = fx->data.count_fx.counter / track->arpSpeed / 3;
-  track->note.noteOffset += calculateArpModeOffset(arp, period, cycles, track->arpType, state->p->pitchTable.octaveSize);
-  fx->data.count_fx.counter++;
+static void handleFX_ARP(struct PlaybackState *state, PlaybackTrackState *track, int trackIdx, int chipIdx, PlaybackFXState *fx) {
+  if (fx->d.arpeggio.speed == 0) fx->d.arpeggio.speed = 1;
+  uint8_t arp[3] = {0, (fx->fxValue & 0xF0) >> 4, fx->fxValue & 0x0F};
+  const uint8_t period = fx->counter / fx->d.arpeggio.speed % 3;
+  const uint8_t cycles = fx->counter / fx->d.arpeggio.speed / 3;
+  track->note.noteOffset += calculateArpModeOffset(arp, period, cycles, fx->d.arpeggio.type, state->p->pitchTable.octaveSize);
 }
 
 // ARC - Arp settings
-static void handleFX_ARC(struct PlaybackState *state, PlaybackTrackState *track, int trackIdx, int chipIdx, PlaybackFXState *fx, PlaybackTableState *tableState) {
-  track->arpSpeed = fx->value & 0x0F;
-  if (track->arpSpeed == 0) track->arpSpeed = 1;
-  track->arpType = (fx->value & 0xF0) >> 4;
+static void initFX_ARC(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn, PhraseRow* phraseRow, int forceCleanState) {
+  fx->d.arpeggio.speed = fx->fxValue & 0x0F;
+  if (fx->d.arpeggio.speed == 0) fx->d.arpeggio.speed = 1;
+  fx->d.arpeggio.type = (fx->fxValue & 0xF0) >> 4;
 }
 
 // PIT - Pitch offset (semitones)
-static void handleFX_PIT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  track->note.noteOffsetAcc += (int8_t)fx->value;
-  fx->fx = EMPTY_VALUE_8;
+static void initFX_PIT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn, PhraseRow* phraseRow, int forceCleanState) {
+  if (forceCleanState) fx->acc = 0;
+  fx->acc += fx->fxValue;
+}
+
+static void handleFX_PIT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  track->note.noteOffset += fx->acc;
 }
 
 // FIN - Fine pitch offset
-static void handleFX_FIN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  track->note.pitchOffsetAcc += (int8_t)fx->value;
-  fx->fx = EMPTY_VALUE_8;
+static void initFX_FIN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn, PhraseRow* phraseRow, int forceCleanState) {
+  if (forceCleanState) fx->acc = 0;
+  fx->acc += (int8_t)fx->fxValue;
+}
+
+static void handleFX_FIN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  track->note.pitchOffset += fx->acc;
 }
 
 // PRD - Period offset
-static void handleFX_PRD(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  track->note.periodOffsetAcc += (int8_t)fx->value;
-  fx->fx = EMPTY_VALUE_8;
+static void initFX_PRD(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn, PhraseRow* phraseRow, int forceCleanState) {
+  if (forceCleanState) fx->acc = 0;
+  fx->acc += (int8_t)fx->fxValue;
 }
 
+static void handleFX_PRD(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  track->note.periodOffset += fx->acc;
+}
+
+
 // TBX - aux table
-static void handleFX_TBX(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  tableInit(state, trackIdx, &track->note.auxTable, fx->value, 1);
-  fx->fx = EMPTY_VALUE_8;
+static void initFX_TBX(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn, PhraseRow* phraseRow, int forceCleanState) {
+  tableInit(state, trackIdx, &track->note.auxTable, fx->fxValue, 1);
+  fx->isOn = 0;
 }
 
 // TBL - instrument table
-static void handleFX_TBL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  tableInit(state, trackIdx, &track->note.instrumentTable, fx->value, 1);
-  fx->fx = EMPTY_VALUE_8;
+static void initFX_TBL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn, PhraseRow* phraseRow, int forceCleanState) {
+  tableInit(state, trackIdx, &track->note.instrumentTable, fx->fxValue, 1);
+  fx->isOn = 0;
 }
 
 // THO - Table hop (instrument table only)
-static void handleFX_THO(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  fx->fx = EMPTY_VALUE_8;
-  if (tableState == NULL) {
-    // FX is in Phrase - hop only in instrument table
-    if (track->note.instrumentTable.tableIdx != EMPTY_VALUE_8) {
-      hopToTableRow(state, trackIdx, &track->note.instrumentTable, fx->value & 0xf);
-    }
-    handleAllTableFX(state, trackIdx, chipIdx);
+static void initFX_THO(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn, PhraseRow* phraseRow, int forceCleanState) {
+  fx->isOn = 0;
+  // FX is in Phrase - hop only in instrument table
+  if (tableState == NULL && track->note.instrumentTable.tableIdx != EMPTY_VALUE_8) {
+    hopToTableRow(state, trackIdx, &track->note.instrumentTable, fx->fxValue & 0xf);
   }
 }
 
 // TXH - Aux table hop
-static void handleFX_TXH(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  fx->fx = EMPTY_VALUE_8;
-  if (tableState == NULL) {
-    // FX is in Phrase - hop only in aux table
-    if (track->note.auxTable.tableIdx != EMPTY_VALUE_8) {
-      hopToTableRow(state, trackIdx, &track->note.auxTable, fx->value & 0xf);
-    }
-    handleAllTableFX(state, trackIdx, chipIdx);
+static void initFX_TXH(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn, PhraseRow* phraseRow, int forceCleanState) {
+  fx->isOn = 0;
+  // FX is in Phrase - hop only in aux table
+  if (tableState == NULL && track->note.auxTable.tableIdx != EMPTY_VALUE_8) {
+    hopToTableRow(state, trackIdx, &track->note.auxTable, fx->fxValue & 0xf);
   }
 }
 
 // TIC - Table speed
-static void handleFX_TIC(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  fx->fx = EMPTY_VALUE_8;
+static void initFX_TIC(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn, PhraseRow* phraseRow, int forceCleanState) {
+  fx->isOn = 0;
   if (tableState == NULL) {
     // TIC in Phrase - set TIC speed for all FX lanes in both instrument and aux tables
     if (track->note.instrumentTable.tableIdx != EMPTY_VALUE_8) {
       for (int i = 0; i < 4; i++) {
-        track->note.instrumentTable.speed[i] = fx->value;
+        track->note.instrumentTable.speed[i] = fx->fxValue;
       }
     }
     if (track->note.auxTable.tableIdx != EMPTY_VALUE_8) {
       for (int i = 0; i < 4; i++) {
-        track->note.auxTable.speed[i] = fx->value;
+        track->note.auxTable.speed[i] = fx->fxValue;
       }
     }
   } else {
     // TIC in table - set it only for the current FX lane
-    for (int c = 0; c < 4; c++) {
-      if (&tableState->fx[c] == fx) {
-        tableState->speed[c] = fx->value;
-        break;
-      }
-    }
+    tableState->speed[tableFXColumn] = fx->fxValue;
   }
 }
 
 // VOL - Volume offset
-static void handleFX_VOL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  fx->fx = EMPTY_VALUE_8;
-  int volumeOffset = track->note.volumeOffsetAcc + (int8_t)fx->value;
-  if (volumeOffset < -128) volumeOffset = -128;
-  if (volumeOffset > 127) volumeOffset = 127;
-  track->note.volumeOffsetAcc = volumeOffset;
+static void initFX_VOL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn, PhraseRow* phraseRow,int forceCleanState) {
+  if (forceCleanState) fx->acc = 0;
+  fx->acc += (int8_t)fx->fxValue;
+}
+
+static void handleFX_VOL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  track->note.volumeOffset += fx->acc;
 }
 
 // GRV - Track groove
-static void handleFX_GRV(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  fx->fx = EMPTY_VALUE_8;
-  track->grooveIdx = fx->value & (PROJECT_MAX_GROOVES - 1);
+static void handleFX_GRV(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  fx->isOn = 0;
+  track->grooveIdx = fx->fxValue & (PROJECT_MAX_GROOVES - 1);
   track->pendingGrooveIdx = track->grooveIdx;
   track->grooveRow = 0;
 }
 
 // GGR - Global groove
-static void handleFX_GGR(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  fx->fx = EMPTY_VALUE_8;
-  uint8_t grooveIdx = fx->value & (PROJECT_MAX_GROOVES - 1);
+static void handleFX_GGR(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  fx->isOn = 0;
+  uint8_t grooveIdx = fx->fxValue & (PROJECT_MAX_GROOVES - 1);
   // Current track changes immediately
   track->grooveIdx = grooveIdx;
   track->pendingGrooveIdx = grooveIdx;
@@ -275,42 +275,50 @@ static void handleFX_GGR(PlaybackState* state, PlaybackTrackState* track, int tr
 }
 
 // OFF - Note off
-static void handleFX_OFF(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  if (tableState != NULL || fx->data.count_fx.counter >= fx->value) {
-    fx->fx = EMPTY_VALUE_8;
+static void handleFX_OFF(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  if (fx->counter >= fx->fxValue) {
+    fx->isOn = 0;
     handleNoteOff(state, trackIdx);
-  } else {
-    fx->data.count_fx.counter++;
   }
 }
 
 // KIL - Kill note
-static void handleFX_KIL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  if (tableState != NULL || fx->data.count_fx.counter >= fx->value) {
-    fx->fx = EMPTY_VALUE_8;
+static void handleFX_KIL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  if (fx->counter >= fx->fxValue) {
+    fx->isOn = 0;
     track->note.noteBase = EMPTY_VALUE_8;
-  } else {
-    fx->data.count_fx.counter++;
   }
 }
 
 // DEL - Delay note
-static void handleFX_DEL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
+static void initFX_DEL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn, PhraseRow* phraseRow, int forceCleanState) {
   if (tableState != NULL) {
-    fx->fx = EMPTY_VALUE_8;
-  } else if (fx->data.count_fx.counter >= fx->value) {
-    fx->fx = EMPTY_VALUE_8;
+    fx->isOn = 0;
+  }
+}
+
+static void handleFX_DEL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  if (fx->counter >= fx->fxValue) {
+    fx->isOn = 0;
     readPhraseRow(state, trackIdx, 1);
-    handleAllTableFX(state, trackIdx, chipIdx);
-  } else {
-    fx->data.count_fx.counter++;
   }
 }
 
 // RET - Note retrigger
-static void handleFX_RET(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  uint8_t delay = fx->value & 0xf;
-  int8_t volumeOffset = (fx->value & 0xf0) >> 4;
+static void initFX_RET(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn, PhraseRow* phraseRow, int forceCleanState) {
+  fx->acc = 0;
+  if (tableState == NULL) {
+    // RET in phrase
+    memcpy(&fx->d.retrigger.row, phraseRow, sizeof(PhraseRow));
+  } else {
+    // RET in table
+    memcpy(&fx->d.retrigger.row, &track->currentPhraseRow, sizeof(PhraseRow));
+  }
+}
+
+static void handleFX_RET(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  uint8_t delay = fx->fxValue & 0xf;
+  int8_t volumeOffset = (fx->fxValue & 0xf0) >> 4;
 
   if (volumeOffset == 0 || volumeOffset == 8) {
     // Zero offset
@@ -323,37 +331,40 @@ static void handleFX_RET(PlaybackState* state, PlaybackTrackState* track, int tr
     volumeOffset = volumeOffset - 8;
   }
 
-  if (tableState != NULL) {
-    fx->fx = EMPTY_VALUE_8;
-    return;
-  } else if (fx->data.count_fx.counter >= delay) {
+  if (fx->counter >= delay) {
     readPhraseRow(state, trackIdx, 1);
-    handleAllTableFX(state, trackIdx, chipIdx);
-    // TODO: Accumulate volume offset separately just for this FX because readPhraseRow resets it
-    track->note.volumeOffsetAcc += volumeOffset;
+    track->note.volumeOffset += fx->acc;
+    fx->acc += volumeOffset;
   }
-  fx->data.count_fx.counter++;
+
 }
 
 // PVB - Pitch vibrato
-static void handleFX_PVB(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
+static void handleFX_PVB(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   int scale = state->p->linearPitch ? 10 : 1;
   track->note.pitchOffset += vibratoCommonLogic(fx, scale);
 }
 
 // PSL - Pitch slide (portamento)
-static void handleFX_PSL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  if (fx->data.psl.startPeriod == 0 || (fx->data.psl.counter == 0 && (track->note.noteBase == EMPTY_VALUE_8 || track->note.noteBase == NOTE_OFF)) || fx->data.psl.counter >= fx->value) {
-    fx->fx = EMPTY_VALUE_8;
-    return;
-  } else if (fx->data.psl.counter == 0) {
-    fx->data.psl.endPeriod = state->p->pitchTable.values[track->note.noteBase];
+static void initFX_PSL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn, PhraseRow* phraseRow, int forceCleanState) {
+  if (forceCleanState) fx->counter = 0;
+  if (track->note.noteBase != NOTE_OFF && track->note.noteBase != EMPTY_VALUE_8) {
+    fx->d.slide.startPeriod = state->p->pitchTable.values[track->note.noteBase];
+  } else {
+    fx->isOn = 0;
   }
-  int distance = fx->data.psl.endPeriod - fx->data.psl.startPeriod;
-  int offset = (distance * fx->data.psl.counter) / fx->value;
-  track->note.pitchOffset += state->p->linearPitch ? offset - distance : distance - offset;
+}
 
-  fx->data.psl.counter++;
+static void handleFX_PSL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  if (fx->d.slide.startPeriod == 0 || fx->counter >= fx->fxValue) {
+    fx->isOn = 0;
+    return;
+  } else if (fx->counter == 0) {
+    fx->d.slide.endPeriod = state->p->pitchTable.values[track->note.noteBase];
+  }
+  int distance = fx->d.slide.endPeriod - fx->d.slide.startPeriod;
+  int offset = (distance * fx->counter) / fx->fxValue;
+  track->note.pitchOffset += state->p->linearPitch ? offset - distance : distance - offset;
 }
 
 
@@ -363,119 +374,56 @@ static void handleFX_PSL(PlaybackState* state, PlaybackTrackState* track, int tr
 // General FX handling functions
 //
 
-static int handleAllTableFX(PlaybackState* state, int trackIdx, int chipIdx) {
-  PlaybackTrackState* track = &state->tracks[trackIdx];
-
-  // Instrument table FX
-  if (track->note.instrumentTable.tableIdx != EMPTY_VALUE_8) {
-    for (int i = 0; i < 4; i++) {
-      handleFXInternal(state, trackIdx, chipIdx, &track->note.instrumentTable.fx[i], &track->note.instrumentTable);
-    }
-  }
-
-  // Aux table FX
-  if (track->note.auxTable.tableIdx != EMPTY_VALUE_8) {
-    for (int i = 0; i < 4; i++) {
-      handleFXInternal(state, trackIdx, chipIdx, &track->note.auxTable.fx[i], &track->note.auxTable);
-    }
-  }
-
-  return 0;
-}
-
-static int handlePriorityFXInternal(PlaybackState* state, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  PlaybackTrackState* track = &state->tracks[trackIdx];
-
-  if (fx->fx == EMPTY_VALUE_8) return 0;
-  else if (fx->fx == fxTBX) handleFX_TBX(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxTBL) handleFX_TBL(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxTHO) handleFX_THO(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxTXH) handleFX_TXH(state, track, trackIdx, chipIdx, fx, tableState);
-
-  return 0;
-}
-
-static int handleFXInternal(PlaybackState* state, int trackIdx, int chipIdx, struct PlaybackFXState* fx, PlaybackTableState *tableState) {
-  PlaybackTrackState* track = &state->tracks[trackIdx];
-
-  // Common FX
-  if (fx->fx == EMPTY_VALUE_8) return 0;
-  else if (fx->fx == fxARP) handleFX_ARP(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxARC) handleFX_ARC(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxPBN) handleFX_PBN(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxPIT) handleFX_PIT(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxFIN) handleFX_FIN(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxPRD) handleFX_PRD(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxTIC) handleFX_TIC(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxVOL) handleFX_VOL(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxGRV) handleFX_GRV(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxGGR) handleFX_GGR(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxOFF) handleFX_OFF(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxKIL) handleFX_KIL(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxDEL) handleFX_DEL(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxRET) handleFX_RET(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxPVB) handleFX_PVB(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxPSL) handleFX_PSL(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxTBX) handleFX_TBX(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxTBL) handleFX_TBL(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxTHO) handleFX_THO(state, track, trackIdx, chipIdx, fx, tableState);
-  else if (fx->fx == fxTXH) handleFX_TXH(state, track, trackIdx, chipIdx, fx, tableState);
-
-  // Chip specific FX
-  else {
-    handleFX_AY(state, trackIdx, chipIdx, fx, tableState);
-  }
-
-  return 0;
-}
-
-void initFX(PlaybackState* state, int trackIdx, uint8_t* fx, PlaybackFXState *fxState, int forceCleanState) {
+void initFX(PlaybackState* state, int trackIdx, uint8_t* fx, int forceCleanState) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
 
   uint8_t fxIdx = fx[0];
-  if (fxIdx == fxDEL) fxIdx = EMPTY_VALUE_8;
 
-  // Generic clean state
-  if (forceCleanState || !((fxState->fx == fxPVB || fxState->fx == fxEVB) && fxState->fx == fxIdx)) {
-    memset(fxState, 0, sizeof(PlaybackFXState));
+  PlaybackFXState* fxState = &track->note.fx[fxIdx];
+  fxState->isOn = 1;
+  fxState->counter = 0;
+  fxState->acc = 0;
+  fxState->fxValue = fx[1];
+
+  if (fxHandlers[fxIdx].init) {
+    fxHandlers[fxIdx].init(state, track, trackIdx, fxState, NULL, -1, NULL, forceCleanState);
   }
+}
 
-  // Special handling for some FX
-  if (fxIdx == fxPSL) {
-    // PSL - Pitch slide (portamento)
-    fxState->data.psl.counter = 0;
-    if (track->note.noteBase != EMPTY_VALUE_8) {
-      fxState->data.psl.startPeriod = state->p->pitchTable.values[track->note.noteBase];
-    } else {
-      fxState->data.psl.startPeriod = 0;
-    }
-  } else if (fxIdx == fxESL) {
-    // ESL - AY Envelope slide (portamento)
-    fxState->data.psl.counter = 0;
-    fxState->data.psl.startPeriod = track->note.chip.ay.envBase;
-  }
-
-  if (fxIdx == fxARP) {
-    if (track->arpSpeed == 0) track->arpSpeed = 1;
-  }
-
-  fxState->fx = fxIdx;
-  fxState->value = fx[1];
+void initFXHandlers(void) {
+  memset(fxHandlers, 0, sizeof(fxHandlers));
+  fxHandlers[fxARP] = (PlaybackFXHandler){NULL, handleFX_ARP};
+  fxHandlers[fxARC] = (PlaybackFXHandler){initFX_ARC, NULL};
+  fxHandlers[fxPVB] = (PlaybackFXHandler){NULL, handleFX_PVB};
+  fxHandlers[fxPBN] = (PlaybackFXHandler){initFX_PBN, handleFX_PBN};
+  fxHandlers[fxPSL] = (PlaybackFXHandler){initFX_PSL, handleFX_PSL};
+  fxHandlers[fxPIT] = (PlaybackFXHandler){initFX_PIT, handleFX_PIT};
+  fxHandlers[fxFIN] = (PlaybackFXHandler){initFX_FIN, handleFX_FIN};
+  fxHandlers[fxPRD] = (PlaybackFXHandler){initFX_PRD, handleFX_PRD};
+  fxHandlers[fxVOL] = (PlaybackFXHandler){initFX_VOL, handleFX_VOL};
+  fxHandlers[fxRET] = (PlaybackFXHandler){initFX_RET, handleFX_RET};
+  fxHandlers[fxDEL] = (PlaybackFXHandler){initFX_DEL, handleFX_DEL};
+  fxHandlers[fxOFF] = (PlaybackFXHandler){NULL, handleFX_OFF};
+  fxHandlers[fxKIL] = (PlaybackFXHandler){NULL, handleFX_KIL};
+  fxHandlers[fxTIC] = (PlaybackFXHandler){initFX_TIC, NULL};
+  fxHandlers[fxTHO] = (PlaybackFXHandler){initFX_THO, NULL};
+  fxHandlers[fxTXH] = (PlaybackFXHandler){initFX_TXH, NULL};
+  fxHandlers[fxTBL] = (PlaybackFXHandler){initFX_TBL, NULL};
+  fxHandlers[fxTBX] = (PlaybackFXHandler){initFX_TBX, NULL};
+  fxHandlers[fxGRV] = (PlaybackFXHandler){NULL, handleFX_GRV};
+  fxHandlers[fxGGR] = (PlaybackFXHandler){NULL, handleFX_GGR};
+  registerFXHandlers_AY();
 }
 
 int handleFX(PlaybackState* state, int trackIdx, int chipIdx) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
 
-  // Handle priority Phrase FX
-  for (int i = 0; i < 3; i++) {
-    handlePriorityFXInternal(state, trackIdx, chipIdx, &track->note.fx[i], NULL);
-  }
-
-  handleAllTableFX(state, trackIdx, chipIdx);
-
-  // Phrase FX
-  for (int i = 0; i < 3; i++) {
-    handleFXInternal(state, trackIdx, chipIdx, &track->note.fx[i], NULL);
+  // All FX on this note
+  for (int i = 0; i < fxTotalCount; i++) {
+    if (track->note.fx[i].isOn && fxHandlers[i].handle) {
+      fxHandlers[i].handle(state, track, trackIdx, chipIdx, &track->note.fx[i]);
+      track->note.fx[i].counter++;
+    }
   }
 
   return 0;
