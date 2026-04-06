@@ -143,9 +143,10 @@ static void handleFX_ARP(struct PlaybackState *state, PlaybackTrackState *track,
 
 // ARC - Arp settings
 static void initFX_ARC(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn, PhraseRow* phraseRow, int forceCleanState) {
-  fx->d.arpeggio.speed = fx->fxValue & 0x0F;
-  if (fx->d.arpeggio.speed == 0) fx->d.arpeggio.speed = 1;
-  fx->d.arpeggio.type = (fx->fxValue & 0xF0) >> 4;
+  int speed = fx->fxValue & 0x0F;
+  if (speed == 0) speed = 1;
+  track->note.fx[fxARP].d.arpeggio.speed = speed;
+  track->note.fx[fxARP].d.arpeggio.type = (fx->fxValue & 0xF0) >> 4;
 }
 
 // PIT - Pitch offset (semitones)
@@ -374,19 +375,22 @@ static void handleFX_PSL(PlaybackState* state, PlaybackTrackState* track, int tr
 // General FX handling functions
 //
 
-void initFX(PlaybackState* state, int trackIdx, uint8_t* fx, int forceCleanState) {
+void initFX(PlaybackState* state, int trackIdx, uint8_t* fx, PlaybackTableState* tableState, int tableFXColumn, PhraseRow* phraseRow, int forceCleanState) {
+  if (fx[0] == EMPTY_VALUE_8 || fx[0] >= fxTotalCount) return;
+
   PlaybackTrackState* track = &state->tracks[trackIdx];
-
   uint8_t fxIdx = fx[0];
-
   PlaybackFXState* fxState = &track->note.fx[fxIdx];
+
   fxState->isOn = 1;
-  fxState->counter = 0;
-  fxState->acc = 0;
+  if (forceCleanState) {
+    fxState->counter = 0;
+    fxState->acc = 0;
+  }
   fxState->fxValue = fx[1];
 
   if (fxHandlers[fxIdx].init) {
-    fxHandlers[fxIdx].init(state, track, trackIdx, fxState, NULL, -1, NULL, forceCleanState);
+    fxHandlers[fxIdx].init(state, track, trackIdx, fxState, tableState, tableFXColumn, phraseRow, forceCleanState);
   }
 }
 

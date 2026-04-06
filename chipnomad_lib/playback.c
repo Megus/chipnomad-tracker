@@ -104,7 +104,8 @@ void tableReadFX(PlaybackState* state, int trackIdx, struct PlaybackTableState* 
 
   int tableRow = table->rows[fxIdx];
   if (forceRead || p->tables[tableIdx].rows[tableRow].fx[fxIdx][0] != EMPTY_VALUE_8) {
-    initFX(state, trackIdx, p->tables[tableIdx].rows[tableRow].fx[fxIdx], 0);
+    // TODO: PhraseRow can be taken from the playback state - probably
+    initFX(state, trackIdx, p->tables[tableIdx].rows[tableRow].fx[fxIdx], table, fxIdx, NULL, 0);
   }
 }
 
@@ -237,11 +238,36 @@ void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRo
   if (!skipDelCheck) {
     for (int i = 0; i < 3; i++) {
       if (phraseRow->fx[i][0] == fxDEL && phraseRow->fx[i][1] != 0) {
-        track->note.fx[fxDEL].isOn = 1;
-        track->note.fx[fxDEL].fxValue = phraseRow->fx[i][1];
-        track->note.fx[fxDEL].counter = 0;
+        initFX(state, trackIdx, phraseRow->fx[i], NULL, -1, phraseRow, 1);
         return;
       }
+    }
+  }
+
+  // Instrument
+  if (instrument != EMPTY_VALUE_8) {
+    track->note.instrument = instrument;
+
+    // Turn off all FX on a new instrument
+    resetNoteFX(state, trackIdx);
+    resetOffsets(state, trackIdx);
+
+    // Reset AUX table
+    tableInit(state, trackIdx, &track->note.auxTable, EMPTY_VALUE_8, 1);
+
+    // Setup instrument and default instrument table
+    setupInstrumentAY(state, trackIdx);
+    tableInit(state, trackIdx, &track->note.instrumentTable, instrument, p->instruments[instrument].tableSpeed);
+  }
+
+  if (instrument == EMPTY_VALUE_8 && (note != EMPTY_VALUE_8 && note != NOTE_OFF)) {
+    // Restart existing FX on a new note and no instrument
+  }
+
+  // Read new FX
+  for (int i = 0; i < 3; i++) {
+    if (phraseRow->fx[i][0] != EMPTY_VALUE_8 && phraseRow->fx[i][0] != fxDEL) {
+      initFX(state, trackIdx, phraseRow->fx[i], NULL, -1, phraseRow, (note != EMPTY_VALUE_8 && note != NOTE_OFF));
     }
   }
 
@@ -250,41 +276,8 @@ void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRo
     if (note == NOTE_OFF) {
       handleNoteOff(state, trackIdx);
     } else {
-      // Set base note, reset offsets
       track->note.noteBase = note;
-      track->note.noteOffset = 0;
-      track->note.pitchOffset = 0;
-      track->note.periodOffset = 0;
-      track->note.volumeOffset = 0;
-
-      if (instrument != EMPTY_VALUE_8) {
-        // Restart FX on empty instrument
-
-      } else {
-        // Turn off all FX on a new instrument
-        resetNoteFX(state, trackIdx);
-      }
-
-      // Reset AUX table
-      tableInit(state, trackIdx, &track->note.auxTable, EMPTY_VALUE_8, 1);
     }
-  }
-
-  // FX
-  // Handle some priority fx:
-  // if (fx->fx == fxTBX || fx->fx == fxTBL || fx->fx == fxTHO || fx->fx == fxTXH) {
-
-  for (int i = 0; i < 3; i++) {
-    if (phraseRow->fx[i][0] != EMPTY_VALUE_8 || (note != EMPTY_VALUE_8 && note != NOTE_OFF)) {
-      initFX(state, trackIdx, phraseRow->fx[i], (note != EMPTY_VALUE_8 && note != NOTE_OFF));
-    }
-  }
-
-  // Instrument
-  if (instrument != EMPTY_VALUE_8) {
-    track->note.instrument = instrument;
-    setupInstrumentAY(state, trackIdx);
-    tableInit(state, trackIdx, &track->note.instrumentTable, instrument, p->instruments[instrument].tableSpeed);
   }
 
   // Apply chain transpose (if the instrument allows it)
@@ -413,6 +406,18 @@ void readPhraseRow(PlaybackState* state, int trackIdx, int skipDelCheck) {
   }
 }
 
+void resetOffsets(PlaybackState* state, int trackIdx) {
+  PlaybackTrackState* track = &state->tracks[trackIdx];
+  track->note.noteOffset = 0;
+  track->note.pitchOffset = 0;
+  track->note.periodOffset = 0;
+  track->note.volumeOffset = 0;
+
+  // TODO: Encapsulate chip-specific offset resets
+  track->note.chip.ay.envOffset = 0;
+  track->note.chip.ay.noiseOffset = 0;
+}
+
 static void nextFrame(PlaybackState* state, int trackIdx, int chipIdx) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
   Project* p = state->p;
@@ -423,15 +428,7 @@ static void nextFrame(PlaybackState* state, int trackIdx, int chipIdx) {
     return;
   }
 
-  // Clear re-calculated fields
-  track->note.noteOffset = 0;
-  track->note.pitchOffset = 0;
-  track->note.periodOffset = 0;
-  track->note.volumeOffset = 0;
-
-  // TODO: Encapsulate chip-specific offset resets
-  track->note.chip.ay.envOffset = 0;
-  track->note.chip.ay.noiseOffset = 0;
+  resetOffsets(state, trackIdx);
 
   // FX
   handleFX(state, trackIdx, chipIdx);
@@ -623,6 +620,8 @@ static int skipZeroGrooveRows(PlaybackState* state, int trackIdx) {
 
 void playbackInit(PlaybackState* state, Project* project) {
   state->p = project;
+
+  initFXHandlers();
 
   for (int c = 0; c < PROJECT_MAX_TRACKS; c++) {
     resetTrack(state, c);

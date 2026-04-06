@@ -44,7 +44,6 @@ static void handleFX_EAU(PlaybackState* state, PlaybackTrackState* track, int tr
   fx->isOn = 0; // Atomic effect
   uint8_t n = (fx->fxValue & 0xf0) >> 4;
   uint8_t d = (fx->fxValue & 0x0f);
-  if (n == 0) n = 1;
   if (d == 0) d = 1;
   track->note.chip.ay.envAutoN = n;
   track->note.chip.ay.envAutoD = d;
