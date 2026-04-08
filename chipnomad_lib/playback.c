@@ -261,7 +261,7 @@ void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRo
   }
 
   if (instrument == EMPTY_VALUE_8 && (note != EMPTY_VALUE_8 && note != NOTE_OFF)) {
-    // Restart existing FX on a new note and no instrument
+    restartFX(state, trackIdx);
   }
 
   // Read new FX

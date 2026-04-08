@@ -23,10 +23,14 @@ static void handleFX_NOA(PlaybackState* state, PlaybackTrackState* track, int tr
 }
 
 // NOI - Relative noise period value
-static void initFX_NOI(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn, PhraseRow* phraseRow, int forceCleanState) {
+static void initFX_NOI(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn, int forceCleanState) {
   if (forceCleanState) fx->acc = 0;
   if (track->note.chip.ay.noiseBase == EMPTY_VALUE_8) track->note.chip.ay.noiseBase = 0;
   fx->acc += fx->fxValue;
+}
+
+static void restartFX_NOI(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
+  // Do nothing - NOI should keep the accumulated offset
 }
 
 static void handleFX_NOI(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
@@ -69,9 +73,13 @@ static void handleFX_ENT(PlaybackState* state, PlaybackTrackState* track, int tr
 }
 
 // EPT - Envelope period offset
-static void initFX_EPT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn, PhraseRow* phraseRow, int forceCleanState) {
+static void initFX_EPT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn, int forceCleanState) {
   if (forceCleanState) fx->acc = 0;
   fx->acc += (int8_t)fx->fxValue;
+}
+
+static void restartFX_EPT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
+  // Do nothing - EPT should keep the accumulated offset
 }
 
 static void handleFX_EPT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
@@ -91,7 +99,7 @@ static void handleFX_EPH(PlaybackState* state, PlaybackTrackState* track, int tr
 }
 
 // EBN - Envelope pitch bend
-static void initFX_EBN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn, PhraseRow* phraseRow, int forceCleanState) {
+static void initFX_EBN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn, int forceCleanState) {
   // Calculate per-frame change
   int speed = 1;
   if (tableFXColumn >= 0) {
@@ -111,8 +119,12 @@ static void handleFX_EBN(PlaybackState* state, PlaybackTrackState* track, int tr
 }
 
 // EVB - Envelope vibrato
-static void initFX_EVB(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn, PhraseRow* phraseRow,int forceCleanState) {
+static void initFX_EVB(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn, int forceCleanState) {
   if (forceCleanState) fx->acc = 0;
+}
+
+static void restartFX_EVB(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
+  // Do nothing - EVB should continue uninterrupted
 }
 
 static void handleFX_EVB(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
@@ -120,7 +132,7 @@ static void handleFX_EVB(PlaybackState* state, PlaybackTrackState* track, int tr
 }
 
 // ESL - Pitch slide (portamento
-static void initFX_ESL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn, PhraseRow* phraseRow,int forceCleanState) {
+static void initFX_ESL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn, int forceCleanState) {
   if (forceCleanState) fx->counter = 0;
   if (track->note.chip.ay.envBase != 0) {
     fx->d.slide.startPeriod = track->note.chip.ay.envBase;
@@ -142,16 +154,16 @@ static void handleFX_ESL(PlaybackState* state, PlaybackTrackState* track, int tr
 }
 
 void registerFXHandlers_AY(void) {
-  fxHandlers[fxAYM] = (PlaybackFXHandler){NULL, handleFX_AYM};
-  fxHandlers[fxNOA] = (PlaybackFXHandler){NULL, handleFX_NOA};
-  fxHandlers[fxNOI] = (PlaybackFXHandler){initFX_NOI, handleFX_NOI};
-  fxHandlers[fxERT] = (PlaybackFXHandler){NULL, handleFX_ERT};
-  fxHandlers[fxEAU] = (PlaybackFXHandler){NULL, handleFX_EAU};
-  fxHandlers[fxENT] = (PlaybackFXHandler){NULL, handleFX_ENT};
-  fxHandlers[fxEPT] = (PlaybackFXHandler){initFX_EPT, handleFX_EPT};
-  fxHandlers[fxEPL] = (PlaybackFXHandler){NULL, handleFX_EPL};
-  fxHandlers[fxEPH] = (PlaybackFXHandler){NULL, handleFX_EPH};
-  fxHandlers[fxEBN] = (PlaybackFXHandler){initFX_EBN, handleFX_EBN};
-  fxHandlers[fxEVB] = (PlaybackFXHandler){initFX_EVB, handleFX_EVB};
-  fxHandlers[fxESL] = (PlaybackFXHandler){initFX_ESL, handleFX_ESL};
+  fxHandlers[fxAYM] = (PlaybackFXHandler){NULL, handleFX_AYM, NULL};
+  fxHandlers[fxNOA] = (PlaybackFXHandler){NULL, handleFX_NOA, NULL};
+  fxHandlers[fxNOI] = (PlaybackFXHandler){initFX_NOI, handleFX_NOI, restartFX_NOI};
+  fxHandlers[fxERT] = (PlaybackFXHandler){NULL, handleFX_ERT, NULL};
+  fxHandlers[fxEAU] = (PlaybackFXHandler){NULL, handleFX_EAU, NULL};
+  fxHandlers[fxENT] = (PlaybackFXHandler){NULL, handleFX_ENT, NULL};
+  fxHandlers[fxEPT] = (PlaybackFXHandler){initFX_EPT, handleFX_EPT, restartFX_EPT};
+  fxHandlers[fxEPL] = (PlaybackFXHandler){NULL, handleFX_EPL, NULL};
+  fxHandlers[fxEPH] = (PlaybackFXHandler){NULL, handleFX_EPH, NULL};
+  fxHandlers[fxEBN] = (PlaybackFXHandler){initFX_EBN, handleFX_EBN, NULL};
+  fxHandlers[fxEVB] = (PlaybackFXHandler){initFX_EVB, handleFX_EVB, restartFX_EVB};
+  fxHandlers[fxESL] = (PlaybackFXHandler){initFX_ESL, handleFX_ESL, NULL};
 }

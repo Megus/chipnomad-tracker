@@ -2,14 +2,17 @@
 
 ## v0.2.0b (not yet released)
 
-- *PLATFORM*: Android (phones, tablets, handhelds), MiyooPorts
+- *PLATFORM*: Android (phones, tablets, handhelds), Miyoo Mini (Miyoo Ports)
 - Press Opt+Left/Right at the Song screen to solo all tracks to the left/right
 - Custom font loading
-- *FIX*: THO behavior in tables now match M8
-- *FIX*: Env shape display was incorrect at the instrument screen
-- *FIX*: Unexpected behavior when "cutting" values at screens other than Phrase and Table
+- FX implementation was re-built to match M8 and LSDj behavior
 - *FIX*: Division by zero in auto envelope logic
 - *FIX*: You could open table FF for editing which led to unexpected behavior
+- *FIX*: Env shape display was incorrect at the instrument screen
+- *FIX*: Unexpected behavior when "cutting" values at screens other than Phrase and Table
+- *FIX*: Phrase transpose was affecting notes playing from the previous phrase
+- *FIX*: THO behavior in tables now match M8
+- *FIX*: RET FX was stopping after a single row and didn't work in tables
 
 ## v0.1.0b (January 25, 2026)
 

@@ -132,8 +132,13 @@ typedef void (*PlaybackFXInitFunc)(
   PlaybackFXState* fx,
   PlaybackTableState* tableState,
   int tableFXColumn,
-  PhraseRow* phraseRow,
   int forceCleanState
+);
+typedef void (*PlaybackFXRestartFunc)(
+  PlaybackState* state,
+  PlaybackTrackState* track,
+  int trackIdx,
+  PlaybackFXState* fx
 );
 typedef void (*PlaybackFXHandleFunc)(
   PlaybackState* state,
@@ -146,6 +151,7 @@ typedef void (*PlaybackFXHandleFunc)(
 typedef struct PlaybackFXHandler {
   PlaybackFXInitFunc init;
   PlaybackFXHandleFunc handle;
+  PlaybackFXRestartFunc restart;
 } PlaybackFXHandler;
 
 /**

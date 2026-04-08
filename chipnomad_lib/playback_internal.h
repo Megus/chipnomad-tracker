@@ -10,7 +10,7 @@ void tableInit(PlaybackState* state, int trackIdx, struct PlaybackTableState* ta
 void tableReadFX(PlaybackState* state, int trackIdx, struct PlaybackTableState* table, int fxIdx, int forceRead);
 void initFX(PlaybackState* state, int trackIdx, uint8_t* fx, PlaybackTableState* tableState, int tableFXColumn, PhraseRow* phraseRow, int forceCleanState);
 int handleFX(PlaybackState* state, int trackIdx, int chipIdx);
-int restartFX(PlaybackState* state, int trackIdx, int chipIdx);
+int restartFX(PlaybackState* state, int trackIdx);
 void hopToTableRow(PlaybackState* state, int trackIdx, PlaybackTableState* table, int tableRow);
 int vibratoCommonLogic(PlaybackFXState *pvbState, int scale);
 void resetOffsets(PlaybackState* state, int trackIdx);
