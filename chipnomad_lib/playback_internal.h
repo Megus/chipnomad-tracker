@@ -4,7 +4,7 @@
 #include "playback.h"
 
 void handleNoteOff(PlaybackState* state, int trackIdx);
-void readPhraseRow(PlaybackState* state, int trackIdx, int skilDelCheck);
+void readPhraseRow(PlaybackState* state, int trackIdx, int skipDelCheck);
 void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRow, int skipDelCheck);
 void tableInit(PlaybackState* state, int trackIdx, struct PlaybackTableState* table, int tableIdx, int speed);
 void tableReadFX(PlaybackState* state, int trackIdx, struct PlaybackTableState* table, int fxIdx, int forceRead);

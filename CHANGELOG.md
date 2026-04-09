@@ -13,6 +13,7 @@
 - *FIX*: Phrase transpose was affecting notes playing from the previous phrase
 - *FIX*: THO behavior in tables now match M8
 - *FIX*: RET FX was stopping after a single row and didn't work in tables
+- *FIX*: Changing vibrato speed over time caused weird phase issues
 
 ## v0.1.0b (January 25, 2026)
 

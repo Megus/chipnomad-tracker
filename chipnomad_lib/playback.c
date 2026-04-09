@@ -496,11 +496,6 @@ static int moveToNextPhraseRow(PlaybackState* state, int trackIdx) {
 
   track->phraseRow++;
 
-  // Reset OFF/KIL/DEL FX
-  track->note.fx[fxOFF].isOn = 0;
-  track->note.fx[fxKIL].isOn = 0;
-  track->note.fx[fxDEL].isOn = 0;
-
   if (track->phraseRow >= 16) {
     track->phraseRow = 0;
 

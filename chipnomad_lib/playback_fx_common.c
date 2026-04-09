@@ -10,10 +10,15 @@ static int iabs(int v) {
 }
 
 int vibratoCommonLogic(PlaybackFXState *fx, int scale) {
-  int period = 32 - ((fx->fxValue & 0xf0) >> 3);
-  int depth = (fx->fxValue & 0xf) * scale;
-  int x = (fx->counter + period / 4) % period;
-  int value = depth - (4 * depth * iabs(x - period / 2)) / period;
+  int speed = (fx->fxValue & 0xf0) >> 4;
+  int p = 32 - speed * 2;
+  int step = 0x1000000 / p; // using 16.16 fixed point
+  int a = (fx->fxValue & 0xf) * scale;
+  int x = ((fx->acc * p / 0x1000000) + p / 4) % p;
+  int value = a - (4 * a * iabs(x - p / 2)) / p;
+
+  fx->acc += step;
+
   return value;
 }
 
@@ -355,14 +360,15 @@ static void handleFX_RET(PlaybackState* state, PlaybackTrackState* track, int tr
 }
 
 // PVB - Pitch vibrato
+static void restartFX_PVB(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
+  // Do nothing - PVB should continue uninterrupted
+}
+
 static void handleFX_PVB(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   int scale = state->p->linearPitch ? 10 : 1;
   track->note.pitchOffset += vibratoCommonLogic(fx, scale);
 }
 
-static void restartFX_PVB(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
-  // Do nothing - PVB should continue uninterrupted
-}
 
 // PSL - Pitch slide (portamento)
 static void initFX_PSL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn, int forceCleanState) {
