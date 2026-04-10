@@ -18,7 +18,7 @@ ChipNomadState* chipnomadCreate(void) {
   projectInit(&state->project);
   playbackInit(&state->playbackState, &state->project);
   state->mixVolume = 0.6f;
-  
+
   // Initialize mix buffer
   state->mixBufferSize = 8192;
   state->mixBuffer = malloc(state->mixBufferSize * sizeof(float));
@@ -42,7 +42,7 @@ void chipnomadDestroy(ChipNomadState* state) {
 
   // Cleanup mix buffer
   free(state->mixBuffer);
-  
+
   free(state);
 }
 

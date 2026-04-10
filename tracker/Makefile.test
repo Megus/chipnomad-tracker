@@ -27,6 +27,14 @@ MOCK_SRC = $(wildcard $(MOCK_DIR)/*.c)
 LIB_SRC = $(LIB_DIR)/project.c \
           $(LIB_DIR)/utils.c
 
+# Full library sources needed by playback tests
+LIB_PLAYBACK_SRC = $(LIB_SRC) \
+                   $(LIB_DIR)/chipnomad_lib.c \
+                   $(LIB_DIR)/playback.c \
+                   $(LIB_DIR)/playback_ay.c \
+                   $(LIB_DIR)/playback_fx_common.c \
+                   $(LIB_DIR)/playback_fx_ay.c
+
 # Tracker sources needed by tracker tests
 TRACKER_SRC = $(TRACKER_DIR)/project_utils.c
 
@@ -47,6 +55,10 @@ all: $(ALL_BINS)
 # Library tests: lib sources + unity + mocks
 $(BUILD)/test_lib_%: $(LIB_DIR)/tests/test_%.c $(LIB_SRC) $(UNITY_SRC) $(MOCK_SRC) | $(BUILD)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIB_SRC) $(UNITY_SRC) $(MOCK_SRC) -lm
+
+# Playback tests need the full playback engine + pitch table utils
+$(BUILD)/test_lib_playback: $(LIB_DIR)/tests/test_playback.c $(LIB_PLAYBACK_SRC) $(TRACKER_DIR)/pitch_table_utils.c $(UNITY_SRC) $(MOCK_SRC) | $(BUILD)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIB_PLAYBACK_SRC) $(TRACKER_DIR)/pitch_table_utils.c $(UNITY_SRC) $(filter-out $(MOCK_DIR)/pitch_table_utils_mock.c,$(MOCK_SRC)) -lm
 
 # Tracker tests: lib + tracker sources + unity + mocks
 $(BUILD)/test_%: tests/test_%.c $(LIB_SRC) $(TRACKER_SRC) $(UNITY_SRC) $(MOCK_SRC) | $(BUILD)

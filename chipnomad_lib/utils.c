@@ -27,24 +27,11 @@ const char* byteToHex(uint8_t byte) {
 
 const char* byteToHexOrEmpty(uint8_t byte) {
   if (byte == EMPTY_VALUE_8) {
-  return "--";
+    return "--";
   } else {
-  return hexBytes[byte];
+    return hexBytes[byte];
   }
 }
-
-// DJB2 algorithm, truncating hash to just byte
-// Taken from http://www.cse.yorku.ca/~oz/hash.html
-uint8_t hash(uint8_t* str) {
-  uint32_t hash = 5381;
-  int c;
-
-  while ((c = *str++))
-  hash = ((hash << 5) + hash) + c; // Variant: XOR c instead of PLUS c
-
-  return (uint8_t)(hash & 0xff);
-}
-
 
 int min(int a, int b) {
   return a < b ? a : b;
@@ -56,11 +43,11 @@ int max(int a, int b) {
 
 // Convert cents value to frequency in Hz
 float centsToFrequency(int cents) {
-  // Clamp to MIDI range: 0-127 * 100 cents = 0-12700 cents
+  // Clamp to MIDI range
   if (cents < 0) cents = 0;
   if (cents > 12700) cents = 12700;
-  
-  // A4 = 440 Hz = MIDI note 69 = 6900 cents
+
+  // A4 = 440 Hz = MIDI note 69
   // Formula: freq = 440 * 2^((cents - 6900) / 1200)
   float semitones = (cents - 6900) / 100.0f;
   return 440.0f * powf(2.0f, semitones / 12.0f);
