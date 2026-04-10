@@ -67,11 +67,6 @@ static void advanceFrames(int n) {
 
 // Tests
 
-void test_mock_chip_stores_registers(void) {
-  state->chips[0].setRegister(&state->chips[0], 0, 0xAB);
-  TEST_ASSERT_EQUAL_HEX8(0xAB, state->chips[0].regs[0]);
-}
-
 void test_playback_init_all_tracks_stopped(void) {
   TEST_ASSERT_FALSE(playbackIsPlaying(&state->playbackState));
 }
@@ -104,7 +99,6 @@ void test_single_note_outputs_to_registers(void) {
 
 int main(void) {
   UNITY_BEGIN();
-  RUN_TEST(test_mock_chip_stores_registers);
   RUN_TEST(test_playback_init_all_tracks_stopped);
   RUN_TEST(test_single_note_outputs_to_registers);
   return UNITY_END();

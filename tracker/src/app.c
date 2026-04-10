@@ -125,19 +125,6 @@ static int inputPlayback(int keys, int tapCount) {
 * @param tapCount number of taps
 */
 static void appInput(int isKeyDown, int keys, int tapCount) {
-  // Volume control (only on key down)
-  if (isKeyDown) {
-    if (keys == keyVolumeUp) {
-      if (appSettings.mixVolume < 1.0) appSettings.mixVolume += 0.1;
-      if (appSettings.mixVolume > 1.0) appSettings.mixVolume = 1.0;
-      if (chipnomadState) chipnomadState->mixVolume = appSettings.mixVolume;
-    } else if (keys == keyVolumeDown) {
-      if (appSettings.mixVolume > 0.0) appSettings.mixVolume -= 0.1;
-      if (appSettings.mixVolume < 0.0) appSettings.mixVolume = 0.0;
-      if (chipnomadState) chipnomadState->mixVolume = appSettings.mixVolume;
-    }
-  }
-
   // Stop phrase row and preview
   if (chipnomadState->playbackState.tracks[*pSongTrack].mode == playbackModePhraseRow && keys == 0) {
     playbackStop(&chipnomadState->playbackState);
@@ -294,12 +281,22 @@ void appOnEvent(MainLoopEventData eventData) {
       pressedButtons |= value;
     }
 
-    // Tap detection
-    int currentTapCount = 0;
-    if ((value & doubleTapMask) && value == tapButton && tapTimerCount > 0) {
-      tapCount++;
-      currentTapCount = tapCount;
-      tapTimerCount = appSettings.doubleTapFrames; // Reset timer for next tap
+    // Multi-tap detection
+    if (value & doubleTapMask) {
+      if (value == tapButton && tapTimerCount > 0) {
+        // Same button pressed again within timer - increment tap count
+        tapCount++;
+      } else {
+        // First tap or different button - start new tap sequence
+        tapButton = value;
+        tapCount = 1;
+      }
+      tapTimerCount = appSettings.doubleTapFrames;
+    } else {
+      // Non-multi-tap button pressed - reset tap state
+      tapButton = 0;
+      tapCount = 1;
+      tapTimerCount = 0;
     }
 
     if (value & dPadMask) {
@@ -308,7 +305,8 @@ void appOnEvent(MainLoopEventData eventData) {
       // As we don't support multiple d-pad keys, keep only the last pressed one
       pressedButtons = (pressedButtons & ~dPadMask) | value;
     }
-    appInput(1, pressedButtons, currentTapCount);
+    appInput(1, pressedButtons, tapCount);
+
     break;
   }
   case eventKeyUp: {
@@ -320,28 +318,18 @@ void appOnEvent(MainLoopEventData eventData) {
     }
 
     pressedButtons &= ~value;
-    // Set tap timer
-    if (value & doubleTapMask) {
-      if (value == tapButton && tapTimerCount > 0) {
-        // Same button released again within timer - keep current count
-      } else {
-        // First tap or different button
-        tapButton = value;
-        tapCount = 1;
-      }
-      tapTimerCount = appSettings.doubleTapFrames;
-    }
 
-    // Call appInput on key release
     appInput(0, pressedButtons, 0);
 
     if (pressedButtons == 0) {
       // Clean untimed screen message when all keys are released
       screenMessage(0, "");
     }
+
     break;
   }
   case eventTick:
+    // Multi-tap timer handling
     if (tapTimerCount > 0) {
       tapTimerCount--;
       if (tapTimerCount == 0) {
@@ -350,6 +338,8 @@ void appOnEvent(MainLoopEventData eventData) {
         tapButton = 0;
       }
     }
+
+    // Key repeat handling
     if (keyRepeatCount > 0) {
       int maskedButtons = pressedButtons & dPadMask;
       // Only one d-pad button can be pressed for key repeats
@@ -365,9 +355,8 @@ void appOnEvent(MainLoopEventData eventData) {
     }
     break;
   case eventExit:
-    // Auto-save the current project on exit
+    // Auto-save the current project and settings on exit
     projectSave(&chipnomadState->project, getAutosavePath());
-    // Save settings on exit
     settingsSave();
     break;
   case eventSleep:

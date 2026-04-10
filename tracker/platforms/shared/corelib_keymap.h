@@ -22,8 +22,6 @@
 #define BTN_SELECT      110
 #define BTN_START       109
 #define BTN_MENU        117
-#define BTN_VOLUME_UP   114
-#define BTN_VOLUME_DOWN 116
 
 #elif defined(MIYOOPORTS_BUILD)
 // MIYOO_PORTS mapping (SDL keycodes)
@@ -42,8 +40,6 @@
 #define BTN_SELECT      SDLK_RCTRL
 #define BTN_START       SDLK_RETURN
 #define BTN_MENU        0
-#define BTN_VOLUME_UP   0
-#define BTN_VOLUME_DOWN 0
 
 #else
 // Other platforms (Desktop, PortMaster, Android)
@@ -62,8 +58,6 @@
 #define BTN_SELECT      (SDLK_LSHIFT)
 #define BTN_START       (SDLK_SPACE)
 #define BTN_MENU        (SDLK_LCTRL)
-#define BTN_VOLUME_UP   0
-#define BTN_VOLUME_DOWN 0
 
 #endif
 

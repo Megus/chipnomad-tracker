@@ -298,7 +298,7 @@ static int inputNormalMode(ScreenData* screen, int keys, int tapCount) {
         redrawn = 1;
         handled = 1;
       }
-    } else if (keys == keyEdit && tapCount == 0) {
+    } else if (keys == keyEdit && tapCount == 1) {
       // Edit: insert/copy value
       handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editTap);
     } else if (keys == keyEdit && tapCount == 2) {

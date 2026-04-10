@@ -24,8 +24,6 @@ enum Key {
   keyOpt = 0x20,
   keyPlay = 0x40,
   keyShift = 0x80,
-  keyVolumeUp = 0x100,
-  keyVolumeDown = 0x200,
   keyUnmapped = 0x400,
 };
 
