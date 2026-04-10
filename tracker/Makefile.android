@@ -48,3 +48,20 @@ android-lib:
 	mkdir -p $(BUILD_DIR)
 	$(CC) -shared $(CFLAGS) $(XTRA_LIBS) $(OUTPUT)
 	$(STRIP) $(BUILD_DIR)/libchipnomad.so
+
+.PHONY: android-apk
+android-apk: android-lib
+	cd platforms/android && ./gradlew assembleDebug
+
+.PHONY: android-deploy
+android-deploy: android-apk
+	@echo "Creating Android deployment package..."
+	@mkdir -p ../../releases
+	$(eval VERSION := $(shell grep 'appVersion.*=' src/version.c | cut -d'"' -f2))
+	@rm -rf /tmp/chipnomad-android-package
+	@mkdir -p /tmp/chipnomad-android-package
+	@cp platforms/android/app/build/outputs/apk/debug/app-debug.apk /tmp/chipnomad-android-package/ChipNomad.apk
+	@cd /tmp/chipnomad-android-package && zip -r ChipNomad-$$(date +%Y-%m-%d)-$(VERSION)-Android.zip ChipNomad.apk
+	@mv /tmp/chipnomad-android-package/ChipNomad-*-Android.zip ../../releases/
+	@rm -rf /tmp/chipnomad-android-package
+	@echo "Android package created in ../../releases/"

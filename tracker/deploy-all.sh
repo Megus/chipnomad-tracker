@@ -18,6 +18,12 @@ fi
 echo "Cleaning previous builds..."
 make clean
 
+# Run tests
+echo ""
+echo "Running tests..."
+make test
+echo "All tests passed."
+
 # Build all platforms
 echo ""
 echo "Building macOS release..."
@@ -42,6 +48,10 @@ make RG35xx-deploy
 echo ""
 echo "Building Linux package..."
 make linux-package-deploy
+
+echo ""
+echo "Building Android release..."
+make android-deploy
 
 echo ""
 echo "=========================================="

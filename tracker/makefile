@@ -46,16 +46,15 @@ macOS macOS-deploy:
 windows-deploy:
 	$(MAKE) -f Makefile.windows windows-deploy
 
-.PHONY: android android-apk
+.PHONY: android android-apk android-deploy
 android:
 	$(MAKE) -f Makefile.android android
 
 android-apk:
-	@echo "Building Android APK..."
-	$(MAKE) -f Makefile.android android
-	cd platforms/android && ~/Library/Android/sdk/tools/bin/sdkmanager --install "build-tools;34.0.0" || true
-	cd platforms/android && ANDROID_HOME=~/Library/Android/sdk ~/Library/Android/sdk/tools/bin/sdkmanager --list | head -20
-	@echo "Use Android Studio to build APK or install Gradle manually"
+	$(MAKE) -f Makefile.android android-apk
+
+android-deploy:
+	$(MAKE) -f Makefile.android android-deploy
 
 .PHONY: linux-package linux-package-deploy
 linux-package:
@@ -70,6 +69,10 @@ linux-package-deploy: linux-package
 .PHONY: clean-android
 clean-android:
 	rm -rf build/android-arm64 build/android-arm32
+
+.PHONY: test
+test:
+	$(MAKE) -f Makefile.test run
 
 .PHONY: deploy-all
 deploy-all:
