@@ -183,6 +183,7 @@ void outputRegistersAY(PlaybackState* state, int trackIdx, int chipIdx, SoundChi
         // Aux table volume
         tableIdx = track->note.auxTable.tableIdx;
         if (tableIdx != EMPTY_VALUE_8 && p->tables[tableIdx].rows[track->note.auxTable.rows[0]].volume != EMPTY_VALUE_8) {
+          volume *= p->tables[tableIdx].rows[track->note.auxTable.rows[0]].volume;
         } else {
           volume *= 15;
         }

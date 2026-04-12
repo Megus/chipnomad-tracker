@@ -1,7 +1,13 @@
 #ifndef CORELIB_KEYMAP_H
 #define CORELIB_KEYMAP_H
 
+#if defined(RG35XX_BUILD)
+// RG35xx: no SDL header needed, uses hardcoded j2k.so keycodes
+#elif defined(MIYOOPORTS_BUILD)
+#include <SDL/SDL.h>
+#else
 #include <SDL2/SDL.h>
+#endif
 
 // Keyboard mapping for different platforms
 

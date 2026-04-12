@@ -10,7 +10,7 @@ LIBS = $(COMMON_LIBS) platforms/sdl12
 OUTPUT_EXT =
 DOCKER = docker run --platform linux/amd64 --rm --user $$(id -u):$$(id -g) -v`pwd`/..:/src -w/src/tracker
 
-XTRA_CFLAGS = -DRG35XXBUILD -I${SYSROOT}/usr/include -L${SYSROOT}/usr/lib
+XTRA_CFLAGS = -DRG35XX_BUILD -I${SYSROOT}/usr/include -L${SYSROOT}/usr/lib
 XTRA_LIBS = -lSDL
 CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(XTRA_CFLAGS)
 

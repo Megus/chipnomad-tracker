@@ -14,6 +14,7 @@
 - *FIX*: THO behavior in tables now match M8
 - *FIX*: RET FX was stopping after a single row and didn't work in tables
 - *FIX*: Changing vibrato speed over time caused weird phase issues
+- *FIX*: Volume column in aux tables didn't work
 
 ## v0.1.0b (January 25, 2026)
 
