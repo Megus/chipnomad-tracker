@@ -67,7 +67,7 @@ static void resetTrack(PlaybackState* state, int trackIdx) {
   resetTrackAY(state, trackIdx);
 }
 
-void tableInit(PlaybackState* state, int trackIdx, struct PlaybackTableState* table, int tableIdx, int speed) {
+void tableInit(PlaybackState* state, int trackIdx, struct PlaybackTableState* table, int tableIdx, int row, int speed) {
   table->tableIdx = tableIdx;
   if (tableIdx == EMPTY_VALUE_8) return;
 
@@ -77,7 +77,7 @@ void tableInit(PlaybackState* state, int trackIdx, struct PlaybackTableState* ta
 
   for (int i = 0; i < 4; i++) {
     table->counters[i] = 0;
-    table->rows[i] = 0;
+    table->rows[i] = row;
     table->speed[i] = speed;
 
     // Check if row 15 has TIC effect for this column
@@ -85,7 +85,7 @@ void tableInit(PlaybackState* state, int trackIdx, struct PlaybackTableState* ta
       table->speed[i] = p->tables[tableIdx].rows[15].fx[i][1];
     }
 
-    tableReadFX(state, trackIdx, table, i, 1);
+    tableReadFX(state, trackIdx, table, i);
   }
 }
 
@@ -93,19 +93,23 @@ void hopToTableRow(PlaybackState* state, int trackIdx, PlaybackTableState* table
   for (int c = 0; c < 4; c++) {
     table->counters[c] = 0;
     table->rows[c] = tableRow;
-    tableReadFX(state, trackIdx, table, c, 0);
+    tableReadFX(state, trackIdx, table, c);
   }
 }
 
-void tableReadFX(PlaybackState* state, int trackIdx, struct PlaybackTableState* table, int fxIdx, int forceRead) {
+void tableReadFX(PlaybackState* state, int trackIdx, struct PlaybackTableState* table, int fxIdx) {
   uint8_t tableIdx = table->tableIdx;
   if (tableIdx == EMPTY_VALUE_8) return;
   Project* p = state->p;
 
   int tableRow = table->rows[fxIdx];
-  if (forceRead || p->tables[tableIdx].rows[tableRow].fx[fxIdx][0] != EMPTY_VALUE_8) {
-    // TODO: PhraseRow can be taken from the playback state - probably
-    initFX(state, trackIdx, p->tables[tableIdx].rows[tableRow].fx[fxIdx], table, fxIdx, NULL);
+  uint8_t fxType = p->tables[tableIdx].rows[tableRow].fx[fxIdx][0];
+  if (fxType == fxTBL) {
+    tableInit(state, trackIdx, &state->tracks[trackIdx].note.instrumentTable, p->tables[tableIdx].rows[tableRow].fx[fxIdx][1], 0, 1);
+  } else if (fxType == fxTBX) {
+    tableInit(state, trackIdx, &state->tracks[trackIdx].note.auxTable, p->tables[tableIdx].rows[tableRow].fx[fxIdx][1], 0, 1);
+  } else {
+    initFX(state, trackIdx, p->tables[tableIdx].rows[tableRow].fx[fxIdx], table, fxIdx);
   }
 }
 
@@ -131,7 +135,7 @@ static void tableProgress(PlaybackState* state, int trackIdx, struct PlaybackTab
 
       if (thoTarget >= 0 && thoTarget == row) {
         // THO pointing to same row - stay here
-        tableReadFX(state, trackIdx, table, i, 0);
+        tableReadFX(state, trackIdx, table, i);
         continue;
       }
 
@@ -144,12 +148,12 @@ static void tableProgress(PlaybackState* state, int trackIdx, struct PlaybackTab
           // Loop counter
           table->fxAuxState[row][i]++;
           if (table->fxAuxState[row][i] <= ((fxValue & 0xf0) >> 4)) {
-            tableReadFX(state, trackIdx, table, i, 0);
+            tableReadFX(state, trackIdx, table, i);
             continue;
           }
         } else {
           // Unconditional hop to same row - stay here
-          tableReadFX(state, trackIdx, table, i, 0);
+          tableReadFX(state, trackIdx, table, i);
           continue;
         }
       }
@@ -178,7 +182,7 @@ static void tableProgress(PlaybackState* state, int trackIdx, struct PlaybackTab
       if (thoTarget >= 0) {
         // THO found - hop this column
         table->rows[i] = thoTarget;
-        tableReadFX(state, trackIdx, table, i, 0);
+        tableReadFX(state, trackIdx, table, i);
         continue;
       }
 
@@ -199,19 +203,19 @@ static void tableProgress(PlaybackState* state, int trackIdx, struct PlaybackTab
               }
             }
             table->rows[i] = hopTarget;
-            tableReadFX(state, trackIdx, table, i, 0);
+            tableReadFX(state, trackIdx, table, i);
             continue;
           }
         } else {
           // Unconditional hop
           table->rows[i] = hopTarget;
-          tableReadFX(state, trackIdx, table, i, 0);
+          tableReadFX(state, trackIdx, table, i);
           continue;
         }
       }
 
       // No hop - read FX from current row
-      tableReadFX(state, trackIdx, table, i, 0);
+      tableReadFX(state, trackIdx, table, i);
     }
   }
 }
@@ -223,9 +227,15 @@ void handleNoteOff(PlaybackState* state, int trackIdx) {
 void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRow, int skipDelCheck) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
   Project* p = state->p;
+
   uint8_t note = phraseRow->note;
   uint8_t instrument = phraseRow->instrument;
   uint8_t volume = phraseRow->volume;
+
+  uint8_t auxTable = EMPTY_VALUE_8;
+  uint8_t auxTableRow = EMPTY_VALUE_8;
+  uint8_t instrumentTable = EMPTY_VALUE_8;
+  uint8_t instrumentTableRow = EMPTY_VALUE_8;
 
   // Check for pending groove change
   if (track->pendingGrooveIdx != track->grooveIdx) {
@@ -234,15 +244,27 @@ void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRo
     track->frameCounter = 0;
   }
 
-  // Pre-scan FX if there's a DEL FX
-  if (!skipDelCheck) {
-    for (int i = 0; i < 3; i++) {
-      if (phraseRow->fx[i][0] == fxDEL && phraseRow->fx[i][1] != 0) {
-        initFX(state, trackIdx, phraseRow->fx[i], NULL, -1, phraseRow);
-        return;
-      }
+  // Pre-scan FX for special commands
+  for (int i = 0; i < 3; i++) {
+    uint8_t fxType = phraseRow->fx[i][0];
+    uint8_t fxValue = phraseRow->fx[i][1];
+
+    if (!skipDelCheck && (fxType == fxDEL && fxValue != 0)) {
+      initFX(state, trackIdx, phraseRow->fx[i], NULL, -1);
+      return;
+    } else if (fxType == fxTBL) {
+      instrumentTable = fxValue;
+    } else if (fxType == fxTBX) {
+      auxTable = fxValue;
+    } else if (fxType == fxTHO) {
+      instrumentTableRow = fxValue & 0xf;
+    } else if (fxType == fxTXH) {
+      auxTableRow = fxValue & 0xf;
     }
   }
+
+  if (instrumentTable != EMPTY_VALUE_8 && instrumentTableRow == EMPTY_VALUE_8) instrumentTableRow = 0;
+  if (auxTable != EMPTY_VALUE_8 && auxTableRow == EMPTY_VALUE_8) auxTableRow = 0;
 
   // Instrument
   if (instrument != EMPTY_VALUE_8) {
@@ -253,21 +275,39 @@ void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRo
     resetOffsets(state, trackIdx);
 
     // Reset AUX table
-    tableInit(state, trackIdx, &track->note.auxTable, EMPTY_VALUE_8, 1);
+    tableInit(state, trackIdx, &track->note.auxTable, EMPTY_VALUE_8, 0, 1);
 
-    // Setup instrument and default instrument table
+    // Setup instrument
     setupInstrumentAY(state, trackIdx);
-    tableInit(state, trackIdx, &track->note.instrumentTable, instrument, p->instruments[instrument].tableSpeed);
+    if (instrumentTable == EMPTY_VALUE_8) {
+      instrumentTable = instrument;
+      if (instrumentTableRow == EMPTY_VALUE_8) {
+        instrumentTableRow = 0;
+      }
+    }
   }
 
   if (instrument == EMPTY_VALUE_8 && (note != EMPTY_VALUE_8 && note != NOTE_OFF)) {
     restartFX(state, trackIdx);
   }
 
+  // Init/hop tables
+  if (instrumentTable != EMPTY_VALUE_8) {
+    tableInit(state, trackIdx, &track->note.instrumentTable, instrumentTable, instrumentTableRow, p->instruments[instrument].tableSpeed);
+  } else if (instrumentTableRow != EMPTY_VALUE_8) {
+    hopToTableRow(state, trackIdx, &track->note.instrumentTable, instrumentTableRow);
+  }
+
+  if (auxTable != EMPTY_VALUE_8) {
+    tableInit(state, trackIdx, &track->note.auxTable, auxTable, auxTableRow, 1);
+  } else if (auxTableRow != EMPTY_VALUE_8) {
+    hopToTableRow(state, trackIdx, &track->note.auxTable, auxTableRow);
+  }
+
   // Read new FX
   for (int i = 0; i < 3; i++) {
-    if (phraseRow->fx[i][0] != EMPTY_VALUE_8 && phraseRow->fx[i][0] != fxDEL) {
-      initFX(state, trackIdx, phraseRow->fx[i], NULL, -1, phraseRow);
+    if (phraseRow->fx[i][0] != fxDEL) {
+      initFX(state, trackIdx, phraseRow->fx[i], NULL, -1);
     }
   }
 

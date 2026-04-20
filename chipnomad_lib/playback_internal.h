@@ -6,9 +6,9 @@
 void handleNoteOff(PlaybackState* state, int trackIdx);
 void readPhraseRow(PlaybackState* state, int trackIdx, int skipDelCheck);
 void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRow, int skipDelCheck);
-void tableInit(PlaybackState* state, int trackIdx, struct PlaybackTableState* table, int tableIdx, int speed);
-void tableReadFX(PlaybackState* state, int trackIdx, struct PlaybackTableState* table, int fxIdx, int forceRead);
-void initFX(PlaybackState* state, int trackIdx, uint8_t* fx, PlaybackTableState* tableState, int tableFXColumn, PhraseRow* phraseRow);
+void tableInit(PlaybackState* state, int trackIdx, struct PlaybackTableState* table, int tableIdx, int row, int speed);
+void tableReadFX(PlaybackState* state, int trackIdx, struct PlaybackTableState* table, int fxIdx);
+void initFX(PlaybackState* state, int trackIdx, uint8_t* fx, PlaybackTableState* tableState, int tableFXColumn);
 int handleFX(PlaybackState* state, int trackIdx, int chipIdx);
 int restartFX(PlaybackState* state, int trackIdx);
 void hopToTableRow(PlaybackState* state, int trackIdx, PlaybackTableState* table, int tableRow);

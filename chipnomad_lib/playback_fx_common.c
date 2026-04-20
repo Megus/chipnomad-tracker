@@ -197,36 +197,6 @@ static void handleFX_PRD(PlaybackState* state, PlaybackTrackState* track, int tr
   track->note.periodOffset += fx->acc;
 }
 
-// TBX - aux table
-static void initFX_TBX(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
-  tableInit(state, trackIdx, &track->note.auxTable, fx->fxValue, 1);
-  fx->isOn = 0;
-}
-
-// TBL - instrument table
-static void initFX_TBL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
-  tableInit(state, trackIdx, &track->note.instrumentTable, fx->fxValue, 1);
-  fx->isOn = 0;
-}
-
-// THO - Table hop (instrument table only)
-static void initFX_THO(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
-  fx->isOn = 0;
-  // FX is in Phrase - hop only in instrument table
-  if (tableState == NULL && track->note.instrumentTable.tableIdx != EMPTY_VALUE_8) {
-    hopToTableRow(state, trackIdx, &track->note.instrumentTable, fx->fxValue & 0xf);
-  }
-}
-
-// TXH - Aux table hop
-static void initFX_TXH(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
-  fx->isOn = 0;
-  // FX is in Phrase - hop only in aux table
-  if (tableState == NULL && track->note.auxTable.tableIdx != EMPTY_VALUE_8) {
-    hopToTableRow(state, trackIdx, &track->note.auxTable, fx->fxValue & 0xf);
-  }
-}
-
 // TIC - Table speed
 static void initFX_TIC(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
   fx->isOn = 0;
@@ -353,8 +323,8 @@ static void handleFX_RET(PlaybackState* state, PlaybackTrackState* track, int tr
 
   if (fx->counter % delay == 0) {
     setupInstrumentAY(state, trackIdx);
-    tableInit(state, trackIdx, &track->note.instrumentTable, track->note.instrumentTable.tableIdx, 1);
-    tableInit(state, trackIdx, &track->note.auxTable, track->note.auxTable.tableIdx, 1);
+    tableInit(state, trackIdx, &track->note.instrumentTable, track->note.instrumentTable.tableIdx, 0, 1);
+    tableInit(state, trackIdx, &track->note.auxTable, track->note.auxTable.tableIdx, 0, 1);
     restartFX(state, trackIdx);
     fx->acc += volumeOffset;
   }
@@ -400,7 +370,7 @@ static void handleFX_PSL(PlaybackState* state, PlaybackTrackState* track, int tr
 // General FX handling functions
 //
 
-void initFX(PlaybackState* state, int trackIdx, uint8_t* fx, PlaybackTableState* tableState, int tableFXColumn, PhraseRow* phraseRow) {
+void initFX(PlaybackState* state, int trackIdx, uint8_t* fx, PlaybackTableState* tableState, int tableFXColumn) {
   if (fx[0] == EMPTY_VALUE_8 || fx[0] >= fxTotalCount) return;
 
   PlaybackTrackState* track = &state->tracks[trackIdx];
@@ -431,10 +401,6 @@ void initFXHandlers(void) {
   fxHandlers[fxOFF] = (PlaybackFXHandler){NULL, handleFX_OFF, NULL};
   fxHandlers[fxKIL] = (PlaybackFXHandler){NULL, handleFX_KIL, NULL};
   fxHandlers[fxTIC] = (PlaybackFXHandler){initFX_TIC, NULL, NULL};
-  fxHandlers[fxTHO] = (PlaybackFXHandler){initFX_THO, NULL, NULL};
-  fxHandlers[fxTXH] = (PlaybackFXHandler){initFX_TXH, NULL, NULL};
-  fxHandlers[fxTBL] = (PlaybackFXHandler){initFX_TBL, NULL, NULL};
-  fxHandlers[fxTBX] = (PlaybackFXHandler){initFX_TBX, NULL, NULL};
   fxHandlers[fxGRV] = (PlaybackFXHandler){NULL, handleFX_GRV, NULL};
   fxHandlers[fxGGR] = (PlaybackFXHandler){NULL, handleFX_GGR, NULL};
   registerFXHandlers_AY();
