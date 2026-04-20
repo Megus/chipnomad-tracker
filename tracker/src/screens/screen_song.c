@@ -248,13 +248,13 @@ static int editCell(int col, int row, enum CellEditAction action) {
 }
 
 static int onEdit(int col, int row, enum CellEditAction action) {
+  int startCol, startRow, endCol, endRow;
+  getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+
   if (action == editSwitchSelection) {
     return switchSongSelectionMode(&screen);
   } else if (action == editMultiIncreaseBig || action == editMultiDecreaseBig) {
     if (screen.selectMode != 1) return 0;
-
-    int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
 
     int success = 0;
     if (action == editMultiDecreaseBig) {
@@ -284,8 +284,6 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     }
     return success;
   } else if (action == editShallowClone || action == editDeepClone) {
-    int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
     int clonedCount = 0;
     for (int r = startRow; r <= endRow; r++) {
       for (int c = startCol; c <= endCol; c++) {
@@ -300,16 +298,12 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       screenMessage(MESSAGE_TIME, "No chains to clone");
       return 0;
     }
-  } else if (applyMultiEdit(&screen, action, editCell)) {
+  } else if (applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell)) {
     return 1;
   } else if (action == editCopy) {
-    int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
     copySong(startCol, startRow, endCol, endRow, 0);
     return 1;
   } else if (action == editCut) {
-    int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
     copySong(startCol, startRow, endCol, endRow, 1);
     return 1;
   } else if (action == editPaste) {

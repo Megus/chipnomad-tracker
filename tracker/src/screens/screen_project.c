@@ -38,11 +38,11 @@ static void onProjectLoaded(const char* path) {
   }
 
   playbackStop(&chipnomadState->playbackState);
-  
+
   // Check file extension to determine loader
   const char* ext = strrchr(path, '.');
   int loadResult = -1;
-  
+
   if (ext != NULL) {
     if (strcasecmp(ext, ".vt2") == 0) {
       // Load VT2 file
@@ -58,8 +58,9 @@ static void onProjectLoaded(const char* path) {
     // No extension, try native format
     loadResult = projectLoad(&chipnomadState->project, path);
   }
-  
+
   if (loadResult == 0) {
+    projectModified = 0; // Clear modified flag after loading
     chipnomadInitChips(chipnomadState, appSettings.audioSampleRate, NULL);
 
     // Store filename without extension
@@ -78,6 +79,7 @@ static void onProjectSaved(const char* folderPath) {
 
   if (projectSave(&chipnomadState->project, fullPath) == 0) {
     // Save the directory path
+    projectModified = 0; // Clear modified flag after saving
     strncpy(appSettings.projectPath, folderPath, PATH_LENGTH);
     appSettings.projectPath[PATH_LENGTH] = 0;
   }
@@ -276,6 +278,7 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
     } else if (col == 2) {
       // New project
       projectInitAY(&chipnomadState->project);
+      projectModified = 0; // Clear modified flag for new project
       appSettings.projectFilename[0] = 0; // Clear filename
       screensInitAll(); // Reset all screen states
       fullRedraw();

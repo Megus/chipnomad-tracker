@@ -23,8 +23,7 @@ static void handleFX_NOA(PlaybackState* state, PlaybackTrackState* track, int tr
 }
 
 // NOI - Relative noise period value
-static void initFX_NOI(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn, int forceCleanState) {
-  if (forceCleanState) fx->acc = 0;
+static void initFX_NOI(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn) {
   if (track->note.chip.ay.noiseBase == EMPTY_VALUE_8) track->note.chip.ay.noiseBase = 0;
   fx->acc += fx->fxValue;
 }
@@ -73,8 +72,7 @@ static void handleFX_ENT(PlaybackState* state, PlaybackTrackState* track, int tr
 }
 
 // EPT - Envelope period offset
-static void initFX_EPT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn, int forceCleanState) {
-  if (forceCleanState) fx->acc = 0;
+static void initFX_EPT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn) {
   fx->acc += (int8_t)fx->fxValue;
 }
 
@@ -99,7 +97,7 @@ static void handleFX_EPH(PlaybackState* state, PlaybackTrackState* track, int tr
 }
 
 // EBN - Envelope pitch bend
-static void initFX_EBN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn, int forceCleanState) {
+static void initFX_EBN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn) {
   // Calculate per-frame change
   int speed = 1;
   if (tableFXColumn >= 0) {
@@ -110,7 +108,6 @@ static void initFX_EBN(PlaybackState* state, PlaybackTrackState* track, int trac
   if (speed == 0) speed = 1;
   int value = (int8_t)(fx->fxValue) << 8; // Use 24.8 fixed point math
   fx->d.bend.speed = value / speed;
-  if (forceCleanState) fx->acc = 0;
 }
 
 static void handleFX_EBN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
@@ -119,10 +116,6 @@ static void handleFX_EBN(PlaybackState* state, PlaybackTrackState* track, int tr
 }
 
 // EVB - Envelope vibrato
-static void initFX_EVB(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn, int forceCleanState) {
-  if (forceCleanState) fx->acc = 0;
-}
-
 static void restartFX_EVB(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
   // Do nothing - EVB should continue uninterrupted
 }
@@ -132,8 +125,7 @@ static void handleFX_EVB(PlaybackState* state, PlaybackTrackState* track, int tr
 }
 
 // ESL - Pitch slide (portamento
-static void initFX_ESL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn, int forceCleanState) {
-  if (forceCleanState) fx->counter = 0;
+static void initFX_ESL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn) {
   if (track->note.chip.ay.envBase != 0) {
     fx->d.slide.startPeriod = track->note.chip.ay.envBase;
   } else {
@@ -164,6 +156,6 @@ void registerFXHandlers_AY(void) {
   fxHandlers[fxEPL] = (PlaybackFXHandler){NULL, handleFX_EPL, NULL};
   fxHandlers[fxEPH] = (PlaybackFXHandler){NULL, handleFX_EPH, NULL};
   fxHandlers[fxEBN] = (PlaybackFXHandler){initFX_EBN, handleFX_EBN, NULL};
-  fxHandlers[fxEVB] = (PlaybackFXHandler){initFX_EVB, handleFX_EVB, restartFX_EVB};
+  fxHandlers[fxEVB] = (PlaybackFXHandler){NULL, handleFX_EVB, restartFX_EVB};
   fxHandlers[fxESL] = (PlaybackFXHandler){initFX_ESL, handleFX_ESL, NULL};
 }

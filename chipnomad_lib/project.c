@@ -837,9 +837,8 @@ static int instrumentLoadInternal(int fileId, Project* project, int instrumentId
   READ_STRING; if (strncmp(lpstr, "### Instrument", 14)) return 1;
 
   if (loadInstrument(fileId, &project->instruments[instrumentIdx], project)) return 1;
-
-  READ_STRING; if (strncmp(lpstr, "### Table", 9)) return 1;
-
+  // Don't read next line here, as loadInstrument already reads the next line, which should be the table header
+  if (strncmp(lpstr, "### Table", 9)) return 1;
   if (loadTable(fileId, &project->tables[instrumentIdx], project)) return 1;
 
   return 0;

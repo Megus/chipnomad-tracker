@@ -280,15 +280,15 @@ static int editCell(int col, int row, enum CellEditAction action) {
 }
 
 static int onEdit(int col, int row, enum CellEditAction action) {
+  int startCol, startRow, endCol, endRow;
+  getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+
   if (action == editSwitchSelection) {
     return switchPhraseSelectionMode(&screen);
   } else if (action == editMultiIncrease || action == editMultiDecrease) {
     if (!isSingleColumnSelection(&screen)) return 0;
-    return applyMultiEdit(&screen, action, editCell);
+    return applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell);
   } else if (action == editMultiIncreaseBig || action == editMultiDecreaseBig) {
-    int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
-
     // Check if full width selection (all columns)
     if (startCol == 0 && endCol == 8) {
       // Rotation mode
@@ -306,18 +306,14 @@ static int onEdit(int col, int row, enum CellEditAction action) {
         return 0;
       } else {
         // Regular big increase/decrease for note, volume, instrument, FX value
-        return applyMultiEdit(&screen, action, editCell);
+        return applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell);
       }
     }
     return 0;
   } else if (action == editCopy) {
-    int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
     copyPhrase(phraseIdx, startCol, startRow, endCol, endRow, 0);
     return 1;
   } else if (action == editCut) {
-    int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
     copyPhrase(phraseIdx, startCol, startRow, endCol, endRow, 1);
     return 1;
   } else if (action == editPaste) {
@@ -331,9 +327,6 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     fullRedraw();
     return 1;
   } else if (action == editShallowClone) {
-    int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
-
     // Handle instrument column cloning
     if (startCol == 1 && endCol == 1) {
       int distinctCount = cloneInstrumentsInPhrase(phraseIdx, startRow, endRow);

@@ -38,6 +38,9 @@ LIB_PLAYBACK_SRC = $(LIB_SRC) \
 # Tracker sources needed by tracker tests
 TRACKER_SRC = $(TRACKER_DIR)/project_utils.c
 
+# Screen sources needed by edit_common tests
+EDIT_COMMON_SRC = $(TRACKER_DIR)/screens/edit_common.c
+
 # Build directory
 BUILD = build/test
 
@@ -59,6 +62,10 @@ $(BUILD)/test_lib_%: $(LIB_DIR)/tests/test_%.c $(LIB_SRC) $(UNITY_SRC) $(MOCK_SR
 # Playback tests need the full playback engine + pitch table utils
 $(BUILD)/test_lib_playback: $(LIB_DIR)/tests/test_playback.c $(LIB_PLAYBACK_SRC) $(TRACKER_DIR)/pitch_table_utils.c $(UNITY_SRC) $(MOCK_SRC) | $(BUILD)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIB_PLAYBACK_SRC) $(TRACKER_DIR)/pitch_table_utils.c $(UNITY_SRC) $(filter-out $(MOCK_DIR)/pitch_table_utils_mock.c,$(MOCK_SRC)) -lm
+
+# Edit common tests: lib + edit_common + unity + mocks
+$(BUILD)/test_edit_common: tests/test_edit_common.c $(LIB_SRC) $(EDIT_COMMON_SRC) $(UNITY_SRC) $(MOCK_SRC) | $(BUILD)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIB_SRC) $(EDIT_COMMON_SRC) $(UNITY_SRC) $(MOCK_SRC) -lm
 
 # Tracker tests: lib + tracker sources + unity + mocks
 $(BUILD)/test_%: tests/test_%.c $(LIB_SRC) $(TRACKER_SRC) $(UNITY_SRC) $(MOCK_SRC) | $(BUILD)

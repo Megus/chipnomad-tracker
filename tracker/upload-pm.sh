@@ -4,8 +4,8 @@
 
 # Configuration variables
 SOURCE_FILE="build/portmaster/chipnomad.aarch64"
-REMOTE_SERVER="sftp://muos@10.0.0.219:2022"
-REMOTE_PATH="/SD2 (sdcard)/ports/chipnomad"
+REMOTE_SERVER="sftp://muos@10.0.0.101:2022"
+REMOTE_PATH="/SD1 (mmc)/ports/chipnomad"
 PASSWORD="muos"
 
 # Upload file via SFTP

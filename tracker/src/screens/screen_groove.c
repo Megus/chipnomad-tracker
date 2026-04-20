@@ -143,7 +143,9 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     return 1;
   } else if (action == editMultiIncrease || action == editMultiDecrease) {
     if (!isSingleColumnSelection(&screen)) return 0;
-    return applyMultiEdit(&screen, action, editCell);
+    int sc, sr, ec, er;
+    getSelectionBounds(&screen, &sc, &sr, &ec, &er);
+    return applyMultiEdit(sc, sr, ec, er, action, editCell);
   } else if (action == editCopy) {
     int startCol, startRow, endCol, endRow;
     getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);

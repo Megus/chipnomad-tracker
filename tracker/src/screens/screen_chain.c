@@ -191,12 +191,12 @@ static int editCell(int col, int row, enum CellEditAction action) {
 static int onEdit(int col, int row, enum CellEditAction action) {
   if (action == editSwitchSelection) {
     return switchChainSelectionMode(&screen);
-  } else if (action == editMultiIncrease || action == editMultiDecrease) {
+  } else if (action == editMultiIncrease || action == editMultiDecrease ||
+             action == editMultiIncreaseBig || action == editMultiDecreaseBig) {
     if (!isSingleColumnSelection(&screen)) return 0;
-    return applyMultiEdit(&screen, action, editCell);
-  } else if (action == editMultiIncreaseBig || action == editMultiDecreaseBig) {
-    if (!isSingleColumnSelection(&screen)) return 0;
-    return applyMultiEdit(&screen, action, editCell);
+    int sc, sr, ec, er;
+    getSelectionBounds(&screen, &sc, &sr, &ec, &er);
+    return applyMultiEdit(sc, sr, ec, er, action, editCell);
   } else if (action == editShallowClone || action == editDeepClone) {
     int startCol, startRow, endCol, endRow;
     getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);

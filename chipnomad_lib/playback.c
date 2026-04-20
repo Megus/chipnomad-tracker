@@ -105,7 +105,7 @@ void tableReadFX(PlaybackState* state, int trackIdx, struct PlaybackTableState* 
   int tableRow = table->rows[fxIdx];
   if (forceRead || p->tables[tableIdx].rows[tableRow].fx[fxIdx][0] != EMPTY_VALUE_8) {
     // TODO: PhraseRow can be taken from the playback state - probably
-    initFX(state, trackIdx, p->tables[tableIdx].rows[tableRow].fx[fxIdx], table, fxIdx, NULL, 0);
+    initFX(state, trackIdx, p->tables[tableIdx].rows[tableRow].fx[fxIdx], table, fxIdx, NULL);
   }
 }
 
@@ -238,7 +238,7 @@ void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRo
   if (!skipDelCheck) {
     for (int i = 0; i < 3; i++) {
       if (phraseRow->fx[i][0] == fxDEL && phraseRow->fx[i][1] != 0) {
-        initFX(state, trackIdx, phraseRow->fx[i], NULL, -1, phraseRow, 1);
+        initFX(state, trackIdx, phraseRow->fx[i], NULL, -1, phraseRow);
         return;
       }
     }
@@ -267,7 +267,7 @@ void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRo
   // Read new FX
   for (int i = 0; i < 3; i++) {
     if (phraseRow->fx[i][0] != EMPTY_VALUE_8 && phraseRow->fx[i][0] != fxDEL) {
-      initFX(state, trackIdx, phraseRow->fx[i], NULL, -1, phraseRow, (note != EMPTY_VALUE_8 && note != NOTE_OFF));
+      initFX(state, trackIdx, phraseRow->fx[i], NULL, -1, phraseRow);
     }
   }
 

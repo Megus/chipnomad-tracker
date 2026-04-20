@@ -258,15 +258,15 @@ static int editCell(int col, int row, enum CellEditAction action) {
 }
 
 static int onEdit(int col, int row, enum CellEditAction action) {
+  int startCol, startRow, endCol, endRow;
+  getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+
   if (action == editSwitchSelection) {
     return switchTableSelectionMode(&screen);
   } else if (action == editMultiIncrease || action == editMultiDecrease) {
     if (!isSingleColumnSelection(&screen)) return 0;
-    return applyMultiEdit(&screen, action, editCell);
+    return applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell);
   } else if (action == editMultiIncreaseBig || action == editMultiDecreaseBig) {
-    int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
-
     // Check if full width selection (all columns)
     if (startCol == 0 && endCol == 10) {
       // Rotation mode
@@ -284,18 +284,14 @@ static int onEdit(int col, int row, enum CellEditAction action) {
         return 0;
       } else {
         // Regular big increase/decrease for other columns
-        return applyMultiEdit(&screen, action, editCell);
+        return applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell);
       }
     }
     return 0;
   } else if (action == editCopy) {
-    int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
     copyTable(tableIdx, startCol, startRow, endCol, endRow, 0);
     return 1;
   } else if (action == editCut) {
-    int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
     copyTable(tableIdx, startCol, startRow, endCol, endRow, 1);
     return 1;
   } else if (action == editPaste) {

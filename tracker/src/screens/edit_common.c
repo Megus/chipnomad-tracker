@@ -13,12 +13,9 @@ int isMultiAction(enum CellEditAction action) {
   return action == editMultiIncrease || action == editMultiDecrease || action == editMultiIncreaseBig || action == editMultiDecreaseBig;
 }
 
-int applyMultiEdit(ScreenData* screen, enum CellEditAction action, int (*editFunc)(int col, int row, enum CellEditAction action)) {
+int applyMultiEdit(int startCol, int startRow, int endCol, int endRow, enum CellEditAction action, int (*editFunc)(int col, int row, enum CellEditAction action)) {
   if (action != editMultiIncrease && action != editMultiDecrease &&
     action != editMultiIncreaseBig && action != editMultiDecreaseBig) return 0;
-
-  int startCol, startRow, endCol, endRow;
-  getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
 
   for (int r = startRow; r <= endRow; r++) {
     for (int c = startCol; c <= endCol; c++) {
@@ -251,6 +248,7 @@ int applySongMoveDown(int startCol, int startRow, int endCol, int endRow) {
   for (int c = startCol; c <= endCol; c++) {
     for (int r = PROJECT_MAX_LENGTH - 1; r > endRow + 1; r--) {
       chipnomadState->project.song[r][c] = chipnomadState->project.song[r - 1][c];
+      chipnomadState->project.songHighlight[r][c] = chipnomadState->project.songHighlight[r - 1][c];
     }
   }
 
@@ -258,8 +256,10 @@ int applySongMoveDown(int startCol, int startRow, int endCol, int endRow) {
   for (int c = startCol; c <= endCol; c++) {
     for (int r = endRow; r >= startRow; r--) {
       chipnomadState->project.song[r + 1][c] = chipnomadState->project.song[r][c];
+      chipnomadState->project.songHighlight[r + 1][c] = chipnomadState->project.songHighlight[r][c];
     }
     chipnomadState->project.song[startRow][c] = EMPTY_VALUE_16;
+    chipnomadState->project.songHighlight[startRow][c] = 0;
   }
 
   return 1;
@@ -279,8 +279,10 @@ int applySongMoveUp(int startCol, int startRow, int endCol, int endRow) {
   for (int c = startCol; c <= endCol; c++) {
     for (int r = startRow - 1; r < endRow; r++) {
       chipnomadState->project.song[r][c] = chipnomadState->project.song[r + 1][c];
+      chipnomadState->project.songHighlight[r][c] = chipnomadState->project.songHighlight[r + 1][c];
     }
     chipnomadState->project.song[endRow][c] = EMPTY_VALUE_16;
+    chipnomadState->project.songHighlight[endRow][c] = 0;
   }
 
   return 1;

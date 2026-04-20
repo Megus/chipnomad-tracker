@@ -68,6 +68,8 @@ extern int* pChainRow;
 
 extern ChipNomadState* chipnomadState;
 
+extern int projectModified; // Flag to track if the project has unsaved changes
+
 // Settings functions
 int settingsSave(void);
 int settingsLoad(void);

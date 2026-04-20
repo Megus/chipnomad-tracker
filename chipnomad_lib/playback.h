@@ -131,8 +131,7 @@ typedef void (*PlaybackFXInitFunc)(
   int trackIdx,
   PlaybackFXState* fx,
   PlaybackTableState* tableState,
-  int tableFXColumn,
-  int forceCleanState
+  int tableFXColumn
 );
 typedef void (*PlaybackFXRestartFunc)(
   PlaybackState* state,

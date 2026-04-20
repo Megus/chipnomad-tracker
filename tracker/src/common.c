@@ -40,6 +40,7 @@ int* pSongRow;
 int* pSongTrack;
 int* pChainRow;
 ChipNomadState* chipnomadState;
+int projectModified = 0;
 
 int settingsSave(void) {
   char defaultDir[PATH_LENGTH];

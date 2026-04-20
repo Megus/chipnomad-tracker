@@ -111,7 +111,7 @@ int edit8withLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValu
 int edit8noLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep);
 int edit8noLast(enum CellEditAction action, uint8_t* value, uint8_t bigStep, uint8_t min, uint8_t max);
 int edit16withOverflow(enum CellEditAction action, uint16_t* value, uint16_t bigStep, uint16_t min, uint16_t max);
-int applyMultiEdit(ScreenData* screen, enum CellEditAction action, int (*editFunc)(int col, int row, enum CellEditAction action));
+int applyMultiEdit(int startCol, int startRow, int endCol, int endRow, enum CellEditAction action, int (*editFunc)(int col, int row, enum CellEditAction action));
 int applyPhraseRotation(int phraseIdx, int startRow, int endRow, int direction);
 int applyTableRotation(int tableIdx, int startRow, int endRow, int direction);
 int applySongMoveDown(int startCol, int startRow, int endCol, int endRow);

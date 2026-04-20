@@ -4,8 +4,8 @@
 
 # Configuration variables
 BACKUP_DEST="../../tracks/backups"
-REMOTE_SERVER="sftp://muos@10.0.0.219:2022"
-REMOTE_PATH="/SD2 (sdcard)/chiptune"
+REMOTE_SERVER="sftp://muos@10.0.0.101:2022"
+REMOTE_PATH="/SD1 (mmc)/chiptune"
 PASSWORD="muos"
 
 # Create date folder
