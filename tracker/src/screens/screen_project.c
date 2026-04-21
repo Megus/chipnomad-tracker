@@ -61,7 +61,7 @@ static void onProjectLoaded(const char* path) {
 
   if (loadResult == 0) {
     projectModified = 0; // Clear modified flag after loading
-    chipnomadInitChips(chipnomadState, appSettings.audioSampleRate, NULL);
+    pendingReinitChips = 1;
 
     // Store filename without extension
     extractFilenameWithoutExtension(path, appSettings.projectFilename, FILENAME_LENGTH + 1);
@@ -359,7 +359,7 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
       // Update tracks count when chips count changes
       chipnomadState->project.tracksCount = projectGetTotalTracks(&chipnomadState->project);
       // Reinitialize chips with new count
-      chipnomadInitChips(chipnomadState, appSettings.audioSampleRate, NULL);
+      pendingReinitChips = 1;
     }
   }
 

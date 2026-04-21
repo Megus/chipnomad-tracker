@@ -19,6 +19,8 @@ typedef struct AudioManager {
 // Singleton AudioManager struct
 extern AudioManager audioManager;
 
+extern int pendingReinitChips;
+
 // Track state constants
 #define TRACK_NORMAL 0
 #define TRACK_SOLO 1

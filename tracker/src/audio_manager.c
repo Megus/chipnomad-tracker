@@ -3,9 +3,12 @@
 #include "corelib_audio.h"
 
 #include "chipnomad_lib.h"
+#include "corelib_file.h"
 
 static int aSampleRate;
 static int aBufferSize;
+
+int pendingReinitChips = 0;
 
 static void updatePlaybackMuteFlags(void) {
   // Check if any tracks are solo
@@ -29,6 +32,11 @@ static void updatePlaybackMuteFlags(void) {
 }
 
 static void audioCallback(int16_t* buffer, int stereoSamples) {
+  if (pendingReinitChips) {
+    chipnomadInitChips(chipnomadState, aSampleRate, NULL);
+    pendingReinitChips = 0;
+  }
+
   static float* floatBuffer = NULL;
   static int floatBufferSize = 0;
 

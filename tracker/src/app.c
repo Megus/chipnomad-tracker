@@ -1,6 +1,7 @@
 #include <string.h>
 #include "corelib_gfx.h"
 #include "corelib_font.h"
+#include "corelib_file.h"
 #include "common.h"
 #include "audio_manager.h"
 #include "app.h"
@@ -147,6 +148,7 @@ static void appInput(int isKeyDown, int keys, int tapCount) {
 * @brief Initialize the application: setup audio system, load auto-saved project, show the first screen
 */
 void appSetup(void) {
+  LOGD("--- ChipNomad started ---");
   // Initialize default key mappings if not loaded from settings
   if (appSettings.keyMapping.keyUp[0].deviceType == inputNone) {
     inputInitDefaultKeyMapping();

@@ -4,6 +4,7 @@
 #include "screen_settings.h"
 #include "chipnomad_lib.h"
 #include "corelib_gfx.h"
+#include "corelib_file.h"
 #include "utils.h"
 #include "copy_paste.h"
 
@@ -72,7 +73,6 @@ void screenSetup(const AppScreen* screen, int input) {
 
 void screenDraw() {
   if (pendingScreen != NULL) {
-
     currentScreen = pendingScreen;
     currentScreen->setup(pendingScreenInput);
     gfxSetBgColor(appSettings.colorScheme.background);
