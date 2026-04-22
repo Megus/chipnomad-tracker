@@ -103,7 +103,12 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     screenSetup(&screenFileBrowser, 0);
   } else if (row == 3) {
     // Generate for current clock
-    calculatePitchTableAY(&chipnomadState->project);
+    if (chipnomadState->project.linearPitch) {
+      calculateLinearPitchTable12TET(&chipnomadState->project);
+    } else {
+      calculatePitchTableAY(&chipnomadState->project);
+    }
+
     projectModified = 1;
     drawField(0, 0, 0); // Still needed to redraw the pitch table name
     handled = 1;

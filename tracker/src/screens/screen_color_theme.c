@@ -36,6 +36,7 @@ static void onThemeLoaded(const char* path) {
   int result = loadTheme(path);
   if (result == 0) {
     screenMessage(MESSAGE_TIME, "Theme loaded");
+    extractFilenameWithoutExtension(path, appSettings.themeName, THEME_NAME_LENGTH + 1);
     // Store the directory path
     char* lastSeparator = strrchr(path, PATH_SEPARATOR);
     if (lastSeparator) {

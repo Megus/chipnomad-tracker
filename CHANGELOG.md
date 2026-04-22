@@ -7,6 +7,7 @@
 - Custom font loading
 - FX implementation was re-built to match M8 and LSDj behavior
 - Confirmation dialog before creating/loading a project is there are unsaved changes
+- When entering a note with empty instrument, note preview looks up the instrument above in the track
 - *FIX*: Division by zero in auto envelope logic
 - *FIX*: You could open table FF for editing which led to unexpected behavior
 - *FIX*: Env shape display was incorrect at the instrument screen
@@ -18,6 +19,7 @@
 - *FIX*: Volume column in aux tables didn't work
 - *FIX*: Random crash on project load and changing the number of chips
 - *FIX*: Loading instruments didn't load the instrument table
+- *FIX*: Loading color theme wasn't setting the theme name
 
 ## v0.1.0b (January 25, 2026)
 

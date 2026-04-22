@@ -13,6 +13,7 @@ static int isFxEdit = 0;
 
 static uint8_t lastNote = 48;
 static uint8_t lastInstrument = 0;
+
 static uint8_t lastVolume = 15;
 static uint8_t lastFX[2] = {0, 0};
 
@@ -48,6 +49,45 @@ static ScreenData screen = {
   .onEdit = onEdit,
   .getLoopRange = getLoopRange,
 };
+
+// Look up the most recent instrument value by searching upward through the track
+static uint8_t lookupPreviousInstrument(int fromRow) {
+  Project* p = &chipnomadState->project;
+  int track = *pSongTrack;
+
+  // Search up in current phrase
+  for (int r = fromRow - 1; r >= 0; r--) {
+    if (phraseRows[r].instrument != EMPTY_VALUE_8) return phraseRows[r].instrument;
+  }
+
+  // Search previous phrases in the chain, then previous chains in the song
+  uint16_t chainIdx = p->song[*pSongRow][track];
+  if (chainIdx == EMPTY_VALUE_16) return EMPTY_VALUE_8;
+
+  for (int cr = *pChainRow - 1; cr >= 0; cr--) {
+    uint16_t ph = p->chains[chainIdx].rows[cr].phrase;
+    if (ph == EMPTY_VALUE_16) continue;
+    for (int r = 15; r >= 0; r--) {
+      if (p->phrases[ph].rows[r].instrument != EMPTY_VALUE_8) return p->phrases[ph].rows[r].instrument;
+    }
+  }
+
+  for (int sr = *pSongRow - 1; sr >= 0; sr--) {
+    uint16_t ci = p->song[sr][track];
+    if (ci == EMPTY_VALUE_16) continue;
+    for (int cr = 15; cr >= 0; cr--) {
+      uint16_t ph = p->chains[ci].rows[cr].phrase;
+      if (ph == EMPTY_VALUE_16) continue;
+      for (int r = 15; r >= 0; r--) {
+        if (p->phrases[ph].rows[r].instrument != EMPTY_VALUE_8) return p->phrases[ph].rows[r].instrument;
+      }
+    }
+  }
+
+  return EMPTY_VALUE_8;
+}
+
+
 
 static void init(void) {
   lastNote = 48;
@@ -273,7 +313,14 @@ static int editCell(int col, int row, enum CellEditAction action) {
   }
 
   if (handled && (!playbackIsPlaying(&chipnomadState->playbackState) || chipnomadState->playbackState.tracks[*pSongTrack].mode == playbackModePhraseRow)) {
-    playbackStartPhraseRow(&chipnomadState->playbackState, *pSongTrack, &phraseRows[screen.cursorRow]);
+    PhraseRow* row = &phraseRows[screen.cursorRow];
+    if (row->note != EMPTY_VALUE_8 && row->note != NOTE_OFF && row->instrument == EMPTY_VALUE_8) {
+      PhraseRow previewRow = *row;
+      previewRow.instrument = lookupPreviousInstrument(screen.cursorRow);
+      playbackStartPhraseRow(&chipnomadState->playbackState, *pSongTrack, &previewRow);
+    } else {
+      playbackStartPhraseRow(&chipnomadState->playbackState, *pSongTrack, row);
+    }
   }
 
   return handled;
