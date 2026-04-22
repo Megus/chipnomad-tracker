@@ -15,6 +15,7 @@ typedef enum {
   POOL_NORMAL,
   POOL_EDIT_PRESSED,
   POOL_MOVING,
+  POOL_PREVIEWING,
 } PoolState;
 
 static PoolState poolState = POOL_NORMAL;
@@ -120,7 +121,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
       poolState = POOL_NORMAL;
       screenSetup(&screenInstrument, cursorRow);
       return 1;
-    } else if (poolState == POOL_MOVING) {
+    } else if (poolState != POOL_NORMAL) {
       poolState = POOL_NORMAL;
     }
     return 0;
@@ -199,6 +200,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
     return 1;
   } else if (keys == (keyEdit | keyPlay)) {
     // Preview instrument
+    poolState = POOL_PREVIEWING;
     if (!instrumentIsEmpty(&chipnomadState->project, cursorRow) && !playbackIsPlaying(&chipnomadState->playbackState)) {
       uint8_t note = instrumentFirstNote(&chipnomadState->project, cursorRow);
       playbackPreviewNote(&chipnomadState->playbackState, *pSongTrack, note, cursorRow);
