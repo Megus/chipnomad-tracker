@@ -248,6 +248,7 @@ static int editCell(int col, int row, enum CellEditAction action) {
 }
 
 static int onEdit(int col, int row, enum CellEditAction action) {
+  int handled = 0;
   int startCol, startRow, endCol, endRow;
   getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
 
@@ -256,10 +257,9 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   } else if (action == editMultiIncreaseBig || action == editMultiDecreaseBig) {
     if (screen.selectMode != 1) return 0;
 
-    int success = 0;
     if (action == editMultiDecreaseBig) {
-      success = applySongMoveDown(startCol, startRow, endCol, endRow);
-      if (success) {
+      handled = applySongMoveDown(startCol, startRow, endCol, endRow);
+      if (handled) {
         screen.selectStartRow++;
         screen.cursorRow++;
         // Scroll down if selection moved below visible area
@@ -268,8 +268,8 @@ static int onEdit(int col, int row, enum CellEditAction action) {
         }
       }
     } else {
-      success = applySongMoveUp(startCol, startRow, endCol, endRow);
-      if (success) {
+      handled = applySongMoveUp(startCol, startRow, endCol, endRow);
+      if (handled) {
         screen.selectStartRow--;
         screen.cursorRow--;
         // Scroll up if selection moved above visible area
@@ -279,10 +279,9 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       }
     }
 
-    if (success) {
+    if (handled) {
       fullRedraw();
     }
-    return success;
   } else if (action == editShallowClone || action == editDeepClone) {
     int clonedCount = 0;
     for (int r = startRow; r <= endRow; r++) {
@@ -292,20 +291,19 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     }
     if (clonedCount > 0) {
       const char* msg = (action == editShallowClone) ? "Shallow-cloned" : "Deep-cloned";
+      handled = 1;
       screenMessage(MESSAGE_TIME, "%s %d chain%s", msg, clonedCount, clonedCount == 1 ? "" : "s");
-      return 1;
     } else {
       screenMessage(MESSAGE_TIME, "No chains to clone");
-      return 0;
     }
   } else if (applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell)) {
-    return 1;
+    handled = 1;
   } else if (action == editCopy) {
     copySong(startCol, startRow, endCol, endRow, 0);
-    return 1;
+    handled = 1;
   } else if (action == editCut) {
     copySong(startCol, startRow, endCol, endRow, 1);
-    return 1;
+    handled = 1;
   } else if (action == editPaste) {
     const int rowsPasted = pasteSong(col, row);
     if (rowsPasted > 0) {
@@ -315,10 +313,13 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       screen.cursorRow = newRow;
     }
     fullRedraw();
-    return 1;
+    handled = 1;
   } else {
-    return editCell(col, row, action);
+    handled = editCell(col, row, action);
   }
+
+  if (handled) projectModified = 1;
+  return handled;
   return 0;
 }
 
@@ -333,6 +334,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
           if (tapCount == 3) {
             // Toggle highlight on triple-tap Opt
             chipnomadState->project.songHighlight[screen.cursorRow][screen.cursorCol] ^= 1;
+            projectModified = 1;
             drawField(screen.cursorCol, screen.cursorRow, stateFocus);
             drawCursor(screen.cursorCol, screen.cursorRow);
           } else {

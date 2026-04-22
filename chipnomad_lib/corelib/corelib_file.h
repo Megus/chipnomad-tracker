@@ -17,7 +17,7 @@
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, "ChipNomad", __VA_ARGS__)
 #else
 #include <stdio.h>
-#define LOGD(...) { printf(__VA_ARGS__); FILE* log = fopen("chipnomad_log.txt", "a"); if (log) { fprintf(log, __VA_ARGS__); fprintf(log, "\n"); fclose(log); } }
+#define LOGD(...) { printf(__VA_ARGS__); printf("\n");  FILE* log = fopen("chipnomad_log.txt", "a"); if (log) { fprintf(log, __VA_ARGS__); fprintf(log, "\n"); fclose(log); } }
 #endif
 
 // File browser functions

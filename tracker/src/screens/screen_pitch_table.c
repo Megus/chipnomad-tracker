@@ -21,6 +21,7 @@ static void onLoadSelected(const char* path) {
       strncpy(appSettings.pitchTablePath, path, pathLen);
       appSettings.pitchTablePath[pathLen] = 0;
     }
+    projectModified = 1;
   }
   screenSetup(&screenPitchTable, 0);
 }
@@ -103,6 +104,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   } else if (row == 3) {
     // Generate for current clock
     calculatePitchTableAY(&chipnomadState->project);
+    projectModified = 1;
     drawField(0, 0, 0); // Still needed to redraw the pitch table name
     handled = 1;
   }
@@ -154,6 +156,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   if (isCharEdit) {
     char result = charEditInput(keys, tapCount, editingString, screenPitchTableData.cursorCol, editingStringLength);
     if (result) {
+      projectModified = 1;
       isCharEdit = 0;
       if (screenPitchTableData.cursorCol < editingStringLength - 1) screenPitchTableData.cursorCol++;
       editingString = NULL;

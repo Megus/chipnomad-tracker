@@ -139,9 +139,11 @@ static void appInput(int isKeyDown, int keys, int tapCount) {
 }
 
 
+#define AUTOSAVE_INTERVAL_FRAMES (60 * 60) // 1 minute at 60 FPS
+
+static int autosaveCounter = 0;
+
 ///////////////////////////////////////////////////////////////////////////////
-//
-// High-level application functions
 //
 
 /**
@@ -331,6 +333,12 @@ void appOnEvent(MainLoopEventData eventData) {
     break;
   }
   case eventTick:
+    // Autosave
+    if (++autosaveCounter >= AUTOSAVE_INTERVAL_FRAMES) {
+      autosaveCounter = 0;
+      projectSave(&chipnomadState->project, getAutosavePath());
+    }
+
     // Multi-tap timer handling
     if (tapTimerCount > 0) {
       tapTimerCount--;

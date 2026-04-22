@@ -90,6 +90,23 @@ static void onProjectCancelled(void) {
   screenSetup(&screenProject, 0);
 }
 
+static void doNewProject(void) {
+  projectInitAY(&chipnomadState->project);
+  projectModified = 0;
+  appSettings.projectFilename[0] = 0;
+  screensInitAll();
+  screenSetup(&screenProject, 0);
+}
+
+static void doLoadProject(void) {
+  fileBrowserSetup("LOAD PROJECT", ".cnm,.vt2", appSettings.projectPath, onProjectLoaded, onProjectCancelled);
+  screenSetup(&screenFileBrowser, 0);
+}
+
+static void cancelConfirm(void) {
+  screenSetup(&screenProject, 0);
+}
+
 static void drawRowHeader(int row, int state);
 static void drawColHeader(int col, int state);
 
@@ -263,9 +280,13 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
   if (row == 0) {
     // Load/Save/New/Export
     if (col == 0) {
-      // Load project - go directly to file browser
-      fileBrowserSetup("LOAD PROJECT", ".cnm,.vt2", appSettings.projectPath, onProjectLoaded, onProjectCancelled);
-      screenSetup(&screenFileBrowser, 0);
+      // Load project
+      if (projectModified) {
+        confirmSetup("Lose unsaved changes?", doLoadProject, cancelConfirm);
+        screenSetup(&screenConfirm, 0);
+      } else {
+        doLoadProject();
+      }
     } else if (col == 1) {
       // Save project - check filename first
       if (strlen(appSettings.projectFilename) == 0) {
@@ -277,11 +298,12 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
       }
     } else if (col == 2) {
       // New project
-      projectInitAY(&chipnomadState->project);
-      projectModified = 0; // Clear modified flag for new project
-      appSettings.projectFilename[0] = 0; // Clear filename
-      screensInitAll(); // Reset all screen states
-      fullRedraw();
+      if (projectModified) {
+        confirmSetup("Lose unsaved changes?", doNewProject, cancelConfirm);
+        screenSetup(&screenConfirm, 0);
+      } else {
+        doNewProject();
+      }
       handled = 1;
     } else if (col == 3) {
       // Export - go to export screen
@@ -326,6 +348,7 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
     // Linear pitch (ON/OFF)
     handled = edit8noLast(action, &chipnomadState->project.linearPitch, 1, 0, 1);
     if (handled) {
+      projectModified = 1;
       playbackStop(&chipnomadState->playbackState);
       reinitializePitchTable(&chipnomadState->project);
     }
@@ -347,19 +370,17 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
     if (handled) {
       // Update project tick rate from the two components
       chipnomadState->project.tickRate = (float)tickRateI + (float)tickRateF / 1000.0f;
+      projectModified = 1;
     }
   } else if (row == 7) {
-    // Chips count (1-3 for AY chips)
+    // Chips count (1-3 for AY)
     handled = edit8noLast(action, (uint8_t*)&chipnomadState->project.chipsCount, 1, 1, 3);
     if (handled) {
-      // Stop playback when chips count changes
       playbackStop(&chipnomadState->playbackState);
-      // Clear note preview area
       clearNotePreview();
-      // Update tracks count when chips count changes
       chipnomadState->project.tracksCount = projectGetTotalTracks(&chipnomadState->project);
-      // Reinitialize chips with new count
       pendingReinitChips = 1;
+      projectModified = 1;
     }
   }
 
@@ -386,6 +407,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
     char result = charEditInput(keys, tapCount, editingString, screen->cursorCol, editingStringLength);
 
     if (result) {
+      projectModified = 1;
       isCharEdit = 0;
       if (screen->cursorCol < editingStringLength - 1) screen->cursorCol++;
       editingString = NULL;

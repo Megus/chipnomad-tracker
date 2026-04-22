@@ -280,6 +280,8 @@ static int editCell(int col, int row, enum CellEditAction action) {
 }
 
 static int onEdit(int col, int row, enum CellEditAction action) {
+  int handled = 0;
+
   int startCol, startRow, endCol, endRow;
   getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
 
@@ -287,7 +289,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     return switchPhraseSelectionMode(&screen);
   } else if (action == editMultiIncrease || action == editMultiDecrease) {
     if (!isSingleColumnSelection(&screen)) return 0;
-    return applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell);
+    handled = applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell);
   } else if (action == editMultiIncreaseBig || action == editMultiDecreaseBig) {
     // Check if full width selection (all columns)
     if (startCol == 0 && endCol == 8) {
@@ -295,7 +297,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       int direction = (action == editMultiIncreaseBig) ? -1 : 1;
       applyPhraseRotation(phraseIdx, startRow, endRow, direction);
       fullRedraw();
-      return 1;
+      handled = 1;
     } else if (isSingleColumnSelection(&screen)) {
       // Single column: big increase/decrease or FX selection
       if (startCol == 3 || startCol == 5 || startCol == 7) {
@@ -306,16 +308,16 @@ static int onEdit(int col, int row, enum CellEditAction action) {
         return 0;
       } else {
         // Regular big increase/decrease for note, volume, instrument, FX value
-        return applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell);
+        handled = applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell);
       }
     }
     return 0;
   } else if (action == editCopy) {
     copyPhrase(phraseIdx, startCol, startRow, endCol, endRow, 0);
-    return 1;
+    handled = 1;
   } else if (action == editCut) {
     copyPhrase(phraseIdx, startCol, startRow, endCol, endRow, 1);
-    return 1;
+    handled = 1;
   } else if (action == editPaste) {
     const int rowsPasted = pastePhrase(phraseIdx, col, row);
     if (rowsPasted > 0) {
@@ -325,22 +327,23 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       screen.cursorRow = newRow;
     }
     fullRedraw();
-    return 1;
+    handled = 1;
   } else if (action == editShallowClone) {
     // Handle instrument column cloning
     if (startCol == 1 && endCol == 1) {
       int distinctCount = cloneInstrumentsInPhrase(phraseIdx, startRow, endRow);
       if (distinctCount == 0) {
         screenMessage(MESSAGE_TIME, "No empty instruments");
-        return 0;
       }
       screenMessage(MESSAGE_TIME, "Cloned %d instrument%s", distinctCount, distinctCount == 1 ? "" : "s");
-      return 1;
+      handled = 1;
     }
-    return 0;
   } else {
-    return editCell(col, row, action);
+    handled = editCell(col, row, action);
   }
+
+  if (handled) projectModified = 1;
+  return handled;
 }
 
 static int inputScreenNavigation(int keys, int tapCount) {

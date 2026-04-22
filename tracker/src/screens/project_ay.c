@@ -155,6 +155,8 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     handled = 0;
   }
 
+  if (handled) projectModified = 1;
+
   return handled;
 }
 

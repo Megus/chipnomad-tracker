@@ -284,6 +284,7 @@ int instrumentCommonOnEdit(int col, int row, enum CellEditAction action) {
     handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].tableSpeed, 16, 1, 255);
   }
 
+  if (handled) projectModified = 1;
   return handled;
 }
 

@@ -189,17 +189,18 @@ static int editCell(int col, int row, enum CellEditAction action) {
 }
 
 static int onEdit(int col, int row, enum CellEditAction action) {
+  int handled = 0;
+
+  int startCol, startRow, endCol, endRow;
+  getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+
   if (action == editSwitchSelection) {
     return switchChainSelectionMode(&screen);
   } else if (action == editMultiIncrease || action == editMultiDecrease ||
              action == editMultiIncreaseBig || action == editMultiDecreaseBig) {
     if (!isSingleColumnSelection(&screen)) return 0;
-    int sc, sr, ec, er;
-    getSelectionBounds(&screen, &sc, &sr, &ec, &er);
-    return applyMultiEdit(sc, sr, ec, er, action, editCell);
+    handled = applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell);
   } else if (action == editShallowClone || action == editDeepClone) {
-    int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
     int clonedCount = 0;
     for (int r = startRow; r <= endRow; r++) {
       for (int c = startCol; c <= endCol; c++) {
@@ -208,21 +209,20 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     }
     if (clonedCount > 0) {
       screenMessage(MESSAGE_TIME, "Cloned %d phrase%s", clonedCount, clonedCount == 1 ? "" : "s");
-      return 1;
+      handled = 1;
     } else {
       screenMessage(MESSAGE_TIME, "No phrases to clone");
-      return 0;
     }
   } else if (action == editCopy) {
     int startCol, startRow, endCol, endRow;
     getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
     copyChain(chain, startCol, startRow, endCol, endRow, 0);
-    return 1;
+    handled = 1;
   } else if (action == editCut) {
     int startCol, startRow, endCol, endRow;
     getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
     copyChain(chain, startCol, startRow, endCol, endRow, 1);
-    return 1;
+    handled = 1;
   } else if (action == editPaste) {
     const int rowsPasted = pasteChain(chain, col, row);
     if (rowsPasted > 0) {
@@ -232,10 +232,13 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       screen.cursorRow = newRow;
     }
     fullRedraw();
-    return 1;
+    handled = 1;
   } else {
-    return editCell(col, row, action);
+    handled = editCell(col, row, action);
   }
+
+  if (handled) projectModified = 1;
+  return handled;
 }
 
 static int inputScreenNavigation(int keys, int tapCount) {

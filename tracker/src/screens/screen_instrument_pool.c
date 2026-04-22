@@ -11,7 +11,16 @@
 static int cursorRow = 0;
 static int topRow = 0;
 
+typedef enum {
+  POOL_NORMAL,
+  POOL_EDIT_PRESSED,
+  POOL_MOVING,
+} PoolState;
+
+static PoolState poolState = POOL_NORMAL;
+
 static void setup(int input) {
+  poolState = POOL_NORMAL;
   if (input != -1) {
     cursorRow = input;
     if (cursorRow >= topRow + 16) {
@@ -86,26 +95,46 @@ static void draw(void) {
   }
 }
 
-static int editPressed = 0;
+static int inputScreenNavigation(int keys) {
+  if (keys == (keyUp | keyShift)) {
+    screenSetup(&screenInstrument, cursorRow);
+    return 1;
+  } else if (keys == (keyLeft | keyShift)) {
+    screenSetup(&screenPhrase, -1);
+    return 1;
+  } else if (keys == (keyRight | keyShift)) {
+    screenSetup(&screenTable, cursorRow);
+    return 1;
+  }
+  return 0;
+}
 
 static int onInput(int isKeyDown, int keys, int tapCount) {
   int oldCursorRow = cursorRow;
   int oldTopRow = topRow;
 
-  // Handle Edit button press/release for instrument selection
-  if (keys == keyEdit) {
-    editPressed = 1;
-    return 1;
-  } else if (keys == 0 && editPressed) {
-    editPressed = 0;
-    // Go to selected instrument when Edit is released
-    screenSetup(&screenInstrument, cursorRow);
-    return 1;
-  } else if (keys != 0) {
-    editPressed = 0;
+  // Handle key-up
+  if (!isKeyDown && keys == 0) {
+    playbackStopPreview(&chipnomadState->playbackState, *pSongTrack);
+    if (poolState == POOL_EDIT_PRESSED) {
+      poolState = POOL_NORMAL;
+      screenSetup(&screenInstrument, cursorRow);
+      return 1;
+    } else if (poolState == POOL_MOVING) {
+      poolState = POOL_NORMAL;
+    }
+    return 0;
   }
+  if (!isKeyDown) return 0;
 
-  if (keys == keyUp) {
+  if (inputScreenNavigation(keys)) return 1;
+
+  if (keys == keyEdit) {
+    if (poolState == POOL_NORMAL) {
+      poolState = POOL_EDIT_PRESSED;
+    }
+    return 1;
+  } else if (keys == keyUp) {
     if (cursorRow > 0) {
       cursorRow--;
       if (cursorRow < topRow) {
@@ -140,23 +169,13 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
     if (topRow < 0) topRow = 0;
     fullRedraw();
     return 1;
-  } else if (keys == (keyUp | keyShift)) {
-    // To Instrument screen
-    screenSetup(&screenInstrument, cursorRow);
-    return 1;
-  } else if (keys == (keyLeft | keyShift)) {
-    // To Phrase screen
-    screenSetup(&screenPhrase, -1);
-    return 1;
-  } else if (keys == (keyRight | keyShift)) {
-    // To Table screen
-    screenSetup(&screenTable, cursorRow);
-    return 1;
   } else if (keys == (keyEdit | keyUp)) {
     // Move instrument up
     if (cursorRow > 0) {
+      poolState = POOL_MOVING;
       playbackStop(&chipnomadState->playbackState);
       instrumentSwap(&chipnomadState->project, cursorRow, cursorRow - 1);
+      projectModified = 1;
       cursorRow--;
       if (cursorRow < topRow) {
         topRow--;
@@ -167,8 +186,10 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   } else if (keys == (keyEdit | keyDown)) {
     // Move instrument down
     if (cursorRow < PROJECT_MAX_INSTRUMENTS - 1) {
+      poolState = POOL_MOVING;
       playbackStop(&chipnomadState->playbackState);
       instrumentSwap(&chipnomadState->project, cursorRow, cursorRow + 1);
+      projectModified = 1;
       cursorRow++;
       if (cursorRow >= topRow + 16) {
         topRow++;
@@ -191,20 +212,14 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   } else if (keys == (keyShift | keyEdit)) {
     // Paste instrument
     pasteInstrument(cursorRow);
+    projectModified = 1;
     fullRedraw();
     return 1;
-  }
-
-  // Stop preview when keys are released
-  if (keys == 0) {
-    playbackStopPreview(&chipnomadState->playbackState, *pSongTrack);
-    editPressed = 0;
   }
 
   // Stop preview when cursor moves
   if (oldCursorRow != cursorRow) {
     playbackStopPreview(&chipnomadState->playbackState, *pSongTrack);
-    editPressed = 0;
   }
 
   // Redraw only cursor if position changed

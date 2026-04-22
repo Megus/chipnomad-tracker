@@ -65,8 +65,6 @@ void drawScreenMap() {
 }
 
 void screenSetup(const AppScreen* screen, int input) {
-  projectSave(&chipnomadState->project, getAutosavePath()); // Temporary measure against random crashes
-
   pendingScreen = screen;
   pendingScreenInput = input;
 }
@@ -305,34 +303,30 @@ static int inputNormalMode(ScreenData* screen, int keys, int tapCount) {
         redrawn = 1;
         handled = 1;
       }
-    } else {
-      if (keys == keyEdit && tapCount == 1) {
-        // Edit: insert/copy value
-        handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editTap);
-      } else if (keys == keyEdit && tapCount == 2) {
-        // Edit: double tap (usually increment to an empty value)
-        handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editDoubleTap);
-      } else if (keys == (keyRight | keyEdit)) {
-        // Edit: value small increase (usually by 1)
-        handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editIncrease);
-      } else if (keys == (keyLeft | keyEdit)) {
-        // Edit: value small decrease (usually by 1)
-        handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editDecrease);
-      } else if (keys == (keyUp | keyEdit)) {
-        // Edit: value big increase
-        handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editIncreaseBig);
-      } else if (keys == (keyDown | keyEdit)) {
-        // Edit: value big decrease
-        handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editDecreaseBig);
-      } else if (keys == (keyEdit | keyOpt)) {
-        // Edit: clear value
-        handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editClear);
-      } else if (keys == (keyShift | keyEdit)) {
-        // Edit: paste
-        handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editPaste);
-      }
-
-      if (handled) projectModified = 1; // Mark project as modified after any edit
+    } else if (keys == keyEdit && tapCount == 1) {
+      // Edit: insert/copy value
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editTap);
+    } else if (keys == keyEdit && tapCount == 2) {
+      // Edit: double tap (usually increment to an empty value)
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editDoubleTap);
+    } else if (keys == (keyRight | keyEdit)) {
+      // Edit: value small increase (usually by 1)
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editIncrease);
+    } else if (keys == (keyLeft | keyEdit)) {
+      // Edit: value small decrease (usually by 1)
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editDecrease);
+    } else if (keys == (keyUp | keyEdit)) {
+      // Edit: value big increase
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editIncreaseBig);
+    } else if (keys == (keyDown | keyEdit)) {
+      // Edit: value big decrease
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editDecreaseBig);
+    } else if (keys == (keyEdit | keyOpt)) {
+      // Edit: clear value
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editClear);
+    } else if (keys == (keyShift | keyEdit)) {
+      // Edit: paste
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editPaste);
     }
   }
 
@@ -430,7 +424,6 @@ static int inputSelectMode(ScreenData* screen, int keys, int tapCount) {
       // Cut and exit select mode
       handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editCut);
       if (handled) {
-        projectModified = 1; // Mark project as modified after cutting
         screenMessage(MESSAGE_TIME, "Cut selection");
         moveCursorToSelectionStart(screen);
       }
@@ -438,35 +431,31 @@ static int inputSelectMode(ScreenData* screen, int keys, int tapCount) {
       screenFullRedraw(screen);
       redrawn = 1;
       optPressed = 0;
-    } else {
-      if (keys == (keyRight | keyEdit)) {
-        // Multi-edit: increase values in selection
-        handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editMultiIncrease);
-      } else if (keys == (keyLeft | keyEdit)) {
-        // Multi-edit: decrease values in selection
-        handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editMultiDecrease);
-      } else if (keys == (keyUp | keyEdit)) {
-        // Multi-edit: big increase values in selection
-        handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editMultiIncreaseBig);
-      } else if (keys == (keyDown | keyEdit)) {
-        // Multi-edit: big decrease values in selection
-        handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editMultiDecreaseBig);
-      } else if (keys == (keyShift | keyEdit) && !shallowClonePressed) {
-        // Shallow clone
-        handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editShallowClone);
-        shallowClonePressed = 1;
-      } else if (keys == (keyShift | keyEdit) && shallowClonePressed) {
-        // Deep clone (second press while Shift still held)
-        handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editDeepClone);
-        screen->selectMode = 0;
-        shallowClonePressed = 0;
-        screenFullRedraw(screen);
-        redrawn = 1;
-      } else if (keys & keyOpt) {
-        optPressed = 1;
-      }
-
-      if (handled) projectModified = 1; // Mark project as modified after any edit action
+    } else if (keys == (keyRight | keyEdit)) {
+      // Multi-edit: increase values in selection
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editMultiIncrease);
+    } else if (keys == (keyLeft | keyEdit)) {
+      // Multi-edit: decrease values in selection
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editMultiDecrease);
+    } else if (keys == (keyUp | keyEdit)) {
+      // Multi-edit: big increase values in selection
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editMultiIncreaseBig);
+    } else if (keys == (keyDown | keyEdit)) {
+      // Multi-edit: big decrease values in selection
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editMultiDecreaseBig);
+    } else if (keys == (keyShift | keyEdit) && !shallowClonePressed) {
+      // Shallow clone
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editShallowClone);
+      shallowClonePressed = 1;
+    } else if (keys == (keyShift | keyEdit) && shallowClonePressed) {
+      // Deep clone (second press while Shift still held)
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editDeepClone);
+      screen->selectMode = 0;
+      shallowClonePressed = 0;
+      screenFullRedraw(screen);
+      redrawn = 1;
+    } else if (keys & keyOpt) {
+      optPressed = 1;
     }
   }
 

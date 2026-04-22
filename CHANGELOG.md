@@ -6,6 +6,7 @@
 - Press Opt+Left/Right at the Song screen to solo all tracks to the left/right
 - Custom font loading
 - FX implementation was re-built to match M8 and LSDj behavior
+- Confirmation dialog before creating/loading a project is there are unsaved changes
 - *FIX*: Division by zero in auto envelope logic
 - *FIX*: You could open table FF for editing which led to unexpected behavior
 - *FIX*: Env shape display was incorrect at the instrument screen
@@ -15,6 +16,8 @@
 - *FIX*: RET FX was stopping after a single row and didn't work in tables
 - *FIX*: Changing vibrato speed over time caused weird phase issues
 - *FIX*: Volume column in aux tables didn't work
+- *FIX*: Random crash on project load and changing the number of chips
+- *FIX*: Loading instruments didn't load the instrument table
 
 ## v0.1.0b (January 25, 2026)
 

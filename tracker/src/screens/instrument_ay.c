@@ -187,6 +187,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvD, 16, 1, 15);
   }
 
+  if (handled) projectModified = 1;
   return handled;
 }
 

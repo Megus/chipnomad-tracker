@@ -113,6 +113,11 @@ static int editCell(int col, int row, enum CellEditAction action) {
 }
 
 static int onEdit(int col, int row, enum CellEditAction action) {
+  int handled = 0;
+
+  int startCol, startRow, endCol, endRow;
+  getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+
   if (action == editSwitchSelection) {
     return switchGrooveSelectionMode(&screen);
   } else if (action == editIncreaseBig || action == editDecreaseBig) {
@@ -140,22 +145,16 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 
     int otherRow = (row == firstRow) ? secondRow : firstRow;
     drawField(col, otherRow, 0);
-    return 1;
+    handled = 1;
   } else if (action == editMultiIncrease || action == editMultiDecrease) {
     if (!isSingleColumnSelection(&screen)) return 0;
-    int sc, sr, ec, er;
-    getSelectionBounds(&screen, &sc, &sr, &ec, &er);
-    return applyMultiEdit(sc, sr, ec, er, action, editCell);
+    return applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell);
   } else if (action == editCopy) {
-    int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
     copyGroove(groove, startRow, endRow, 0);
-    return 1;
+    handled = 1;
   } else if (action == editCut) {
-    int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
     copyGroove(groove, startRow, endRow, 1);
-    return 1;
+    handled = 1;
   } else if (action == editPaste) {
     const int rowsPasted = pasteGroove(groove, row);
     if (rowsPasted > 0) {
@@ -165,10 +164,13 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       screen.cursorRow = newRow;
     }
     fullRedraw();
-    return 1;
+    handled = 1;
   } else {
-    return editCell(col, row, action);
+    handled = editCell(col, row, action);
   }
+
+  if (handled) projectModified = 1;
+  return handled;
 }
 
 static int inputScreenNavigation(int keys, int tapCount) {
