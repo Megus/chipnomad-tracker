@@ -68,6 +68,8 @@ static void onProjectLoaded(const char* path) {
 
     // Reset all screen states (including song position)
     screensInitAll();
+  } else {
+    screenMessage(MESSAGE_TIME, "%s", projectFileError);
   }
 
   screenSetup(&screenProject, 0);

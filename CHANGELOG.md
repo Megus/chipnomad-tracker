@@ -1,6 +1,6 @@
 # ChipNomad changelog
 
-## v0.2.0b (not yet released)
+## v1.0.0 (April 25, 2026)
 
 - *PLATFORM*: Android (phones, tablets, handhelds), Miyoo Mini (Miyoo Ports)
 - Press Opt+Left/Right at the Song screen to solo all tracks to the left/right

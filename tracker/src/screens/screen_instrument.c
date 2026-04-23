@@ -63,7 +63,7 @@ static void onInstrumentLoaded(const char* path) {
     if (result == 0) {
       screenMessage(MESSAGE_TIME, "Instrument loaded");
     } else {
-      screenMessage(MESSAGE_TIME, "Failed to load instrument");
+      screenMessage(MESSAGE_TIME, "%s", projectFileError);
     }
   }
 

@@ -412,13 +412,22 @@ static int projectLoadInternal(int fileId, Project* project) {
   projectInit(&p);
 
   sprintf(projectFileError, "Module header");
-  READ_STRING; if (strcmp(lpstr, "# ChipNomad Tracker Module 1.0")) return 1;
+  READ_STRING;
+  if (strncmp(lpstr, "# ChipNomad Tracker Module", 26)) {
+    sprintf(projectFileError, "Incorrect module format");
+    return 1;
+  }
+  if (strcmp(lpstr, "# ChipNomad Tracker Module 1.0")) {
+    sprintf(projectFileError, "Incorrect module version");
+    return 1;
+  }
   READ_STRING;
   if (!strncmp(lpstr, "- Title:", 8)) {
     if (sscanf(lpstr, "- Title: %[^\n]", p.title) != 1) {
       p.title[0] = 0; // Empty title
     }
   } else {
+    sprintf(projectFileError, "Missing title");
     return 1;
   }
   READ_STRING;
@@ -428,6 +437,7 @@ static int projectLoadInternal(int fileId, Project* project) {
     }
   }
 
+  sprintf(projectFileError, "Invalid project settings");
   READ_STRING; if (sscanf(lpstr, "- Frame rate: %f", &p.tickRate) != 1) return 1;
   READ_STRING; if (sscanf(lpstr, "- Chips count: %d", &p.chipsCount) != 1) return 1;
 
@@ -439,6 +449,7 @@ static int projectLoadInternal(int fileId, Project* project) {
     READ_STRING; // Read next line for chip type
   }
   // If linear pitch not found, lpstr already contains the chip type line
+  sprintf(projectFileError, "Invalid chip settings");
   if (sscanf(lpstr, "- Chip type: %s", buf) != 1) return 1;
 
   int found = 0;
@@ -449,7 +460,10 @@ static int projectLoadInternal(int fileId, Project* project) {
       break;
     }
   }
-  if (!found) return 1;
+  if (!found) {
+    sprintf(projectFileError, "Unsupported chip type");
+    return 1;
+  }
 
   switch (p.chipType) {
   case chipAY:
@@ -493,11 +507,17 @@ static int projectLoadInternal(int fileId, Project* project) {
   sprintf(projectFileError, "Pitch table");
 
   if (projectLoadPitchTable(fileId, &p)) return 1;
+  sprintf(projectFileError, "Invalid song data");
   if (projectLoadSong(fileId, &p)) return 1;
+  sprintf(projectFileError, "Invalid chain data");
   if (projectLoadChains(fileId, &p)) return 1;
+  sprintf(projectFileError, "Invalid groove data");
   if (projectLoadGrooves(fileId, &p)) return 1;
+  sprintf(projectFileError, "Invalid phrase data");
   if (projectLoadPhrases(fileId, &p)) return 1;
+  sprintf(projectFileError, "Invalid instrument data");
   if (projectLoadInstruments(fileId, &p)) return 1;
+  sprintf(projectFileError, "Invalid table data");
   if (projectLoadTables(fileId, &p)) return 1;
 
   // Copy loaded project to the target project
@@ -824,7 +844,7 @@ int instrumentSave(Project* project, const char* path, int instrumentIdx) {
     return 1;
   }
 
-  filePrintf(fileId, "# ChipNomad Instrument\n\n");
+  filePrintf(fileId, "# ChipNomad Instrument 1.0\n\n");
   saveInstrument(fileId, 0, &project->instruments[instrumentIdx]);
   saveTable(fileId, 0, &project->tables[instrumentIdx]);
 
@@ -833,11 +853,22 @@ int instrumentSave(Project* project, const char* path, int instrumentIdx) {
 }
 
 static int instrumentLoadInternal(int fileId, Project* project, int instrumentIdx) {
-  READ_STRING; if (strcmp(lpstr, "# ChipNomad Instrument")) return 1;
+  READ_STRING;
+  if (strncmp(lpstr, "# ChipNomad Instrument", 22)) {
+    sprintf(projectFileError, "Incorrect instrument format");
+    return 1;
+  }
+  // Check version if present (no version = 1.0, backwards compatible)
+  if (strlen(lpstr) > 22 && strcmp(lpstr + 22, " 1.0")) {
+    sprintf(projectFileError, "Incorrect instrument version");
+    return 1;
+  }
+  sprintf(projectFileError, "Invalid instrument data");
   READ_STRING; if (strncmp(lpstr, "### Instrument", 14)) return 1;
 
   if (loadInstrument(fileId, &project->instruments[instrumentIdx], project)) return 1;
   // Don't read next line here, as loadInstrument already reads the next line, which should be the table header
+  sprintf(projectFileError, "Invalid table data");
   if (strncmp(lpstr, "### Table", 9)) return 1;
   if (loadTable(fileId, &project->tables[instrumentIdx], project)) return 1;
 
