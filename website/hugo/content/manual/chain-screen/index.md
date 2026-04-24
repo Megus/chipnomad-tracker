@@ -10,7 +10,7 @@ layout: single
 
 A chain is a sequence of phrases. You can have up to 16 phrases in a chain and use the same phrase many times. The second column is the transpose value in semitones.
 
-If the chain is used in the project multiple times, then there will be an asterisk (**\***) character next to its number.
+If the chain is used in the project multiple times, then there will be an asterisk (**\***) character next to its number. You can clone Chains at the [Song](/manual/song-screen) screen.
 
 ## Controls
 

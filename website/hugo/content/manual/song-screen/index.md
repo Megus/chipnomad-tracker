@@ -17,10 +17,10 @@ You can have multiple sub-songs in a project by creating "islands" — sections 
 In addition to the [common controls](/manual/#common-controls) the following controls are available:
 
 - **OPT** + \[**UP** or **DOWN**\]: jump 16 positions up/down
-- Select range, then **SHIFT** + **EDIT**: clone chains
-- Select range, then **SHIFT** + Double-tap **EDIT**: deep clone chains — clone both chains and phrases in chains
+- Select range, then **SHIFT** + **EDIT**: shallow clone — cloned chains will have the same phrases
+- Select range, then **SHIFT** + Double-tap **EDIT**: deep clone — clone both chains and phrases in chains
 - Select range, then **EDIT** + \[**UP** or **DOWN**\]: move selection up or down
-- Triple-tap **OPT**: "bookmark" a chain
+- Triple-tap **OPT**: add/remove a highlight, use it for visual organization of the project
 - **OPT** + **SHIFT**: Mute current track (release **OPT** first to hold the mute)
 - **OPT** + **PLAY**: Solo current track (release **OPT** first to hold the mute)
 - **OPT** + \[**LEFT** or **RIGHT**\]: solo all tracks to the left or to the right of the current track

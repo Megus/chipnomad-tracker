@@ -10,7 +10,6 @@ layout: single
 
 ![](save.png)
 
-
 File browser is used to load/save projects, instruments, etc. The UI of this screen is pretty self-explanatory.
 
 ## Controls

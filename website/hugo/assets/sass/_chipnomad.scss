@@ -1,7 +1,25 @@
 .cn-download {
-  @include relative-font-size(2);
-  font-weight: bold;
   text-align: center;
+  margin-top: $spacing-unit;
+  margin-bottom: $spacing-unit;
+
+  a {
+    display: inline-block;
+    @include relative-font-size(1.5);
+    font-weight: bold;
+    text-decoration: none;
+    padding: $spacing-unit / 3 $spacing-unit * 1.5;
+    border-radius: 40px;
+    background-color: $link-color;
+    color: $background-color;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: lighten($link-color, 10%);
+      text-decoration: none;
+      color: $background-color;
+    }
+  }
 }
 
 .img-shadow img {

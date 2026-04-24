@@ -10,7 +10,7 @@ layout: single
 
 As a true chiptune tracker, ChipNomad takes in account certain constraints of real retro platforms and doesn't let you directly control BPM. Instead, it uses tick rate and grooves to control the song tempo and, well, groove.
 
-On the real platforms (e.g. ZX Spectrum) the tick rate is tied to the frame rate (usually, 50 or 60Hz). ChipNomad allows you to define tick rate up to 200Hz at the [Project screen](project-screen/).
+On the real platforms (e.g. ZX Spectrum) the tick rate is tied to the frame rate (usually, 50 or 60Hz). ChipNomad allows you to define tick rate up to 200Hz at the [Project screen](project-screen/). Note that playing tracks with non-standard tick rate on the real retro hardware will require custom players.
 
 Groove table values define the duration of a phrase row in ticks.
 

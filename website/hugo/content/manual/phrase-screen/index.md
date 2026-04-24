@@ -12,7 +12,7 @@ The phrase screen layout should be familiar for everyone who is familiar with tr
 
 Phrases are 16 rows long, unlike patterns in classic trackers. But when you have a chain with multiple phrases, then the Phrase screen works similar to a pattern editor: when you do below row F or above row 0, Phrase screen moves to the next/previous phrase in the chain.
 
-If the phrase is used in the project multiple times, then there will be an asterisk (**\***) character next to its number.
+If the phrase is used in the project multiple times, then there will be an asterisk (**\***) character next to its number. You can clone phrases at the [Chain](/manual/chain-screen/) screen.
 
 ## Controls
 
@@ -23,3 +23,4 @@ In addition to the [common controls](/manual/#common-controls) the following con
 - **OPT** + \[**LEFT** or **RIGHT**\]: navigate between tracks
 - **OPT** + \[**UP** or **DOWN**\]: navigate between phrases in the current chain
 - Select range in the instrument column, then **SHIFT** + **EDIT**: clone instruments
+- Select range, then **EDIT** + \[**UP** or **DOWN**\]: rotate phrase rows

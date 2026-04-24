@@ -22,6 +22,7 @@ ChipNomad currently supports only [AY-3-8910/YM2149F](https://en.wikipedia.org/w
 - [Project Screen](project-screen/)
 - [Settings Screen](settings-screen/)
 - [Tracker FX reference](tracker-fx/)
+- [File Browser Screen](file-browser/)
 
 ## Introduction
 
@@ -61,9 +62,9 @@ ChipNomad uses 8 logical buttons. The default mapping on consoles and desktops:
 | **PLAY**   | Start       | Space        |
 | **SHIFT**  | Select      | Shift        |
 
-You can define your own keys and have up to 3 physical buttons mapped to each logical button.
+You can define your own keys and have up to 3 physical buttons mapped to each logical button. You can also use gamepads.
 
-To quit ChipNomad use the button at the Setings screen or press MENU + X on consoles.
+To quit ChipNomad use the button at the Setings screen or press **MENU** + **X** on consoles.
 
 ### Navigation
 
@@ -81,7 +82,8 @@ To quit ChipNomad use the button at the Setings screen or press MENU + X on cons
 
 ### Selection and Clipboard
 
-- **SHIFT** + **OPT**: enter selection mode
+- **SHIFT** + **OPT**: enter selection mode. Press multiple times to iterate through convenient selection ranges
+- **DIRECTION**: select range
 - **EDIT** + \[**DIRECTION**\]: multi-edit — edit all values in selection
 - **OPT**: copy selection
 - **OPT** + **EDIT**: cut selection
