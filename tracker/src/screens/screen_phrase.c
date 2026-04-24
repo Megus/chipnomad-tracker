@@ -352,13 +352,11 @@ static int onEdit(int col, int row, enum CellEditAction action) {
         int fxIdx = (startCol - 3) / 2;
         fxEditFullDraw(phraseRows[screen.cursorRow].fx[fxIdx][0]);
         isFxEdit = 1;
-        return 0;
       } else {
         // Regular big increase/decrease for note, volume, instrument, FX value
         handled = applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell);
       }
     }
-    return 0;
   } else if (action == editCopy) {
     copyPhrase(phraseIdx, startCol, startRow, endCol, endRow, 0);
     handled = 1;

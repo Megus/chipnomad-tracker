@@ -13,7 +13,7 @@ layout: single
 Each track can have all FX running simultaneously but only one instance of each FX. A few examples to explain this:
 
 1. Put `PVB` in FX1 column in a phrase, and then put `PBN` in the same column lower in the phrase. Pitch bend won't stop the vibrato, both FX will run at the same time.
-2. Put `PBN` in FX2 column in aphrase, then put another `PBN` lower in the phrase in FX1 column. The second `PBN` will simply update the pitch bend speed in the track. To stop pitch bend later you can put `PBN 00` in any FX column.
+2. Put `PBN` in FX2 column in a phrase, then put another `PBN` lower in the phrase in FX1 column. The second `PBN` will simply update the pitch bend speed in the track. To stop pitch bend later you can put `PBN 00` in any FX column.
 
 Effects can be stopped with the value 00. Only `TBL` and `TBX` effects are an exception, they're stopped with value FF.
 
@@ -97,7 +97,7 @@ Hop to row XX in the instrument table. When used in a table, all FX columns hop 
 
 Hop to row XX in the aux table. Doesn't work in tables.
 
-### `HOP XY`
+### `HOP XY` — Conditional jump
 
 Conditional jumps in phrases and tables. In tables this FX hops only in the column where FX is placed (unlike THO which hops all columns).
 

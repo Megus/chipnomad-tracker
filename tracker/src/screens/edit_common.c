@@ -14,8 +14,7 @@ int isMultiAction(enum CellEditAction action) {
 }
 
 int applyMultiEdit(int startCol, int startRow, int endCol, int endRow, enum CellEditAction action, int (*editFunc)(int col, int row, enum CellEditAction action)) {
-  if (action != editMultiIncrease && action != editMultiDecrease &&
-    action != editMultiIncreaseBig && action != editMultiDecreaseBig) return 0;
+  if (!isMultiAction(action)) return 0;
 
   for (int r = startRow; r <= endRow; r++) {
     for (int c = startCol; c <= endCol; c++) {
