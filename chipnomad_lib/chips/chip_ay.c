@@ -5,6 +5,15 @@
 #include "../external/ayumi/ayumi_filters.h"
 #include "../chipnomad_lib.h"
 
+static int ayumiTimerFunction(struct ayumi* ay, void* userdata) {
+  SoundChip* self = (SoundChip*)userdata;
+  if (self->timerFunc) {
+    return self->timerFunc(self, self->timerUserdata);
+  }
+  return 0;
+}
+
+
 static int init(SoundChip* self) {
   return 0;
 }
@@ -48,6 +57,12 @@ static void setRegister(SoundChip* self, uint16_t reg, uint8_t value) {
   }
 }
 
+static void setTimerFunc(SoundChip* self, int (*timerFunc)(struct SoundChip* self, void* userdata), void* timerUserdata) {
+  self->timerFunc = timerFunc;
+  self->timerUserdata = timerUserdata;
+  ayumi_set_timer_func((struct ayumi*)self->userdata, ayumiTimerFunction, self);
+}
+
 void updateChipAYType(SoundChip* self, uint8_t isYM) {
   ayumi_set_chip_type((struct ayumi*)self->userdata, isYM);
 }
@@ -82,11 +97,9 @@ void updateChipAYClock(SoundChip* self, int clockRate, int sampleRate) {
   ay->step = (float)clockRate / (sampleRate * 8 * 8); // 8 * DECIMATE_FACTOR
 }
 
-
-
 static void setQuality(SoundChip* self, int quality) {
   struct ayumi* ay = (struct ayumi*)self->userdata;
-  
+
   // Map chip-agnostic quality to Ayumi filter functions
   ayumi_filter_func filter_func;
   switch (quality) {
@@ -106,7 +119,7 @@ static void setQuality(SoundChip* self, int quality) {
       filter_func = ayumi_filter_medium;
       break;
   }
-  
+
   ayumi_set_filter_quality(ay, filter_func);
 }
 
@@ -123,9 +136,11 @@ SoundChip createChipAY(int sampleRate, ChipSetup setup) {
 
   SoundChip chip = {
     .userdata = ay,
+    .timerFunc = NULL,
     .init = init,
     .render = render,
     .setRegister = setRegister,
+    .setTimerFunc = setTimerFunc,
     .setQuality = setQuality,
     .cleanup = cleanup,
   };

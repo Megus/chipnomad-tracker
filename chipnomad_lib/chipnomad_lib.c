@@ -80,7 +80,7 @@ int chipnomadRender(ChipNomadState* state, float* buffer, int samples) {
   while (samplesLeft > 0 && !allTracksStopped) {
     if ((int)state->frameSampleCounter == 0) {
       state->frameSampleCounter += state->sampleRate / state->project.tickRate;
-      allTracksStopped = playbackNextFrame(&state->playbackState, state->chips);
+      allTracksStopped = playbackNextFrame(state);
       // Decrease audio overload cooldown each frame
       if (state->audioOverload > 0) {
         state->audioOverload--;

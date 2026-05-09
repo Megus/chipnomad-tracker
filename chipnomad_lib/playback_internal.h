@@ -1,7 +1,7 @@
 #ifndef __PLAYBACK_INTERNAL_H__
 #define __PLAYBACK_INTERNAL_H__
 
-#include "playback.h"
+#include "chipnomad_lib.h"
 
 void handleNoteOff(PlaybackState* state, int trackIdx);
 void readPhraseRow(PlaybackState* state, int trackIdx, int skipDelCheck);
@@ -23,14 +23,14 @@ void registerFXHandlers_AY(void);
 // Chip-specific functions
 
 // AY-3-8910/YM2149F
+int timerFunctionAY(struct SoundChip* chip, void* userdata);
 void setupInstrumentAY(PlaybackState* state, int trackIdx);
 void noteOffInstrumentAY(PlaybackState* state, int trackIdx);
 void handleInstrumentAY(PlaybackState* state, int trackIdx);
-void outputRegistersAY(PlaybackState* state, int trackIdx, int chipIdx, SoundChip* chip);
+void outputRegistersAY(ChipNomadState* state, int trackIdx, int chipIdx);
 void resetTrackAY(PlaybackState* state, int trackIdx);
 
-
-// Convert frequency to AY period with optimal accuracy
+// Convert frequency to AY period
 int frequencyToAYPeriod(float frequency, int clockHz);
 
 #endif

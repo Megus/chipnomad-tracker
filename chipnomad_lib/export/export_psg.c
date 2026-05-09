@@ -100,7 +100,7 @@ static int psgNext(Exporter* self) {
       fileWrite(data->fileIds[i], &frameMarker, 1);
     }
 
-    data->allTracksStopped = playbackNextFrame(&self->chipnomadState->playbackState, self->chipnomadState->chips);
+    data->allTracksStopped = playbackNextFrame(self->chipnomadState);
     framesRendered++;
   }
 
@@ -128,7 +128,7 @@ static void psgCancel(Exporter* self) {
   chipnomadDestroy(self->chipnomadState);
   for (int i = 0; i < data->numChips; i++) {
     fileClose(data->fileIds[i]);
-    
+
     char filename[1024];
     if (data->numChips > 1) {
       snprintf(filename, sizeof(filename), "%s-%d.psg", data->baseFilename, i + 1);

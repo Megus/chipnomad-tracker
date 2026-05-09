@@ -792,8 +792,9 @@ void playbackStopPreview(PlaybackState* state, int trackIdx) {
   }
 }
 
-int playbackNextFrame(PlaybackState* state, SoundChip* chips) {
-  Project* p = state->p;
+int playbackNextFrame(ChipNomadState* chipNomadState) {
+  PlaybackState *state = &chipNomadState->playbackState;
+  Project* p = &chipNomadState->project;
   int hasActiveTracks = 0;
 
   int chipIdx = 0;
@@ -870,7 +871,7 @@ int playbackNextFrame(PlaybackState* state, SoundChip* chips) {
 
   // Output registers for all chips
   for (int chipIdx = 0; chipIdx < p->chipsCount; chipIdx++) {
-    outputRegistersAY(state, chipIdx * projectGetChipTracks(p, chipIdx), chipIdx, &chips[chipIdx]);
+    outputRegistersAY(chipNomadState, chipIdx * projectGetChipTracks(p, chipIdx), chipIdx);
   }
 
   return !hasActiveTracks;

@@ -206,6 +206,11 @@ void ayumi_set_filter_quality(struct ayumi* ay, ayumi_filter_func filter_func) {
   ay->filter_func = filter_func;
 }
 
+void ayumi_set_timer_func(struct ayumi* ay, int (*timer_func)(struct ayumi* ay, void* userdata), void* timer_func_userdata) {
+  ay->timer_func = timer_func;
+  ay->timer_func_userdata = timer_func_userdata;
+}
+
 void ayumi_process(struct ayumi* ay) {
   int i;
   float y1;
@@ -226,6 +231,9 @@ void ayumi_process(struct ayumi* ay) {
       y_right[0] = y_right[1];
       y_right[1] = y_right[2];
       y_right[2] = y_right[3];
+      if (ay->timer_func) {
+        ay->timer_func(ay, ay->timer_func_userdata);
+      }
       update_mixer(ay);
       y_left[3] = ay->left;
       y_right[3] = ay->right;

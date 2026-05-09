@@ -1,14 +1,35 @@
-#include "playback.h"
+#include "chipnomad_lib.h"
 #include "playback_internal.h"
 #include "utils.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <math.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 //
 // AY-specific logic
 //
+
+int timerFunctionAY(struct SoundChip* chip, void* userdata) {
+  static int counter = 0;
+  static int vol = 15;
+
+  //ChipNomadState* state = (ChipNomadState*)userdata;
+
+  //int chipIdx = chip - state->chips;
+  int period = ((chip->regs[1] << 8) | chip->regs[0]) + 1;
+  counter++;
+  if (counter >= period) {
+    counter = 0;
+    vol ^= 15;
+  }
+
+  chip->setRegister(chip, 8, vol); // Random noise value for channel A
+
+  return 1;
+}
+
 
 void resetTrackAY(PlaybackState* state, int trackIdx) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
@@ -108,8 +129,10 @@ void handleInstrumentAY(PlaybackState* state, int trackIdx) {
   track->note.chip.ay.adsrVolume = adsrVolume;
 }
 
-void outputRegistersAY(PlaybackState* state, int trackIdx, int chipIdx, SoundChip* chip) {
-  Project* p = state->p;
+void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx) {
+  PlaybackState* state = &chipNomadState->playbackState;
+  Project* p = &chipNomadState->project;
+  SoundChip* chip = &chipNomadState->chips[chipIdx];
   int ayChannel = 0;
 
   uint8_t mixer = 0;

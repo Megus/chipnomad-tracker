@@ -5,6 +5,8 @@
 #include "chips/chips.h"
 #include "playback_fx.h"
 
+struct ChipNomadState;
+
 enum PlaybackMode {
   playbackModeNone, // For queue
   playbackModeStopped,
@@ -264,10 +266,9 @@ void playbackClearLoopRange(PlaybackState* state);
 /**
  * Advances playback by one frame
  *
- * @param state Pointer to the playback state
- * @param chips Array of sound chips to output to
+ * @param state Pointer to the ChipNomad state
  * @return 1 if all tracks have finished playing, 0 if any track is still active
  */
-int playbackNextFrame(PlaybackState* state, SoundChip* chips);
+int playbackNextFrame(struct ChipNomadState* state);
 
 #endif
