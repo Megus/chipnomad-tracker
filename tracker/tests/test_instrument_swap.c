@@ -13,7 +13,7 @@ void tearDown(void) {
 }
 
 void test_instrumentSwap_should_swap_instrument_data(void) {
-  project.instruments[1].type = instAY;
+  project.instruments[1].type = instAY1;
   strcpy(project.instruments[1].name, "Test1");
   project.instruments[1].tableSpeed = 10;
   project.instruments[1].transposeEnabled = 1;
@@ -30,7 +30,7 @@ void test_instrumentSwap_should_swap_instrument_data(void) {
   TEST_ASSERT_EQUAL(20, project.instruments[1].tableSpeed);
   TEST_ASSERT_EQUAL(0, project.instruments[1].transposeEnabled);
 
-  TEST_ASSERT_EQUAL(instAY, project.instruments[2].type);
+  TEST_ASSERT_EQUAL(instAY1, project.instruments[2].type);
   TEST_ASSERT_EQUAL_STRING("Test1", project.instruments[2].name);
   TEST_ASSERT_EQUAL(10, project.instruments[2].tableSpeed);
   TEST_ASSERT_EQUAL(1, project.instruments[2].transposeEnabled);
@@ -57,22 +57,22 @@ void test_instrumentSwap_should_swap_default_tables(void) {
 }
 
 void test_instrumentSwap_should_handle_same_instrument(void) {
-  project.instruments[1].type = instAY;
+  project.instruments[1].type = instAY1;
   strcpy(project.instruments[1].name, "Test");
 
   instrumentSwap(&project, 1, 1);
 
-  TEST_ASSERT_EQUAL(instAY, project.instruments[1].type);
+  TEST_ASSERT_EQUAL(instAY1, project.instruments[1].type);
   TEST_ASSERT_EQUAL_STRING("Test", project.instruments[1].name);
 }
 
 void test_instrumentSwap_should_handle_invalid_indices(void) {
-  project.instruments[1].type = instAY;
+  project.instruments[1].type = instAY1;
   strcpy(project.instruments[1].name, "Test");
 
   instrumentSwap(&project, 1, PROJECT_MAX_INSTRUMENTS);
 
-  TEST_ASSERT_EQUAL(instAY, project.instruments[1].type);
+  TEST_ASSERT_EQUAL(instAY1, project.instruments[1].type);
   TEST_ASSERT_EQUAL_STRING("Test", project.instruments[1].name);
 }
 

@@ -2,29 +2,15 @@
 #define __PROJECT_H__
 
 #include <stdint.h>
-
-#define PROJECT_MAX_TRACKS (10)
-#define PROJECT_MAX_LENGTH (256)
-#define PROJECT_MAX_CHAINS (255)
-#define PROJECT_MAX_PHRASES (1024)
-#define PROJECT_MAX_GROOVES (32)
-#define PROJECT_MAX_INSTRUMENTS (128)
-#define PROJECT_MAX_TABLES (255)
-#define PROJECT_MAX_CHIPS (3)
-#define PROJECT_MAX_PITCHES (254)
-#define PROJECT_INSTRUMENT_NAME_LENGTH (15)
-#define PROJECT_TITLE_LENGTH (24)
-#define PROJECT_PITCH_TABLE_TITLE_LENGTH (18)
-
-#define NOTE_OFF (254)
-#define EMPTY_VALUE_8 (255)
-#define EMPTY_VALUE_16 (32767)
+#include "project_instruments.h"
+#include "project_constants.h"
 
 // Song data structures
 
 // FX
 
 enum FX {
+  // Sequencer FX
   fxARP, // Arpeggio
   fxARC, // Arpeggio config
   fxPVB, // Pitch vibrato
@@ -47,7 +33,9 @@ enum FX {
   fxGGR, // Global groove
   fxHOP, // Hop
   fxSNG, // Song hop
-  // AY-specific FX
+
+  // AY FX
+  // AY Classic instrument (AY1):
   fxAYM, // AY Mixer settting
   fxERT, // Envelope retrigger
   fxNOI, // Noise (relative)
@@ -60,7 +48,17 @@ enum FX {
   fxEPT, // Envelope pitch offset
   fxEPL, // Envelope period L
   fxEPH, // Envelope period H
-  // Terminate
+  // AY Synth instrument (AY2):
+
+  // AY Sample instrument (AYSample):
+
+  // AY Wavetable instrument (AYWavetable):
+
+  // TODO: FM FX
+
+  // TODO: SID FX
+
+  // Total count - must be last
   fxTotalCount
 };
 
@@ -111,35 +109,6 @@ typedef struct TableRow {
 typedef struct Table {
   TableRow rows[16];
 } Table;
-
-// Instruments
-
-enum InstrumentType {
-  instNone = 0,
-  instAY = 1,
-};
-
-typedef struct InstrumentAY {
-  uint8_t veA;
-  uint8_t veD;
-  uint8_t veS;
-  uint8_t veR;
-  uint8_t autoEnvN; // 0 - no auto-env
-  uint8_t autoEnvD;
-  uint8_t defaultMixer; // Low nibble: mixer, high nibble: envelope shape
-} InstrumentAY;
-
-typedef union InstrumentChipData {
-  InstrumentAY ay;
-} InstrumentChipData;
-
-typedef struct Instrument {
-  uint8_t type; // enum InstrumentType
-  char name[PROJECT_INSTRUMENT_NAME_LENGTH + 1];
-  uint8_t tableSpeed;
-  uint8_t transposeEnabled;
-  InstrumentChipData chip;
-} Instrument;
 
 // Grooves
 
@@ -195,6 +164,7 @@ typedef struct Project {
 
   PitchTable pitchTable;
 
+  // Main project data
   uint16_t song[PROJECT_MAX_LENGTH][PROJECT_MAX_TRACKS];
   uint8_t songHighlight[PROJECT_MAX_LENGTH][PROJECT_MAX_TRACKS];
   Chain chains[PROJECT_MAX_CHAINS];
@@ -202,6 +172,9 @@ typedef struct Project {
   Groove grooves[PROJECT_MAX_GROOVES];
   Instrument instruments[PROJECT_MAX_INSTRUMENTS];
   Table tables[PROJECT_MAX_TABLES];
+
+  // Additional data for different chips
+  uint8_t ayWavetables[256][32]; // 256 wavetables with 32 4-bit values each (AY chip)
 } Project;
 
 extern char projectFileError[41];

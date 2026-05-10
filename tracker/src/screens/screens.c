@@ -34,6 +34,9 @@ void drawScreenMap() {
     gfxPrint(37, smY, "G");
   } else if (currentScreen == &screenInstrument || currentScreen == &screenInstrumentPool) {
     gfxPrint(38, smY + 2, "P");
+    gfxPrint(38, smY, "M");
+  } else if (currentScreen == &screenModulation) {
+    gfxPrint(38, smY + 2, "P");
   }
 
   // Show Settings below Song
@@ -53,6 +56,8 @@ void drawScreenMap() {
     gfxPrint(38, smY + 1, "I");
   } else if (currentScreen == &screenInstrumentPool) {
     gfxPrint(38, smY + 2, "P");
+  } else if (currentScreen == &screenModulation) {
+    gfxPrint(38, smY, "M");
   } else if (currentScreen == &screenTable) {
     gfxPrint(39, smY + 1, "T");
   } else if (currentScreen == &screenProject) {
@@ -230,32 +235,63 @@ void screenDrawOverlays(ScreenData* screen) {
 
 
 // Cursor navigation within a spreadhseet-like page
+static int isCellValid(ScreenData* screen, int col, int row) {
+  if (screen->isCellValid) return screen->isCellValid(col, row);
+  return 1;
+}
+
 static void inputCursorCommon(ScreenData* screen, int keys, int* handled, int* redrawn) {
   if (keys == keyLeft) {
-    if (screen->cursorCol > 0) screen->cursorCol--;
+    if (screen->cursorCol > 0) {
+      screen->cursorCol--;
+      // If we landed on a dead cell, move up until valid
+      while (!isCellValid(screen, screen->cursorCol, screen->cursorRow) && screen->cursorRow > 0) {
+        screen->cursorRow--;
+      }
+    }
     *handled = 1;
   } else if (keys == keyRight) {
-    if (screen->cursorCol < screen->getColumnCount(screen->cursorRow) - 1) screen->cursorCol++;
+    if (screen->cursorCol < screen->getColumnCount(screen->cursorRow) - 1) {
+      screen->cursorCol++;
+      // If we landed on a dead cell, move up until valid
+      while (!isCellValid(screen, screen->cursorCol, screen->cursorRow) && screen->cursorRow > 0) {
+        screen->cursorRow--;
+      }
+    }
     *handled = 1;
   } else if (keys == keyUp) {
-    if (screen->cursorRow > 0) screen->cursorRow--;
+    int origRow = screen->cursorRow;
+    while (screen->cursorRow > 0) {
+      screen->cursorRow--;
+      int columns = screen->getColumnCount(screen->cursorRow);
+      if (screen->cursorCol >= columns) screen->cursorCol = columns - 1;
+      if (isCellValid(screen, screen->cursorCol, screen->cursorRow)) break;
+    }
+    if (!isCellValid(screen, screen->cursorCol, screen->cursorRow)) {
+      screen->cursorRow = origRow; // Can't move, stay put
+    }
     if (screen->cursorRow < screen->topRow) {
-      screen->topRow--;
+      screen->topRow = screen->cursorRow;
       screenFullRedraw(screen);
       *redrawn = 1;
     }
-    int columns = screen->getColumnCount(screen->cursorRow);
-    if (screen->cursorCol >= columns) screen->cursorCol = columns - 1;
     *handled = 1;
   } else if (keys == keyDown) {
-    if (screen->cursorRow < screen->rows - 1) screen->cursorRow++;
+    int origRow = screen->cursorRow;
+    while (screen->cursorRow < screen->rows - 1) {
+      screen->cursorRow++;
+      int columns = screen->getColumnCount(screen->cursorRow);
+      if (screen->cursorCol >= columns) screen->cursorCol = columns - 1;
+      if (isCellValid(screen, screen->cursorCol, screen->cursorRow)) break;
+    }
+    if (!isCellValid(screen, screen->cursorCol, screen->cursorRow)) {
+      screen->cursorRow = origRow; // Can't move, stay put
+    }
     if (screen->cursorRow >= screen->topRow + 16) {
-      screen->topRow++;
+      screen->topRow = screen->cursorRow - 15;
       screenFullRedraw(screen);
       *redrawn = 1;
     }
-    int columns = screen->getColumnCount(screen->cursorRow);
-    if (screen->cursorCol >= columns) screen->cursorCol = columns - 1;
     *handled = 1;
   }
 }

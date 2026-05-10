@@ -58,15 +58,18 @@ char* instrumentName(Project* project, uint8_t instrument) {
 // Instrument type name
 char* instrumentTypeName(uint8_t type) {
   switch (type) {
-    case instAY:
-    return "AY";
-    break;
+    case instAY1:
+      return "AY Classic";
+    case instAY2:
+      return "AY Plus";
+    case instAYSample:
+      return "AY Sample";
+    case instAYWavetable:
+      return "AY Wavetable";
     case instNone:
-    return "None";
-    break;
+      return "None";
     default:
-    return "";
-    break;
+      return "";
   }
 }
 

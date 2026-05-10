@@ -121,12 +121,15 @@ static ScreenData screenInstrumentNone = {
 
 static ScreenData* instrumentScreen(void) {
   ScreenData* data = &screenInstrumentNone;
-  if (chipnomadState->project.instruments[cInstrument].type == instAY) {
-    data = &screenInstrumentAY;
+  switch (chipnomadState->project.instruments[cInstrument].type) {
+    case instAY1:         data = &screenInstrumentAY; break;
+    case instAY2:         data = &screenInstrumentAY2; break;
+    case instAYSample:    data = &screenInstrumentAYSample; break;
+    case instAYWavetable: data = &screenInstrumentAYWavetable; break;
+    default: break;
   }
   data->drawRowHeader = drawRowHeader;
   data->drawColHeader = drawColHeader;
-
   return data;
 }
 
@@ -192,10 +195,10 @@ void instrumentCommonDrawCursor(int col, int row) {
     gfxCursor(8, 2, strlen(instrumentTypeName(chipnomadState->project.instruments[cInstrument].type)));
   } else if (row == 0 && col == 1) {
     // Load
-    gfxCursor(17, 2, 4);
+    gfxCursor(23, 2, 4);
   } else if (row == 0 && col == 2) {
     // Save
-    gfxCursor(23, 2, 4);
+    gfxCursor(29, 2, 4);
   } else if (row == 1) {
     // Instrument name
     gfxCursor(8 + col, 3, 1);
@@ -219,10 +222,13 @@ void instrumentCommonDrawField(int col, int row, int state) {
     gfxPrint(8, 2, instrumentTypeName(chipnomadState->project.instruments[cInstrument].type));
   } else if (row == 0 && col == 1) {
     // Load
-    gfxPrint(17, 2, "Load");
+    gfxPrint(23, 2, "Load");
   } else if (row == 0 && col == 2) {
     // Save
-    gfxPrint(23, 2, "Save");
+    gfxPrint(29, 2, "Save");
+  } else if (row == 0 && col == 3) {
+    // Save
+    gfxPrint(29, 2, "Save");
   } else if (row == 1) {
     // Instrument name
     gfxClearRect(8, 3, PROJECT_INSTRUMENT_NAME_LENGTH, 1);
@@ -241,13 +247,22 @@ int instrumentCommonOnEdit(int col, int row, enum CellEditAction action) {
   if (row == 0 && col == 0) {
     // Instrument type
     uint8_t oldType = chipnomadState->project.instruments[cInstrument].type;
-    handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].type, 1, 0, 1);
+    handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].type, 1, 0, 4);
     if (oldType != chipnomadState->project.instruments[cInstrument].type) {
       switch (chipnomadState->project.instruments[cInstrument].type) {
         case instNone:
           break;
-        case instAY:
+        case instAY1:
           initAYInstrument(cInstrument);
+          break;
+        case instAY2:
+          initAY2Instrument(cInstrument);
+          break;
+        case instAYSample:
+          initAYSampleInstrument(cInstrument);
+          break;
+        case instAYWavetable:
+          initAYWavetableInstrument(cInstrument);
           break;
       }
       fullRedraw();
@@ -305,6 +320,10 @@ static int inputScreenNavigation(int keys, int tapCount) {
   } else if (keys == (keyDown | keyShift)) {
     // To Instrument Pool screen
     screenSetup(&screenInstrumentPool, cInstrument);
+    return 1;
+  } else if (keys == (keyUp | keyShift)) {
+    // To Modulation screen
+    screenSetup(&screenModulation, cInstrument);
     return 1;
   } else if (keys == (keyOpt | keyLeft)) {
     // To the previous instrument

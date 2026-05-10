@@ -48,7 +48,7 @@ void tearDown(void) {
 
 // Helper: set up a simple instrument
 static void setInstrument(int idx, uint8_t veA, uint8_t veD, uint8_t veS, uint8_t veR) {
-  state->project.instruments[idx].type = instAY;
+  state->project.instruments[idx].type = instAY1;
   state->project.instruments[idx].tableSpeed = 1;
   state->project.instruments[idx].transposeEnabled = 1;
   state->project.instruments[idx].chip.ay.veA = veA;
@@ -61,7 +61,7 @@ static void setInstrument(int idx, uint8_t veA, uint8_t veD, uint8_t veS, uint8_
 // Helper: advance playback by N frames
 static void advanceFrames(int n) {
   for (int i = 0; i < n; i++) {
-    playbackNextFrame(&state->playbackState, state->chips);
+    playbackNextFrame(state);
   }
 }
 

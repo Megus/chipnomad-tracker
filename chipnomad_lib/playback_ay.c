@@ -72,7 +72,7 @@ void noteOffInstrumentAY(PlaybackState* state, int trackIdx) {
   track->note.chip.ay.adsrCounter = 0;
 }
 
-void handleInstrumentAY(PlaybackState* state, int trackIdx) {
+void handleInstrumentAY1(PlaybackState* state, int trackIdx) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
   Project* p = state->p;
 
@@ -128,6 +128,19 @@ void handleInstrumentAY(PlaybackState* state, int trackIdx) {
   }
   track->note.chip.ay.adsrVolume = adsrVolume;
 }
+
+void handleInstrumentAY2(PlaybackState* state, int trackIdx) {
+  // TODO
+}
+
+void handleInstrumentAYSample(PlaybackState* state, int trackIdx) {
+  // TODO
+}
+
+void handleInstrumentAYWavetable(PlaybackState* state, int trackIdx) {
+  // TODO
+}
+
 
 void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx) {
   PlaybackState* state = &chipNomadState->playbackState;

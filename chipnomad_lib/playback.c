@@ -476,8 +476,17 @@ static void nextFrame(PlaybackState* state, int trackIdx, int chipIdx) {
   // Instrument
   enum InstrumentType instType = (track->note.instrument != EMPTY_VALUE_8) ? p->instruments[track->note.instrument].type : instNone;
   switch (instType) {
-  case instAY:
-    handleInstrumentAY(state, trackIdx);
+  case instAY1:
+    handleInstrumentAY1(state, trackIdx);
+    break;
+  case instAY2:
+    handleInstrumentAY2(state, trackIdx);
+    break;
+  case instAYSample:
+    handleInstrumentAYSample(state, trackIdx);
+    break;
+  case instAYWavetable:
+    handleInstrumentAYWavetable(state, trackIdx);
     break;
   case instNone:
     break;

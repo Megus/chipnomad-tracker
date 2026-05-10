@@ -59,6 +59,7 @@ typedef struct AppSettings {
   char themePath[PATH_LENGTH + 1];
   char fontPath[PATH_LENGTH + 1];
   char fontFolderPath[PATH_LENGTH + 1];
+  char samplePath[PATH_LENGTH + 1];
 } AppSettings;
 
 extern AppSettings appSettings;

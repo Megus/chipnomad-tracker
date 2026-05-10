@@ -4,7 +4,7 @@
 #include "misc.h"
 
 void initAYInstrument(int instrument) {
-  chipnomadState->project.instruments[instrument].type = instAY;
+  chipnomadState->project.instruments[instrument].type = instAY1;
   chipnomadState->project.instruments[instrument].name[0] = 0;
   chipnomadState->project.instruments[instrument].tableSpeed = 1;
   chipnomadState->project.instruments[instrument].transposeEnabled = 1;

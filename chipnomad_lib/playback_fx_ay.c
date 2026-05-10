@@ -16,6 +16,7 @@ static void handleFX_AYM(PlaybackState* state, PlaybackTrackState* track, int tr
 static void handleFX_NOA(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   fx->isOn = 0; // Atomic effect
   if (fx->fxValue == EMPTY_VALUE_8) {
+    // Bypass setting noise period
     track->note.chip.ay.noiseBase = EMPTY_VALUE_8;
   } else {
     track->note.chip.ay.noiseBase = fx->fxValue & 0x1f;

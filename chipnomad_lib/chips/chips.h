@@ -2,7 +2,6 @@
 #define __CHIPS_H__
 
 #include <stdint.h>
-#include <chips.h>
 #include "../project.h"
 
 typedef struct SoundChip {

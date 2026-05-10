@@ -669,7 +669,7 @@ static int saveInstrument(int fileId, int idx, Instrument* instrument) {
   filePrintf(fileId, "- Table speed: %hhu\n", instrument->tableSpeed);
   filePrintf(fileId, "- Transpose: %hhu\n", instrument->transposeEnabled);
 
-  if (instrument->type == instAY) {
+  if (instrument->type == instAY1) {
     filePrintf(fileId, "- Volume envelope: %hhu,%hhu,%hhu,%hhu\n",
       instrument->chip.ay.veA, instrument->chip.ay.veD,
       instrument->chip.ay.veS, instrument->chip.ay.veR);

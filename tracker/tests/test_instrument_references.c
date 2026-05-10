@@ -13,7 +13,7 @@ void tearDown(void) {
 }
 
 void test_instrumentSwap_should_update_phrase_references(void) {
-  project.instruments[1].type = instAY;
+  project.instruments[1].type = instAY1;
   strcpy(project.instruments[1].name, "Test1");
   project.instruments[2].type = instNone;
   strcpy(project.instruments[2].name, "Test2");
@@ -27,7 +27,7 @@ void test_instrumentSwap_should_update_phrase_references(void) {
 
   TEST_ASSERT_EQUAL(instNone, project.instruments[1].type);
   TEST_ASSERT_EQUAL_STRING("Test2", project.instruments[1].name);
-  TEST_ASSERT_EQUAL(instAY, project.instruments[2].type);
+  TEST_ASSERT_EQUAL(instAY1, project.instruments[2].type);
   TEST_ASSERT_EQUAL_STRING("Test1", project.instruments[2].name);
 
   TEST_ASSERT_EQUAL(2, project.phrases[0].rows[0].instrument);

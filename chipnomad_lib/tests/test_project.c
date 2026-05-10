@@ -57,7 +57,7 @@ void test_instrumentIsEmpty_true_for_none(void) {
 }
 
 void test_instrumentIsEmpty_false_for_ay(void) {
-  p.instruments[0].type = instAY;
+  p.instruments[0].type = instAY1;
   TEST_ASSERT_FALSE(instrumentIsEmpty(&p, 0));
 }
 
@@ -160,7 +160,7 @@ void test_chainClear(void) {
 }
 
 void test_instrumentClear(void) {
-  p.instruments[0].type = instAY;
+  p.instruments[0].type = instAY1;
   strcpy(p.instruments[0].name, "Test");
   instrumentClear(&p.instruments[0]);
   TEST_ASSERT_TRUE(instrumentIsEmpty(&p, 0));

@@ -95,27 +95,27 @@ static int calculateSemitonesFromOffset(int offset, int referenceNoteIdx, int* o
   int currentNote = referenceNoteIdx;
   int direction = (offset > 0) ? -1 : 1;
   int absOffset = abs(offset);
-  
+
   while (currentNote >= 0 && currentNote < chipnomadState->project.pitchTable.length - 1) {
     int nextNote = currentNote + direction;
     if (nextNote < 0 || nextNote >= chipnomadState->project.pitchTable.length) break;
-    
+
     int stepSize = abs(chipnomadState->project.pitchTable.values[currentNote] -
       chipnomadState->project.pitchTable.values[nextNote]);
-    
+
     if (accumulatedPeriod + stepSize > absOffset) break;
-    
+
     accumulatedPeriod += stepSize;
     semitones++;
     currentNote = nextNote;
   }
-  
+
   semitones *= direction;
-  
+
   if (outAccumulatedPeriod != NULL) {
     *outAccumulatedPeriod = direction * accumulatedPeriod;
   }
-  
+
   return semitones;
 }
 
@@ -209,7 +209,7 @@ static void parseVTSLine(const char* line, TableRow* row) {
 }
 
 static void initAYInstrument(Instrument* inst) {
-  inst->type = instAY;
+  inst->type = instAY1;
   inst->tableSpeed = 1;
   inst->transposeEnabled = 1;
 
@@ -254,9 +254,9 @@ static int findLoopMarker(const char* line) {
 static void parsePitchOffset(const char* line, size_t lineLen, int* offset, int* offsetType) {
   *offset = 0;
   *offsetType = 0;
-  
+
   if (lineLen < VTS_COL_PITCH + 5) return;
-  
+
   char pitchChar = line[VTS_COL_PITCH];
   if (pitchChar == '+' || pitchChar == '-') {
     *offset = parseVTSOffset(&line[VTS_COL_PITCH]);
@@ -267,7 +267,7 @@ static void parsePitchOffset(const char* line, size_t lineLen, int* offset, int*
   }
 }
 
-static void processVTSLine(Table* table, const char* line, int rowIdx, 
+static void processVTSLine(Table* table, const char* line, int rowIdx,
                            int* loopRow, int* vtsOffsets, int* vtsOffsetTypes) {
   size_t lineLen = strlen(line);
   if (lineLen < 3) return;
@@ -280,7 +280,7 @@ static void processVTSLine(Table* table, const char* line, int rowIdx,
   parseVTSLine(line, &table->rows[rowIdx]);
 }
 
-static void finalizeVTSInstrument(Table* table, int rowCount, int loopRow, 
+static void finalizeVTSInstrument(Table* table, int rowCount, int loopRow,
                                   int* vtsOffsets, int* vtsOffsetTypes) {
   int referenceNoteIdx = findReferenceNote();
   convertVTSPitchOffsets(table, vtsOffsets, vtsOffsetTypes, rowCount, referenceNoteIdx);

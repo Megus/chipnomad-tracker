@@ -26,7 +26,10 @@ void registerFXHandlers_AY(void);
 int timerFunctionAY(struct SoundChip* chip, void* userdata);
 void setupInstrumentAY(PlaybackState* state, int trackIdx);
 void noteOffInstrumentAY(PlaybackState* state, int trackIdx);
-void handleInstrumentAY(PlaybackState* state, int trackIdx);
+void handleInstrumentAY1(PlaybackState* state, int trackIdx);
+void handleInstrumentAY2(PlaybackState* state, int trackIdx);
+void handleInstrumentAYSample(PlaybackState* state, int trackIdx);
+void handleInstrumentAYWavetable(PlaybackState* state, int trackIdx);
 void outputRegistersAY(ChipNomadState* state, int trackIdx, int chipIdx);
 void resetTrackAY(PlaybackState* state, int trackIdx);
 

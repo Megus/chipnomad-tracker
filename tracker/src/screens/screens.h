@@ -60,6 +60,7 @@ typedef struct ScreenData {
   int (*onEdit)(int col, int row, enum CellEditAction action);
   int (*onKey)(enum Key key, int isDown);  // Optional: handle keys before standard processing
   int (*onRawInput)(int keyCode, int isKeyboard, int isDown);  // Optional: capture raw SDL input
+  int (*isCellValid)(int col, int row);  // Optional: return 0 for dead cells that cursor should skip
   LoopRange (*getLoopRange)(void);  // Optional: return loop range for ranged playback
 } ScreenData;
 
@@ -76,6 +77,7 @@ extern const AppScreen screenPhrase;
 extern const AppScreen screenGroove;
 extern const AppScreen screenInstrument;
 extern const AppScreen screenInstrumentPool;
+extern const AppScreen screenModulation;
 extern const AppScreen screenTable;
 extern const AppScreen screenExport;
 extern const AppScreen screenManage;
@@ -110,6 +112,8 @@ int edit16withLimit(enum CellEditAction action, uint16_t* value, uint16_t* lastV
 int edit8withLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep, uint8_t max);
 int edit8noLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep);
 int edit8noLast(enum CellEditAction action, uint8_t* value, uint8_t bigStep, uint8_t min, uint8_t max);
+int editSigned16(enum CellEditAction action, int16_t* value, int16_t bigStep, int16_t min, int16_t max);
+int editSigned8(enum CellEditAction action, int8_t* value, int8_t bigStep, int8_t min, int8_t max);
 int edit16withOverflow(enum CellEditAction action, uint16_t* value, uint16_t bigStep, uint16_t min, uint16_t max);
 int applyMultiEdit(int startCol, int startRow, int endCol, int endRow, enum CellEditAction action, int (*editFunc)(int col, int row, enum CellEditAction action));
 int applyPhraseRotation(int phraseIdx, int startRow, int endRow, int direction);
