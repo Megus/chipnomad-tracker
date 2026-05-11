@@ -23,6 +23,9 @@ void configInit(VisualizerConfig* config) {
   config->volumeColor = (SDL_Color){255, 0, 255, 255};
   config->fxColor = (SDL_Color){255, 255, 255, 255};
   config->dimmedColor = (SDL_Color){64, 64, 64, 255};
+  config->phraseRenderMode = PHRASE_RENDER_MODE_FULL;
+  config->playerMode = PLAYER_MODE_PHRASE;
+  config->scrollRows = 32;
 }
 
 void configLoad(VisualizerConfig* config, const char* filename) {
@@ -67,6 +70,23 @@ void configLoad(VisualizerConfig* config, const char* filename) {
       config->fxColor = parseColor(value);
     } else if (strcmp(key, "dimmedColor") == 0) {
       config->dimmedColor = parseColor(value);
+    } else if (strcmp(key, "phraseRenderMode") == 0) {
+      if (strcmp(value, "compact") == 0) {
+        config->phraseRenderMode = PHRASE_RENDER_MODE_COMPACT;
+      } else if (strcmp(value, "medium") == 0) {
+        config->phraseRenderMode = PHRASE_RENDER_MODE_MEDIUM;
+      } else {
+        config->phraseRenderMode = PHRASE_RENDER_MODE_FULL;
+      }
+    } else if (strcmp(key, "playerMode") == 0) {
+      if (strcmp(value, "scroll") == 0) {
+        config->playerMode = PLAYER_MODE_SCROLL;
+      } else {
+        config->playerMode = PLAYER_MODE_PHRASE;
+      }
+    } else if (strcmp(key, "scrollRows") == 0) {
+      config->scrollRows = atoi(value);
+      if (config->scrollRows < 1) config->scrollRows = 32;
     }
   }
 

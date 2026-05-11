@@ -1,0 +1,14 @@
+windowWidth: 1920
+windowHeight: 1080
+fontSize: 28
+fontPath: fonts/Fragment_Mono/FragmentMono-Regular.ttf
+backgroundColor: 0x000000
+currentRowColor: 0xffff00
+noteColor: 0xffffff
+instrumentColor: 0x00ffff
+volumeColor: 0x00ff00
+fxColor: 0x00ffff
+dimmedColor: 0x404040
+playerMode: scroll
+scrollRows: 24
+phraseRenderMode: medium
