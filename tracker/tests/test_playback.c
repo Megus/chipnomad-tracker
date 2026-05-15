@@ -51,10 +51,11 @@ static void setInstrument(int idx, uint8_t veA, uint8_t veD, uint8_t veS, uint8_
   state->project.instruments[idx].type = instAY1;
   state->project.instruments[idx].tableSpeed = 1;
   state->project.instruments[idx].transposeEnabled = 1;
-  state->project.instruments[idx].chip.ay.veA = veA;
-  state->project.instruments[idx].chip.ay.veD = veD;
-  state->project.instruments[idx].chip.ay.veS = veS;
-  state->project.instruments[idx].chip.ay.veR = veR;
+  state->project.instruments[idx].chip.ay.volumeEnvelope.type = modADSR;
+  state->project.instruments[idx].chip.ay.volumeEnvelope.p1 = veA;  // Attack
+  state->project.instruments[idx].chip.ay.volumeEnvelope.p2 = veD;  // Decay
+  state->project.instruments[idx].chip.ay.volumeEnvelope.p3 = veS;  // Sustain
+  state->project.instruments[idx].chip.ay.volumeEnvelope.p4 = veR;  // Release
   state->project.instruments[idx].chip.ay.defaultMixer = 0x01; // Tone only
 }
 

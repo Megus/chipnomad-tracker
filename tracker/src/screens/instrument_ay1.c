@@ -8,10 +8,13 @@ void initAYInstrument(int instrument) {
   chipnomadState->project.instruments[instrument].name[0] = 0;
   chipnomadState->project.instruments[instrument].tableSpeed = 1;
   chipnomadState->project.instruments[instrument].transposeEnabled = 1;
-  chipnomadState->project.instruments[instrument].chip.ay.veA = 0;
-  chipnomadState->project.instruments[instrument].chip.ay.veD = 0;
-  chipnomadState->project.instruments[instrument].chip.ay.veS = 15;
-  chipnomadState->project.instruments[instrument].chip.ay.veR = 0;
+  chipnomadState->project.instruments[instrument].chip.ay.volumeEnvelope.type = modADSR;
+  chipnomadState->project.instruments[instrument].chip.ay.volumeEnvelope.destination = 0;
+  chipnomadState->project.instruments[instrument].chip.ay.volumeEnvelope.amount = 0;
+  chipnomadState->project.instruments[instrument].chip.ay.volumeEnvelope.p1 = 0;  // A
+  chipnomadState->project.instruments[instrument].chip.ay.volumeEnvelope.p2 = 0;  // D
+  chipnomadState->project.instruments[instrument].chip.ay.volumeEnvelope.p3 = 15; // S
+  chipnomadState->project.instruments[instrument].chip.ay.volumeEnvelope.p4 = 0;  // R
   chipnomadState->project.instruments[instrument].chip.ay.autoEnvN = 0;
   chipnomadState->project.instruments[instrument].chip.ay.autoEnvD = 0;
 }
@@ -111,13 +114,13 @@ static void drawField(int col, int row, int state) {
   } else if (row == 5 && col == 0) {
     gfxPrintf(8, 8, "%X %s", envShape, getEnvelopeShapeASCII(envShape));
   } else if (row == 6 && col == 0) {
-    gfxPrint(8, 11, byteToHex(chipnomadState->project.instruments[cInstrument].chip.ay.veA));
+    gfxPrint(8, 11, byteToHex(chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p1));  // A
   } else if (row == 7 && col == 0) {
-    gfxPrint(8, 12, byteToHex(chipnomadState->project.instruments[cInstrument].chip.ay.veD));
+    gfxPrint(8, 12, byteToHex(chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p2));  // D
   } else if (row == 8 && col == 0) {
-    gfxPrint(8, 13, byteToHex(chipnomadState->project.instruments[cInstrument].chip.ay.veS));
+    gfxPrint(8, 13, byteToHex(chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p3));  // S
   } else if (row == 9 && col == 0) {
-    gfxPrint(8, 14, byteToHex(chipnomadState->project.instruments[cInstrument].chip.ay.veR));
+    gfxPrint(8, 14, byteToHex(chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p4));  // R
   } else if (row == 4 && col == 1) {
     gfxPrintf(26, 7, isAutoEnvEnabled ? "On " : "Off");
     if (!isAutoEnvEnabled) gfxPrint(26, 8, "   ");
@@ -158,13 +161,13 @@ static int onEdit(int col, int row, enum CellEditAction action) {
         *defaultMixer = (*defaultMixer & 0x0F) | (envShape << 4);
       }
     } else if (row == 6) {
-      handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].chip.ay.veA, 16, 0, 255);
+      handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p1, 16, 0, 255);  // A
     } else if (row == 7) {
-      handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].chip.ay.veD, 16, 0, 255);
+      handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p2, 16, 0, 255);  // D
     } else if (row == 8) {
-      handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].chip.ay.veS, 1, 0, 15);
+      handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p3, 1, 0, 15);   // S
     } else if (row == 9) {
-      handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].chip.ay.veR, 16, 0, 255);
+      handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p4, 16, 0, 255);  // R
     }
   } else if (col == 1) {
     if (row == 4) {

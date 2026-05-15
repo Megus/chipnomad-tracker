@@ -55,10 +55,7 @@ typedef struct Modulation {
 // AY Instruments
 
 typedef struct InstrumentAY1 {
-  uint8_t veA;
-  uint8_t veD;
-  uint8_t veS;
-  uint8_t veR;
+  Modulation volumeEnvelope;  // ADSR envelope as modulation
   uint8_t autoEnvN; // 0 - no auto-env
   uint8_t autoEnvD;
   uint8_t defaultMixer; // Low nibble: mixer, high nibble: envelope shape

@@ -12,9 +12,13 @@ static int loadInstrumentAY1Legacy(int fileId, Instrument* instrument) {
     if (line[0] == '#') return 0;
 
     if (strncmp(line, "- Volume envelope: ", 19) == 0) {
+      // Read ADSR values into modulation struct
+      Modulation* ve = &instrument->chip.ay.volumeEnvelope;
+      ve->type = modADSR;
+      ve->destination = 0;  // Volume (will be defined properly later)
+      ve->amount = 0;       // Not used for ADSR
       sscanf(line, "- Volume envelope: %hhu,%hhu,%hhu,%hhu",
-        &instrument->chip.ay.veA, &instrument->chip.ay.veD,
-        &instrument->chip.ay.veS, &instrument->chip.ay.veR);
+        &ve->p1, &ve->p2, &ve->p3, &ve->p4);  // A, D, S, R
     } else if (strncmp(line, "- Auto envelope: ", 17) == 0) {
       sscanf(line, "- Auto envelope: %hhu,%hhu",
         &instrument->chip.ay.autoEnvN, &instrument->chip.ay.autoEnvD);
@@ -33,9 +37,13 @@ static int loadInstrumentAY1(int fileId, Instrument* instrument) {
     if (line[0] == '#') return 0;
 
     if (strncmp(line, "- Volume envelope: ", 19) == 0) {
+      // Read ADSR values into modulation struct
+      Modulation* ve = &instrument->chip.ay.volumeEnvelope;
+      ve->type = modADSR;
+      ve->destination = 0;  // Volume (will be defined properly later)
+      ve->amount = 0;       // Not used for ADSR
       sscanf(line, "- Volume envelope: %hhu,%hhu,%hhu,%hhu",
-        &instrument->chip.ay.veA, &instrument->chip.ay.veD,
-        &instrument->chip.ay.veS, &instrument->chip.ay.veR);
+        &ve->p1, &ve->p2, &ve->p3, &ve->p4);  // A, D, S, R
     } else if (strncmp(line, "- Auto envelope: ", 17) == 0) {
       sscanf(line, "- Auto envelope: %hhu,%hhu",
         &instrument->chip.ay.autoEnvN, &instrument->chip.ay.autoEnvD);
@@ -275,9 +283,10 @@ int instrumentLoadData(int fileId, Instrument* instrument, Project* p) {
 
 // Save AY1 instrument data
 static int saveInstrumentAY1(int fileId, Instrument* instrument) {
+  // Save volume envelope as ADSR values (for backward compatibility in file format)
+  Modulation* ve = &instrument->chip.ay.volumeEnvelope;
   filePrintf(fileId, "- Volume envelope: %hhu,%hhu,%hhu,%hhu\n",
-    instrument->chip.ay.veA, instrument->chip.ay.veD,
-    instrument->chip.ay.veS, instrument->chip.ay.veR);
+    ve->p1, ve->p2, ve->p3, ve->p4);  // A, D, S, R
   filePrintf(fileId, "- Auto envelope: %hhd,%hhd\n",
     instrument->chip.ay.autoEnvN, instrument->chip.ay.autoEnvD);
   filePrintf(fileId, "- Default mixer: %02X\n", instrument->chip.ay.defaultMixer);

@@ -88,17 +88,17 @@ void handleInstrumentAY1(PlaybackState* state, int trackIdx) {
 
     // Sustain phase
     if (track->note.chip.ay.adsrStep == 2) {
-      adsrVolume = p->instruments[track->note.instrument].chip.ay.veS;
+      adsrVolume = p->instruments[track->note.instrument].chip.ay.volumeEnvelope.p3;  // S
       break;
     }
 
     int duration = 0;
     // Attack
-    if (track->note.chip.ay.adsrStep == 0) duration = p->instruments[track->note.instrument].chip.ay.veA;
+    if (track->note.chip.ay.adsrStep == 0) duration = p->instruments[track->note.instrument].chip.ay.volumeEnvelope.p1;  // A
     // Decay
-    else if (track->note.chip.ay.adsrStep == 1) duration = p->instruments[track->note.instrument].chip.ay.veD;
+    else if (track->note.chip.ay.adsrStep == 1) duration = p->instruments[track->note.instrument].chip.ay.volumeEnvelope.p2;  // D
     // Release
-    else if (track->note.chip.ay.adsrStep == 3) duration = p->instruments[track->note.instrument].chip.ay.veR;
+    else if (track->note.chip.ay.adsrStep == 3) duration = p->instruments[track->note.instrument].chip.ay.volumeEnvelope.p4;  // R
 
     if (duration == 0 || track->note.chip.ay.adsrCounter >= duration) {
       // Move to the next ADSR step
@@ -113,7 +113,7 @@ void handleInstrumentAY1(PlaybackState* state, int trackIdx) {
         // Decay to sustain
         if (track->note.chip.ay.adsrStep == 1) {
           track->note.chip.ay.adsrFrom = 15;
-          track->note.chip.ay.adsrTo = p->instruments[track->note.instrument].chip.ay.veS;
+          track->note.chip.ay.adsrTo = p->instruments[track->note.instrument].chip.ay.volumeEnvelope.p3;  // S
         }
       }
     } else {

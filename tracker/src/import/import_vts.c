@@ -213,10 +213,11 @@ static void initAYInstrument(Instrument* inst) {
   inst->tableSpeed = 1;
   inst->transposeEnabled = 1;
 
-  inst->chip.ay.veA = 0;
-  inst->chip.ay.veD = 0;
-  inst->chip.ay.veS = 15;
-  inst->chip.ay.veR = 0;
+  inst->chip.ay.volumeEnvelope.type = modADSR;
+  inst->chip.ay.volumeEnvelope.p1 = 0;  // Attack
+  inst->chip.ay.volumeEnvelope.p2 = 0;  // Decay
+  inst->chip.ay.volumeEnvelope.p3 = 15; // Sustain
+  inst->chip.ay.volumeEnvelope.p4 = 0;  // Release
   inst->chip.ay.autoEnvN = 0;
   inst->chip.ay.autoEnvD = 0;
 }
