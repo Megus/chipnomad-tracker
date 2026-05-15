@@ -7,11 +7,13 @@ LIB_DIR = ../chipnomad_lib
 TRACKER_DIR = src
 UNITY_DIR = external/unity
 MOCK_DIR = tests/mocks
+TEST_DIR = tests
 
 # Include paths
 INCLUDES = -I$(UNITY_DIR) \
            -I$(LIB_DIR) \
            -I$(LIB_DIR)/corelib \
+           -I$(LIB_DIR)/corelib_file_stdio \
            -I$(TRACKER_DIR) \
            -I$(TRACKER_DIR)/corelib \
            -I$(TRACKER_DIR)/screens \
@@ -25,6 +27,8 @@ MOCK_SRC = $(wildcard $(MOCK_DIR)/*.c)
 
 # Library sources needed by tests
 LIB_SRC = $(LIB_DIR)/project.c \
+          $(LIB_DIR)/project_io.c \
+          $(LIB_DIR)/project_instruments_io.c \
           $(LIB_DIR)/utils.c
 
 # Full library sources needed by playback tests
@@ -41,34 +45,38 @@ TRACKER_SRC = $(TRACKER_DIR)/project_utils.c
 # Screen sources needed by edit_common tests
 EDIT_COMMON_SRC = $(TRACKER_DIR)/screens/edit_common.c
 
+# Real file system implementation
+REAL_FILE_SRC = $(LIB_DIR)/corelib_file_stdio/corelib_file_stdio.c
+
 # Build directory
 BUILD = build/test
 
-# Discover tests from both locations
-LIB_TESTS = $(wildcard $(LIB_DIR)/tests/test_*.c)
-TRACKER_TESTS = $(wildcard tests/test_*.c)
+# All test files
+ALL_TESTS = $(wildcard $(TEST_DIR)/test_*.c)
 
 # Test executables
-LIB_TEST_BINS = $(patsubst $(LIB_DIR)/tests/test_%.c,$(BUILD)/test_lib_%,$(LIB_TESTS))
-TRACKER_TEST_BINS = $(patsubst tests/test_%.c,$(BUILD)/test_%,$(TRACKER_TESTS))
-ALL_BINS = $(LIB_TEST_BINS) $(TRACKER_TEST_BINS)
+ALL_BINS = $(patsubst $(TEST_DIR)/test_%.c,$(BUILD)/test_%,$(ALL_TESTS))
 
 all: $(ALL_BINS)
 
-# Library tests: lib sources + unity + mocks
-$(BUILD)/test_lib_%: $(LIB_DIR)/tests/test_%.c $(LIB_SRC) $(UNITY_SRC) $(MOCK_SRC) | $(BUILD)
-	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIB_SRC) $(UNITY_SRC) $(MOCK_SRC) -lm
-
 # Playback tests need the full playback engine + pitch table utils
-$(BUILD)/test_lib_playback: $(LIB_DIR)/tests/test_playback.c $(LIB_PLAYBACK_SRC) $(TRACKER_DIR)/pitch_table_utils.c $(UNITY_SRC) $(MOCK_SRC) | $(BUILD)
+$(BUILD)/test_playback: $(TEST_DIR)/test_playback.c $(LIB_PLAYBACK_SRC) $(TRACKER_DIR)/pitch_table_utils.c $(UNITY_SRC) $(MOCK_SRC) | $(BUILD)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIB_PLAYBACK_SRC) $(TRACKER_DIR)/pitch_table_utils.c $(UNITY_SRC) $(filter-out $(MOCK_DIR)/pitch_table_utils_mock.c,$(MOCK_SRC)) -lm
 
+# Project I/O tests use real file system (not mocked)
+$(BUILD)/test_project_io: $(TEST_DIR)/test_project_io.c $(LIB_SRC) $(REAL_FILE_SRC) $(UNITY_SRC) | $(BUILD)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIB_SRC) $(REAL_FILE_SRC) $(UNITY_SRC) -lm
+
+# Project tests use mocks
+$(BUILD)/test_project: $(TEST_DIR)/test_project.c $(LIB_SRC) $(UNITY_SRC) $(MOCK_SRC) | $(BUILD)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIB_SRC) $(UNITY_SRC) $(MOCK_SRC) -lm
+
 # Edit common tests: lib + edit_common + unity + mocks
-$(BUILD)/test_edit_common: tests/test_edit_common.c $(LIB_SRC) $(EDIT_COMMON_SRC) $(UNITY_SRC) $(MOCK_SRC) | $(BUILD)
+$(BUILD)/test_edit_common: $(TEST_DIR)/test_edit_common.c $(LIB_SRC) $(EDIT_COMMON_SRC) $(UNITY_SRC) $(MOCK_SRC) | $(BUILD)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIB_SRC) $(EDIT_COMMON_SRC) $(UNITY_SRC) $(MOCK_SRC) -lm
 
 # Tracker tests: lib + tracker sources + unity + mocks
-$(BUILD)/test_%: tests/test_%.c $(LIB_SRC) $(TRACKER_SRC) $(UNITY_SRC) $(MOCK_SRC) | $(BUILD)
+$(BUILD)/test_%: $(TEST_DIR)/test_%.c $(LIB_SRC) $(TRACKER_SRC) $(UNITY_SRC) $(MOCK_SRC) | $(BUILD)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIB_SRC) $(TRACKER_SRC) $(UNITY_SRC) $(MOCK_SRC) -lm
 
 $(BUILD):

@@ -1,0 +1,36 @@
+# ChipNomad Tracker Module 1.0
+
+- Title: Legacy Project
+- Author: Test
+- Frame rate: 50.000000
+- Chips count: 1
+- Chip type: AY8910
+- *AY8910* Clock: 1773400
+- *AY8910* AY/YM: 0
+- *AY8910* Stereo: ABC
+- *AY8910* Stereo separation: 100
+
+## Pitch table
+
+- Title: Test
+
+```
+C-4 1000
+```
+
+## Song
+
+```
+00 01 02
+```
+
+## Chains
+
+## Grooves
+
+## Phrases
+
+## Instruments
+
+## Tables
+EOF

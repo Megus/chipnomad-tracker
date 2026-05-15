@@ -4,6 +4,7 @@
 #include "project.h"
 #include "chips/chips.h"
 #include "playback_fx.h"
+#include "playback_chips.h"
 
 struct ChipNomadState;
 
@@ -24,26 +25,6 @@ typedef struct PlaybackTableState {
   uint8_t speed[4];
   uint8_t fxAuxState[16][4];
 } PlaybackTableState;
-
-typedef struct PlaybackAYNoteState {
-  uint8_t mixer; // bit 0 - Tone, bit 1 - Noise, bit 2 - Envelope
-  uint8_t adsrStep;
-  uint8_t adsrCounter;
-  uint8_t adsrFrom;
-  uint8_t adsrTo;
-  uint8_t adsrVolume;
-  uint8_t envAutoN;
-  uint8_t envAutoD;
-  uint8_t envShape;
-  uint16_t envBase;
-  int16_t envOffset;
-  uint8_t noiseBase;
-  int8_t noiseOffset;
-} PlaybackAYNoteState;
-
-typedef union PlaybackChipNoteState {
-  PlaybackAYNoteState ay;
-} PlaybackChipNoteState;
 
 typedef struct PlaybackNoteState {
   uint8_t noteBase;

@@ -11,4 +11,4 @@ fxColor: 0x00ffff
 dimmedColor: 0x404040
 playerMode: scroll
 scrollRows: 24
-phraseRenderMode: medium
+phraseRenderMode: full

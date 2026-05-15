@@ -270,7 +270,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     case 1: // Destination (not editable yet)
       break;
     case 2: // Amount
-      handled = edit8noLast(action, &mod->amount, 16, 0, 255);
+      handled = editSigned8(action, &mod->amount, 16, -128, 127);
       break;
     default: {
       int paramIdx = modRow - 3;

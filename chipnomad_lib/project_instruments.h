@@ -45,7 +45,7 @@ enum LFOTrigger {
 typedef struct Modulation {
   enum ModulationType type;
   uint8_t destination;
-  uint8_t amount;
+  int8_t amount;
   uint8_t p1;
   uint8_t p2;
   uint8_t p3;
@@ -78,6 +78,8 @@ typedef struct InstrumentAYOscNoise {
 
 typedef struct InstrumentAYOscEnvelope {
   uint8_t shape;
+  uint8_t autoEnvN;
+  uint8_t autoEnvD;
   uint8_t pitchFlag;
   int8_t pitchOffset;
   int8_t fineTune;
@@ -110,6 +112,7 @@ typedef struct InstrumentAYSample {
   InstrumentAYOscTone oscTone;
   InstrumentAYOscNoise oscNoise;
   char sampleName[PROJECT_INSTRUMENT_NAME_LENGTH + 1];
+  uint16_t fileLength;
   uint16_t sampleRate;
   uint16_t sampleStart;
   uint16_t sampleLength;
