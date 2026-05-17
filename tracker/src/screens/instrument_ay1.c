@@ -3,22 +3,6 @@
 #include "utils.h"
 #include "misc.h"
 
-void initAYInstrument(int instrument) {
-  chipnomadState->project.instruments[instrument].type = instAY1;
-  chipnomadState->project.instruments[instrument].name[0] = 0;
-  chipnomadState->project.instruments[instrument].tableSpeed = 1;
-  chipnomadState->project.instruments[instrument].transposeEnabled = 1;
-  chipnomadState->project.instruments[instrument].chip.ay.volumeEnvelope.type = modADSR;
-  chipnomadState->project.instruments[instrument].chip.ay.volumeEnvelope.destination = 0;
-  chipnomadState->project.instruments[instrument].chip.ay.volumeEnvelope.amount = 0;
-  chipnomadState->project.instruments[instrument].chip.ay.volumeEnvelope.p1 = 0;  // A
-  chipnomadState->project.instruments[instrument].chip.ay.volumeEnvelope.p2 = 0;  // D
-  chipnomadState->project.instruments[instrument].chip.ay.volumeEnvelope.p3 = 15; // S
-  chipnomadState->project.instruments[instrument].chip.ay.volumeEnvelope.p4 = 0;  // R
-  chipnomadState->project.instruments[instrument].chip.ay.autoEnvN = 0;
-  chipnomadState->project.instruments[instrument].chip.ay.autoEnvD = 0;
-}
-
 static int getColumnCount(int row) {
   // The first 3 rows come from the common instrument fields
   if (row < 3) return instrumentCommonColumnCount(row);

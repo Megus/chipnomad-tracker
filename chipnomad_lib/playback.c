@@ -40,10 +40,10 @@ static void resetTrack(PlaybackState* state, int trackIdx) {
   track->grooveRow = 0;
   track->pendingGrooveIdx = 0;
 
-  track->note.noteBase = EMPTY_VALUE_8;
-  track->note.noteFinal = EMPTY_VALUE_8;
-  track->note.noteOffset = 0;
+  track->note.pitchBase = EMPTY_VALUE_8;
+  track->note.pitchFinal = EMPTY_VALUE_8;
   track->note.pitchOffset = 0;
+  track->note.fineOffset = 0;
   track->note.instrument = EMPTY_VALUE_8;
   track->note.volume = 0;
   track->note.volume1 = 0;
@@ -316,7 +316,7 @@ void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRo
     if (note == NOTE_OFF) {
       handleNoteOff(state, trackIdx);
     } else {
-      track->note.noteBase = note;
+      track->note.pitchBase = note;
     }
   }
 
@@ -326,7 +326,7 @@ void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRo
     if (chainIdx != EMPTY_VALUE_16) {
       int8_t transpose = p->chains[chainIdx].rows[track->chainRow].transpose;
       if (p->instruments[track->note.instrument].transposeEnabled) {
-        track->note.noteBase += transpose;
+        track->note.pitchBase += transpose;
       }
     }
   }
@@ -448,13 +448,13 @@ void readPhraseRow(PlaybackState* state, int trackIdx, int skipDelCheck) {
 
 void resetOffsets(PlaybackState* state, int trackIdx) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
-  track->note.noteOffset = 0;
   track->note.pitchOffset = 0;
+  track->note.fineOffset = 0;
   track->note.periodOffset = 0;
   track->note.volumeOffset = 0;
 
   // TODO: Encapsulate chip-specific offset resets
-  track->note.chip.ay.envOffset = 0;
+  track->note.chip.ay.envPeriodOffset = 0;
   track->note.chip.ay.noiseOffset = 0;
 }
 
@@ -464,7 +464,7 @@ static void nextFrame(PlaybackState* state, int trackIdx, int chipIdx) {
 
   // Is the channel playing?
   if (track->songRow == EMPTY_VALUE_16) {
-    track->note.noteFinal = EMPTY_VALUE_8;
+    track->note.pitchFinal = EMPTY_VALUE_8;
     return;
   }
 
@@ -493,11 +493,11 @@ static void nextFrame(PlaybackState* state, int trackIdx, int chipIdx) {
   }
 
   // Final note calculation
-  if (track->note.noteBase == EMPTY_VALUE_8) {
-    track->note.noteFinal = EMPTY_VALUE_8;
+  if (track->note.pitchBase == EMPTY_VALUE_8) {
+    track->note.pitchFinal = EMPTY_VALUE_8;
   } else {
     // Base note
-    int16_t note = track->note.noteBase;
+    int16_t note = track->note.pitchBase;
 
     // Tables
     int tableIdx = track->note.instrumentTable.tableIdx;
@@ -519,12 +519,12 @@ static void nextFrame(PlaybackState* state, int trackIdx, int chipIdx) {
     }
 
     // Offset from FX
-    note += track->note.noteOffset;
+    note += track->note.pitchOffset;
 
     if (note < 0) note = p->pitchTable.length + (note % p->pitchTable.length);
     if (note >= p->pitchTable.length) note = note % p->pitchTable.length;
 
-    track->note.noteFinal = note;
+    track->note.pitchFinal = note;
   }
 }
 

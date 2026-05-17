@@ -45,8 +45,8 @@ void setupInstrumentAY(PlaybackState* state, int trackIdx) {
   track->note.chip.ay.adsrCounter = 0;
   track->note.chip.ay.envAutoN = p->instruments[track->note.instrument].chip.ay.autoEnvN;
   track->note.chip.ay.envAutoD = p->instruments[track->note.instrument].chip.ay.autoEnvD;
-  track->note.chip.ay.envBase = 0;
-  track->note.chip.ay.envOffset = 0;
+  track->note.chip.ay.envPeriodBase = 0;
+  track->note.chip.ay.envPeriodOffset = 0;
   track->note.chip.ay.noiseBase = EMPTY_VALUE_8;
   track->note.chip.ay.noiseOffset = 0;
 
@@ -76,7 +76,7 @@ void handleInstrumentAY1(PlaybackState* state, int trackIdx) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
   Project* p = state->p;
 
-  if (track->note.noteBase == EMPTY_VALUE_8 || track->note.instrument == EMPTY_VALUE_8) {
+  if (track->note.pitchBase == EMPTY_VALUE_8 || track->note.instrument == EMPTY_VALUE_8) {
     track->note.chip.ay.adsrVolume = 0;
     return;
   }
@@ -105,7 +105,7 @@ void handleInstrumentAY1(PlaybackState* state, int trackIdx) {
       if (track->note.chip.ay.adsrStep == 3) {
         // Release phase end
         adsrVolume = 0;
-        track->note.noteBase = EMPTY_VALUE_8;
+        track->note.pitchBase = EMPTY_VALUE_8;
         break;
       } else {
         track->note.chip.ay.adsrStep++;
@@ -156,19 +156,19 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
   for (int t = trackIdx; t < trackIdx + projectGetChipTracks(p, chipIdx); t++) {
     PlaybackTrackState* track = &state->tracks[t];
 
-    if (track->note.noteFinal == EMPTY_VALUE_8 || p->instruments[track->note.instrument].type == instNone) {
+    if (track->note.pitchFinal == EMPTY_VALUE_8 || p->instruments[track->note.instrument].type == instNone) {
       // Silence channel
       chip->setRegister(chip, 8 + ayChannel, 0);
     } else {
       int16_t period;
       if (p->linearPitch) {
         // Linear pitch mode: convert cents to frequency, then to period
-        int cents = p->pitchTable.values[track->note.noteFinal] + track->note.pitchOffset;
+        int cents = p->pitchTable.values[track->note.pitchFinal] + track->note.fineOffset;
         float frequency = centsToFrequency(cents);
         period = frequencyToAYPeriod(frequency, p->chipSetup.ay.clock);
       } else {
         // Traditional period mode
-        period = p->pitchTable.values[track->note.noteFinal] - track->note.pitchOffset;
+        period = p->pitchTable.values[track->note.pitchFinal] - track->note.fineOffset;
       }
       period -= track->note.periodOffset;
 
@@ -194,11 +194,11 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
           envPeriod = ((tempPeriod & 0xf) >= 8) ? (tempPeriod >> 4) + 1 : (tempPeriod >> 4);
         } else {
           // 2. Manual envelope
-          envPeriod = track->note.chip.ay.envBase;
+          envPeriod = track->note.chip.ay.envPeriodBase;
         }
 
         // Envelope period modification
-        envPeriod -= track->note.chip.ay.envOffset;
+        envPeriod -= track->note.chip.ay.envPeriodOffset;
 
         volume = 16;
       } else {

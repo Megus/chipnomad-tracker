@@ -3,53 +3,42 @@
 #include "utils.h"
 #include "misc.h"
 
-void initAY2Instrument(int instrument) {
-  Instrument* inst = &chipnomadState->project.instruments[instrument];
-  inst->type = instAY2;
-  inst->name[0] = 0;
-  inst->tableSpeed = 1;
-  inst->transposeEnabled = 1;
-  inst->chip.ay2 = (InstrumentAY2){
-    .oscTone = { .isOn = 1, .pitchFlag = 0, .pitchOffset = 0, .fineTune = 0 },
-    .oscNoise = { .isOn = 0, .noisePeriod = 0 },
-    .oscEnvelope = { .shape = 0, .pitchFlag = 0, .pitchOffset = 0, .fineTune = 0 },
-    .oscSoftware = { .type = aySoftwareOscNone, .pitchFlag = 0, .pitchOffset = 0, .fineTune = 0 },
-  };
-}
-
 // Screen layout:
 // y 6:  Tone   [On ]       Envelope [Off   ]
-// y 7:  Pitch  [+0  ]      Pitch    [+0  ]
-// y 8:  Fine   [+0  ]      Fine     [+0  ]
-// y 9:  (spacing)
-// y 10: Noise  [Off]       Soft osc [Off  ]
-// y 11: Period [00 ]       Pitch    [+0  ]
-// y 12:                    Fine     [+0  ]
+// y 7:  Pitch  [+0  ]      Mode     [Osc   ]
+// y 8:  Fine   [+0  ]      Pitch/N  [+0  ]  (depends on mode)
+// y 9:                     Fine/D   [+0  ]  (depends on mode)
+// y 10: (spacing)
+// y 11: Noise  [Off]       Soft osc [Off  ]
+// y 12: Period [00 ]       Pitch    [+0  ]
+// y 13:                    Fine     [+0  ]
 //
 // Logical rows:
 // 0-2: common (type, name, transpose/tic)
 // 3: Tone on/off | Env shape        (y 6)
-// 4: Tone pitch  | Env pitch        (y 7)
-// 5: Tone fine   | Env fine         (y 8)
-// 6: Noise on/off | Soft osc type   (y 10)
-// 7: Noise period | Soft osc pitch  (y 11)
-// 8: (dead left)  | Soft osc fine   (y 12)
+// 4: Tone pitch  | Env mode         (y 7)
+// 5: Tone fine   | Env pitch/N      (y 8)
+// 6:             | Env fine/D       (y 9)
+// 7: Noise on/off | Soft osc type   (y 11)
+// 8: Noise period | Soft osc pitch  (y 12)
+// 9: (dead left)  | Soft osc fine   (y 13)
 
 #define COL_LEFT_X    0
 #define COL_LEFT_VAL  8
 #define COL_RIGHT_X   17
 #define COL_RIGHT_VAL 26
 
-#define ROW_TOTAL 9
+#define ROW_TOTAL 10
 
 static int rowToY(int row) {
   switch (row) {
     case 3: return 6;
     case 4: return 7;
     case 5: return 8;
-    case 6: return 10;
+    case 6: return 9;
     case 7: return 11;
     case 8: return 12;
+    case 9: return 13;
     default: return 0;
   }
 }
@@ -60,7 +49,6 @@ static const char* softwareOscTypeName(enum AYSoftwareOscType type) {
     case aySoftwareOscRingMod:        return "Ring ";
     case aySoftwareOscSyncTone:       return "SyncT";
     case aySoftwareOscSyncEnvelope:   return "SyncE";
-    case aySoftwareOscNoiseWavetable: return "NoiWT";
     default:                          return "?    ";
   }
 }
@@ -76,7 +64,7 @@ static void drawSignedValue(int x, int y, int8_t value, int width) {
 
 static int getColumnCount(int row) {
   if (row < 3) return instrumentCommonColumnCount(row);
-  if (row >= 3 && row <= 8) return 2;
+  if (row >= 3 && row <= 9) return 2;
   return 1;
 }
 
@@ -90,23 +78,23 @@ static void drawStatic(void) {
   gfxPrint(COL_LEFT_X, 6, "Tone");
   gfxPrint(COL_RIGHT_X, 6, "Envelope");
 
-  // Top block labels (y 7-8)
+  // Top block labels (y 7-9)
   gfxSetFgColor(cs.textDefault);
   gfxPrint(COL_LEFT_X, 7, "Pitch");
   gfxPrint(COL_LEFT_X, 8, "Fine");
-  gfxPrint(COL_RIGHT_X, 7, "Pitch");
-  gfxPrint(COL_RIGHT_X, 8, "Fine");
+  gfxPrint(COL_RIGHT_X, 7, "Mode");
+  // Row 8-9 labels are dynamic (Pitch/N and Fine/D or N and D)
 
-  // Bottom block headers (y 10)
+  // Bottom block headers (y 11)
   gfxSetFgColor(cs.textTitles);
-  gfxPrint(COL_LEFT_X, 10, "Noise");
-  gfxPrint(COL_RIGHT_X, 10, "Soft osc");
+  gfxPrint(COL_LEFT_X, 11, "Noise");
+  gfxPrint(COL_RIGHT_X, 11, "Soft osc");
 
-  // Bottom block labels (y 11-12)
+  // Bottom block labels (y 12-13)
   gfxSetFgColor(cs.textDefault);
-  gfxPrint(COL_LEFT_X, 11, "Period");
-  gfxPrint(COL_RIGHT_X, 11, "Pitch");
-  gfxPrint(COL_RIGHT_X, 12, "Fine");
+  gfxPrint(COL_LEFT_X, 12, "Period");
+  gfxPrint(COL_RIGHT_X, 12, "Pitch");
+  gfxPrint(COL_RIGHT_X, 13, "Fine");
 }
 
 static void drawCursor(int col, int row) {
@@ -119,17 +107,25 @@ static void drawCursor(int col, int row) {
       case 3: gfxCursor(COL_LEFT_VAL, y, 3); break;  // Tone on/off
       case 4: gfxCursor(COL_LEFT_VAL, y, 4); break;  // Tone pitch
       case 5: gfxCursor(COL_LEFT_VAL, y, 4); break;  // Tone fine
-      case 6: gfxCursor(COL_LEFT_VAL, y, 3); break;  // Noise on/off
-      case 7: gfxCursor(COL_LEFT_VAL, y, 2); break;  // Noise period
+      case 7: gfxCursor(COL_LEFT_VAL, y, 3); break;  // Noise on/off
+      case 8: gfxCursor(COL_LEFT_VAL, y, 2); break;  // Noise period
     }
   } else if (col == 1) {
+    InstrumentAY2* ay2 = &chipnomadState->project.instruments[cInstrument].chip.ay2;
+    int isAutoEnv = ay2->oscEnvelope.autoEnvN != 0;
+
     switch (row) {
-      case 3: gfxCursor(COL_RIGHT_VAL, y, 1); break; // Env shape (single hex digit)
-      case 4: gfxCursor(COL_RIGHT_VAL, y, 4); break; // Env pitch
-      case 5: gfxCursor(COL_RIGHT_VAL, y, 4); break; // Env fine
-      case 6: gfxCursor(COL_RIGHT_VAL, y, 5); break; // Soft osc type
-      case 7: gfxCursor(COL_RIGHT_VAL, y, 4); break; // Soft osc pitch
-      case 8: gfxCursor(COL_RIGHT_VAL, y, 4); break; // Soft osc fine
+      case 3: gfxCursor(COL_RIGHT_VAL, y, 1); break;  // Env shape (single hex digit)
+      case 4: gfxCursor(COL_RIGHT_VAL, y, 6); break;  // Env mode
+      case 5: // Env pitch/N
+        gfxCursor(COL_RIGHT_VAL, y, isAutoEnv ? 2 : 4);
+        break;
+      case 6: // Env fine/D
+        gfxCursor(COL_RIGHT_VAL, y, isAutoEnv ? 2 : 4);
+        break;
+      case 7: gfxCursor(COL_RIGHT_VAL, y, 5); break;  // Soft osc type
+      case 8: gfxCursor(COL_RIGHT_VAL, y, 4); break;  // Soft osc pitch
+      case 9: gfxCursor(COL_RIGHT_VAL, y, 4); break;  // Soft osc fine
     }
   }
 }
@@ -153,15 +149,17 @@ static void drawField(int col, int row, int state) {
       case 5: // Tone fine
         drawSignedValue(COL_LEFT_VAL, y, ay2->oscTone.fineTune, 4);
         break;
-      case 6: // Noise on/off
+      case 7: // Noise on/off
         gfxPrintf(COL_LEFT_VAL, y, ay2->oscNoise.isOn ? "On " : "Off");
         break;
-      case 7: // Noise period
+      case 8: // Noise period
         gfxClearRect(COL_LEFT_VAL, y, 2, 1);
         gfxPrint(COL_LEFT_VAL, y, byteToHex(ay2->oscNoise.noisePeriod));
         break;
     }
   } else if (col == 1) {
+    int isAutoEnv = ay2->oscEnvelope.autoEnvN != 0;
+
     switch (row) {
       case 3: // Envelope shape
         gfxClearRect(COL_RIGHT_VAL, y, 6, 1);
@@ -171,19 +169,43 @@ static void drawField(int col, int row, int state) {
           gfxPrintf(COL_RIGHT_VAL, y, "%X %s", ay2->oscEnvelope.shape, getEnvelopeShapeASCII(ay2->oscEnvelope.shape));
         }
         break;
-      case 4: // Envelope pitch
-        drawSignedValue(COL_RIGHT_VAL, y, ay2->oscEnvelope.pitchOffset, 4);
+      case 4: // Envelope mode
+        gfxClearRect(COL_RIGHT_VAL, y, 6, 1);
+        gfxPrint(COL_RIGHT_VAL, y, isAutoEnv ? "AutoEn" : "Osc   ");
         break;
-      case 5: // Envelope fine
-        drawSignedValue(COL_RIGHT_VAL, y, ay2->oscEnvelope.fineTune, 4);
+      case 5: // Envelope pitch/N
+        // Draw the label for this row
+        gfxSetFgColor(appSettings.colorScheme.textDefault);
+        gfxPrint(COL_RIGHT_X, y, isAutoEnv ? "N    " : "Pitch");
+        // Draw the value
+        gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+        gfxClearRect(COL_RIGHT_VAL, y, 4, 1);
+        if (isAutoEnv) {
+          gfxPrintf(COL_RIGHT_VAL, y, "%d", ay2->oscEnvelope.autoEnvN);
+        } else {
+          drawSignedValue(COL_RIGHT_VAL, y, ay2->oscEnvelope.pitchOffset, 4);
+        }
         break;
-      case 6: // Software osc type
+      case 6: // Envelope fine/D
+        // Draw the label for this row
+        gfxSetFgColor(appSettings.colorScheme.textDefault);
+        gfxPrint(COL_RIGHT_X, y, isAutoEnv ? "D    " : "Fine ");
+        // Draw the value
+        gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+        gfxClearRect(COL_RIGHT_VAL, y, 4, 1);
+        if (isAutoEnv) {
+          gfxPrintf(COL_RIGHT_VAL, y, "%d", ay2->oscEnvelope.autoEnvD);
+        } else {
+          drawSignedValue(COL_RIGHT_VAL, y, ay2->oscEnvelope.fineTune, 4);
+        }
+        break;
+      case 7: // Software osc type
         gfxPrint(COL_RIGHT_VAL, y, softwareOscTypeName(ay2->oscSoftware.type));
         break;
-      case 7: // Software osc pitch
+      case 8: // Software osc pitch
         drawSignedValue(COL_RIGHT_VAL, y, ay2->oscSoftware.pitchOffset, 4);
         break;
-      case 8: // Software osc fine
+      case 9: // Software osc fine
         drawSignedValue(COL_RIGHT_VAL, y, ay2->oscSoftware.fineTune, 4);
         break;
     }
@@ -207,35 +229,67 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       case 5: // Tone fine
         handled = editSigned8(action, &ay2->oscTone.fineTune, 12, -128, 127);
         break;
-      case 6: // Noise on/off
+      case 7: // Noise on/off
         handled = edit8noLast(action, &ay2->oscNoise.isOn, 1, 0, 1);
         break;
-      case 7: // Noise period
+      case 8: // Noise period
         handled = edit8noLast(action, &ay2->oscNoise.noisePeriod, 8, 0, 31);
         break;
     }
   } else if (col == 1) {
+    int isAutoEnv = ay2->oscEnvelope.autoEnvN != 0;
+
     switch (row) {
       case 3: // Envelope shape
         handled = edit8noLast(action, &ay2->oscEnvelope.shape, 8, 0, 15);
         break;
-      case 4: // Envelope pitch
-        handled = editSigned8(action, &ay2->oscEnvelope.pitchOffset, 12, -128, 127);
+      case 4: // Envelope mode (toggle between Osc and AutoEnv)
+        {
+          uint8_t modeValue = isAutoEnv ? 1 : 0;
+          uint8_t oldValue = modeValue;
+          handled = edit8noLast(action, &modeValue, 1, 0, 1);
+
+          if (handled && oldValue != modeValue) {
+            if (modeValue == 1) {
+              // Switching to AutoEnv mode
+              ay2->oscEnvelope.autoEnvN = 1;
+              ay2->oscEnvelope.autoEnvD = 1;
+            } else {
+              // Switching to Osc mode
+              ay2->oscEnvelope.autoEnvN = 0;
+              ay2->oscEnvelope.autoEnvD = 0;
+            }
+            // Redraw the fields (which will also redraw labels)
+            drawField(1, 5, 0);
+            drawField(1, 6, 0);
+          }
+        }
         break;
-      case 5: // Envelope fine
-        handled = editSigned8(action, &ay2->oscEnvelope.fineTune, 12, -128, 127);
+      case 5: // Envelope pitch/N
+        if (isAutoEnv) {
+          handled = edit8noLast(action, &ay2->oscEnvelope.autoEnvN, 1, 1, 15);
+        } else {
+          handled = editSigned8(action, &ay2->oscEnvelope.pitchOffset, 12, -128, 127);
+        }
         break;
-      case 6: // Software osc type
+      case 6: // Envelope fine/D
+        if (isAutoEnv) {
+          handled = edit8noLast(action, &ay2->oscEnvelope.autoEnvD, 1, 1, 15);
+        } else {
+          handled = editSigned8(action, &ay2->oscEnvelope.fineTune, 12, -128, 127);
+        }
+        break;
+      case 7: // Software osc type
         {
           uint8_t type = (uint8_t)ay2->oscSoftware.type;
           handled = edit8noLast(action, &type, 1, 0, aysoftwareOscTotalCount - 1);
           ay2->oscSoftware.type = (enum AYSoftwareOscType)type;
         }
         break;
-      case 7: // Software osc pitch
+      case 8: // Software osc pitch
         handled = editSigned8(action, &ay2->oscSoftware.pitchOffset, 12, -128, 127);
         break;
-      case 8: // Software osc fine
+      case 9: // Software osc fine
         handled = editSigned8(action, &ay2->oscSoftware.fineTune, 12, -128, 127);
         break;
     }
@@ -246,8 +300,8 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 }
 
 static int isCellValid(int col, int row) {
-  // Row 8 col 0 is a dead cell (noise block has no third row)
-  if (row == 8 && col == 0) return 0;
+  // Row 6 col 0 and row 9 col 0 are dead cells (tone/noise blocks have no corresponding rows)
+  if ((row == 6 || row == 9) && col == 0) return 0;
   return 1;
 }
 

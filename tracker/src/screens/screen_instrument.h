@@ -11,11 +11,6 @@ void instrumentCommonDrawCursor(int col, int row);
 void instrumentCommonDrawField(int col, int row, int state);
 int instrumentCommonOnEdit(int col, int row, enum CellEditAction action);
 
-void initAYInstrument(int instrument);
-void initAY2Instrument(int instrument);
-void initAYSampleInstrument(int instrument);
-void initAYWavetableInstrument(int instrument);
-
 extern ScreenData screenInstrumentAY;
 extern ScreenData screenInstrumentAY2;
 extern ScreenData screenInstrumentAYSample;

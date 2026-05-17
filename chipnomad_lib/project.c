@@ -191,9 +191,8 @@ void chainClear(Chain* chain) {
 
 // Clear a single instrument with proper initialization
 void instrumentClear(Instrument* instrument) {
-  instrument->type = instNone;
-  instrument->name[0] = 0;
-  instrument->chip.ay.defaultMixer = 0x01; // Default to tone only
+  getInstrumentFunctions(instrument->type).free(instrument);
+  getInstrumentFunctions(instNone).init(instrument);
 }
 
 // Clear a single table with proper initialization

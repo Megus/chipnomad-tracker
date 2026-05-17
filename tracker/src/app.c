@@ -246,7 +246,7 @@ void appDraw(void) {
       gfxDrawCharBitmap(waveformBitmap, 36, 3 + c);
     }
 
-    uint8_t note = chipnomadState->playbackState.tracks[c].note.noteFinal;
+    uint8_t note = chipnomadState->playbackState.tracks[c].note.pitchFinal;
     char* noteStr = noteName(&chipnomadState->project, note);
 
     // Use warning color if track warning is active

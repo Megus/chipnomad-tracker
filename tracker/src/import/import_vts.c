@@ -208,20 +208,6 @@ static void parseVTSLine(const char* line, TableRow* row) {
   row->fx[FX_SLOT_MIXER][1] = mixerMode;
 }
 
-static void initAYInstrument(Instrument* inst) {
-  inst->type = instAY1;
-  inst->tableSpeed = 1;
-  inst->transposeEnabled = 1;
-
-  inst->chip.ay.volumeEnvelope.type = modADSR;
-  inst->chip.ay.volumeEnvelope.p1 = 0;  // Attack
-  inst->chip.ay.volumeEnvelope.p2 = 0;  // Decay
-  inst->chip.ay.volumeEnvelope.p3 = 15; // Sustain
-  inst->chip.ay.volumeEnvelope.p4 = 0;  // Release
-  inst->chip.ay.autoEnvN = 0;
-  inst->chip.ay.autoEnvD = 0;
-}
-
 static void extractInstrumentName(const char* line, const char* path, char* outName, size_t maxLen) {
   if (line[0] == '[') {
     size_t len = strlen(line);
@@ -311,7 +297,7 @@ int instrumentLoadVTS(const char* path, int instrumentIdx) {
   Instrument* inst = &chipnomadState->project.instruments[instrumentIdx];
   Table* table = &chipnomadState->project.tables[instrumentIdx];
 
-  initAYInstrument(inst);
+  getInstrumentFunctions(instAY1).init(inst);
 
   char* lpstr = fileReadString(fileId);
   if (lpstr == NULL) {
@@ -348,7 +334,7 @@ int instrumentLoadVTSFromMemory(char** lines, int lineCount, int instrumentIdx, 
   Instrument* inst = &chipnomadState->project.instruments[instrumentIdx];
   Table* table = &chipnomadState->project.tables[instrumentIdx];
 
-  initAYInstrument(inst);
+  getInstrumentFunctions(instAY1).init(inst);
 
   if (instrumentName != NULL) {
     strncpy(inst->name, instrumentName, PROJECT_INSTRUMENT_NAME_LENGTH);

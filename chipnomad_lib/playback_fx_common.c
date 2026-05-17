@@ -134,7 +134,7 @@ static void initFX_PBN(PlaybackState* state, PlaybackTrackState* track, int trac
 
 static void handleFX_PBN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   fx->acc += fx->d.bend.speed;
-  track->note.pitchOffset += fx->acc >> 8;
+  track->note.fineOffset += fx->acc >> 8;
 }
 
 // ARP - arpeggio
@@ -143,7 +143,7 @@ static void handleFX_ARP(struct PlaybackState *state, PlaybackTrackState *track,
   uint8_t arp[3] = {0, (fx->fxValue & 0xF0) >> 4, fx->fxValue & 0x0F};
   const uint8_t period = fx->counter / fx->d.arpeggio.speed % 3;
   const uint8_t cycles = fx->counter / fx->d.arpeggio.speed / 3;
-  track->note.noteOffset += calculateArpModeOffset(arp, period, cycles, fx->d.arpeggio.type, state->p->pitchTable.octaveSize);
+  track->note.pitchOffset += calculateArpModeOffset(arp, period, cycles, fx->d.arpeggio.type, state->p->pitchTable.octaveSize);
 }
 
 static void restartFX_ARP(struct PlaybackState *state, PlaybackTrackState *track, int trackIdx, PlaybackFXState *fx) {
@@ -168,7 +168,7 @@ static void restartFX_PIT(PlaybackState* state, PlaybackTrackState* track, int t
 }
 
 static void handleFX_PIT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
-  track->note.noteOffset += fx->acc;
+  track->note.pitchOffset += fx->acc;
 }
 
 // FIN - Fine pitch offset
@@ -181,7 +181,7 @@ static void restartFX_FIN(PlaybackState* state, PlaybackTrackState* track, int t
 }
 
 static void handleFX_FIN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
-  track->note.pitchOffset += fx->acc;
+  track->note.fineOffset += fx->acc;
 }
 
 // PRD - Period offset
@@ -277,7 +277,7 @@ static void handleFX_OFF(PlaybackState* state, PlaybackTrackState* track, int tr
 static void handleFX_KIL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   if (fx->counter >= fx->fxValue) {
     fx->isOn = 0;
-    track->note.noteBase = EMPTY_VALUE_8;
+    track->note.pitchBase = EMPTY_VALUE_8;
   }
 }
 
@@ -338,14 +338,14 @@ static void restartFX_PVB(PlaybackState* state, PlaybackTrackState* track, int t
 
 static void handleFX_PVB(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   int scale = state->p->linearPitch ? 10 : 1;
-  track->note.pitchOffset += vibratoCommonLogic(fx, scale);
+  track->note.fineOffset += vibratoCommonLogic(fx, scale);
 }
 
 
 // PSL - Pitch slide (portamento)
 static void initFX_PSL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
-  if (track->note.noteBase != NOTE_OFF && track->note.noteBase != EMPTY_VALUE_8) {
-    fx->d.slide.startPeriod = state->p->pitchTable.values[track->note.noteBase];
+  if (track->note.pitchBase != NOTE_OFF && track->note.pitchBase != EMPTY_VALUE_8) {
+    fx->d.slide.startPeriod = state->p->pitchTable.values[track->note.pitchBase];
   } else {
     fx->isOn = 0;
   }
@@ -356,11 +356,11 @@ static void handleFX_PSL(PlaybackState* state, PlaybackTrackState* track, int tr
     fx->isOn = 0;
     return;
   } else if (fx->counter == 0) {
-    fx->d.slide.endPeriod = state->p->pitchTable.values[track->note.noteBase];
+    fx->d.slide.endPeriod = state->p->pitchTable.values[track->note.pitchBase];
   }
   int distance = fx->d.slide.endPeriod - fx->d.slide.startPeriod;
   int offset = (distance * fx->counter) / fx->fxValue;
-  track->note.pitchOffset += state->p->linearPitch ? offset - distance : distance - offset;
+  track->note.fineOffset += state->p->linearPitch ? offset - distance : distance - offset;
 }
 
 

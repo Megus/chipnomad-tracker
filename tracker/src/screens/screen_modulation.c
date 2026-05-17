@@ -63,9 +63,8 @@ static int getModRow(int row) {
 
 static const char* modTypeName(enum ModulationType type) {
   switch (type) {
-    case modNone: return "Off ";
-    case modAHD:  return "AHD ";
     case modADSR: return "ADSR";
+    case modAHD:  return "AHD ";
     case modLFO:  return "LFO ";
     default:      return "?   ";
   }
@@ -98,16 +97,16 @@ static const char* lfoTrigName(uint8_t trig) {
 // Get the parameter label for a given modulator type and parameter index (0-3)
 static const char* paramLabel(enum ModulationType type, int paramIdx) {
   switch (type) {
-    case modAHD:
-      if (paramIdx == 0) return "Atk";
-      if (paramIdx == 1) return "Hold";
-      if (paramIdx == 2) return "Dec";
-      break;
     case modADSR:
       if (paramIdx == 0) return "Atk";
       if (paramIdx == 1) return "Dec";
       if (paramIdx == 2) return "Sus";
       if (paramIdx == 3) return "Rel";
+      break;
+    case modAHD:
+      if (paramIdx == 0) return "Atk";
+      if (paramIdx == 1) return "Hold";
+      if (paramIdx == 2) return "Dec";
       break;
     case modLFO:
       if (paramIdx == 0) return "Shape";
@@ -123,8 +122,8 @@ static const char* paramLabel(enum ModulationType type, int paramIdx) {
 // How many parameter rows does this modulation type have?
 static int paramCount(enum ModulationType type) {
   switch (type) {
-    case modAHD:  return 3;
     case modADSR: return 4;
+    case modAHD:  return 3;
     case modLFO:  return 3;
     default:      return 0;
   }

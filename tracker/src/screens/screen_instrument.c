@@ -248,23 +248,17 @@ int instrumentCommonOnEdit(int col, int row, enum CellEditAction action) {
     // Instrument type
     uint8_t oldType = chipnomadState->project.instruments[cInstrument].type;
     handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].type, 1, 0, 4);
-    if (oldType != chipnomadState->project.instruments[cInstrument].type) {
-      switch (chipnomadState->project.instruments[cInstrument].type) {
-        case instNone:
-          break;
-        case instAY1:
-          initAYInstrument(cInstrument);
-          break;
-        case instAY2:
-          initAY2Instrument(cInstrument);
-          break;
-        case instAYSample:
-          initAYSampleInstrument(cInstrument);
-          break;
-        case instAYWavetable:
-          initAYWavetableInstrument(cInstrument);
-          break;
-      }
+    uint8_t newType = chipnomadState->project.instruments[cInstrument].type;
+
+    if (oldType != newType) {
+      // Free old instrument data (critical for sample instruments to prevent memory leaks!)
+      // Note: free() will zero the entire struct including the type field
+      getInstrumentFunctions(oldType).free(&chipnomadState->project.instruments[cInstrument]);
+
+      // Restore the new type and initialize
+      chipnomadState->project.instruments[cInstrument].type = newType;
+      getInstrumentFunctions(newType).init(&chipnomadState->project.instruments[cInstrument]);
+
       fullRedraw();
     }
   } else if (row == 0 && col == 1) {

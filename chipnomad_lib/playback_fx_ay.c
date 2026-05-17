@@ -65,10 +65,10 @@ static void handleFX_ENT(PlaybackState* state, PlaybackTrackState* track, int tr
     // Linear pitch mode: convert cents to frequency, then to period
     int cents = p->pitchTable.values[note];
     float frequency = centsToFrequency(cents);
-    track->note.chip.ay.envBase = frequencyToAYPeriod(frequency, p->chipSetup.ay.clock);
+    track->note.chip.ay.envPeriodBase = frequencyToAYPeriod(frequency, p->chipSetup.ay.clock);
   } else {
     // Traditional period mode
-    track->note.chip.ay.envBase = p->pitchTable.values[note];
+    track->note.chip.ay.envPeriodBase = p->pitchTable.values[note];
   }
 }
 
@@ -82,19 +82,19 @@ static void restartFX_EPT(PlaybackState* state, PlaybackTrackState* track, int t
 }
 
 static void handleFX_EPT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
-  track->note.chip.ay.envOffset += fx->acc;
+  track->note.chip.ay.envPeriodOffset += fx->acc;
 }
 
 // EPL - Envelope period Low
 static void handleFX_EPL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   fx->isOn = 0; // Atomic effect
-  track->note.chip.ay.envBase = (track->note.chip.ay.envBase & 0xff00) + fx->fxValue;
+  track->note.chip.ay.envPeriodBase = (track->note.chip.ay.envPeriodBase & 0xff00) + fx->fxValue;
 }
 
 // EPH - Envelope period High
 static void handleFX_EPH(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   fx->isOn = 0; // Atomic effect
-  track->note.chip.ay.envBase = (track->note.chip.ay.envBase & 0x00ff) + (fx->fxValue << 8);
+  track->note.chip.ay.envPeriodBase = (track->note.chip.ay.envPeriodBase & 0x00ff) + (fx->fxValue << 8);
 }
 
 // EBN - Envelope pitch bend
@@ -113,7 +113,7 @@ static void initFX_EBN(PlaybackState* state, PlaybackTrackState* track, int trac
 
 static void handleFX_EBN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   fx->acc += fx->d.bend.speed;
-  track->note.chip.ay.envOffset += fx->acc >> 8;
+  track->note.chip.ay.envPeriodOffset += fx->acc >> 8;
 }
 
 // EVB - Envelope vibrato
@@ -122,13 +122,13 @@ static void restartFX_EVB(PlaybackState* state, PlaybackTrackState* track, int t
 }
 
 static void handleFX_EVB(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
-  track->note.chip.ay.envOffset += vibratoCommonLogic(fx, 1);
+  track->note.chip.ay.envPeriodOffset += vibratoCommonLogic(fx, 1);
 }
 
 // ESL - Pitch slide (portamento
 static void initFX_ESL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn) {
-  if (track->note.chip.ay.envBase != 0) {
-    fx->d.slide.startPeriod = track->note.chip.ay.envBase;
+  if (track->note.chip.ay.envPeriodBase != 0) {
+    fx->d.slide.startPeriod = track->note.chip.ay.envPeriodBase;
   } else {
     fx->isOn = 0;
   }
@@ -139,11 +139,11 @@ static void handleFX_ESL(PlaybackState* state, PlaybackTrackState* track, int tr
     fx->isOn = 0; // Reached the end or no valid start, turn off FX
     return;
   } else if (fx->counter == 0) {
-    fx->d.slide.endPeriod = track->note.chip.ay.envBase;
+    fx->d.slide.endPeriod = track->note.chip.ay.envPeriodBase;
   }
   int distance = fx->d.slide.endPeriod - fx->d.slide.startPeriod;
   int offset = (distance * fx->counter) / fx->fxValue;
-  track->note.chip.ay.envOffset += distance - offset;
+  track->note.chip.ay.envPeriodOffset += distance - offset;
 }
 
 void registerFXHandlers_AY(void) {

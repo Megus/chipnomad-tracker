@@ -3,16 +3,6 @@
 #include "utils.h"
 #include <string.h>
 
-void initAYWavetableInstrument(int instrument) {
-  Instrument* inst = &chipnomadState->project.instruments[instrument];
-  inst->type = instAYWavetable;
-  inst->name[0] = 0;
-  inst->tableSpeed = 1;
-  inst->transposeEnabled = 1;
-  memset(&inst->chip.ayWavetable, 0, sizeof(InstrumentAYWavetable));
-  inst->chip.ayWavetable.oscTone.isOn = 1;
-}
-
 // Screen layout:
 // y 6:  Wave  [00]       Tone   [On ]
 // y 7:  Pitch [+0  ]    Pitch  [+0  ]

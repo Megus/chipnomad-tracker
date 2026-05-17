@@ -17,36 +17,42 @@ INCLUDES = -I$(UNITY_DIR) \
            -I$(TRACKER_DIR) \
            -I$(TRACKER_DIR)/corelib \
            -I$(TRACKER_DIR)/screens \
+           -I$(TRACKER_DIR)/import \
            -Iplatforms/shared
 
 # Unity
 UNITY_SRC = $(UNITY_DIR)/unity.c
 
-# Mock sources
-MOCK_SRC = $(wildcard $(MOCK_DIR)/*.c)
+# Mock sources (only corelib mocks - platform-specific code)
+CORELIB_MOCKS = $(MOCK_DIR)/corelib_audio_mock.c \
+                $(MOCK_DIR)/corelib_file_mock.c \
+                $(MOCK_DIR)/corelib_gfx_mock.c \
+                $(MOCK_DIR)/corelib_input_mock.c \
+                $(MOCK_DIR)/corelib_mainloop_mock.c
 
-# Library sources needed by tests
+# Source directories (same as app, but exclude platform SDL code and corelib_file_stdio which we mock)
+APP_SRC_DIRS = src \
+               src/screens \
+               src/import \
+               src/corelib \
+               ../chipnomad_lib \
+               ../chipnomad_lib/chips \
+               ../chipnomad_lib/external/ayumi \
+               ../chipnomad_lib/export \
+               platforms/shared
+
+# Collect all app source files (exclude main.c which has its own main())
+ALL_APP_SRC = $(filter-out platforms/shared/main.c, $(foreach dir, $(APP_SRC_DIRS), $(wildcard $(dir)/*.c)))
+
+# Real file I/O (for test_project_io which tests actual file operations)
+REAL_FILE_SRC = $(LIB_DIR)/corelib_file_stdio/corelib_file_stdio.c
+
+# Minimal library sources for simple tests
 LIB_SRC = $(LIB_DIR)/project.c \
           $(LIB_DIR)/project_io.c \
+          $(LIB_DIR)/project_instruments.c \
           $(LIB_DIR)/project_instruments_io.c \
           $(LIB_DIR)/utils.c
-
-# Full library sources needed by playback tests
-LIB_PLAYBACK_SRC = $(LIB_SRC) \
-                   $(LIB_DIR)/chipnomad_lib.c \
-                   $(LIB_DIR)/playback.c \
-                   $(LIB_DIR)/playback_ay.c \
-                   $(LIB_DIR)/playback_fx_common.c \
-                   $(LIB_DIR)/playback_fx_ay.c
-
-# Tracker sources needed by tracker tests
-TRACKER_SRC = $(TRACKER_DIR)/project_utils.c
-
-# Screen sources needed by edit_common tests
-EDIT_COMMON_SRC = $(TRACKER_DIR)/screens/edit_common.c
-
-# Real file system implementation
-REAL_FILE_SRC = $(LIB_DIR)/corelib_file_stdio/corelib_file_stdio.c
 
 # Build directory
 BUILD = build/test
@@ -59,25 +65,21 @@ ALL_BINS = $(patsubst $(TEST_DIR)/test_%.c,$(BUILD)/test_%,$(ALL_TESTS))
 
 all: $(ALL_BINS)
 
-# Playback tests need the full playback engine + pitch table utils
-$(BUILD)/test_playback: $(TEST_DIR)/test_playback.c $(LIB_PLAYBACK_SRC) $(TRACKER_DIR)/pitch_table_utils.c $(UNITY_SRC) $(MOCK_SRC) | $(BUILD)
-	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIB_PLAYBACK_SRC) $(TRACKER_DIR)/pitch_table_utils.c $(UNITY_SRC) $(filter-out $(MOCK_DIR)/pitch_table_utils_mock.c,$(MOCK_SRC)) -lm
+# Playback tests need the full playback engine
+$(BUILD)/test_playback: $(TEST_DIR)/test_playback.c $(ALL_APP_SRC) $(UNITY_SRC) $(CORELIB_MOCKS) | $(BUILD)
+	$(CC) $(CFLAGS) $(INCLUDES) -I$(MOCK_DIR) -o $@ $< $(ALL_APP_SRC) $(UNITY_SRC) $(CORELIB_MOCKS) -lm
 
 # Project I/O tests use real file system (not mocked)
 $(BUILD)/test_project_io: $(TEST_DIR)/test_project_io.c $(LIB_SRC) $(REAL_FILE_SRC) $(UNITY_SRC) | $(BUILD)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIB_SRC) $(REAL_FILE_SRC) $(UNITY_SRC) -lm
 
-# Project tests use mocks
-$(BUILD)/test_project: $(TEST_DIR)/test_project.c $(LIB_SRC) $(UNITY_SRC) $(MOCK_SRC) | $(BUILD)
-	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIB_SRC) $(UNITY_SRC) $(MOCK_SRC) -lm
+# Project tests use minimal library sources (no tracker code needed)
+$(BUILD)/test_project: $(TEST_DIR)/test_project.c $(LIB_SRC) $(UNITY_SRC) $(CORELIB_MOCKS) | $(BUILD)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIB_SRC) $(UNITY_SRC) $(CORELIB_MOCKS) -lm
 
-# Edit common tests: lib + edit_common + unity + mocks
-$(BUILD)/test_edit_common: $(TEST_DIR)/test_edit_common.c $(LIB_SRC) $(EDIT_COMMON_SRC) $(UNITY_SRC) $(MOCK_SRC) | $(BUILD)
-	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIB_SRC) $(EDIT_COMMON_SRC) $(UNITY_SRC) $(MOCK_SRC) -lm
-
-# Tracker tests: lib + tracker sources + unity + mocks
-$(BUILD)/test_%: $(TEST_DIR)/test_%.c $(LIB_SRC) $(TRACKER_SRC) $(UNITY_SRC) $(MOCK_SRC) | $(BUILD)
-	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIB_SRC) $(TRACKER_SRC) $(UNITY_SRC) $(MOCK_SRC) -lm
+# Default rule for other tests: use ALL_APP_SRC (simplest approach)
+$(BUILD)/test_%: $(TEST_DIR)/test_%.c $(ALL_APP_SRC) $(UNITY_SRC) $(CORELIB_MOCKS) | $(BUILD)
+	$(CC) $(CFLAGS) $(INCLUDES) -I$(MOCK_DIR) -o $@ $< $(ALL_APP_SRC) $(UNITY_SRC) $(CORELIB_MOCKS) -lm
 
 $(BUILD):
 	mkdir -p $(BUILD)

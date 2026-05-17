@@ -165,7 +165,6 @@ void test_instrumentClear(void) {
   instrumentClear(&p.instruments[0]);
   TEST_ASSERT_TRUE(instrumentIsEmpty(&p, 0));
   TEST_ASSERT_EQUAL_STRING("", p.instruments[0].name);
-  TEST_ASSERT_EQUAL(0x01, p.instruments[0].chip.ay.defaultMixer);
 }
 
 void test_tableClear(void) {

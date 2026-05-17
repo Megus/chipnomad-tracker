@@ -15,10 +15,9 @@ enum InstrumentType {
 };
 
 enum ModulationType {
-  modNone = 0,
+  modADSR = 0,
   modAHD = 1,
-  modADSR = 2,
-  modLFO = 3,
+  modLFO = 2,
   modTotalCount,
 };
 
@@ -87,7 +86,6 @@ enum AYSoftwareOscType {
   aySoftwareOscRingMod = 1,
   aySoftwareOscSyncTone = 2,
   aySoftwareOscSyncEnvelope = 3,
-  aySoftwareOscNoiseWavetable = 4,
   aysoftwareOscTotalCount,
 };
 
@@ -136,12 +134,19 @@ typedef union InstrumentChipData {
 } InstrumentChipData;
 
 typedef struct Instrument {
-  uint8_t type; // enum InstrumentType
+  uint8_t type;
   char name[PROJECT_INSTRUMENT_NAME_LENGTH + 1];
   uint8_t tableSpeed;
   uint8_t transposeEnabled;
   Modulation modulation[4];
   InstrumentChipData chip;
 } Instrument;
+
+typedef struct InstrumentFunctions {
+  int (*init)(Instrument* instrument);
+  int (*free)(Instrument* instrument);
+} InstrumentFunctions;
+
+InstrumentFunctions getInstrumentFunctions(enum InstrumentType type);
 
 #endif

@@ -23,17 +23,17 @@ typedef struct PlaybackTableState {
   uint8_t rows[4];
   uint8_t counters[4];
   uint8_t speed[4];
-  uint8_t fxAuxState[16][4];
+  uint8_t fxAuxState[16][4]; // Used for stateful effects like HOP
 } PlaybackTableState;
 
 typedef struct PlaybackNoteState {
-  uint8_t noteBase;
+  uint8_t pitchBase;
   uint8_t instrument;
   uint8_t volume;
 
-  uint8_t noteFinal; // Calculated value
-  int8_t noteOffset; // Note offset
-  int16_t pitchOffset; // Pitch offset
+  uint8_t pitchFinal; // Calculated pitch value
+  int8_t pitchOffset; // Pitch offset (semitones)
+  int16_t fineOffset; // Fine pitch offset (cents or periods, depending on linearPitch setting)
   int16_t periodOffset; // Period offset
   uint8_t volume1; // Instrument volume
   uint8_t volume2; // Instrument table volume

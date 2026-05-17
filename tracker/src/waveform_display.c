@@ -129,7 +129,7 @@ uint8_t* waveformDisplayGetBitmap(int trackIdx) {
   PlaybackTrackState* track = &chipnomadState->playbackState.tracks[trackIdx];
 
   // Check if track is playing
-  if (track->note.noteFinal == EMPTY_VALUE_8) {
+  if (track->note.pitchFinal == EMPTY_VALUE_8) {
     return emptyBitmap;
   }
 

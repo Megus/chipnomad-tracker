@@ -6,7 +6,7 @@
 
 // Shared state for I/O operations
 extern char projectFileError[41];
-extern int projectFileVersion;  // 1 = legacy (1.0), 2 = current (2.0)
+extern int projectFileVersion;
 
 // Peek/consume pattern for line reading
 char* peekLine(int fileId);    // Look at next non-empty line without consuming

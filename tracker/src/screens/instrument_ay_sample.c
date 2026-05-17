@@ -5,16 +5,6 @@
 #include "file_browser.h"
 #include <string.h>
 
-void initAYSampleInstrument(int instrument) {
-  Instrument* inst = &chipnomadState->project.instruments[instrument];
-  inst->type = instAYSample;
-  inst->name[0] = 0;
-  inst->tableSpeed = 1;
-  inst->transposeEnabled = 1;
-  memset(&inst->chip.aySample, 0, sizeof(InstrumentAYSample));
-  inst->chip.aySample.oscTone.isOn = 1;
-}
-
 // Screen layout:
 // y 0: INSTRUMENT 00
 // y 2: Type  AY Sample  Load Save
