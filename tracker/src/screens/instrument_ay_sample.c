@@ -52,15 +52,6 @@ static int rowToY(int row) {
   }
 }
 
-static void drawSignedValue(int x, int y, int8_t value, int width) {
-  gfxClearRect(x, y, width, 1);
-  if (value >= 0) {
-    gfxPrintf(x, y, "+%d", value);
-  } else {
-    gfxPrintf(x, y, "%d", value);
-  }
-}
-
 static void onSampleLoaded(const char* path) {
   // TODO: Actually load the WAV file data
   // For now, just store the filename
@@ -165,14 +156,14 @@ static void drawCursor(int col, int row) {
       case 6: gfxCursor(COL_LEFT_VAL, y, 4); break;  // Length
       case 7: gfxCursor(COL_LEFT_VAL, y, 4); break;  // Loop Start
       case 8: gfxCursor(COL_LEFT_VAL, y, 4); break;  // Loop End
-      case 9: gfxCursor(COL_LEFT_VAL, y, 4); break;  // Pitch
-      case 10: gfxCursor(COL_LEFT_VAL, y, 4); break; // Fine
+      case 9: gfxCursor(COL_LEFT_VAL, y, 2); break;  // Pitch (hex)
+      case 10: gfxCursor(COL_LEFT_VAL, y, 2); break; // Fine (hex)
     }
   } else if (col == 1) {
     switch (row) {
       case 4: gfxCursor(COL_RIGHT_VAL, y, 3); break; // Tone on/off
-      case 5: gfxCursor(COL_RIGHT_VAL, y, 4); break; // Tone pitch
-      case 6: gfxCursor(COL_RIGHT_VAL, y, 4); break; // Tone fine
+      case 5: gfxCursor(COL_RIGHT_VAL, y, 2); break; // Tone pitch (hex)
+      case 6: gfxCursor(COL_RIGHT_VAL, y, 2); break; // Tone fine (hex)
       case 9: gfxCursor(COL_RIGHT_VAL, y, 3); break; // Noise on/off
       case 10: gfxCursor(COL_RIGHT_VAL, y, 2); break; // Noise period
     }
@@ -226,10 +217,12 @@ static void drawField(int col, int row, int state) {
         gfxPrintf(COL_LEFT_VAL, y, "%04X", smp->sampleLoopEnd);
         break;
       case 9: // Pitch
-        drawSignedValue(COL_LEFT_VAL, y, smp->pitchOffset, 4);
+        gfxClearRect(COL_LEFT_VAL, y, 2, 1);
+        gfxPrint(COL_LEFT_VAL, y, byteToHex((uint8_t)smp->pitchOffset));
         break;
       case 10: // Fine
-        drawSignedValue(COL_LEFT_VAL, y, smp->fineTune, 4);
+        gfxClearRect(COL_LEFT_VAL, y, 2, 1);
+        gfxPrint(COL_LEFT_VAL, y, byteToHex((uint8_t)smp->fineTune));
         break;
     }
   } else if (col == 1) {
@@ -238,10 +231,12 @@ static void drawField(int col, int row, int state) {
         gfxPrintf(COL_RIGHT_VAL, y, smp->oscTone.isOn ? "On " : "Off");
         break;
       case 5: // Tone pitch
-        drawSignedValue(COL_RIGHT_VAL, y, smp->oscTone.pitchOffset, 4);
+        gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
+        gfxPrint(COL_RIGHT_VAL, y, byteToHex((uint8_t)smp->oscTone.pitchOffset));
         break;
       case 6: // Tone fine
-        drawSignedValue(COL_RIGHT_VAL, y, smp->oscTone.fineTune, 4);
+        gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
+        gfxPrint(COL_RIGHT_VAL, y, byteToHex((uint8_t)smp->oscTone.fineTune));
         break;
       case 9: // Noise on/off
         gfxPrintf(COL_RIGHT_VAL, y, smp->oscNoise.isOn ? "On " : "Off");
@@ -287,10 +282,16 @@ static int onEdit(int col, int row, enum CellEditAction action) {
         handled = edit16withOverflow(action, &smp->sampleLoopEnd, 256, 0, 0x3FFF);
         break;
       case 9: // Pitch
-        handled = editSigned8(action, &smp->pitchOffset, 12, -128, 127);
+        handled = editSigned8(action, &smp->pitchOffset, chipnomadState->project.pitchTable.octaveSize, -128, 127);
+        if (handled) {
+          screenMessage(0, "Sample pitch offset %hhd", smp->pitchOffset);
+        }
         break;
       case 10: // Fine
-        handled = editSigned8(action, &smp->fineTune, 12, -128, 127);
+        handled = editSigned8(action, &smp->fineTune, 16, -128, 127);
+        if (handled) {
+          screenMessage(0, "Sample fine tune %hhd", smp->fineTune);
+        }
         break;
     }
   } else if (col == 1) {
@@ -299,10 +300,16 @@ static int onEdit(int col, int row, enum CellEditAction action) {
         handled = edit8noLast(action, &smp->oscTone.isOn, 1, 0, 1);
         break;
       case 5: // Tone pitch
-        handled = editSigned8(action, &smp->oscTone.pitchOffset, 12, -128, 127);
+        handled = editSigned8(action, &smp->oscTone.pitchOffset, chipnomadState->project.pitchTable.octaveSize, -128, 127);
+        if (handled) {
+          screenMessage(0, "Tone pitch offset %hhd", smp->oscTone.pitchOffset);
+        }
         break;
       case 6: // Tone fine
-        handled = editSigned8(action, &smp->oscTone.fineTune, 12, -128, 127);
+        handled = editSigned8(action, &smp->oscTone.fineTune, 16, -128, 127);
+        if (handled) {
+          screenMessage(0, "Tone fine tune %hhd", smp->oscTone.fineTune);
+        }
         break;
       case 9: // Noise on/off
         handled = edit8noLast(action, &smp->oscNoise.isOn, 1, 0, 1);

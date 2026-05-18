@@ -111,7 +111,7 @@ static const char* paramLabel(enum ModulationType type, int paramIdx) {
     case modLFO:
       if (paramIdx == 0) return "Shape";
       if (paramIdx == 1) return "Trig";
-      if (paramIdx == 2) return "Speed";
+      if (paramIdx == 2) return "Period";
       break;
     default:
       break;
@@ -177,7 +177,7 @@ static void drawCursor(int col, int row) {
 
   switch (modRow) {
     case 0: gfxCursor(valX, y, 4); break; // Type
-    case 1: gfxCursor(valX, y, 3); break; // Dest
+    case 1: gfxCursor(valX, y, 7); break; // Dest
     case 2: gfxCursor(valX, y, 2); break; // Amt
     default:
       if (mod->type == modLFO && (modRow - 3) <= 1) {
@@ -206,7 +206,14 @@ static void drawField(int col, int row, int state) {
       gfxPrint(valX, y, modTypeName(mod->type));
       break;
     case 1: // Destination
-      gfxPrint(valX, y, "Off");
+      gfxClearRect(valX, y, 7, 1);
+      {
+        Instrument* inst = &chipnomadState->project.instruments[cInstrument];
+        InstrumentFunctions funcs = getInstrumentFunctions(inst->type);
+        if (funcs.modName) {
+          gfxPrint(valX, y, funcs.modName(mod->destination));
+        }
+      }
       break;
     case 2: // Amount
       gfxClearRect(valX, y, 2, 1);
@@ -266,10 +273,17 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       }
       break;
     }
-    case 1: // Destination (not editable yet)
+    case 1: { // Destination
+      Instrument* inst = &chipnomadState->project.instruments[cInstrument];
+      InstrumentFunctions funcs = getInstrumentFunctions(inst->type);
+      handled = edit8noLast(action, &mod->destination, 1, 0, funcs.modDestinationsCount);
       break;
+    }
     case 2: // Amount
       handled = editSigned8(action, &mod->amount, 16, -128, 127);
+      if (handled) {
+        screenMessage(0, "Modulation amount %hhd", mod->amount);
+      }
       break;
     default: {
       int paramIdx = modRow - 3;
@@ -278,13 +292,32 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       if (mod->type == modAHD || mod->type == modADSR) {
         uint8_t* params = &mod->p1;
         handled = edit8noLast(action, &params[paramIdx], 16, 0, 255);
+        if (handled) {
+          // Full field names for AHD and ADSR
+          const char* fullName = NULL;
+          if (mod->type == modADSR) {
+            const char* adsrNames[] = {"Attack", "Decay", "Sustain", "Release"};
+            if (paramIdx < 4) fullName = adsrNames[paramIdx];
+          } else if (mod->type == modAHD) {
+            const char* ahdNames[] = {"Attack", "Hold", "Decay"};
+            if (paramIdx < 3) fullName = ahdNames[paramIdx];
+          }
+          if (fullName) {
+            screenMessage(0, "%s %hhu ticks", fullName, params[paramIdx]);
+          }
+        }
       } else if (mod->type == modLFO) {
         if (paramIdx == 0) {
           handled = edit8noLast(action, &mod->p1, 1, 0, lfoShapeTotalCount - 1);
+          // No hint for LFO shape - not adding value
         } else if (paramIdx == 1) {
           handled = edit8noLast(action, &mod->p2, 1, 0, lfoTriggerTotalCount - 1);
+          // No hint for LFO trigger - not adding value
         } else if (paramIdx == 2) {
           handled = edit8noLast(action, &mod->p3, 16, 0, 255);
+          if (handled) {
+            screenMessage(0, "Period %hhu ticks", mod->p3);
+          }
         }
       }
       break;

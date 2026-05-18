@@ -141,6 +141,18 @@ static int projectLoadPitchTable(int fileId, Project* p) {
   }
   p->pitchTable.length = idx;
 
+  // Calculate octave size (find first note name change)
+  if (idx > 0) {
+    char firstOctave = p->pitchTable.noteNames[0][2];
+    p->pitchTable.octaveSize = 12; // Default
+    for (int i = 1; i < idx; i++) {
+      if (p->pitchTable.noteNames[i][2] != firstOctave) {
+        p->pitchTable.octaveSize = i;
+        break;
+      }
+    }
+  }
+
   // Consume the closing ``` if present
   if (line[0] == '`') {
     consumeLine(fileId);

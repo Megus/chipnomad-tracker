@@ -135,11 +135,77 @@ void test_projectLoad_real_file_skytrain_funk(void) {
   TEST_ASSERT_EQUAL(1, projectFileVersion);  // It's a v1.0 file
 }
 
+void test_projectLoad_octaveSize_calculated(void) {
+  Project p;
+  projectInit(&p);
+
+  // Load a real project file
+  int result = projectLoad(&p, "packaging/common/projects/SkyTrain Funk.cnm");
+  TEST_ASSERT_EQUAL(0, result);
+
+  // Verify octaveSize is set correctly (should be 12 for standard 12TET)
+  TEST_ASSERT_EQUAL(12, p.pitchTable.octaveSize);
+  TEST_ASSERT_GREATER_THAN(0, p.pitchTable.length);
+}
+
+void test_projectSaveLoad_octaveSize_preserved(void) {
+  Project p1, p2;
+  projectInit(&p1);
+  projectInit(&p2);
+
+  // Set up a project with a 12-note octave pitch table
+  strcpy(p1.title, "Octave Test");
+  strcpy(p1.author, "Test");
+  p1.tickRate = 50.0f;
+  p1.chipsCount = 1;
+  p1.chipType = chipAY;
+  p1.chipSetup.ay.clock = 1773400;
+  p1.chipSetup.ay.isYM = 0;
+  p1.chipSetup.ay.stereoMode = ayStereoABC;
+  p1.chipSetup.ay.stereoSeparation = 100;
+  p1.tracksCount = 3;
+
+  // Create a pitch table with 2 octaves (24 notes)
+  strcpy(p1.pitchTable.name, "12TET Test");
+  p1.pitchTable.length = 24;
+  p1.pitchTable.octaveSize = 12;
+
+  // First octave (octave 4) - fill all 12 notes
+  const char* noteNames[12] = {"C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-"};
+  for (int i = 0; i < 12; i++) {
+    strcpy(p1.pitchTable.noteNames[i], noteNames[i]);
+    p1.pitchTable.noteNames[i][2] = '4';  // Octave 4
+    p1.pitchTable.noteNames[i][3] = 0;
+    p1.pitchTable.values[i] = 1000 + i * 100;
+  }
+
+  // Second octave (octave 5) - fill all 12 notes
+  for (int i = 0; i < 12; i++) {
+    strcpy(p1.pitchTable.noteNames[12 + i], noteNames[i]);
+    p1.pitchTable.noteNames[12 + i][2] = '5';  // Octave 5
+    p1.pitchTable.noteNames[12 + i][3] = 0;
+    p1.pitchTable.values[12 + i] = 2000 + i * 100;
+  }
+
+  // Save and load
+  int result = projectSave(&p1, "tests/test_octave_size.cnm");
+  TEST_ASSERT_EQUAL(0, result);
+
+  result = projectLoad(&p2, "tests/test_octave_size.cnm");
+  TEST_ASSERT_EQUAL(0, result);
+
+  // Verify octaveSize is correctly calculated after load
+  TEST_ASSERT_EQUAL(12, p2.pitchTable.octaveSize);
+  TEST_ASSERT_EQUAL(24, p2.pitchTable.length);
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_projectSaveLoad_song_data_preserved);
   RUN_TEST(test_projectLoad_version_1_0_format);
   RUN_TEST(test_projectSave_always_version_2_0);
   RUN_TEST(test_projectLoad_real_file_skytrain_funk);
+  RUN_TEST(test_projectLoad_octaveSize_calculated);
+  RUN_TEST(test_projectSaveLoad_octaveSize_preserved);
   return UNITY_END();
 }

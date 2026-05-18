@@ -16,6 +16,10 @@ static void freeCommon(Instrument* instrument) {
 }
 
 // Instrument type: None
+static char* modNameNone(int modIndex) {
+  return "Off";
+}
+
 static int initNoneInstrument(Instrument* instrument) {
   initCommon(instrument);
   instrument->type = instNone;
@@ -28,6 +32,11 @@ static int freeNoneInstrument(Instrument* instrument) {
 }
 
 // Instrument type: AY1
+static char* modNameAY1(int modIndex) {
+  static char *names[] = {"Off", "Volume", "TonePit", "Noise", "EnvPrd"};
+  return names[modIndex];
+}
+
 static int initAY1Instrument(Instrument* instrument) {
   initCommon(instrument);
   instrument->type = instAY1;
@@ -42,6 +51,11 @@ static int freeAY1Instrument(Instrument* instrument) {
 }
 
 // Instrument type: AY2
+static char* modNameAY2(int modIndex) {
+  static char *names[] = {"Off", "Volume", "TonePit", "Noise", "EnvPit", "SoftPit"};
+  return names[modIndex];
+}
+
 static int initAY2Instrument(Instrument* instrument) {
   initCommon(instrument);
   instrument->type = instAY2;
@@ -56,6 +70,11 @@ static int freeAY2Instrument(Instrument* instrument) {
 }
 
 // Instrument type: AY Sample
+static char* modNameAYSample(int modIndex) {
+  static char *names[] = {"Off", "Volume", "SmplPit", "TonePit", "Noise"};
+  return names[modIndex];
+}
+
 static int initAYSampleInstrument(Instrument* instrument) {
   initCommon(instrument);
   instrument->type = instAYSample;
@@ -72,6 +91,11 @@ static int freeAYSampleInstrument(Instrument* instrument) {
 }
 
 // Instrument type: AY Wavetable
+static char* modNameAYWavetable(int modIndex) {
+  static char *names[] = {"Off", "Volume", "WavePit", "Wave", "TonePit", "Noise"};
+  return names[modIndex];
+}
+
 static int initAYWavetableInstrument(Instrument* instrument) {
   initCommon(instrument);
   instrument->type = instAYWavetable;
@@ -89,26 +113,36 @@ InstrumentFunctions getInstrumentFunctions(enum InstrumentType type) {
   switch (type) {
     case instAY1:
       return (InstrumentFunctions){
+        .modDestinationsCount = 4,
+        .modName = modNameAY1,
         .init = initAY1Instrument,
         .free = freeAY1Instrument
       };
     case instAY2:
       return (InstrumentFunctions){
+        .modDestinationsCount = 5,
+        .modName = modNameAY2,
         .init = initAY2Instrument,
         .free = freeAY2Instrument
       };
     case instAYSample:
       return (InstrumentFunctions){
+        .modDestinationsCount = 4,
+        .modName = modNameAYSample,
         .init = initAYSampleInstrument,
         .free = freeAYSampleInstrument
       };
     case instAYWavetable:
       return (InstrumentFunctions){
+        .modDestinationsCount = 5,
+        .modName = modNameAYWavetable,
         .init = initAYWavetableInstrument,
         .free = freeAYWavetableInstrument
       };
     default:
       return (InstrumentFunctions){
+        .modDestinationsCount = 0,
+        .modName = modNameNone,
         .init = initNoneInstrument,
         .free = freeNoneInstrument
       };

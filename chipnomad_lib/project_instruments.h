@@ -94,6 +94,7 @@ typedef struct InstrumentAYOscSoftware {
   uint8_t pitchFlag;
   int8_t pitchOffset;
   int8_t fineTune;
+  uint8_t auxParameter;
 } InstrumentAYOscSoftware;
 
 typedef struct InstrumentAY2 {
@@ -143,6 +144,8 @@ typedef struct Instrument {
 } Instrument;
 
 typedef struct InstrumentFunctions {
+  int modDestinationsCount;
+  char* (*modName)(int modIndex);
   int (*init)(Instrument* instrument);
   int (*free)(Instrument* instrument);
 } InstrumentFunctions;

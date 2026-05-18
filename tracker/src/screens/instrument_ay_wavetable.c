@@ -37,15 +37,6 @@ static int rowToY(int row) {
   }
 }
 
-static void drawSignedValue(int x, int y, int8_t value, int width) {
-  gfxClearRect(x, y, width, 1);
-  if (value >= 0) {
-    gfxPrintf(x, y, "+%d", value);
-  } else {
-    gfxPrintf(x, y, "%d", value);
-  }
-}
-
 static int getColumnCount(int row) {
   if (row < 3) return instrumentCommonColumnCount(row);
   // Rows 3-5: col 0 = wavetable, col 1 = tone
@@ -93,16 +84,16 @@ static void drawCursor(int col, int row) {
   if (col == 0) {
     switch (row) {
       case 3: gfxCursor(COL_LEFT_VAL, y, 2); break;  // Wave index
-      case 4: gfxCursor(COL_LEFT_VAL, y, 4); break;  // WT pitch
-      case 5: gfxCursor(COL_LEFT_VAL, y, 4); break;  // WT fine
+      case 4: gfxCursor(COL_LEFT_VAL, y, 2); break;  // WT pitch (hex)
+      case 5: gfxCursor(COL_LEFT_VAL, y, 2); break;  // WT fine (hex)
       case 6: gfxCursor(COL_LEFT_VAL, y, 3); break;  // Noise on/off
       case 7: gfxCursor(COL_LEFT_VAL, y, 2); break;  // Noise period
     }
   } else if (col == 1) {
     switch (row) {
       case 3: gfxCursor(COL_RIGHT_VAL, y, 3); break; // Tone on/off
-      case 4: gfxCursor(COL_RIGHT_VAL, y, 4); break; // Tone pitch
-      case 5: gfxCursor(COL_RIGHT_VAL, y, 4); break; // Tone fine
+      case 4: gfxCursor(COL_RIGHT_VAL, y, 2); break; // Tone pitch (hex)
+      case 5: gfxCursor(COL_RIGHT_VAL, y, 2); break; // Tone fine (hex)
     }
   }
 }
@@ -122,10 +113,12 @@ static void drawField(int col, int row, int state) {
         gfxPrint(COL_LEFT_VAL, y, byteToHex(wt->waveIndex));
         break;
       case 4: // WT pitch
-        drawSignedValue(COL_LEFT_VAL, y, wt->pitchOffset, 4);
+        gfxClearRect(COL_LEFT_VAL, y, 2, 1);
+        gfxPrint(COL_LEFT_VAL, y, byteToHex((uint8_t)wt->pitchOffset));
         break;
       case 5: // WT fine
-        drawSignedValue(COL_LEFT_VAL, y, wt->fineTune, 4);
+        gfxClearRect(COL_LEFT_VAL, y, 2, 1);
+        gfxPrint(COL_LEFT_VAL, y, byteToHex((uint8_t)wt->fineTune));
         break;
       case 6: // Noise on/off
         gfxPrintf(COL_LEFT_VAL, y, wt->oscNoise.isOn ? "On " : "Off");
@@ -141,10 +134,12 @@ static void drawField(int col, int row, int state) {
         gfxPrintf(COL_RIGHT_VAL, y, wt->oscTone.isOn ? "On " : "Off");
         break;
       case 4: // Tone pitch
-        drawSignedValue(COL_RIGHT_VAL, y, wt->oscTone.pitchOffset, 4);
+        gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
+        gfxPrint(COL_RIGHT_VAL, y, byteToHex((uint8_t)wt->oscTone.pitchOffset));
         break;
       case 5: // Tone fine
-        drawSignedValue(COL_RIGHT_VAL, y, wt->oscTone.fineTune, 4);
+        gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
+        gfxPrint(COL_RIGHT_VAL, y, byteToHex((uint8_t)wt->oscTone.fineTune));
         break;
     }
   }
@@ -162,10 +157,16 @@ static int onEdit(int col, int row, enum CellEditAction action) {
         handled = edit8noLast(action, &wt->waveIndex, 16, 0, 255);
         break;
       case 4: // WT pitch
-        handled = editSigned8(action, &wt->pitchOffset, 12, -128, 127);
+        handled = editSigned8(action, &wt->pitchOffset, chipnomadState->project.pitchTable.octaveSize, -128, 127);
+        if (handled) {
+          screenMessage(0, "Wavetable pitch offset %hhd", wt->pitchOffset);
+        }
         break;
       case 5: // WT fine
-        handled = editSigned8(action, &wt->fineTune, 12, -128, 127);
+        handled = editSigned8(action, &wt->fineTune, 16, -128, 127);
+        if (handled) {
+          screenMessage(0, "Wavetable fine tune %hhd", wt->fineTune);
+        }
         break;
       case 6: // Noise on/off
         handled = edit8noLast(action, &wt->oscNoise.isOn, 1, 0, 1);
@@ -180,10 +181,16 @@ static int onEdit(int col, int row, enum CellEditAction action) {
         handled = edit8noLast(action, &wt->oscTone.isOn, 1, 0, 1);
         break;
       case 4: // Tone pitch
-        handled = editSigned8(action, &wt->oscTone.pitchOffset, 12, -128, 127);
+        handled = editSigned8(action, &wt->oscTone.pitchOffset, chipnomadState->project.pitchTable.octaveSize, -128, 127);
+        if (handled) {
+          screenMessage(0, "Tone pitch offset %hhd", wt->oscTone.pitchOffset);
+        }
         break;
       case 5: // Tone fine
-        handled = editSigned8(action, &wt->oscTone.fineTune, 12, -128, 127);
+        handled = editSigned8(action, &wt->oscTone.fineTune, 16, -128, 127);
+        if (handled) {
+          screenMessage(0, "Tone fine tune %hhd", wt->oscTone.fineTune);
+        }
         break;
     }
   }

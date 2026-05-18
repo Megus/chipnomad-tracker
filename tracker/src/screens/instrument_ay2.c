@@ -53,15 +53,6 @@ static const char* softwareOscTypeName(enum AYSoftwareOscType type) {
   }
 }
 
-static void drawSignedValue(int x, int y, int8_t value, int width) {
-  gfxClearRect(x, y, width, 1);
-  if (value >= 0) {
-    gfxPrintf(x, y, "+%d", value);
-  } else {
-    gfxPrintf(x, y, "%d", value);
-  }
-}
-
 static int getColumnCount(int row) {
   if (row < 3) return instrumentCommonColumnCount(row);
   if (row >= 3 && row <= 9) return 2;
@@ -105,27 +96,24 @@ static void drawCursor(int col, int row) {
   if (col == 0) {
     switch (row) {
       case 3: gfxCursor(COL_LEFT_VAL, y, 3); break;  // Tone on/off
-      case 4: gfxCursor(COL_LEFT_VAL, y, 4); break;  // Tone pitch
-      case 5: gfxCursor(COL_LEFT_VAL, y, 4); break;  // Tone fine
+      case 4: gfxCursor(COL_LEFT_VAL, y, 2); break;  // Tone pitch (hex)
+      case 5: gfxCursor(COL_LEFT_VAL, y, 2); break;  // Tone fine (hex)
       case 7: gfxCursor(COL_LEFT_VAL, y, 3); break;  // Noise on/off
       case 8: gfxCursor(COL_LEFT_VAL, y, 2); break;  // Noise period
     }
   } else if (col == 1) {
-    InstrumentAY2* ay2 = &chipnomadState->project.instruments[cInstrument].chip.ay2;
-    int isAutoEnv = ay2->oscEnvelope.autoEnvN != 0;
-
     switch (row) {
       case 3: gfxCursor(COL_RIGHT_VAL, y, 1); break;  // Env shape (single hex digit)
       case 4: gfxCursor(COL_RIGHT_VAL, y, 6); break;  // Env mode
       case 5: // Env pitch/N
-        gfxCursor(COL_RIGHT_VAL, y, isAutoEnv ? 2 : 4);
+        gfxCursor(COL_RIGHT_VAL, y, 2);  // Always 2 chars for hex
         break;
       case 6: // Env fine/D
-        gfxCursor(COL_RIGHT_VAL, y, isAutoEnv ? 2 : 4);
+        gfxCursor(COL_RIGHT_VAL, y, 2);  // Always 2 chars for hex
         break;
       case 7: gfxCursor(COL_RIGHT_VAL, y, 5); break;  // Soft osc type
-      case 8: gfxCursor(COL_RIGHT_VAL, y, 4); break;  // Soft osc pitch
-      case 9: gfxCursor(COL_RIGHT_VAL, y, 4); break;  // Soft osc fine
+      case 8: gfxCursor(COL_RIGHT_VAL, y, 2); break;  // Soft osc pitch (hex)
+      case 9: gfxCursor(COL_RIGHT_VAL, y, 2); break;  // Soft osc fine (hex)
     }
   }
 }
@@ -144,10 +132,12 @@ static void drawField(int col, int row, int state) {
         gfxPrintf(COL_LEFT_VAL, y, ay2->oscTone.isOn ? "On " : "Off");
         break;
       case 4: // Tone pitch
-        drawSignedValue(COL_LEFT_VAL, y, ay2->oscTone.pitchOffset, 4);
+        gfxClearRect(COL_LEFT_VAL, y, 2, 1);
+        gfxPrint(COL_LEFT_VAL, y, byteToHex((uint8_t)ay2->oscTone.pitchOffset));
         break;
       case 5: // Tone fine
-        drawSignedValue(COL_LEFT_VAL, y, ay2->oscTone.fineTune, 4);
+        gfxClearRect(COL_LEFT_VAL, y, 2, 1);
+        gfxPrint(COL_LEFT_VAL, y, byteToHex((uint8_t)ay2->oscTone.fineTune));
         break;
       case 7: // Noise on/off
         gfxPrintf(COL_LEFT_VAL, y, ay2->oscNoise.isOn ? "On " : "Off");
@@ -170,8 +160,8 @@ static void drawField(int col, int row, int state) {
         }
         break;
       case 4: // Envelope mode
-        gfxClearRect(COL_RIGHT_VAL, y, 6, 1);
-        gfxPrint(COL_RIGHT_VAL, y, isAutoEnv ? "AutoEn" : "Osc   ");
+        gfxClearRect(COL_RIGHT_VAL, y, 7, 1);
+        gfxPrint(COL_RIGHT_VAL, y, isAutoEnv ? "AutoEnv" : "Osc   ");
         break;
       case 5: // Envelope pitch/N
         // Draw the label for this row
@@ -179,11 +169,11 @@ static void drawField(int col, int row, int state) {
         gfxPrint(COL_RIGHT_X, y, isAutoEnv ? "N    " : "Pitch");
         // Draw the value
         gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-        gfxClearRect(COL_RIGHT_VAL, y, 4, 1);
+        gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
         if (isAutoEnv) {
-          gfxPrintf(COL_RIGHT_VAL, y, "%d", ay2->oscEnvelope.autoEnvN);
+          gfxPrint(COL_RIGHT_VAL, y, byteToHex(ay2->oscEnvelope.autoEnvN));
         } else {
-          drawSignedValue(COL_RIGHT_VAL, y, ay2->oscEnvelope.pitchOffset, 4);
+          gfxPrint(COL_RIGHT_VAL, y, byteToHex((uint8_t)ay2->oscEnvelope.pitchOffset));
         }
         break;
       case 6: // Envelope fine/D
@@ -192,21 +182,23 @@ static void drawField(int col, int row, int state) {
         gfxPrint(COL_RIGHT_X, y, isAutoEnv ? "D    " : "Fine ");
         // Draw the value
         gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-        gfxClearRect(COL_RIGHT_VAL, y, 4, 1);
+        gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
         if (isAutoEnv) {
-          gfxPrintf(COL_RIGHT_VAL, y, "%d", ay2->oscEnvelope.autoEnvD);
+          gfxPrint(COL_RIGHT_VAL, y, byteToHex(ay2->oscEnvelope.autoEnvD));
         } else {
-          drawSignedValue(COL_RIGHT_VAL, y, ay2->oscEnvelope.fineTune, 4);
+          gfxPrint(COL_RIGHT_VAL, y, byteToHex((uint8_t)ay2->oscEnvelope.fineTune));
         }
         break;
       case 7: // Software osc type
         gfxPrint(COL_RIGHT_VAL, y, softwareOscTypeName(ay2->oscSoftware.type));
         break;
       case 8: // Software osc pitch
-        drawSignedValue(COL_RIGHT_VAL, y, ay2->oscSoftware.pitchOffset, 4);
+        gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
+        gfxPrint(COL_RIGHT_VAL, y, byteToHex((uint8_t)ay2->oscSoftware.pitchOffset));
         break;
       case 9: // Software osc fine
-        drawSignedValue(COL_RIGHT_VAL, y, ay2->oscSoftware.fineTune, 4);
+        gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
+        gfxPrint(COL_RIGHT_VAL, y, byteToHex((uint8_t)ay2->oscSoftware.fineTune));
         break;
     }
   }
@@ -224,10 +216,16 @@ static int onEdit(int col, int row, enum CellEditAction action) {
         handled = edit8noLast(action, &ay2->oscTone.isOn, 1, 0, 1);
         break;
       case 4: // Tone pitch
-        handled = editSigned8(action, &ay2->oscTone.pitchOffset, 12, -128, 127);
+        handled = editSigned8(action, &ay2->oscTone.pitchOffset, chipnomadState->project.pitchTable.octaveSize, -128, 127);
+        if (handled) {
+          screenMessage(0, "Tone pitch offset %hhd", ay2->oscTone.pitchOffset);
+        }
         break;
       case 5: // Tone fine
-        handled = editSigned8(action, &ay2->oscTone.fineTune, 12, -128, 127);
+        handled = editSigned8(action, &ay2->oscTone.fineTune, 16, -128, 127);
+        if (handled) {
+          screenMessage(0, "Tone fine tune %hhd", ay2->oscTone.fineTune);
+        }
         break;
       case 7: // Noise on/off
         handled = edit8noLast(action, &ay2->oscNoise.isOn, 1, 0, 1);
@@ -267,16 +265,28 @@ static int onEdit(int col, int row, enum CellEditAction action) {
         break;
       case 5: // Envelope pitch/N
         if (isAutoEnv) {
-          handled = edit8noLast(action, &ay2->oscEnvelope.autoEnvN, 1, 1, 15);
+          handled = edit8noLast(action, &ay2->oscEnvelope.autoEnvN, 16, 1, 15);
+          if (handled) {
+            screenMessage(0, "Envelope auto N %hhu", ay2->oscEnvelope.autoEnvN);
+          }
         } else {
-          handled = editSigned8(action, &ay2->oscEnvelope.pitchOffset, 12, -128, 127);
+          handled = editSigned8(action, &ay2->oscEnvelope.pitchOffset, chipnomadState->project.pitchTable.octaveSize, -128, 127);
+          if (handled) {
+            screenMessage(0, "Envelope pitch offset %hhd", ay2->oscEnvelope.pitchOffset);
+          }
         }
         break;
       case 6: // Envelope fine/D
         if (isAutoEnv) {
-          handled = edit8noLast(action, &ay2->oscEnvelope.autoEnvD, 1, 1, 15);
+          handled = edit8noLast(action, &ay2->oscEnvelope.autoEnvD, 16, 1, 15);
+          if (handled) {
+            screenMessage(0, "Envelope auto D %hhu", ay2->oscEnvelope.autoEnvD);
+          }
         } else {
-          handled = editSigned8(action, &ay2->oscEnvelope.fineTune, 12, -128, 127);
+          handled = editSigned8(action, &ay2->oscEnvelope.fineTune, 16, -128, 127);
+          if (handled) {
+            screenMessage(0, "Envelope fine tune %hhd", ay2->oscEnvelope.fineTune);
+          }
         }
         break;
       case 7: // Software osc type
@@ -287,10 +297,16 @@ static int onEdit(int col, int row, enum CellEditAction action) {
         }
         break;
       case 8: // Software osc pitch
-        handled = editSigned8(action, &ay2->oscSoftware.pitchOffset, 12, -128, 127);
+        handled = editSigned8(action, &ay2->oscSoftware.pitchOffset, chipnomadState->project.pitchTable.octaveSize, -128, 127);
+        if (handled) {
+          screenMessage(0, "Software pitch offset %hhd", ay2->oscSoftware.pitchOffset);
+        }
         break;
       case 9: // Software osc fine
-        handled = editSigned8(action, &ay2->oscSoftware.fineTune, 12, -128, 127);
+        handled = editSigned8(action, &ay2->oscSoftware.fineTune, 16, -128, 127);
+        if (handled) {
+          screenMessage(0, "Software fine tune %hhd", ay2->oscSoftware.fineTune);
+        }
         break;
     }
   }

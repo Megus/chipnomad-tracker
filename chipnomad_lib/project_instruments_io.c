@@ -15,8 +15,8 @@ static int loadInstrumentAY1Legacy(int fileId, Instrument* instrument) {
       // Read ADSR values into modulation struct
       Modulation* ve = &instrument->chip.ay.volumeEnvelope;
       ve->type = modADSR;
-      ve->destination = 0;  // Volume (will be defined properly later)
-      ve->amount = 0;       // Not used for ADSR
+      ve->destination = 1;
+      ve->amount = 15;
       sscanf(line, "- Volume envelope: %hhu,%hhu,%hhu,%hhu",
         &ve->p1, &ve->p2, &ve->p3, &ve->p4);  // A, D, S, R
     } else if (strncmp(line, "- Auto envelope: ", 17) == 0) {
@@ -40,8 +40,8 @@ static int loadInstrumentAY1(int fileId, Instrument* instrument) {
       // Read ADSR values into modulation struct
       Modulation* ve = &instrument->chip.ay.volumeEnvelope;
       ve->type = modADSR;
-      ve->destination = 0;  // Volume (will be defined properly later)
-      ve->amount = 0;       // Not used for ADSR
+      ve->destination = 1;
+      ve->amount = 15;
       sscanf(line, "- Volume envelope: %hhu,%hhu,%hhu,%hhu",
         &ve->p1, &ve->p2, &ve->p3, &ve->p4);  // A, D, S, R
     } else if (strncmp(line, "- Auto envelope: ", 17) == 0) {
@@ -100,6 +100,8 @@ static int loadInstrumentAY2(int fileId, Instrument* instrument) {
       sscanf(line, "- Software pitch offset: %hhd", &instrument->chip.ay2.oscSoftware.pitchOffset);
     } else if (strncmp(line, "- Software fine tune: ", 22) == 0) {
       sscanf(line, "- Software fine tune: %hhd", &instrument->chip.ay2.oscSoftware.fineTune);
+    } else if (strncmp(line, "- Software aux parameter: ", 26) == 0) {
+      sscanf(line, "- Software aux parameter: %hhu", &instrument->chip.ay2.oscSoftware.auxParameter);
     }
     consumeLine(fileId);
   }
@@ -318,6 +320,7 @@ static int saveInstrumentAY2(int fileId, Instrument* instrument) {
   filePrintf(fileId, "- Software pitch flag: %hhu\n", instrument->chip.ay2.oscSoftware.pitchFlag);
   filePrintf(fileId, "- Software pitch offset: %hhd\n", instrument->chip.ay2.oscSoftware.pitchOffset);
   filePrintf(fileId, "- Software fine tune: %hhd\n", instrument->chip.ay2.oscSoftware.fineTune);
+  filePrintf(fileId, "- Software aux parameter: %hhu\n", instrument->chip.ay2.oscSoftware.auxParameter);
 
   return 0;
 }
