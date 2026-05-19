@@ -5,6 +5,7 @@
 #include "chips/chips.h"
 #include "playback_fx.h"
 #include "playback_chips.h"
+#include "playback_modulation.h"
 
 struct ChipNomadState;
 
@@ -43,6 +44,8 @@ typedef struct PlaybackNoteState {
   PlaybackTableState instrumentTable;
   PlaybackTableState auxTable;
   PlaybackFXState fx[256]; // Active FX on this note, indexed by FX enum
+
+  PlaybackModState modulation[4]; // Modulation states
 
   PlaybackChipNoteState chip;
 } PlaybackNoteState;
