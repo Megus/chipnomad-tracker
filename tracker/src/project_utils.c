@@ -402,3 +402,53 @@ int isPhraseUsedElsewhere(Project* project, int phraseIdx, int excludeChain, int
 }
 
 
+
+// Look up instrument value at the given position or by searching upward through the track
+// Parameters: project, song row, chain row, phrase row, track index
+// Returns: instrument number (0-255) or EMPTY_VALUE_8 if not found
+uint8_t lookupInstrument(Project* p, int songRow, int chainRow, int phraseRow, int track) {
+  int sr = songRow;
+  int cr = chainRow;
+  int pr = phraseRow;
+
+  do {
+    // Get current chain
+    uint16_t chainIdx = p->song[sr][track];
+    if (chainIdx == EMPTY_VALUE_16) {
+      // Move to previous song row
+      if (--sr < 0) return EMPTY_VALUE_8;
+      cr = 15;
+      pr = 15;
+      continue;
+    }
+
+    // Get current phrase
+    uint16_t phraseIdx = p->chains[chainIdx].rows[cr].phrase;
+    if (phraseIdx == EMPTY_VALUE_16) {
+      // Move to previous chain row
+      if (--cr < 0) {
+        // Move to previous song row
+        if (--sr < 0) return EMPTY_VALUE_8;
+        cr = 15;
+      }
+      pr = 15;
+      continue;
+    }
+
+    // Scan phrase rows from current position upward
+    for (int r = pr; r >= 0; r--) {
+      if (p->phrases[phraseIdx].rows[r].instrument != EMPTY_VALUE_8) {
+        return p->phrases[phraseIdx].rows[r].instrument;
+      }
+    }
+
+    // Move to previous chain row
+    if (--cr < 0) {
+      // Move to previous song row
+      if (--sr < 0) return EMPTY_VALUE_8;
+      cr = 15;
+    }
+    pr = 15;
+
+  } while (1);
+}

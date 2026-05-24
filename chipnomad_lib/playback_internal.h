@@ -19,6 +19,7 @@ void resetOffsets(PlaybackState* state, int trackIdx);
 extern PlaybackFXHandler fxHandlers[fxTotalCount];
 void initFXHandlers(void);
 void registerFXHandlers_AY(void);
+void registerFXHandlers_Modulation(void);
 
 // Chip-specific functions
 

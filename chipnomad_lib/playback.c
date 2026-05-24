@@ -503,6 +503,7 @@ void resetOffsets(PlaybackState* state, int trackIdx) {
 
   // Reset modulation offsets
   for (int i = 0; i < 4; i++) {
+    track->note.modulation[i].amountOffset = 0;
     track->note.modulation[i].p1Offset = 0;
     track->note.modulation[i].p2Offset = 0;
     track->note.modulation[i].p3Offset = 0;

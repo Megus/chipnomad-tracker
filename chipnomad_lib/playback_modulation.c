@@ -15,6 +15,13 @@ static inline uint8_t clampParam(int16_t value) {
   return (uint8_t)value;
 }
 
+// Helper function to clamp amount to -128 to 127 range
+static inline int8_t clampAmount(int16_t value) {
+  if (value < -128) return -128;
+  if (value > 127) return 127;
+  return (int8_t)value;
+}
+
 // Helper macros to read parameters with offsets and clamping
 // Intermediate calculation happens in 16-bit, then clamped to 0-255 range
 #define GET_P1(state) clampParam((int16_t)(state)->modulation->p1 + (state)->p1Offset)
@@ -22,7 +29,7 @@ static inline uint8_t clampParam(int16_t value) {
 #define GET_P3(state) clampParam((int16_t)(state)->modulation->p3 + (state)->p3Offset)
 #define GET_P4(state) clampParam((int16_t)(state)->modulation->p4 + (state)->p4Offset)
 #define GET_TYPE(state) ((state)->modulation->type)
-#define GET_AMOUNT(state) ((state)->modulation->amount)
+#define GET_AMOUNT(state) clampAmount((int16_t)(state)->modulation->amount + (state)->amountOffset)
 #define GET_DESTINATION(state) ((state)->modulation->destination)
 
 static void handleADSR(PlaybackModState* state) {
@@ -293,6 +300,7 @@ static void handleLFOnoteOff(PlaybackModState* state) {
 
 void playbackModInit(PlaybackModState* state, Modulation* mod) {
   state->modulation = mod;
+  state->amountOffset = 0;
   state->p1Offset = 0;
   state->p2Offset = 0;
   state->p3Offset = 0;

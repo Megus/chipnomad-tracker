@@ -50,45 +50,6 @@ static ScreenData screen = {
   .getLoopRange = getLoopRange,
 };
 
-// Look up the most recent instrument value by searching upward through the track
-static uint8_t lookupPreviousInstrument(int fromRow) {
-  Project* p = &chipnomadState->project;
-  int track = *pSongTrack;
-
-  // Search up in current phrase
-  for (int r = fromRow - 1; r >= 0; r--) {
-    if (phraseRows[r].instrument != EMPTY_VALUE_8) return phraseRows[r].instrument;
-  }
-
-  // Search previous phrases in the chain, then previous chains in the song
-  uint16_t chainIdx = p->song[*pSongRow][track];
-  if (chainIdx == EMPTY_VALUE_16) return EMPTY_VALUE_8;
-
-  for (int cr = *pChainRow - 1; cr >= 0; cr--) {
-    uint16_t ph = p->chains[chainIdx].rows[cr].phrase;
-    if (ph == EMPTY_VALUE_16) continue;
-    for (int r = 15; r >= 0; r--) {
-      if (p->phrases[ph].rows[r].instrument != EMPTY_VALUE_8) return p->phrases[ph].rows[r].instrument;
-    }
-  }
-
-  for (int sr = *pSongRow - 1; sr >= 0; sr--) {
-    uint16_t ci = p->song[sr][track];
-    if (ci == EMPTY_VALUE_16) continue;
-    for (int cr = 15; cr >= 0; cr--) {
-      uint16_t ph = p->chains[ci].rows[cr].phrase;
-      if (ph == EMPTY_VALUE_16) continue;
-      for (int r = 15; r >= 0; r--) {
-        if (p->phrases[ph].rows[r].instrument != EMPTY_VALUE_8) return p->phrases[ph].rows[r].instrument;
-      }
-    }
-  }
-
-  return EMPTY_VALUE_8;
-}
-
-
-
 static void init(void) {
   lastNote = 48;
   lastInstrument = 0;
@@ -296,7 +257,13 @@ static int editCell(int col, int row, enum CellEditAction action) {
   } else if (col == 3 || col == 5 || col == 7) {
     // FX
     int fxIdx = (col - 3) / 2;
-    int result = editFX(action, phraseRows[row].fx[fxIdx], lastFX, 0);
+    // Get instrument type from current phrase row or traverse back
+    uint8_t instrumentNum = lookupInstrument(&chipnomadState->project, *pSongRow, *pChainRow, row, *pSongTrack);
+    enum InstrumentType instType = instNone;
+    if (instrumentNum != EMPTY_VALUE_8) {
+      instType = chipnomadState->project.instruments[instrumentNum].type;
+    }
+    int result = editFX(action, phraseRows[row].fx[fxIdx], lastFX, 0, instType);
     if (result == 2) {
       drawField(col + 1, row, 0);
       handled = 1;
@@ -316,7 +283,7 @@ static int editCell(int col, int row, enum CellEditAction action) {
     PhraseRow* row = &phraseRows[screen.cursorRow];
     if (row->note != EMPTY_VALUE_8 && row->note != NOTE_OFF && row->instrument == EMPTY_VALUE_8) {
       PhraseRow previewRow = *row;
-      previewRow.instrument = lookupPreviousInstrument(screen.cursorRow);
+      previewRow.instrument = lookupInstrument(&chipnomadState->project, *pSongRow, *pChainRow, screen.cursorRow, *pSongTrack);
       playbackStartPhraseRow(&chipnomadState->playbackState, *pSongTrack, &previewRow);
     } else {
       playbackStartPhraseRow(&chipnomadState->playbackState, *pSongTrack, row);
@@ -348,9 +315,15 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     } else if (isSingleColumnSelection(&screen)) {
       // Single column: big increase/decrease or FX selection
       if (startCol == 3 || startCol == 5 || startCol == 7) {
-        // FX type column: fill selection with selected FX type
+        // FX type column: show FX selection
         int fxIdx = (startCol - 3) / 2;
-        fxEditFullDraw(phraseRows[screen.cursorRow].fx[fxIdx][0]);
+        // Get instrument type from current phrase row or traverse back
+        uint8_t instrumentNum = lookupInstrument(&chipnomadState->project, *pSongRow, *pChainRow, screen.cursorRow, *pSongTrack);
+        enum InstrumentType instType = instNone;
+        if (instrumentNum != EMPTY_VALUE_8) {
+          instType = chipnomadState->project.instruments[instrumentNum].type;
+        }
+        fxEditFullDraw(phraseRows[screen.cursorRow].fx[fxIdx][0], instType);
         isFxEdit = 1;
       } else {
         // Regular big increase/decrease for note, volume, instrument, FX value

@@ -33,3 +33,9 @@ void cleanupInstrumentsAndTables(Project* p, int* instrumentsFreed, int* tablesF
 // Usage checking functions
 int isChainUsedElsewhere(Project* p, int chainIdx, int excludeTrack, int excludeRow);
 int isPhraseUsedElsewhere(Project* p, int phraseIdx, int excludeChain, int excludeRow);
+
+// Lookup functions
+// Look up instrument value at the given position or by searching upward through the track
+// Parameters: project, song row, chain row, phrase row, track index
+// Returns: instrument number (0-255) or EMPTY_VALUE_8 if not found
+uint8_t lookupInstrument(Project* p, int songRow, int chainRow, int phraseRow, int track);

@@ -59,24 +59,43 @@ enum FX {
   // AY FX
   // Common AY FX (used in 1+ AY instrument types):
   fxAYM, // AY Mixer settting
-  fxERT, // Envelope retrigger
+  fxERT, // Envelope phase retrigger
   fxNOI, // Noise (relative)
   fxNOA, // Noise (absolute)
   fxEAU, // Auto-env setting
+  fxTNN, // Tone specific note
+  fxTNP, // Tone pitch offset
+  fxTNF, // Tone fine offset
+  fxTRT, // Tone phase retrigger
+  fxENN, // Envelope specific note
+  fxENP, // Envelope pitch offset
+  fxENF, // Envelope fine offset
   // AY Classic instrument (AY1):
   fxEVB, // Envelope vibrato
   fxEBN, // Envelope bend
   fxESL, // Envelope slide (portamento)
   fxENT, // Envelope note
-  fxEPT, // Envelope pitch offset
+  fxEPT, // Envelope period offset
   fxEPL, // Envelope period L
   fxEPH, // Envelope period H
   // AY Plus instrument (AY2):
-
+  fxSFT, // Software oscillator type
+  fxSFV, // Software oscillator aux value
+  fxSFN, // Software oscillator specific note
+  fxSFP, // Software oscillator pitch offset
+  fxSFF, // Software oscillator fine offset
+  fxSRT, // Software oscillator phase retrigger
   // AY Sample instrument (AYSample):
-
+  fxSMN, // Sample specific note
+  fxSMP, // Sample pitch offset
+  fxSMF, // Sample fine offset
+  fxSMS, // Sample start position
   // AY Wavetable instrument (AYWavetable):
-
+  fxWTX, // Wavetable index offset
+  fxWTN, // Wavetable specific note
+  fxWTP, // Wavetable pitch offset
+  fxWTF, // Wavetable fine offset
+  fxWRT, // Wavetable phase retrigger
   // TODO: FM FX
 
   // TODO: SID FX
@@ -90,11 +109,16 @@ typedef struct FXName {
   char name[4];
 } FXName;
 
+typedef struct FXGroup {
+  const char* name;              // Group name (e.g., "Sequencer FX")
+  FXName* fxList;                // Array of FX in this group
+  int count;                     // Number of FX in this group
+  enum InstrumentType instType;  // instNone for non-instrument groups
+} FXGroup;
+
 extern FXName fxNames[256]; // All names
-extern FXName fxNamesCommon[]; // Common FX names
-extern int fxCommonCount;
-extern FXName fxNamesAY[]; // AY FX names
-extern int fxAYCount;
+extern FXGroup fxGroups[]; // FX groups
+extern int fxGroupCount; // Number of FX groups
 
 // Chips
 

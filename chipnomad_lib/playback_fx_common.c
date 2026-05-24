@@ -403,6 +403,7 @@ void initFXHandlers(void) {
   fxHandlers[fxTIC] = (PlaybackFXHandler){initFX_TIC, NULL, NULL};
   fxHandlers[fxGRV] = (PlaybackFXHandler){NULL, handleFX_GRV, NULL};
   fxHandlers[fxGGR] = (PlaybackFXHandler){NULL, handleFX_GGR, NULL};
+  registerFXHandlers_Modulation();
   registerFXHandlers_AY();
 }
 

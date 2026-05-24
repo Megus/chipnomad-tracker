@@ -34,7 +34,7 @@ static int freeNoneInstrument(Instrument* instrument) {
 
 // Instrument type: AY1
 static char* modNameAY1(int modIndex) {
-  static char *names[] = {"Off", "Volume", "TonePit", "Noise", "EnvPrd"};
+  static char *names[] = {"Off", "Volume", "Pitch", "Noise", "EnvPrd"};
   return names[modIndex];
 }
 
@@ -53,7 +53,7 @@ static int freeAY1Instrument(Instrument* instrument) {
 
 // Instrument type: AY2
 static char* modNameAY2(int modIndex) {
-  static char *names[] = {"Off", "Volume", "TonePit", "Noise", "EnvPit", "SoftPit"};
+  static char *names[] = {"Off", "Volume", "Pitch", "TonePit", "Noise", "EnvPit", "SoftPit"};
   return names[modIndex];
 }
 
@@ -72,7 +72,7 @@ static int freeAY2Instrument(Instrument* instrument) {
 
 // Instrument type: AY Sample
 static char* modNameAYSample(int modIndex) {
-  static char *names[] = {"Off", "Volume", "SmplPit", "TonePit", "Noise"};
+  static char *names[] = {"Off", "Volume", "Pitch", "SmplPit", "TonePit", "Noise"};
   return names[modIndex];
 }
 
@@ -93,7 +93,7 @@ static int freeAYSampleInstrument(Instrument* instrument) {
 
 // Instrument type: AY Wavetable
 static char* modNameAYWavetable(int modIndex) {
-  static char *names[] = {"Off", "Volume", "WavePit", "Wave", "TonePit", "Noise"};
+  static char *names[] = {"Off", "Volume", "Pitch", "WavePit", "Wave", "TonePit", "Noise"};
   return names[modIndex];
 }
 
@@ -121,21 +121,21 @@ InstrumentFunctions getInstrumentFunctions(enum InstrumentType type) {
       };
     case instAY2:
       return (InstrumentFunctions){
-        .modDestinationsCount = 5,
+        .modDestinationsCount = 6,
         .modName = modNameAY2,
         .init = initAY2Instrument,
         .free = freeAY2Instrument
       };
     case instAYSample:
       return (InstrumentFunctions){
-        .modDestinationsCount = 4,
+        .modDestinationsCount = 5,
         .modName = modNameAYSample,
         .init = initAYSampleInstrument,
         .free = freeAYSampleInstrument
       };
     case instAYWavetable:
       return (InstrumentFunctions){
-        .modDestinationsCount = 5,
+        .modDestinationsCount = 6,
         .modName = modNameAYWavetable,
         .init = initAYWavetableInstrument,
         .free = freeAYWavetableInstrument

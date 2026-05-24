@@ -1,43 +1,111 @@
 #include <stdio.h>
 #include <string.h>
 #include "project.h"
+#include "project_instruments.h"
 #include "corelib/corelib_file.h"
 #include "utils.h"
 
 FXName fxNames[256];
 
-// FX Names (in the order as they appear in FX select screen)
-FXName fxNamesCommon[] = {
+// FX Names organized by groups (in the order as they appear in FX select screen)
+
+// Sequencer FX (renamed from fxNamesCommon)
+FXName fxNamesSequencer[] = {
   {fxARP, "ARP"}, {fxARC, "ARC"}, {fxPVB, "PVB"}, {fxPBN, "PBN"}, {fxPSL, "PSL"},
   {fxPIT, "PIT"}, {fxFIN, "FIN"}, {fxPRD, "PRD"}, {fxVOL, "VOL"}, {fxRET, "RET"},
   {fxDEL, "DEL"}, {fxOFF, "OFF"}, {fxKIL, "KIL"}, {fxTIC, "TIC"}, {fxTBL, "TBL"},
   {fxTBX, "TBX"}, {fxTHO, "THO"}, {fxTXH, "TXH"}, {fxGRV, "GRV"}, {fxGGR, "GGR"},
   {fxHOP, "HOP"}, {fxSNG, "SNG"}
 };
-int fxCommonCount = sizeof(fxNamesCommon) / sizeof(FXName);
+int fxSequencerCount = sizeof(fxNamesSequencer) / sizeof(FXName);
 
-FXName fxNamesAY[] = {
-  {fxAYM, "AYM"}, {fxERT, "ERT"}, {fxNOI, "NOI"}, {fxNOA, "NOA"}, {fxEAU, "EAU"},
+// Modulation FX (new group)
+FXName fxNamesModulation[] = {
+  {fxM1A, "M1A"}, {fxM11, "M11"}, {fxM12, "M12"}, {fxM13, "M13"}, {fxM14, "M14"},
+  {fxM2A, "M2A"}, {fxM21, "M21"}, {fxM22, "M22"}, {fxM23, "M23"}, {fxM24, "M24"},
+  {fxM3A, "M3A"}, {fxM31, "M31"}, {fxM32, "M32"}, {fxM33, "M33"}, {fxM34, "M34"},
+  {fxM4A, "M4A"}, {fxM41, "M41"}, {fxM42, "M42"}, {fxM43, "M43"}, {fxM44, "M44"}
+};
+int fxModulationCount = sizeof(fxNamesModulation) / sizeof(FXName);
+
+// AY1 FX
+FXName fxNamesAY1[] = {
+  {fxAYM, "AYM"}, {fxNOI, "NOI"}, {fxNOA, "NOA"}, {fxERT, "ERT"},{fxEAU, "EAU"},
   {fxEVB, "EVB"}, {fxEBN, "EBN"}, {fxESL, "ESL"}, {fxENT, "ENT"}, {fxEPT, "EPT"},
   {fxEPL, "EPL"}, {fxEPH, "EPH"},
 };
-int fxAYCount = sizeof(fxNamesAY) / sizeof(FXName);
+int fxAY1Count = sizeof(fxNamesAY1) / sizeof(FXName);
+
+// AY2 FX
+FXName fxNamesAY2[] = {
+  // Mixer and noise
+  {fxAYM, "AYM"}, {fxNOI, "NOI"}, {fxNOA, "NOA"},
+  // Tone
+  {fxTNN, "TNN"}, {fxTNP, "TNP"}, {fxTNF, "TNF"}, {fxTRT, "TRT"},
+  // Envelope
+  {fxEAU, "EAU"}, {fxENN, "ENN"}, {fxENP, "ENP"}, {fxENF, "ENF"}, {fxERT, "ERT"},
+  // Software osc
+  {fxSFT, "SFT"}, {fxSFV, "SFV"}, {fxSFN, "SFN"}, {fxSFP, "SFP"}, {fxSFF, "SFF"},
+  {fxSRT, "SRT"},
+};
+int fxAY2Count = sizeof(fxNamesAY2) / sizeof(FXName);
+
+// AYSample FX
+FXName fxNamesAYSample[] = {
+  // Mixer and noise
+  {fxAYM, "AYM"}, {fxNOI, "NOI"}, {fxNOA, "NOA"},
+  // Tone
+  {fxTNN, "TNN"}, {fxTNP, "TNP"}, {fxTNF, "TNF"}, {fxTRT, "TRT"},
+  // Sample
+  {fxSMN, "SMN"}, {fxSMP, "SMP"}, {fxSMF, "SMF"}, {fxSMS, "SMS"},
+};
+int fxAYSampleCount = sizeof(fxNamesAYSample) / sizeof(FXName);
+
+// AYWavetable FX
+FXName fxNamesAYWavetable[] = {
+  // Mixer and noise
+  {fxAYM, "AYM"}, {fxNOI, "NOI"}, {fxNOA, "NOA"},
+  // Tone
+  {fxTNN, "TNN"}, {fxTNP, "TNP"}, {fxTNF, "TNF"}, {fxTRT, "TRT"},
+  // Wavetable
+  {fxWTX, "WTX"}, {fxWTN, "WTN"}, {fxWTP, "WTP"}, {fxWTF, "WTF"}, {fxWRT, "WRT"},
+};
+int fxAYWavetableCount = sizeof(fxNamesAYWavetable) / sizeof(FXName);
+
+// FX Groups array. FX counts are filles in fillFXNames()
+FXGroup fxGroups[] = {
+  {"Sequencer FX", fxNamesSequencer, 0, instNone},
+  {"Modulation FX", fxNamesModulation, 0, instNone},
+  {"AY Classic FX", fxNamesAY1, 0, instAY1},
+  {"AY Plus FX", fxNamesAY2, 0, instAY2},
+  {"AYSample FX", fxNamesAYSample, 0, instAYSample},
+  {"AYWavetable FX", fxNamesAYWavetable, 0, instAYWavetable},
+};
+int fxGroupCount = sizeof(fxGroups) / sizeof(FXGroup);
 
 // Fill FX names
 void fillFXNames() {
+  // Initialize all FX names to "---"
   for (int c = 0; c < 256; c++) {
     strcpy(fxNames[c].name, "---");
     fxNames[c].fx = c;
   }
 
-  for (int c = 0; c < fxCommonCount; c++) {
-    strcpy(fxNames[fxNamesCommon[c].fx].name, fxNamesCommon[c].name);
-    fxNames[fxNamesCommon[c].fx].fx = fxNamesCommon[c].fx;
-  }
+  // Fill counts in fxGroups array
+  fxGroups[0].count = fxSequencerCount;
+  fxGroups[1].count = fxModulationCount;
+  fxGroups[2].count = fxAY1Count;
+  fxGroups[3].count = fxAY2Count;
+  fxGroups[4].count = fxAYSampleCount;
+  fxGroups[5].count = fxAYWavetableCount;
 
-  for (int c = 0; c < fxAYCount; c++) {
-    strcpy(fxNames[fxNamesAY[c].fx].name, fxNamesAY[c].name);
-    fxNames[fxNamesAY[c].fx].fx = fxNamesAY[c].fx;
+  // Fill FX names from all groups
+  for (int g = 0; g < fxGroupCount; g++) {
+    for (int i = 0; i < fxGroups[g].count; i++) {
+      enum FX fx = fxGroups[g].fxList[i].fx;
+      strcpy(fxNames[fx].name, fxGroups[g].fxList[i].name);
+      fxNames[fx].fx = fx;
+    }
   }
 }
 

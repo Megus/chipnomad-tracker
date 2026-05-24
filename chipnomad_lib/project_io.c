@@ -87,18 +87,13 @@ static uint8_t scanFX(char* str, Project* p) {
 
   if (!strcmp(buf, "---")) return EMPTY_VALUE_8;
 
-  // Common FX
-  extern FXName fxNamesCommon[];
-  extern int fxCommonCount;
-  for (int c = 0; c < fxCommonCount; c++) {
-    if (!strcmp(buf, fxNamesCommon[c].name)) return fxNamesCommon[c].fx;
-  }
-
-  // AY FX
-  extern FXName fxNamesAY[];
-  extern int fxAYCount;
-  for (int c = 0; c < fxAYCount; c++) {
-    if (!strcmp(buf, fxNamesAY[c].name)) return fxNamesAY[c].fx;
+  // Scan all FX groups
+  extern FXGroup fxGroups[];
+  extern int fxGroupCount;
+  for (int g = 0; g < fxGroupCount; g++) {
+    for (int c = 0; c < fxGroups[g].count; c++) {
+      if (!strcmp(buf, fxGroups[g].fxList[c].name)) return fxGroups[g].fxList[c].fx;
+    }
   }
 
   return EMPTY_VALUE_8;

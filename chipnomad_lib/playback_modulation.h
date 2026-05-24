@@ -6,6 +6,7 @@
 
 typedef struct PlaybackModState {
   const Modulation* modulation; // Pointer to the source Modulation struct
+  int16_t amountOffset;
   int16_t p1Offset;
   int16_t p2Offset;
   int16_t p3Offset;

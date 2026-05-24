@@ -3,6 +3,7 @@
 #include "corelib_gfx.h"
 #include "utils.h"
 #include "chipnomad_lib.h"
+#include "project_utils.h"
 #include "copy_paste.h"
 #include "help.h"
 
@@ -13,6 +14,22 @@ static uint8_t lastPitchValue = 0;
 static uint8_t lastVolume = 15;
 static uint8_t lastFX[2] = {0, 0};
 static int isFxEdit = 0;
+
+// Get instrument type for current table context
+static enum InstrumentType getTableInstrumentType() {
+  // Tables 00-7F are default tables for instruments 00-7F
+  if (tableIdx < 0x80) {
+    return chipnomadState->project.instruments[tableIdx].type;
+  }
+
+  // Tables 80-FE are aux tables - get instrument from current phrase context
+  uint8_t instrumentNum = lookupInstrument(&chipnomadState->project, *pSongRow, *pChainRow, 0, *pSongTrack);
+  if (instrumentNum != EMPTY_VALUE_8) {
+    return chipnomadState->project.instruments[instrumentNum].type;
+  }
+
+  return instNone;
+}
 
 static int getColumnCount(int row);
 static void drawStatic(void);
@@ -238,7 +255,8 @@ static int editCell(int col, int row, enum CellEditAction action) {
   } else if (col % 2 == 1 && col >= 3) {
     // FX (columns 3,5,7,9)
     int fxIdx = (col - 3) / 2;
-    int result = editFX(action, tableRows[row].fx[fxIdx], lastFX, 1);
+    enum InstrumentType instType = getTableInstrumentType();
+    int result = editFX(action, tableRows[row].fx[fxIdx], lastFX, 1, instType);
     if (result == 2) {
       drawField(col + 1, row, 0);
       handled = 1;
@@ -279,7 +297,8 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       if (startCol == 3 || startCol == 5 || startCol == 7 || startCol == 9) {
         // FX type column: show FX selection
         int fxIdx = (startCol - 3) / 2;
-        fxEditFullDraw(tableRows[screen.cursorRow].fx[fxIdx][0]);
+        enum InstrumentType instType = getTableInstrumentType();
+        fxEditFullDraw(tableRows[screen.cursorRow].fx[fxIdx][0], instType);
         isFxEdit = 1;
         return 0;
       } else {

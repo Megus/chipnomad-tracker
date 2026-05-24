@@ -8,6 +8,9 @@
 #include <stdlib.h>
 #include <math.h>
 
+#define PITCH_MOD_RANGE_CENTS (2400)
+#define PITCH_MOD_RANGE_PERIOD (1024)
+
 ///////////////////////////////////////////////////////////////////////////////
 //
 // AY-specific logic
@@ -42,6 +45,11 @@ void resetTrackAY(PlaybackState* state, int trackIdx) {
 
   // Set non-zero defaults for fields that need them
   track->note.chip.ay.noiseBase = EMPTY_VALUE_8;
+
+  // Reset fixed pitches
+  track->note.chip.ay.toneFixedPitch = EMPTY_VALUE_8;
+  track->note.chip.ay.envFixedPitch = EMPTY_VALUE_8;
+  track->note.chip.ay.softFixedPitch = EMPTY_VALUE_8;
 }
 
 void resetOffsetsAY(PlaybackState* state, int trackIdx) {
@@ -196,8 +204,8 @@ void handleInstrumentAY1(PlaybackState* state, int trackIdx) {
         }
         break;
       }
-      case 2: { // Tone Pitch
-        track->note.chip.ay.toneFineOffset += playbackModScaleToRange(mod->outValue, p->linearPitch ? 2400 : 1024);
+      case 2: { // Pitch
+        track->note.fineOffset += playbackModScaleToRange(mod->outValue, p->linearPitch ? PITCH_MOD_RANGE_CENTS : PITCH_MOD_RANGE_PERIOD);
         break;
       }
       case 3: { // Noise
@@ -242,20 +250,24 @@ void handleInstrumentAY2(PlaybackState* state, int trackIdx) {
         }
         break;
       }
-      case 2: { // Tone Pitch
-        track->note.chip.ay.toneFineOffset += playbackModScaleToRange(mod->outValue, p->linearPitch ? 2400 : 1024);
+      case 2: { // Pitch
+        track->note.fineOffset += playbackModScaleToRange(mod->outValue, p->linearPitch ? PITCH_MOD_RANGE_CENTS : PITCH_MOD_RANGE_PERIOD);
         break;
       }
-      case 3: { // Noise
+      case 3: { // Tone Pitch
+        track->note.chip.ay.toneFineOffset += playbackModScaleToRange(mod->outValue, p->linearPitch ? PITCH_MOD_RANGE_CENTS : PITCH_MOD_RANGE_PERIOD);
+        break;
+      }
+      case 4: { // Noise
         track->note.chip.ay.noiseOffset += playbackModScaleToRange(mod->outValue, 127);
         break;
       }
-      case 4: { // Env Pitch
-        track->note.chip.ay.envFineOffset += playbackModScaleToRange(mod->outValue, p->linearPitch ? 2400 : 256);
+      case 5: { // Env Pitch
+        track->note.chip.ay.envFineOffset += playbackModScaleToRange(mod->outValue, p->linearPitch ? PITCH_MOD_RANGE_CENTS : 256);
         break;
       }
-      case 5: { // Software Oscillator Pitch
-        track->note.chip.ay.softFineOffset += playbackModScaleToRange(mod->outValue, p->linearPitch ? 2400 : 1024);
+      case 6: { // Software Oscillator Pitch
+        track->note.chip.ay.softFineOffset += playbackModScaleToRange(mod->outValue, p->linearPitch ? PITCH_MOD_RANGE_CENTS : PITCH_MOD_RANGE_PERIOD);
         break;
       }
     }
@@ -299,9 +311,13 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
     } else {
       enum InstrumentType instType = p->instruments[track->note.instrument].type;
 
-      // Calculate tone period (common for AY1 and AY2)
+      // =====================
+      // Calculate tone period
+      // =====================
+
       int16_t period;
-      int8_t tonePitch = track->note.pitchFinal + track->note.chip.ay.tonePitchOffset;
+      uint8_t toneBasePitch = (track->note.chip.ay.toneFixedPitch != EMPTY_VALUE_8) ? track->note.chip.ay.toneFixedPitch : track->note.pitchFinal;
+      int8_t tonePitch = toneBasePitch + track->note.chip.ay.tonePitchOffset;
 
       if (tonePitch < 0) tonePitch = 0;
       if (tonePitch > p->pitchTable.length - 1) tonePitch = p->pitchTable.length - 1;
@@ -324,10 +340,15 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
       chip->setRegister(chip, ayChannel * 2, period & 0xff);
       chip->setRegister(chip, ayChannel * 2 + 1, (period & 0xf00) >> 8);
 
+      // ===============
       // Volume register
+      // ===============
+
       int volume = 0;
       if (track->note.chip.ay.envShape != 0) {
+        // ===========
         // Envelope on
+        // ===========
         envShape = track->note.chip.ay.envShape;
 
         // Env period calculation
@@ -342,18 +363,18 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
           // 2. Manual envelope (AY1 style or AY2 with pitch control)
           if (instType == instAY2) {
             // AY2: Calculate envelope period from pitch
+            uint8_t envBasePitch = (track->note.chip.ay.envFixedPitch != EMPTY_VALUE_8) ? track->note.chip.ay.envFixedPitch : track->note.pitchFinal;
+            int8_t envPitch = envBasePitch + track->note.chip.ay.envPitchOffset;
+            if (envPitch < 0) envPitch = 0;
+            if (envPitch > p->pitchTable.length - 1) envPitch = p->pitchTable.length - 1;
+
             if (p->linearPitch) {
-              int envCents = p->pitchTable.values[track->note.pitchFinal] + track->note.fineOffset;
-              envCents += track->note.chip.ay.envPitchOffset * 100;
+              int envCents = p->pitchTable.values[envPitch] + track->note.fineOffset;
               envCents += track->note.chip.ay.envFineOffset;
               float envFrequency = centsToFrequency(envCents);
               envPeriod = frequencyToAYPeriod(envFrequency, p->chipSetup.ay.clock);
             } else {
-              int8_t envPitch = track->note.pitchFinal + track->note.chip.ay.envPitchOffset;
-              if (envPitch < 0) envPitch = 0;
-              if (envPitch > p->pitchTable.length - 1) envPitch = p->pitchTable.length - 1;
-
-              //envPeriod = p->pitchTable.values[envPitch] - track->note.fineOffset;
+              envPeriod = p->pitchTable.values[envPitch] /* - track->note.fineOffset */;
               envPeriod -= track->note.chip.ay.envFineOffset;
             }
           } else {
@@ -370,7 +391,10 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
 
         volume = 16;
       } else {
+        // ===============================
         // Envelope off - calculate volume
+        // ===============================
+
         volume = track->note.volume + track->note.volumeOffset;
         if (volume < 0) volume = 0;
         if (volume > 15) volume = 15;
@@ -402,12 +426,16 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
 
       chip->setRegister(chip, 8 + ayChannel, state->trackEnabled[t] ? volume : 0);
 
+      // =====
       // Noise
+      // =====
       if ((track->note.chip.ay.mixer & 8) == 0 && track->note.chip.ay.noiseBase != EMPTY_VALUE_8) {
         noise = track->note.chip.ay.noiseBase + track->note.chip.ay.noiseOffset;
       }
 
+      // =====
       // Mixer
+      // =====
       mixer = mixer & (~(9 << ayChannel));
       mixer = mixer | ((track->note.chip.ay.mixer & 9) << ayChannel);
     }
@@ -415,6 +443,7 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
     ayChannel++;
   }
 
+  // Env register write
   if (envShape != 0) {
     if (envShape != state->chips[chipIdx].ay.envShape) {
       chip->setRegister(chip, 13, envShape);
@@ -424,9 +453,11 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
     chip->setRegister(chip, 12, (envPeriod & 0xff00) >> 8);
   }
 
+  // Noise register write
   if (noise != EMPTY_VALUE_8) {
     chip->setRegister(chip, 6, noise);
   }
+  // Mixer register write
   chip->setRegister(chip, 7, mixer);
 }
 

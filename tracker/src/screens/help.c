@@ -107,6 +107,67 @@ char* helpFXHint(uint8_t* fx, int isTable) {
         sprintf(buffer, "Song hop by %hhd", fx[1]);
       }
       break;
+    // Modulation FX
+    case fxM1A: // Modulation 1 amount
+      sprintf(buffer, "Modulation 1 amount %hhd", (int8_t)fx[1]);
+      break;
+    case fxM11: // Modulation 1, parameter 1
+      sprintf(buffer, "Modulation 1 param 1 offset %hhd", (int8_t)fx[1]);
+      break;
+    case fxM12: // Modulation 1, parameter 2
+      sprintf(buffer, "Modulation 1 param 2 offset %hhd", (int8_t)fx[1]);
+      break;
+    case fxM13: // Modulation 1, parameter 3
+      sprintf(buffer, "Modulation 1 param 3 offset %hhd", (int8_t)fx[1]);
+      break;
+    case fxM14: // Modulation 1, parameter 4
+      sprintf(buffer, "Modulation 1 param 4 offset %hhd", (int8_t)fx[1]);
+      break;
+    case fxM2A: // Modulation 2 amount
+      sprintf(buffer, "Modulation 2 amount %hhd", (int8_t)fx[1]);
+      break;
+    case fxM21: // Modulation 2, parameter 1
+      sprintf(buffer, "Modulation 2 param 1 offset %hhd", (int8_t)fx[1]);
+      break;
+    case fxM22: // Modulation 2, parameter 2
+      sprintf(buffer, "Modulation 2 param 2 offset %hhd", (int8_t)fx[1]);
+      break;
+    case fxM23: // Modulation 2, parameter 3
+      sprintf(buffer, "Modulation 2 param 3 offset %hhd", (int8_t)fx[1]);
+      break;
+    case fxM24: // Modulation 2, parameter 4
+      sprintf(buffer, "Modulation 2 param 4 offset %hhd", (int8_t)fx[1]);
+      break;
+    case fxM3A: // Modulation 3 amount
+      sprintf(buffer, "Modulation 3 amount %hhd", (int8_t)fx[1]);
+      break;
+    case fxM31: // Modulation 3, parameter 1
+      sprintf(buffer, "Modulation 3 param 1 offset %hhd", (int8_t)fx[1]);
+      break;
+    case fxM32: // Modulation 3, parameter 2
+      sprintf(buffer, "Modulation 3 param 2 offset %hhd", (int8_t)fx[1]);
+      break;
+    case fxM33: // Modulation 3, parameter 3
+      sprintf(buffer, "Modulation 3 param 3 offset %hhd", (int8_t)fx[1]);
+      break;
+    case fxM34: // Modulation 3, parameter 4
+      sprintf(buffer, "Modulation 3 param 4 offset %hhd", (int8_t)fx[1]);
+      break;
+    case fxM4A: // Modulation 4 amount
+      sprintf(buffer, "Modulation 4 amount %hhd", (int8_t)fx[1]);
+      break;
+    case fxM41: // Modulation 4, parameter 1
+      sprintf(buffer, "Modulation 4 param 1 offset %hhd", (int8_t)fx[1]);
+      break;
+    case fxM42: // Modulation 4, parameter 2
+      sprintf(buffer, "Modulation 4 param 2 offset %hhd", (int8_t)fx[1]);
+      break;
+    case fxM43: // Modulation 4, parameter 3
+      sprintf(buffer, "Modulation 4 param 3 offset %hhd", (int8_t)fx[1]);
+      break;
+    case fxM44: // Modulation 4, parameter 4
+      sprintf(buffer, "Modulation 4 param 4 offset %hhd", (int8_t)fx[1]);
+      break;
     // AY-specific FX
     case fxAYM: // AY Mixer settting
       if (fx[1] & 0xf0) {
@@ -193,6 +254,28 @@ static const char* fxHelpText[] = {
   [fxGGR] = "Global Groove\nSets groove for\nall tracks",
   [fxHOP] = "Hop\nHops to phrase/table row X times",
   [fxSNG] = "Song Hop\nHops in song by\namount specified",
+  // Modulation FX
+  [fxM1A] = "Mod 1 Amount\nSets modulation 1\noutput amount",
+  [fxM11] = "Mod 1 Param 1\nOffsets modulation 1\nparameter 1",
+  [fxM12] = "Mod 1 Param 2\nOffsets modulation 1\nparameter 2",
+  [fxM13] = "Mod 1 Param 3\nOffsets modulation 1\nparameter 3",
+  [fxM14] = "Mod 1 Param 4\nOffsets modulation 1\nparameter 4",
+  [fxM2A] = "Mod 2 Amount\nSets modulation 2\noutput amount",
+  [fxM21] = "Mod 2 Param 1\nOffsets modulation 2\nparameter 1",
+  [fxM22] = "Mod 2 Param 2\nOffsets modulation 2\nparameter 2",
+  [fxM23] = "Mod 2 Param 3\nOffsets modulation 2\nparameter 3",
+  [fxM24] = "Mod 2 Param 4\nOffsets modulation 2\nparameter 4",
+  [fxM3A] = "Mod 3 Amount\nSets modulation 3\noutput amount",
+  [fxM31] = "Mod 3 Param 1\nOffsets modulation 3\nparameter 1",
+  [fxM32] = "Mod 3 Param 2\nOffsets modulation 3\nparameter 2",
+  [fxM33] = "Mod 3 Param 3\nOffsets modulation 3\nparameter 3",
+  [fxM34] = "Mod 3 Param 4\nOffsets modulation 3\nparameter 4",
+  [fxM4A] = "Mod 4 Amount\nSets modulation 4\noutput amount",
+  [fxM41] = "Mod 4 Param 1\nOffsets modulation 4\nparameter 1",
+  [fxM42] = "Mod 4 Param 2\nOffsets modulation 4\nparameter 2",
+  [fxM43] = "Mod 4 Param 3\nOffsets modulation 4\nparameter 3",
+  [fxM44] = "Mod 4 Param 4\nOffsets modulation 4\nparameter 4",
+  // AY-specific FX
   [fxAYM] = "AY Mixer\nControls tone/noise mix\nand envelope mode",
   [fxERT] = "Envelope Retrigger\nRestarts AY envelope\nfrom beginning",
   [fxNOI] = "Noise Offset\nAdds offset to\nnoise period",
