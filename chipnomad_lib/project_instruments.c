@@ -1,5 +1,6 @@
 #include <string.h>
 #include "project_instruments.h"
+#include "project.h"
 
 static void initCommon(Instrument* instrument) {
   memset(instrument, 0, sizeof(Instrument));
@@ -41,7 +42,7 @@ static int initAY1Instrument(Instrument* instrument) {
   initCommon(instrument);
   instrument->type = instAY1;
   instrument->chip.ay.defaultMixer = 0x01; // Tone on, noise off, envelope shape 0
-  instrument->chip.ay.volumeEnvelope = (Modulation){.type = modADSR, .destination = 0, .amount = 15, .p1 = 0, .p2 = 0, .p3 = 15, .p4 = 0 };
+  instrument->chip.ay.volumeEnvelope = (Modulation){.type = modADSR, .destination = 1, .amount = 127, .p1 = 0, .p2 = 0, .p3 = 15, .p4 = 0 };
   return 0;
 }
 
@@ -148,3 +149,4 @@ InstrumentFunctions getInstrumentFunctions(enum InstrumentType type) {
       };
   }
 }
+

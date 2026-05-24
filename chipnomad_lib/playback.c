@@ -221,7 +221,51 @@ static void tableProgress(PlaybackState* state, int trackIdx, struct PlaybackTab
 }
 
 void handleNoteOff(PlaybackState* state, int trackIdx) {
-  noteOffInstrumentAY(state, trackIdx);
+  PlaybackTrackState* track = &state->tracks[trackIdx];
+  Project* p = state->p;
+
+  if (track->note.instrument == EMPTY_VALUE_8) return;
+
+  enum InstrumentType instType = p->instruments[track->note.instrument].type;
+
+  if (instType == instNone) return;
+
+  if (instType == instAY1) {
+    // Handle legacy AY1 volume modulation
+    playbackModNoteOff(&track->note.chip.ay.volumeModulation);
+  }
+
+  // Common note off for all instruments - send note off to all modulations
+  for (int i = 0; i < 4; i++) {
+    playbackModNoteOff(&track->note.modulation[i]);
+  }
+}
+
+static void initModulations(PlaybackState* state, int trackIdx, uint8_t oldInstrument, uint8_t newInstrument) {
+  PlaybackTrackState* track = &state->tracks[trackIdx];
+  Project* p = state->p;
+
+  if (newInstrument == EMPTY_VALUE_8) return;
+
+  const Modulation* mods = p->instruments[newInstrument].modulation;
+
+  int instrumentChanged = (oldInstrument != newInstrument);
+
+  // Initialize all modulation slots
+  for (int i = 0; i < 4; i++) {
+    const Modulation* mod = &mods[i];
+
+    // Check if this is an LFO with "free" trigger mode
+    // LFO parameters: p1=shape, p2=trigger, p3=period
+    int isLFOFree = (mod->type == modLFO && mod->p2 == lfoTrigFree);
+
+    // Initialize modulation if:
+    // 1. Instrument changed (always reinit), OR
+    // 2. Not an LFO with free trigger mode (retrig/hold/once always reinit)
+    if (instrumentChanged || !isLFOFree) {
+      playbackModInit(&track->note.modulation[i], (Modulation*)mod);
+    }
+  }
 }
 
 void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRow, int skipDelCheck) {
@@ -268,6 +312,7 @@ void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRo
 
   // Instrument
   if (instrument != EMPTY_VALUE_8) {
+    uint8_t oldInstrument = track->note.instrument;
     track->note.instrument = instrument;
 
     // Turn off all FX on a new instrument
@@ -277,8 +322,11 @@ void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRo
     // Reset AUX table
     tableInit(state, trackIdx, &track->note.auxTable, EMPTY_VALUE_8, 0, 1);
 
+    // Initialize modulations
+    initModulations(state, trackIdx, oldInstrument, instrument);
+
     // Setup instrument
-    setupInstrumentAY(state, trackIdx);
+    setupInstrument(state, trackIdx);
     if (instrumentTable == EMPTY_VALUE_8) {
       instrumentTable = instrument;
       if (instrumentTableRow == EMPTY_VALUE_8) {
@@ -453,28 +501,51 @@ void resetOffsets(PlaybackState* state, int trackIdx) {
   track->note.periodOffset = 0;
   track->note.volumeOffset = 0;
 
-  // TODO: Encapsulate chip-specific offset resets
-  track->note.chip.ay.envPeriodOffset = 0;
-  track->note.chip.ay.noiseOffset = 0;
+  // Reset modulation offsets
+  for (int i = 0; i < 4; i++) {
+    track->note.modulation[i].p1Offset = 0;
+    track->note.modulation[i].p2Offset = 0;
+    track->note.modulation[i].p3Offset = 0;
+    track->note.modulation[i].p4Offset = 0;
+  }
+
+  // Dispatch to chip-specific offset reset based on instrument type
+  if (track->note.instrument != EMPTY_VALUE_8) {
+    enum InstrumentType instType = state->p->instruments[track->note.instrument].type;
+    switch (instType) {
+      case instAY1:
+      case instAY2:
+      case instAYSample:
+      case instAYWavetable:
+        resetOffsetsAY(state, trackIdx);
+        break;
+      default:
+        break;
+    }
+  }
 }
 
-static void nextFrame(PlaybackState* state, int trackIdx, int chipIdx) {
+static void processModulations(PlaybackState* state, int trackIdx) {
+  PlaybackTrackState* track = &state->tracks[trackIdx];
+
+  if (track->note.instrument == EMPTY_VALUE_8) return;
+
+  for (int i = 0; i < 4; i++) {
+    PlaybackModState* mod = &track->note.modulation[i];
+    // Skip if modulation not initialized or destination == 0 (no destination)
+    if (!mod->modulation || mod->modulation->destination == 0) continue;
+    playbackModNext(mod);
+  }
+}
+
+static void handleInstrument(PlaybackState* state, int trackIdx) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
   Project* p = state->p;
 
-  // Is the channel playing?
-  if (track->songRow == EMPTY_VALUE_16) {
-    track->note.pitchFinal = EMPTY_VALUE_8;
-    return;
-  }
+  if (track->note.instrument == EMPTY_VALUE_8) return;
+  if (track->note.pitchBase == EMPTY_VALUE_8) return;
 
-  resetOffsets(state, trackIdx);
-
-  // FX
-  handleFX(state, trackIdx, chipIdx);
-
-  // Instrument
-  enum InstrumentType instType = (track->note.instrument != EMPTY_VALUE_8) ? p->instruments[track->note.instrument].type : instNone;
+  enum InstrumentType instType = p->instruments[track->note.instrument].type;
   switch (instType) {
   case instAY1:
     handleInstrumentAY1(state, trackIdx);
@@ -491,40 +562,57 @@ static void nextFrame(PlaybackState* state, int trackIdx, int chipIdx) {
   case instNone:
     break;
   }
+}
 
-  // Final note calculation
+static void nextFrame(PlaybackState* state, int trackIdx, int chipIdx) {
+  PlaybackTrackState* track = &state->tracks[trackIdx];
+  Project* p = state->p;
+
+  // Is the channel playing?
+  if (track->songRow == EMPTY_VALUE_16) {
+    track->note.pitchFinal = EMPTY_VALUE_8;
+    return;
+  }
+
+  resetOffsets(state, trackIdx);
+  handleFX(state, trackIdx, chipIdx);
+  processModulations(state, trackIdx);
+  handleInstrument(state, trackIdx);
+
+  // Final pitch calculation
   if (track->note.pitchBase == EMPTY_VALUE_8) {
     track->note.pitchFinal = EMPTY_VALUE_8;
   } else {
-    // Base note
-    int16_t note = track->note.pitchBase;
+    // Base pitch
+    int16_t pitch = track->note.pitchBase;
 
     // Tables
     int tableIdx = track->note.instrumentTable.tableIdx;
     if (tableIdx != EMPTY_VALUE_8) {
       if (p->tables[tableIdx].rows[track->note.instrumentTable.rows[0]].pitchFlag) {
-        note = p->tables[tableIdx].rows[track->note.instrumentTable.rows[0]].pitchOffset;
+        pitch = p->tables[tableIdx].rows[track->note.instrumentTable.rows[0]].pitchOffset;
       } else {
-        note += (int8_t)(p->tables[tableIdx].rows[track->note.instrumentTable.rows[0]].pitchOffset);
+        pitch += (int8_t)(p->tables[tableIdx].rows[track->note.instrumentTable.rows[0]].pitchOffset);
       }
     }
 
     tableIdx = track->note.auxTable.tableIdx;
     if (tableIdx != EMPTY_VALUE_8) {
       if (p->tables[tableIdx].rows[track->note.auxTable.rows[0]].pitchFlag) {
-        note = p->tables[tableIdx].rows[track->note.auxTable.rows[0]].pitchOffset;
+        pitch = p->tables[tableIdx].rows[track->note.auxTable.rows[0]].pitchOffset;
       } else {
-        note += (int8_t)(p->tables[tableIdx].rows[track->note.auxTable.rows[0]].pitchOffset);
+        pitch += (int8_t)(p->tables[tableIdx].rows[track->note.auxTable.rows[0]].pitchOffset);
       }
     }
 
     // Offset from FX
-    note += track->note.pitchOffset;
+    pitch += track->note.pitchOffset;
 
-    if (note < 0) note = p->pitchTable.length + (note % p->pitchTable.length);
-    if (note >= p->pitchTable.length) note = note % p->pitchTable.length;
+    // Clamp pitch to valid range
+    if (pitch < 0) pitch = 0;
+    if (pitch >= p->pitchTable.length) pitch = p->pitchTable.length - 1;
 
-    track->note.pitchFinal = note;
+    track->note.pitchFinal = pitch;
   }
 }
 

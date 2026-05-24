@@ -24,14 +24,18 @@ void registerFXHandlers_AY(void);
 
 // AY-3-8910/YM2149F
 int timerFunctionAY(struct SoundChip* chip, void* userdata);
-void setupInstrumentAY(PlaybackState* state, int trackIdx);
-void noteOffInstrumentAY(PlaybackState* state, int trackIdx);
+void setupInstrumentAY1(PlaybackState* state, int trackIdx);
+void setupInstrumentAY2(PlaybackState* state, int trackIdx);
+void setupInstrumentAYSample(PlaybackState* state, int trackIdx);
+void setupInstrumentAYWavetable(PlaybackState* state, int trackIdx);
+void setupInstrument(PlaybackState* state, int trackIdx);
 void handleInstrumentAY1(PlaybackState* state, int trackIdx);
 void handleInstrumentAY2(PlaybackState* state, int trackIdx);
 void handleInstrumentAYSample(PlaybackState* state, int trackIdx);
 void handleInstrumentAYWavetable(PlaybackState* state, int trackIdx);
 void outputRegistersAY(ChipNomadState* state, int trackIdx, int chipIdx);
 void resetTrackAY(PlaybackState* state, int trackIdx);
+void resetOffsetsAY(PlaybackState* state, int trackIdx);
 
 // Convert frequency to AY period
 int frequencyToAYPeriod(float frequency, int clockHz);

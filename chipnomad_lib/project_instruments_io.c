@@ -16,7 +16,7 @@ static int loadInstrumentAY1Legacy(int fileId, Instrument* instrument) {
       Modulation* ve = &instrument->chip.ay.volumeEnvelope;
       ve->type = modADSR;
       ve->destination = 1;
-      ve->amount = 15;
+      ve->amount = 127;
       sscanf(line, "- Volume envelope: %hhu,%hhu,%hhu,%hhu",
         &ve->p1, &ve->p2, &ve->p3, &ve->p4);  // A, D, S, R
     } else if (strncmp(line, "- Auto envelope: ", 17) == 0) {
@@ -41,7 +41,7 @@ static int loadInstrumentAY1(int fileId, Instrument* instrument) {
       Modulation* ve = &instrument->chip.ay.volumeEnvelope;
       ve->type = modADSR;
       ve->destination = 1;
-      ve->amount = 15;
+      ve->amount = 127;
       sscanf(line, "- Volume envelope: %hhu,%hhu,%hhu,%hhu",
         &ve->p1, &ve->p2, &ve->p3, &ve->p4);  // A, D, S, R
     } else if (strncmp(line, "- Auto envelope: ", 17) == 0) {

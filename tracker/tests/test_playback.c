@@ -52,6 +52,7 @@ static void setInstrument(int idx, uint8_t veA, uint8_t veD, uint8_t veS, uint8_
   state->project.instruments[idx].tableSpeed = 1;
   state->project.instruments[idx].transposeEnabled = 1;
   state->project.instruments[idx].chip.ay.volumeEnvelope.type = modADSR;
+  state->project.instruments[idx].chip.ay.volumeEnvelope.amount = 127;  // Full amount
   state->project.instruments[idx].chip.ay.volumeEnvelope.p1 = veA;  // Attack
   state->project.instruments[idx].chip.ay.volumeEnvelope.p2 = veD;  // Decay
   state->project.instruments[idx].chip.ay.volumeEnvelope.p3 = veS;  // Sustain
@@ -86,21 +87,68 @@ void test_single_note_outputs_to_registers(void) {
   // Put chain 0 in song row 0, track 0
   state->project.song[0][0] = 0;
 
-  // Start playback and advance one frame
+  // Start playback and advance a few frames to let attack ramp up
   playbackStartSong(&state->playbackState, 0, 0, 0);
-  advanceFrames(1);
+  advanceFrames(5);
 
   // Channel 0 tone period should be set (regs 0,1)
   uint16_t period = state->chips[0].regs[0] | (state->chips[0].regs[1] << 8);
   TEST_ASSERT_EQUAL(state->project.pitchTable.values[48], period);
 
-  // Channel 0 volume should be non-zero
+  // Channel 0 volume should be non-zero (attack phase ramping up)
   TEST_ASSERT_NOT_EQUAL(0, state->chips[0].regs[8] & 0x0f);
+}
+
+void test_ADSR_volume_envelope_ranges(void) {
+  // Test with A=15, D=16, S=1, R=10
+  // This should produce low initial volume, decay to sustain level 1, then release
+  setInstrument(0, 15, 16, 1, 10);
+
+  // Put a note in phrase 0
+  state->project.phrases[0].rows[0].note = 48;
+  state->project.phrases[0].rows[0].instrument = 0;
+  state->project.phrases[0].rows[0].volume = 15;
+
+  // Put phrase in chain and song
+  state->project.chains[0].rows[0].phrase = 0;
+  state->project.song[0][0] = 0;
+
+  // Start playback
+  playbackStartSong(&state->playbackState, 0, 0, 0);
+
+  // First frame: should start attack phase with low volume (0-2)
+  advanceFrames(1);
+  uint8_t vol1 = state->chips[0].regs[8] & 0x0f;
+  TEST_ASSERT_LESS_OR_EQUAL(2, vol1);
+
+  // After attack (15 frames): should be at max volume (15)
+  advanceFrames(14);
+  uint8_t volMax = state->chips[0].regs[8] & 0x0f;
+  TEST_ASSERT_EQUAL(15, volMax);
+
+  // After decay (16 more frames): should be at sustain level (1)
+  advanceFrames(16);
+  uint8_t volSustain = state->chips[0].regs[8] & 0x0f;
+  TEST_ASSERT_INT_WITHIN(1, 1, volSustain);
+
+  // Trigger note off
+  handleNoteOff(&state->playbackState, 0);
+
+  // After release starts: volume should decrease or stay same
+  advanceFrames(1);
+  uint8_t volRelease1 = state->chips[0].regs[8] & 0x0f;
+  TEST_ASSERT_LESS_OR_EQUAL(volSustain, volRelease1); // Should be decreasing or same
+
+  // After full release (10 frames): should be at 0
+  advanceFrames(10);
+  uint8_t volEnd = state->chips[0].regs[8] & 0x0f;
+  TEST_ASSERT_EQUAL(0, volEnd);
 }
 
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_playback_init_all_tracks_stopped);
   RUN_TEST(test_single_note_outputs_to_registers);
+  RUN_TEST(test_ADSR_volume_envelope_ranges);
   return UNITY_END();
 }

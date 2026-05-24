@@ -322,7 +322,7 @@ static void handleFX_RET(PlaybackState* state, PlaybackTrackState* track, int tr
   }
 
   if (fx->counter % delay == 0) {
-    setupInstrumentAY(state, trackIdx);
+    setupInstrument(state, trackIdx);
     tableInit(state, trackIdx, &track->note.instrumentTable, track->note.instrumentTable.tableIdx, 0, 1);
     tableInit(state, trackIdx, &track->note.auxTable, track->note.auxTable.tableIdx, 0, 1);
     restartFX(state, trackIdx);

@@ -34,13 +34,36 @@ enum FX {
   fxHOP, // Hop
   fxSNG, // Song hop
 
+  // Modulation FX
+  fxM1A, // Modulation 1 amount
+  fxM11, // Modulation 1, parameter 1 offset
+  fxM12, // Modulation 1, parameter 2 offset
+  fxM13, // Modulation 1, parameter 3 offset
+  fxM14, // Modulation 1, parameter 4 offset
+  fxM2A, // Modulation 2 amount
+  fxM21, // Modulation 2, parameter 1 offset
+  fxM22, // Modulation 2, parameter 2 offset
+  fxM23, // Modulation 2, parameter 3 offset
+  fxM24, // Modulation 2, parameter 4 offset
+  fxM3A, // Modulation 3 amount
+  fxM31, // Modulation 3, parameter 1 offset
+  fxM32, // Modulation 3, parameter 2 offset
+  fxM33, // Modulation 3, parameter 3 offset
+  fxM34, // Modulation 3, parameter 4 offset
+  fxM4A, // Modulation 4 amount
+  fxM41, // Modulation 4, parameter 1 offset
+  fxM42, // Modulation 4, parameter 2 offset
+  fxM43, // Modulation 4, parameter 3 offset
+  fxM44, // Modulation 4, parameter 4 offset
+
   // AY FX
-  // AY Classic instrument (AY1):
+  // Common AY FX (used in 1+ AY instrument types):
   fxAYM, // AY Mixer settting
   fxERT, // Envelope retrigger
   fxNOI, // Noise (relative)
   fxNOA, // Noise (absolute)
   fxEAU, // Auto-env setting
+  // AY Classic instrument (AY1):
   fxEVB, // Envelope vibrato
   fxEBN, // Envelope bend
   fxESL, // Envelope slide (portamento)
@@ -48,7 +71,7 @@ enum FX {
   fxEPT, // Envelope pitch offset
   fxEPL, // Envelope period L
   fxEPH, // Envelope period H
-  // AY Synth instrument (AY2):
+  // AY Plus instrument (AY2):
 
   // AY Sample instrument (AYSample):
 

@@ -52,3 +52,12 @@ float centsToFrequency(int cents) {
   float semitones = (cents - 6900) / 100.0f;
   return 440.0f * powf(2.0f, semitones / 12.0f);
 }
+
+// Simple pseudo-random number generator (LCG)
+// Returns a value in range [0, 65535]
+uint16_t utilsRandom(void) {
+  static uint32_t seed = 0x5A5A5A5A;
+  // LCG: next = (a * seed + c) mod m
+  seed = seed * 1103515245u + 12345u;
+  return (uint16_t)((seed >> 16) & 0xFFFF);
+}

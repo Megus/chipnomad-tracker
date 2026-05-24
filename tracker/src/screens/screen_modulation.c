@@ -72,25 +72,25 @@ static const char* modTypeName(enum ModulationType type) {
 
 static const char* lfoShapeName(uint8_t shape) {
   switch (shape) {
-    case lfoTri:      return "Tri   ";
-    case lfoSin:      return "Sin   ";
-    case lfoRampDown: return "RampDn";
-    case lfoRampUp:   return "RampUp";
-    case lfoExpDown:  return "ExpDn ";
-    case lfoExpUp:    return "ExpUp ";
-    case lfoSquare:   return "Square";
-    case lfoRandom:   return "Random";
-    default:          return "?     ";
+    case lfoShapeTri:      return "Tri   ";
+    case lfoShapeSin:      return "Sin   ";
+    case lfoShapeRampDown: return "RampDn";
+    case lfoShapeRampUp:   return "RampUp";
+    case lfoShapeExpDown:  return "ExpDn ";
+    case lfoShapeExpUp:    return "ExpUp ";
+    case lfoShapeSquare:   return "Square";
+    case lfoShapeRandom:   return "Random";
+    default:               return "?     ";
   }
 }
 
 static const char* lfoTrigName(uint8_t trig) {
   switch (trig) {
-    case lfoFree:   return "Free  ";
-    case lfoRetrig: return "Retrig";
-    case lfoHold:   return "Hold  ";
-    case lfoOnce:   return "Once  ";
-    default:        return "?     ";
+    case lfoTrigFree:   return "Free  ";
+    case lfoTrigRetrig: return "Retrig";
+    case lfoTrigHold:   return "Hold  ";
+    case lfoTrigOnce:   return "Once  ";
+    default:            return "?     ";
   }
 }
 
@@ -311,7 +311,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
           handled = edit8noLast(action, &mod->p1, 1, 0, lfoShapeTotalCount - 1);
           // No hint for LFO shape - not adding value
         } else if (paramIdx == 1) {
-          handled = edit8noLast(action, &mod->p2, 1, 0, lfoTriggerTotalCount - 1);
+          handled = edit8noLast(action, &mod->p2, 1, 0, lfoTrigTotalCount - 1);
           // No hint for LFO trigger - not adding value
         } else if (paramIdx == 2) {
           handled = edit8noLast(action, &mod->p3, 16, 0, 255);

@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include "project_constants.h"
 
+// Forward declarations
+struct Project;
+
 // Instruments
 
 enum InstrumentType {
@@ -22,33 +25,33 @@ enum ModulationType {
 };
 
 enum LFOShape {
-  lfoTri = 0,
-  lfoSin = 1,
-  lfoRampDown = 2,
-  lfoRampUp = 3,
-  lfoExpDown = 4,
-  lfoExpUp = 5,
-  lfoSquare = 6,
-  lfoRandom = 7,
+  lfoShapeTri = 0,
+  lfoShapeSin = 1,
+  lfoShapeRampDown = 2,
+  lfoShapeRampUp = 3,
+  lfoShapeExpDown = 4,
+  lfoShapeExpUp = 5,
+  lfoShapeSquare = 6,
+  lfoShapeRandom = 7,
   lfoShapeTotalCount,
 };
 
 enum LFOTrigger {
-  lfoFree = 0,
-  lfoRetrig = 1,
-  lfoHold = 2,
-  lfoOnce = 3,
-  lfoTriggerTotalCount,
+  lfoTrigFree = 0,
+  lfoTrigRetrig = 1,
+  lfoTrigHold = 2,
+  lfoTrigOnce = 3,
+  lfoTrigTotalCount,
 };
 
 typedef struct Modulation {
   enum ModulationType type;
   uint8_t destination;
   int8_t amount;
-  uint8_t p1;
-  uint8_t p2;
-  uint8_t p3;
-  uint8_t p4;
+  uint8_t p1; // ADSR: A, AHD: A, LFO: Shape
+  uint8_t p2; // ADSR: D, AHD: H, LFO: Trig
+  uint8_t p3; // ADSR: S, AHD: D, LFO: Period
+  uint8_t p4; // ADSR: R, AHD: -, LFO: -
 } Modulation;
 
 // AY Instruments

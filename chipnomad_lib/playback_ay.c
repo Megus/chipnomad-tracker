@@ -1,5 +1,7 @@
 #include "chipnomad_lib.h"
 #include "playback_internal.h"
+#include "playback_modulation.h"
+#include "playback_instruments.h"
 #include "utils.h"
 #include <stdio.h>
 #include <string.h>
@@ -34,103 +36,238 @@ int timerFunctionAY(struct SoundChip* chip, void* userdata) {
 void resetTrackAY(PlaybackState* state, int trackIdx) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
 
+  // Clear all AY playback state
+  // This function is generic and works for all AY instrument types (AY1, AY2, AYSample, AYWavetable)
   memset(&track->note.chip.ay, 0, sizeof(track->note.chip.ay));
+
+  // Set non-zero defaults for fields that need them
   track->note.chip.ay.noiseBase = EMPTY_VALUE_8;
 }
 
-void setupInstrumentAY(PlaybackState* state, int trackIdx) {
+void resetOffsetsAY(PlaybackState* state, int trackIdx) {
+  PlaybackTrackState* track = &state->tracks[trackIdx];
+
+  // Reset AY-specific offsets
+  track->note.chip.ay.envPeriodOffset = 0;
+  track->note.chip.ay.noiseOffset = 0;
+  track->note.chip.ay.tonePitchOffset = 0;
+  track->note.chip.ay.toneFineOffset = 0;
+  track->note.chip.ay.envPitchOffset = 0;
+  track->note.chip.ay.envFineOffset = 0;
+  track->note.chip.ay.softPitchOffset = 0;
+  track->note.chip.ay.softFineOffset = 0;
+  track->note.chip.ay.volumeOffset = 0;
+}
+
+void setupInstrumentAY1(PlaybackState* state, int trackIdx) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
   Project* p = state->p;
 
-  track->note.chip.ay.adsrCounter = 0;
-  track->note.chip.ay.envAutoN = p->instruments[track->note.instrument].chip.ay.autoEnvN;
-  track->note.chip.ay.envAutoD = p->instruments[track->note.instrument].chip.ay.autoEnvD;
-  track->note.chip.ay.envPeriodBase = 0;
-  track->note.chip.ay.envPeriodOffset = 0;
-  track->note.chip.ay.noiseBase = EMPTY_VALUE_8;
-  track->note.chip.ay.noiseOffset = 0;
-
+  // Mixer
   uint8_t defaultMixer = p->instruments[track->note.instrument].chip.ay.defaultMixer;
   uint8_t mixerValue = ~(defaultMixer & 0x0F);
   track->note.chip.ay.mixer = (mixerValue & 0x1) + ((mixerValue & 0x2) << 2);
-  track->note.chip.ay.envShape = (defaultMixer >> 4) & 0x0F;
 
-  track->note.chip.ay.adsrStep = 0; // ADSR: Attack
-  track->note.chip.ay.adsrFrom = 1;
-  track->note.chip.ay.adsrTo = 15;
+  // Noise
+  track->note.chip.ay.noiseBase = EMPTY_VALUE_8;
+
+  // Envelope
+  track->note.chip.ay.envShape = (defaultMixer >> 4) & 0x0F;
+  track->note.chip.ay.envAutoN = p->instruments[track->note.instrument].chip.ay.autoEnvN;
+  track->note.chip.ay.envAutoD = p->instruments[track->note.instrument].chip.ay.autoEnvD;
+  track->note.chip.ay.envPeriodBase = 0;
+
+  // Initialize AY1 legacy volume modulation (backward compatibility)
+  // AY1 uses the dedicated volumeModulation field in addition to the 4 generic modulation slots
+  Modulation* volumeMod = &p->instruments[track->note.instrument].chip.ay.volumeEnvelope;
+  playbackModInit(&track->note.chip.ay.volumeModulation, volumeMod);
+  // Scale sustain from 0-15 (AY volume range) to 0-255 (modulation range) with rounding
+  // Original sustain is in p3, we need to scale it
+  // We can't modify the instrument data, so we use p3Offset
+  int16_t scaledSustain = (volumeMod->p3 * 255 + 7) / 15;
+  track->note.chip.ay.volumeModulation.p3Offset = scaledSustain - volumeMod->p3;
+
+  // Software oscillator (not available for AY1)
+  track->note.chip.ay.softType = aySoftwareOscNone;
 }
 
-void noteOffInstrumentAY(PlaybackState* state, int trackIdx) {
+void setupInstrumentAY2(PlaybackState* state, int trackIdx) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
+  Project* p = state->p;
+  InstrumentAY2* ay2 = &p->instruments[track->note.instrument].chip.ay2;
 
-  if (track->note.instrument == EMPTY_VALUE_8 || track->note.chip.ay.adsrStep == 3) return;
+  // Mixer
+  uint8_t mixer = 0;
+  if (!ay2->oscTone.isOn) mixer |= 1;
+  if (!ay2->oscNoise.isOn) mixer |= 8;
+  track->note.chip.ay.mixer = mixer;
 
-  // ADSR: Release
-  track->note.chip.ay.adsrStep = 3;
-  track->note.chip.ay.adsrFrom = track->note.chip.ay.adsrVolume;
-  track->note.chip.ay.adsrTo = 0;
-  track->note.chip.ay.adsrCounter = 0;
+  // Noise
+  track->note.chip.ay.noiseBase = ay2->oscNoise.isOn ? ay2->oscNoise.noisePeriod : EMPTY_VALUE_8;
+
+  // Envelope
+  track->note.chip.ay.envShape = ay2->oscEnvelope.shape;
+  track->note.chip.ay.envAutoN = ay2->oscEnvelope.autoEnvN;
+  track->note.chip.ay.envAutoD = ay2->oscEnvelope.autoEnvD;
+  track->note.chip.ay.envPeriodBase = 0;
+
+  // Software oscillator
+  track->note.chip.ay.softType = ay2->oscSoftware.type;
+}
+
+void setupInstrumentAYSample(PlaybackState* state, int trackIdx) {
+  // TODO: Implement in future
+}
+
+void setupInstrumentAYWavetable(PlaybackState* state, int trackIdx) {
+  // TODO: Implement in future
+}
+
+void setupInstrument(PlaybackState* state, int trackIdx) {
+  PlaybackTrackState* track = &state->tracks[trackIdx];
+  Project* p = state->p;
+
+  if (track->note.instrument == EMPTY_VALUE_8) return;
+
+  enum InstrumentType instType = p->instruments[track->note.instrument].type;
+
+  switch (instType) {
+    case instAY1:
+      setupInstrumentAY1(state, trackIdx);
+      break;
+    case instAY2:
+      setupInstrumentAY2(state, trackIdx);
+      break;
+    case instAYSample:
+      setupInstrumentAYSample(state, trackIdx);
+      break;
+    case instAYWavetable:
+      setupInstrumentAYWavetable(state, trackIdx);
+      break;
+    case instNone:
+      // No setup needed
+      break;
+  }
 }
 
 void handleInstrumentAY1(PlaybackState* state, int trackIdx) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
   Project* p = state->p;
 
-  if (track->note.pitchBase == EMPTY_VALUE_8 || track->note.instrument == EMPTY_VALUE_8) {
-    track->note.chip.ay.adsrVolume = 0;
-    return;
+  // Process AY1 legacy volume modulation (backward compatibility)
+  if (track->note.chip.ay.volumeModulation.modulation) {
+    playbackModNext(&track->note.chip.ay.volumeModulation);
   }
 
-  // Volume ADSR
-  uint8_t adsrVolume = 0;
-  while (1) {
-    if (track->note.chip.ay.adsrStep > 3) break; // Just in case...
+  // Initialize volume to full (15) before applying modulations
+  track->note.chip.ay.volume = 15;
 
-    // Sustain phase
-    if (track->note.chip.ay.adsrStep == 2) {
-      adsrVolume = p->instruments[track->note.instrument].chip.ay.volumeEnvelope.p3;  // S
-      break;
+  // Apply AY1 legacy volume modulation (backward compatibility)
+  if (track->note.chip.ay.volumeModulation.modulation) {
+    int16_t scaledVolume = playbackModScaleToRange(track->note.chip.ay.volumeModulation.outValue, 15);
+    if (scaledVolume < 0) scaledVolume = 0;
+    if (scaledVolume > 15) scaledVolume = 15;
+    track->note.chip.ay.volume = (uint8_t)scaledVolume;
+    // Check if note should be stopped (release phase complete)
+    if (track->note.chip.ay.volumeModulation.step == 0xff) {
+      track->note.pitchBase = EMPTY_VALUE_8;
     }
+  }
 
-    int duration = 0;
-    // Attack
-    if (track->note.chip.ay.adsrStep == 0) duration = p->instruments[track->note.instrument].chip.ay.volumeEnvelope.p1;  // A
-    // Decay
-    else if (track->note.chip.ay.adsrStep == 1) duration = p->instruments[track->note.instrument].chip.ay.volumeEnvelope.p2;  // D
-    // Release
-    else if (track->note.chip.ay.adsrStep == 3) duration = p->instruments[track->note.instrument].chip.ay.volumeEnvelope.p4;  // R
+  // Apply all 4 generic modulation slots
+  // AY1 destinations: 1=Volume, 2=TonePitch, 3=Noise, 4=EnvPeriod
+  for (int i = 0; i < 4; i++) {
+    PlaybackModState* mod = &track->note.modulation[i];
+    if (!mod->modulation || mod->modulation->destination == 0) continue;
 
-    if (duration == 0 || track->note.chip.ay.adsrCounter >= duration) {
-      // Move to the next ADSR step
-      if (track->note.chip.ay.adsrStep == 3) {
-        // Release phase end
-        adsrVolume = 0;
-        track->note.pitchBase = EMPTY_VALUE_8;
-        break;
-      } else {
-        track->note.chip.ay.adsrStep++;
-        track->note.chip.ay.adsrCounter = 0;
-        // Decay to sustain
-        if (track->note.chip.ay.adsrStep == 1) {
-          track->note.chip.ay.adsrFrom = 15;
-          track->note.chip.ay.adsrTo = p->instruments[track->note.instrument].chip.ay.volumeEnvelope.p3;  // S
+    switch (mod->modulation->destination) {
+      case 1: { // Volume
+        if (mod->modulation->type == modLFO) {
+          // LFO: Add to volumeOffset
+          track->note.volumeOffset += playbackModScaleToRange(mod->outValue, 127);
+        } else {
+          // ADSR/AHD: Rewrite volume
+          int stopNote = 0;
+          int16_t envelopeVolume = playbackApplyVolumeEnvelope(mod, 15, &stopNote);
+          track->note.chip.ay.volume = envelopeVolume;
+          if (stopNote) {
+            track->note.pitchBase = EMPTY_VALUE_8;
+          }
         }
+        break;
       }
-    } else {
-      // LERP between adsrFrom and adsrTo
-      track->note.chip.ay.adsrCounter++;
-      int from = track->note.chip.ay.adsrFrom;
-      int to = track->note.chip.ay.adsrTo;
-      int delta = to - from;
-      adsrVolume = from + ((delta * ((track->note.chip.ay.adsrCounter << 8) / (duration + 1))) >> 8);
-      break;
+      case 2: { // Tone Pitch
+        track->note.chip.ay.toneFineOffset += playbackModScaleToRange(mod->outValue, p->linearPitch ? 2400 : 1024);
+        break;
+      }
+      case 3: { // Noise
+        track->note.chip.ay.noiseOffset += playbackModScaleToRange(mod->outValue, 127);
+        break;
+      }
+      case 4: { // Env Period
+        track->note.chip.ay.envPeriodOffset += playbackModScaleToRange(mod->outValue, 256);
+        break;
+      }
     }
   }
-  track->note.chip.ay.adsrVolume = adsrVolume;
+
 }
 
 void handleInstrumentAY2(PlaybackState* state, int trackIdx) {
-  // TODO
+  PlaybackTrackState* track = &state->tracks[trackIdx];
+  Project* p = state->p;
+
+  // Initialize volume to full (15) before applying modulations
+  track->note.chip.ay.volume = 15;
+
+  // Apply all 4 generic modulation slots
+  // AY2 destinations: 1=Volume, 2=TonePitch, 3=Noise, 4=EnvPitch, 5=SoftPitch
+  for (int i = 0; i < 4; i++) {
+    PlaybackModState* mod = &track->note.modulation[i];
+    if (!mod->modulation || mod->modulation->destination == 0) continue;
+
+    switch (mod->modulation->destination) {
+      case 1: { // Volume
+        if (mod->modulation->type == modLFO) {
+          // LFO: Add to volumeOffset
+          track->note.volumeOffset += playbackModScaleToRange(mod->outValue, 127);
+        } else {
+          // ADSR/AHD: Rewrite volume
+          int stopNote = 0;
+          int16_t envelopeVolume = playbackApplyVolumeEnvelope(mod, 15, &stopNote);
+          track->note.chip.ay.volume = envelopeVolume;
+          if (stopNote) {
+            track->note.pitchBase = EMPTY_VALUE_8;
+          }
+        }
+        break;
+      }
+      case 2: { // Tone Pitch
+        track->note.chip.ay.toneFineOffset += playbackModScaleToRange(mod->outValue, p->linearPitch ? 2400 : 1024);
+        break;
+      }
+      case 3: { // Noise
+        track->note.chip.ay.noiseOffset += playbackModScaleToRange(mod->outValue, 127);
+        break;
+      }
+      case 4: { // Env Pitch
+        track->note.chip.ay.envFineOffset += playbackModScaleToRange(mod->outValue, p->linearPitch ? 2400 : 256);
+        break;
+      }
+      case 5: { // Software Oscillator Pitch
+        track->note.chip.ay.softFineOffset += playbackModScaleToRange(mod->outValue, p->linearPitch ? 2400 : 1024);
+        break;
+      }
+    }
+  }
+
+  // Offsets from instrument parameters
+  track->note.chip.ay.tonePitchOffset += p->instruments[track->note.instrument].chip.ay2.oscTone.pitchOffset;
+  track->note.chip.ay.toneFineOffset += p->instruments[track->note.instrument].chip.ay2.oscTone.fineTune;
+  track->note.chip.ay.envPitchOffset += p->instruments[track->note.instrument].chip.ay2.oscEnvelope.pitchOffset;
+  track->note.chip.ay.envFineOffset += p->instruments[track->note.instrument].chip.ay2.oscEnvelope.fineTune;
+  track->note.chip.ay.softPitchOffset += p->instruments[track->note.instrument].chip.ay2.oscSoftware.pitchOffset;
+  track->note.chip.ay.softFineOffset += p->instruments[track->note.instrument].chip.ay2.oscSoftware.fineTune;
 }
 
 void handleInstrumentAYSample(PlaybackState* state, int trackIdx) {
@@ -151,7 +288,7 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
   uint8_t mixer = 0;
   uint8_t noise = EMPTY_VALUE_8;
   uint8_t envShape = 0;
-  uint16_t envPeriod = 0;
+  int16_t envPeriod = 0;
 
   for (int t = trackIdx; t < trackIdx + projectGetChipTracks(p, chipIdx); t++) {
     PlaybackTrackState* track = &state->tracks[t];
@@ -160,15 +297,24 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
       // Silence channel
       chip->setRegister(chip, 8 + ayChannel, 0);
     } else {
+      enum InstrumentType instType = p->instruments[track->note.instrument].type;
+
+      // Calculate tone period (common for AY1 and AY2)
       int16_t period;
+      int8_t tonePitch = track->note.pitchFinal + track->note.chip.ay.tonePitchOffset;
+
+      if (tonePitch < 0) tonePitch = 0;
+      if (tonePitch > p->pitchTable.length - 1) tonePitch = p->pitchTable.length - 1;
+
       if (p->linearPitch) {
         // Linear pitch mode: convert cents to frequency, then to period
-        int cents = p->pitchTable.values[track->note.pitchFinal] + track->note.fineOffset;
+        int cents = p->pitchTable.values[tonePitch] + track->note.fineOffset + track->note.chip.ay.toneFineOffset;
+
         float frequency = centsToFrequency(cents);
         period = frequencyToAYPeriod(frequency, p->chipSetup.ay.clock);
       } else {
         // Traditional period mode
-        period = p->pitchTable.values[track->note.pitchFinal] - track->note.fineOffset;
+        period = p->pitchTable.values[tonePitch] - track->note.fineOffset - track->note.chip.ay.toneFineOffset;
       }
       period -= track->note.periodOffset;
 
@@ -184,29 +330,51 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
         // Envelope on
         envShape = track->note.chip.ay.envShape;
 
-        // Env period:
+        // Env period calculation
         if (track->note.chip.ay.envAutoN != 0) {
-          // 1. Auto envelope
+          // 1. Auto envelope (based on tone period)
           int n = track->note.chip.ay.envAutoN;
           int d = track->note.chip.ay.envAutoD;
           if (d == 0) d = 1; // Just in case, to avoid division by zero
           int tempPeriod = period * n / d;
           envPeriod = ((tempPeriod & 0xf) >= 8) ? (tempPeriod >> 4) + 1 : (tempPeriod >> 4);
         } else {
-          // 2. Manual envelope
-          envPeriod = track->note.chip.ay.envPeriodBase;
+          // 2. Manual envelope (AY1 style or AY2 with pitch control)
+          if (instType == instAY2) {
+            // AY2: Calculate envelope period from pitch
+            if (p->linearPitch) {
+              int envCents = p->pitchTable.values[track->note.pitchFinal] + track->note.fineOffset;
+              envCents += track->note.chip.ay.envPitchOffset * 100;
+              envCents += track->note.chip.ay.envFineOffset;
+              float envFrequency = centsToFrequency(envCents);
+              envPeriod = frequencyToAYPeriod(envFrequency, p->chipSetup.ay.clock);
+            } else {
+              int8_t envPitch = track->note.pitchFinal + track->note.chip.ay.envPitchOffset;
+              if (envPitch < 0) envPitch = 0;
+              if (envPitch > p->pitchTable.length - 1) envPitch = p->pitchTable.length - 1;
+
+              //envPeriod = p->pitchTable.values[envPitch] - track->note.fineOffset;
+              envPeriod -= track->note.chip.ay.envFineOffset;
+            }
+          } else {
+            // AY1: Use manual envelope period base
+            envPeriod = track->note.chip.ay.envPeriodBase;
+          }
         }
 
         // Envelope period modification
         envPeriod -= track->note.chip.ay.envPeriodOffset;
+        // Clamp envelope period to valid range
+        if (envPeriod < 0) envPeriod = 0;
+        if (envPeriod > 4095) envPeriod = 4095;
 
         volume = 16;
       } else {
-        // Envelope off
+        // Envelope off - calculate volume
         volume = track->note.volume + track->note.volumeOffset;
         if (volume < 0) volume = 0;
         if (volume > 15) volume = 15;
-        volume *= track->note.chip.ay.adsrVolume;
+        volume *= track->note.chip.ay.volume; // Instrument volume
 
         // Instrument table volume
         int tableIdx = track->note.instrumentTable.tableIdx;

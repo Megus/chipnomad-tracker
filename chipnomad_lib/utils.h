@@ -12,4 +12,7 @@ int max(int a, int b);
 // Convert cents value to frequency in Hz (with safeguards)
 float centsToFrequency(int cents);
 
+// Simple pseudo-random number generator. Returns a value in range [0, 65535]
+uint16_t utilsRandom(void);
+
 #endif
