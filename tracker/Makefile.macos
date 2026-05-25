@@ -9,9 +9,10 @@ include Makefile.common
 LIBS = $(COMMON_LIBS) platforms/sdl2
 OUTPUT_EXT =
 
-# macOS-specific flags (ARM64 with Rosetta 2 compatibility for Intel Macs)
-XTRA_CFLAGS = -arch arm64 -mmacosx-version-min=11.0 -I/opt/homebrew/include -DDESKTOP_BUILD -DMACOS_BUILD
-XTRA_LIBS = -arch arm64 -mmacosx-version-min=11.0 -L/opt/homebrew/lib -lSDL2 -lm -rpath @executable_path/../Frameworks
+# macOS-specific flags (ARM64 for Apple Silicon)
+# Note: Minimum version set to 14.0 (Sonoma) to match SDL2 library requirements
+XTRA_CFLAGS = -arch arm64 -mmacosx-version-min=14.0 -I/opt/homebrew/include -DDESKTOP_BUILD -DMACOS_BUILD
+XTRA_LIBS = -arch arm64 -mmacosx-version-min=14.0 -L/opt/homebrew/lib -lSDL2 -lm -rpath @executable_path/../Frameworks
 CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(XTRA_CFLAGS)
 OUTPUT = -o $(BUILD)/chipnomad$(OUTPUT_EXT)
 
