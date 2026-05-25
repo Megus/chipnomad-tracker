@@ -2,17 +2,23 @@
 #include "corelib_gfx.h"
 #include "help.h"
 
-#define FX_COLS 8
-
 // State for FX selection screen
 int currentGroup;      // Current group being navigated
 int currentIdx;        // Current FX index within group
 int expandedGroup;     // Currently expanded group (-1 = none)
-enum InstrumentType currentInstrumentType;  // For filtering instrument groups
+uint8_t currentInstrumentIdx;  // Current instrument index for context-aware help
 
-void fxEditFullDraw(uint8_t currentFX, enum InstrumentType instType);
+// Helper to get instrument type from stored instrument index
+static enum InstrumentType getCurrentInstrumentType() {
+  if (currentInstrumentIdx != EMPTY_VALUE_8 && currentInstrumentIdx < PROJECT_MAX_INSTRUMENTS) {
+    return chipnomadState->project.instruments[currentInstrumentIdx].type;
+  }
+  return instNone;
+}
 
-int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastValue, int isTable, enum InstrumentType instType) {
+void fxEditFullDraw(uint8_t currentFX, uint8_t instrumentIdx);
+
+int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastValue, int isTable, uint8_t instrumentIdx) {
   int result = 0;
   action = convertMultiAction(action);
 
@@ -46,14 +52,14 @@ int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastValue, int isTa
     result = 2;
   } else if (action == editIncreaseBig || action == editDecreaseBig) {
     // Show FX select screen with instrument context
-    fxEditFullDraw(fx[0], instType);
+    fxEditFullDraw(fx[0], instrumentIdx);
     result = 1;
   }
-  if (result != 1) screenMessage(0, "%s", helpFXHint(fx, isTable));
+  if (result != 1) screenMessage(0, "%s", helpFXHint(fx, isTable, instrumentIdx));
   return result;
 }
 
-int editFXValue(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable) {
+int editFXValue(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable, uint8_t instrumentIdx) {
   action = convertMultiAction(action);
 
   uint8_t bigStep = 16;
@@ -63,7 +69,7 @@ int editFXValue(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX, int is
   }
 
   int handled = edit8noLimit(action, &fx[1], &lastFX[1], bigStep);
-  screenMessage(0, helpFXHint(fx, 0));
+  screenMessage(0, helpFXHint(fx, 0, instrumentIdx));
   return handled;
 }
 
@@ -135,31 +141,10 @@ void collapseGroup(int groupIdx) {
   }
 }
 
-// Legacy compatibility functions (for old 2-group layout)
-// These will be removed once UI is updated
-
-// Legacy compatibility functions (for old 2-group layout)
-// These will be removed once UI is updated
-
-// Uses the ordered FX list
-struct FXName* getGroup(int group) {
-  // TEMPORARY: Map old group indices to new structure for backward compatibility
-  // group 0 = Sequencer FX (fxGroups[0])
-  // group 1 = AY1 FX (fxGroups[2])
-  extern FXGroup fxGroups[];
-  return group == 0 ? fxGroups[0].fxList : fxGroups[2].fxList;
-}
-
-int getGroupSize(int group) {
-  // TEMPORARY: Map old group indices to new structure for backward compatibility
-  extern FXGroup fxGroups[];
-  return group == 0 ? fxGroups[0].count : fxGroups[2].count;
-}
-
 // Draw a group header at specified Y position
 // Returns the Y position after the header (for next element)
 int drawGroupHeader(int visibleGroupIdx, int y, int isCurrent) {
-  FXGroup* group = getVisibleGroup(visibleGroupIdx, currentInstrumentType);
+  FXGroup* group = getVisibleGroup(visibleGroupIdx, getCurrentInstrumentType());
   if (!group) return y;
 
   // Highlight current group header
@@ -177,13 +162,15 @@ int drawGroupHeader(int visibleGroupIdx, int y, int isCurrent) {
 // Draw FX list for a group at specified Y position
 // Returns the Y position after the FX list (for next element)
 int drawFXList(int visibleGroupIdx, int y) {
-  FXGroup* group = getVisibleGroup(visibleGroupIdx, currentInstrumentType);
+  FXGroup* group = getVisibleGroup(visibleGroupIdx, getCurrentInstrumentType());
   if (!group) return y;
 
-  // Draw FX in 8-column grid
+  int cols = group->columns;  // Use group-specific column count
+
+  // Draw FX in grid with group-specific column count
   for (int idx = 0; idx < group->count; idx++) {
-    int row = idx / FX_COLS;
-    int col = idx % FX_COLS;
+    int row = idx / cols;
+    int col = idx % cols;
     int fxY = y + row;
 
     // Highlight current FX if this is the current group
@@ -202,15 +189,21 @@ int drawFXList(int visibleGroupIdx, int y) {
   }
 
   // Calculate how many rows the FX list takes
-  int rows = (group->count + FX_COLS - 1) / FX_COLS;  // Ceiling division
+  int rows = (group->count + cols - 1) / cols;  // Ceiling division
   return y + rows;
 }
 
-void fxEditFullDraw(uint8_t currentFX, enum InstrumentType instType) {
+void fxEditFullDraw(uint8_t currentFX, uint8_t instrumentIdx) {
   gfxClearRect(0, 0, 35, 20);
 
-  // Store instrument type for this session
-  currentInstrumentType = instType;
+  // Store instrument index for this session
+  currentInstrumentIdx = instrumentIdx;
+
+  // Get instrument type for filtering groups
+  enum InstrumentType instType = instNone;
+  if (instrumentIdx != EMPTY_VALUE_8 && instrumentIdx < PROJECT_MAX_INSTRUMENTS) {
+    instType = chipnomadState->project.instruments[instrumentIdx].type;
+  }
 
   // Get visible groups
   int visibleGroupCount = getVisibleGroupCount(instType);
@@ -245,8 +238,8 @@ void fxEditFullDraw(uint8_t currentFX, enum InstrumentType instType) {
     expandedGroup = 0;
   }
 
-  // Draw help for current FX at top
-  drawFXHelp((enum FX)currentFX);
+  // Draw help for current FX at top (with instrument context)
+  drawFXHelp((enum FX)currentFX, instrumentIdx);
 
   // Draw all visible groups (headers + expanded group's FX list)
   int y = 7;  // Start below help text
@@ -269,7 +262,7 @@ void fxEditFullDraw(uint8_t currentFX, enum InstrumentType instType) {
 int fxEditInput(int keys, int tapCount, uint8_t* fx, uint8_t* lastFX) {
   if (keys == 0) {
     // Selection complete - update the FX value
-    FXGroup* group = getVisibleGroup(currentGroup, currentInstrumentType);
+    FXGroup* group = getVisibleGroup(currentGroup, getCurrentInstrumentType());
     if (group && currentIdx < group->count) {
       fx[0] = group->fxList[currentIdx].fx;
       lastFX[0] = fx[0];
@@ -279,8 +272,8 @@ int fxEditInput(int keys, int tapCount, uint8_t* fx, uint8_t* lastFX) {
 
   if (keys & keyEdit) {
     int oldGroup = currentGroup;
-    int visibleGroupCount = getVisibleGroupCount(currentInstrumentType);
-    FXGroup* group = getVisibleGroup(currentGroup, currentInstrumentType);
+    int visibleGroupCount = getVisibleGroupCount(getCurrentInstrumentType());
+    FXGroup* group = getVisibleGroup(currentGroup, getCurrentInstrumentType());
     if (!group) return 0;
 
     // Navigate based on d-pad input
@@ -305,7 +298,7 @@ int fxEditInput(int keys, int tapCount, uint8_t* fx, uint8_t* lastFX) {
         // Reached beginning of current group - move to previous group
         if (currentGroup > 0) {
           currentGroup--;
-          FXGroup* prevGroup = getVisibleGroup(currentGroup, currentInstrumentType);
+          FXGroup* prevGroup = getVisibleGroup(currentGroup, getCurrentInstrumentType());
           currentIdx = prevGroup ? prevGroup->count - 1 : 0;
           expandedGroup = currentGroup;
         } else {
@@ -314,13 +307,13 @@ int fxEditInput(int keys, int tapCount, uint8_t* fx, uint8_t* lastFX) {
         }
       }
     } else if (keys & keyUp) {
-      // Move up one row in grid
-      currentIdx -= FX_COLS;
+      // Move up one row in grid (using group-specific column count)
+      currentIdx -= group->columns;
       if (currentIdx < 0) {
         // Reached top of current group - move to previous group
         if (currentGroup > 0) {
           currentGroup--;
-          FXGroup* prevGroup = getVisibleGroup(currentGroup, currentInstrumentType);
+          FXGroup* prevGroup = getVisibleGroup(currentGroup, getCurrentInstrumentType());
           if (prevGroup) {
             // Position at last FX of previous group
             currentIdx = prevGroup->count - 1;
@@ -334,8 +327,8 @@ int fxEditInput(int keys, int tapCount, uint8_t* fx, uint8_t* lastFX) {
         }
       }
     } else if (keys & keyDown) {
-      // Move down one row in grid
-      currentIdx += FX_COLS;
+      // Move down one row in grid (using group-specific column count)
+      currentIdx += group->columns;
       if (currentIdx >= group->count) {
         // Reached bottom of current group - move to next group
         if (currentGroup < visibleGroupCount - 1) {
@@ -351,16 +344,16 @@ int fxEditInput(int keys, int tapCount, uint8_t* fx, uint8_t* lastFX) {
 
     // If group changed, need full redraw
     if (oldGroup != currentGroup) {
-      FXGroup* newGroup = getVisibleGroup(currentGroup, currentInstrumentType);
+      FXGroup* newGroup = getVisibleGroup(currentGroup, getCurrentInstrumentType());
       if (newGroup && currentIdx < newGroup->count) {
-        fxEditFullDraw(newGroup->fxList[currentIdx].fx, currentInstrumentType);
+        fxEditFullDraw(newGroup->fxList[currentIdx].fx, currentInstrumentIdx);
       }
     } else {
       // Same group, just update the FX selection
       // For now, do a simple redraw (can optimize later)
-      FXGroup* currentGroupPtr = getVisibleGroup(currentGroup, currentInstrumentType);
+      FXGroup* currentGroupPtr = getVisibleGroup(currentGroup, getCurrentInstrumentType());
       if (currentGroupPtr && currentIdx < currentGroupPtr->count) {
-        fxEditFullDraw(currentGroupPtr->fxList[currentIdx].fx, currentInstrumentType);
+        fxEditFullDraw(currentGroupPtr->fxList[currentIdx].fx, currentInstrumentIdx);
       }
     }
   }

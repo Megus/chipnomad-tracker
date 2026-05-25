@@ -27,7 +27,7 @@ void playbackModNext(PlaybackModState* state);
 void playbackModNoteOff(PlaybackModState* state);
 
 // Helper function to scale modulation output to a specific range
-// modValue: input in range [-32640, 32640] (255 * 128)
+// modValue: input in range [-32385, 32385] (255 * 127)
 // maxAmplitude: maximum value for the target parameter (e.g., 15 for AY volume)
 // Returns scaled value in range [-maxAmplitude, maxAmplitude] with rounding
 int16_t playbackModScaleToRange(int16_t modValue, int16_t maxAmplitude);

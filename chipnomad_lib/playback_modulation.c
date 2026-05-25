@@ -3,10 +3,11 @@
 #include <math.h>
 #include <stdint.h>
 
-// Modulation range: 255 * 128 = 32640
-// This allows exact division by 255 (sustain range) and 128 (amount range)
-#define MOD_MAX_RANGE 32640
-#define MOD_MAX_RANGE_F 32640.0f
+// Modulation range: 255 * 127 = 32385
+// This allows exact division by 255 (sustain range) and 127 (max amount)
+// Using 127 instead of 128 ensures that max amount (127) reaches full range
+#define MOD_MAX_RANGE 32385
+#define MOD_MAX_RANGE_F 32385.0f
 
 // Helper function to clamp value to 0-255 range
 static inline uint8_t clampParam(int16_t value) {
@@ -42,8 +43,8 @@ static void handleADSR(PlaybackModState* state) {
 
     // Sustain phase
     if (state->step == 2) {
-      // Scale sustain (0-255) to 0-32640 range (exact: 255 * 128 = 32640)
-      envelopeValue = GET_P3(state) * 128;
+      // Scale sustain (0-255) to 0-32385 range (exact: 255 * 127 = 32385)
+      envelopeValue = GET_P3(state) * 127;
       break;
     }
 
@@ -66,7 +67,7 @@ static void handleADSR(PlaybackModState* state) {
         if (state->step == 1) {
           // Decay: from peak to sustain
           state->data1 = MOD_MAX_RANGE;
-          state->data2 = GET_P3(state) * 128;
+          state->data2 = GET_P3(state) * 127;
         }
         // Continue loop to handle zero-duration phases or enter sustain
       }
@@ -87,9 +88,9 @@ static void handleADSR(PlaybackModState* state) {
   }
 
   // Apply amount scaling: amount is -128 to 127
-  // Scale envelope (0-32640) by amount to get final signed 16-bit value
-  // Using 128 as divisor for exact division (32640 / 128 = 255)
-  int32_t scaled = (envelopeValue * GET_AMOUNT(state)) / 128;
+  // Scale envelope (0-32385) by amount to get final signed 16-bit value
+  // Using 127 as divisor for exact division (32385 / 127 = 255)
+  int32_t scaled = (envelopeValue * GET_AMOUNT(state)) / 127;
   state->outValue = (int16_t)scaled;
 }
 
@@ -101,7 +102,7 @@ static void handleADSRnoteOff(PlaybackModState* state) {
     // Set release from the current envelope value (before amount scaling)
     // Reverse the amount scaling to get the envelope value
     int8_t amount = GET_AMOUNT(state);
-    int32_t currentEnvelope = (state->outValue * 128) / (amount != 0 ? amount : 1);
+    int32_t currentEnvelope = (state->outValue * 127) / (amount != 0 ? amount : 1);
     state->data1 = (int16_t)currentEnvelope;
     state->data2 = 0; // Release to 0
   }
@@ -109,8 +110,8 @@ static void handleADSRnoteOff(PlaybackModState* state) {
 
 static void handleAHD(PlaybackModState* state) {
   // step: 0 - Attack, 1 - Hold, 2 - Decay
-  // Output range: 0 to 32640 (255 * 128)
-  // All three phases are treated uniformly as ramps (Hold is a ramp from 32640 to 32640)
+  // Output range: 0 to 32385 (255 * 127)
+  // All three phases are treated uniformly as ramps (Hold is a ramp from 32385 to 32385)
 
   int16_t envelopeValue = 0;
 
@@ -141,11 +142,11 @@ static void handleAHD(PlaybackModState* state) {
 
         // Set up ramp for next phase
         if (state->step == 1) {
-          // Hold: 32640 to 32640
+          // Hold: 32385 to 32385
           state->data1 = MOD_MAX_RANGE;
           state->data2 = MOD_MAX_RANGE;
         } else if (state->step == 2) {
-          // Decay: 32640 to 0
+          // Decay: 32385 to 0
           state->data1 = MOD_MAX_RANGE;
           state->data2 = 0;
         }
@@ -168,8 +169,8 @@ static void handleAHD(PlaybackModState* state) {
   }
 
   // Apply amount scaling: amount is -128 to 127
-  // Scale envelope (0-32640) by amount to get final signed 16-bit value
-  int32_t scaled = (envelopeValue * GET_AMOUNT(state)) / 128;
+  // Scale envelope (0-32385) by amount to get final signed 16-bit value
+  int32_t scaled = (envelopeValue * GET_AMOUNT(state)) / 127;
   state->outValue = (int16_t)scaled;
 }
 
@@ -205,45 +206,45 @@ static void handleLFO(PlaybackModState* state) {
   int16_t envelopeValue = 0;
 
   switch (shape) {
-    case lfoShapeTri: { // Triangle: bipolar -32640 to +32640
+    case lfoShapeTri: { // Triangle: bipolar -32385 to +32385
       // Triangle wave centered at 0
       float x = phase * 4.0f; // Scale to 0-4
       if (x < 1.0f) {
-        envelopeValue = (int16_t)(x * MOD_MAX_RANGE_F); // 0 to 32640
+        envelopeValue = (int16_t)(x * MOD_MAX_RANGE_F); // 0 to 32385
       } else if (x < 3.0f) {
-        envelopeValue = (int16_t)(MOD_MAX_RANGE_F - (x - 1.0f) * MOD_MAX_RANGE_F); // 32640 to -32640
+        envelopeValue = (int16_t)(MOD_MAX_RANGE_F - (x - 1.0f) * MOD_MAX_RANGE_F); // 32385 to -32385
       } else {
-        envelopeValue = (int16_t)(-MOD_MAX_RANGE_F + (x - 3.0f) * MOD_MAX_RANGE_F); // -32640 to 0
+        envelopeValue = (int16_t)(-MOD_MAX_RANGE_F + (x - 3.0f) * MOD_MAX_RANGE_F); // -32385 to 0
       }
       break;
     }
 
-    case lfoShapeSin: { // Sine: bipolar -32640 to +32640
+    case lfoShapeSin: { // Sine: bipolar -32385 to +32385
       envelopeValue = (int16_t)(sinf(phase * 2.0f * 3.14159265f) * MOD_MAX_RANGE_F);
       break;
     }
 
-    case lfoShapeRampDown: { // Ramp down: unipolar 32640 to 0
+    case lfoShapeRampDown: { // Ramp down: unipolar 32385 to 0
       envelopeValue = (int16_t)(MOD_MAX_RANGE_F * (1.0f - phase));
       break;
     }
 
-    case lfoShapeRampUp: { // Ramp up: unipolar 0 to 32640
+    case lfoShapeRampUp: { // Ramp up: unipolar 0 to 32385
       envelopeValue = (int16_t)(MOD_MAX_RANGE_F * phase);
       break;
     }
 
-    case lfoShapeExpDown: { // Exponential decay: unipolar 32640 to 0
+    case lfoShapeExpDown: { // Exponential decay: unipolar 32385 to 0
       envelopeValue = (int16_t)(MOD_MAX_RANGE_F * expf(-5.0f * phase));
       break;
     }
 
-    case lfoShapeExpUp: { // Exponential rise: unipolar 0 to 32640
+    case lfoShapeExpUp: { // Exponential rise: unipolar 0 to 32385
       envelopeValue = (int16_t)(MOD_MAX_RANGE_F * (1.0f - expf(-5.0f * phase)));
       break;
     }
 
-    case lfoShapeSquare: { // Square: bipolar -32640 to +32640
+    case lfoShapeSquare: { // Square: bipolar -32385 to +32385
       envelopeValue = (phase < 0.5f) ? MOD_MAX_RANGE : -MOD_MAX_RANGE;
       break;
     }
@@ -254,8 +255,8 @@ static void handleLFO(PlaybackModState* state) {
       if (state->counter == 0) {
         // Get new random value from utils (returns 0-65535)
         uint16_t randomValue = utilsRandom();
-        // Scale from [0, 65535] to [-32640, 32640]
-        // 32640 = 255 * 128 (modulation range)
+        // Scale from [0, 65535] to [-32385, 32385]
+        // 32385 = 255 * 127 (modulation range)
         state->data1 = (int16_t)(((int32_t)randomValue - 32768) * MOD_MAX_RANGE / 32768);
       }
       // Use the stored random value for the entire period
@@ -269,7 +270,7 @@ static void handleLFO(PlaybackModState* state) {
   }
 
   // Apply amount scaling: amount is -128 to 127
-  int32_t scaled = ((int32_t)envelopeValue * GET_AMOUNT(state)) / 128;
+  int32_t scaled = ((int32_t)envelopeValue * GET_AMOUNT(state)) / 127;
   state->outValue = (int16_t)scaled;
 
   // Increment counter AFTER calculating output
@@ -318,12 +319,12 @@ void playbackModInit(PlaybackModState* state, Modulation* mod) {
   // Additional initialization based on modulation type
   if (GET_TYPE(state) == modADSR) {
     // For ADSR, set initial values for Attack phase
-    // Start from 0, target is full range (32640)
+    // Start from 0, target is full range (32385)
     state->data1 = 0;
     state->data2 = MOD_MAX_RANGE;
   } else if (GET_TYPE(state) == modAHD) {
     // For AHD, set initial values for Attack phase
-    // Start from 0, target is full range (32640)
+    // Start from 0, target is full range (32385)
     state->data1 = 0;
     state->data2 = MOD_MAX_RANGE;
   }
@@ -374,16 +375,16 @@ void playbackModNoteOff(PlaybackModState* state) {
 }
 
 int16_t playbackModScaleToRange(int16_t modValue, int16_t maxAmplitude) {
-  // modValue is in range [-32640, 32640] (MOD_MAX_RANGE)
+  // modValue is in range [-32385, 32385] (MOD_MAX_RANGE)
   // Scale proportionally to [-maxAmplitude, maxAmplitude]
-  // Zero stays zero, 32640 becomes maxAmplitude, -32640 becomes -maxAmplitude
-  // Add rounding: half of divisor (32640 / 2 = 16320)
+  // Zero stays zero, 32385 becomes maxAmplitude, -32385 becomes -maxAmplitude
+  // Add rounding: half of divisor (32385 / 2 = 16192)
 
   int32_t scaled;
   if (modValue >= 0) {
-    scaled = ((int32_t)modValue * maxAmplitude + 16320) / MOD_MAX_RANGE;
+    scaled = ((int32_t)modValue * maxAmplitude + 16192) / MOD_MAX_RANGE;
   } else {
-    scaled = ((int32_t)modValue * maxAmplitude - 16320) / MOD_MAX_RANGE;
+    scaled = ((int32_t)modValue * maxAmplitude - 16192) / MOD_MAX_RANGE;
   }
 
   return (int16_t)scaled;

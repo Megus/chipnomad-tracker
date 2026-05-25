@@ -257,13 +257,9 @@ static int editCell(int col, int row, enum CellEditAction action) {
   } else if (col == 3 || col == 5 || col == 7) {
     // FX
     int fxIdx = (col - 3) / 2;
-    // Get instrument type from current phrase row or traverse back
+    // Get instrument number from current phrase row or traverse back
     uint8_t instrumentNum = lookupInstrument(&chipnomadState->project, *pSongRow, *pChainRow, row, *pSongTrack);
-    enum InstrumentType instType = instNone;
-    if (instrumentNum != EMPTY_VALUE_8) {
-      instType = chipnomadState->project.instruments[instrumentNum].type;
-    }
-    int result = editFX(action, phraseRows[row].fx[fxIdx], lastFX, 0, instType);
+    int result = editFX(action, phraseRows[row].fx[fxIdx], lastFX, 0, instrumentNum);
     if (result == 2) {
       drawField(col + 1, row, 0);
       handled = 1;
@@ -275,7 +271,8 @@ static int editCell(int col, int row, enum CellEditAction action) {
     // FX value
     int fxIdx = (col - 4) / 2;
     if (phraseRows[row].fx[fxIdx][0] != EMPTY_VALUE_8) {
-      handled = editFXValue(action, phraseRows[row].fx[fxIdx], lastFX, 0);
+      uint8_t instrumentNum = lookupInstrument(&chipnomadState->project, *pSongRow, *pChainRow, row, *pSongTrack);
+      handled = editFXValue(action, phraseRows[row].fx[fxIdx], lastFX, 0, instrumentNum);
     }
   }
 

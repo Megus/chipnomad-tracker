@@ -113,6 +113,7 @@ typedef struct FXGroup {
   const char* name;              // Group name (e.g., "Sequencer FX")
   FXName* fxList;                // Array of FX in this group
   int count;                     // Number of FX in this group
+  int columns;                   // Number of columns for grid layout (default 8)
   enum InstrumentType instType;  // instNone for non-instrument groups
 } FXGroup;
 

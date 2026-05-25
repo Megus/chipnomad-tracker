@@ -3,8 +3,8 @@
 
 #include "chipnomad_lib.h"
 
-char* helpFXHint(uint8_t* fx, int isTable);
-char* helpFXDescription(enum FX fxIdx);
-void drawFXHelp(enum FX fxIdx);
+char* helpFXHint(uint8_t* fx, int isTable, uint8_t instrumentIdx);
+char* helpFXDescription(enum FX fxIdx, uint8_t instrumentIdx);
+void drawFXHelp(enum FX fxIdx, uint8_t instrumentIdx);
 
 #endif

@@ -15,20 +15,16 @@ static uint8_t lastVolume = 15;
 static uint8_t lastFX[2] = {0, 0};
 static int isFxEdit = 0;
 
-// Get instrument type for current table context
-static enum InstrumentType getTableInstrumentType() {
+// Get instrument number for current table context
+static uint8_t getTableInstrumentIdx() {
   // Tables 00-7F are default tables for instruments 00-7F
   if (tableIdx < 0x80) {
-    return chipnomadState->project.instruments[tableIdx].type;
+    return tableIdx;
   }
 
   // Tables 80-FE are aux tables - get instrument from current phrase context
   uint8_t instrumentNum = lookupInstrument(&chipnomadState->project, *pSongRow, *pChainRow, 0, *pSongTrack);
-  if (instrumentNum != EMPTY_VALUE_8) {
-    return chipnomadState->project.instruments[instrumentNum].type;
-  }
-
-  return instNone;
+  return instrumentNum;
 }
 
 static int getColumnCount(int row);
@@ -255,8 +251,8 @@ static int editCell(int col, int row, enum CellEditAction action) {
   } else if (col % 2 == 1 && col >= 3) {
     // FX (columns 3,5,7,9)
     int fxIdx = (col - 3) / 2;
-    enum InstrumentType instType = getTableInstrumentType();
-    int result = editFX(action, tableRows[row].fx[fxIdx], lastFX, 1, instType);
+    uint8_t instrumentIdx = getTableInstrumentIdx();
+    int result = editFX(action, tableRows[row].fx[fxIdx], lastFX, 1, instrumentIdx);
     if (result == 2) {
       drawField(col + 1, row, 0);
       handled = 1;
@@ -268,7 +264,8 @@ static int editCell(int col, int row, enum CellEditAction action) {
     // FX value (columns 4,6,8,10)
     int fxIdx = (col - 4) / 2;
     if (tableRows[row].fx[fxIdx][0] != EMPTY_VALUE_8) {
-      handled = editFXValue(action, tableRows[row].fx[fxIdx], lastFX, 1);
+      uint8_t instrumentIdx = getTableInstrumentIdx();
+      handled = editFXValue(action, tableRows[row].fx[fxIdx], lastFX, 1, instrumentIdx);
     }
   }
 
@@ -297,8 +294,8 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       if (startCol == 3 || startCol == 5 || startCol == 7 || startCol == 9) {
         // FX type column: show FX selection
         int fxIdx = (startCol - 3) / 2;
-        enum InstrumentType instType = getTableInstrumentType();
-        fxEditFullDraw(tableRows[screen.cursorRow].fx[fxIdx][0], instType);
+        uint8_t instrumentIdx = getTableInstrumentIdx();
+        fxEditFullDraw(tableRows[screen.cursorRow].fx[fxIdx][0], instrumentIdx);
         isFxEdit = 1;
         return 0;
       } else {

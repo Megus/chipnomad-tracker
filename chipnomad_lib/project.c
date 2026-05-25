@@ -72,14 +72,14 @@ FXName fxNamesAYWavetable[] = {
 };
 int fxAYWavetableCount = sizeof(fxNamesAYWavetable) / sizeof(FXName);
 
-// FX Groups array. FX counts are filles in fillFXNames()
+// FX Groups array. FX counts are filled in fillFXNames()
 FXGroup fxGroups[] = {
-  {"Sequencer FX", fxNamesSequencer, 0, instNone},
-  {"Modulation FX", fxNamesModulation, 0, instNone},
-  {"AY Classic FX", fxNamesAY1, 0, instAY1},
-  {"AY Plus FX", fxNamesAY2, 0, instAY2},
-  {"AYSample FX", fxNamesAYSample, 0, instAYSample},
-  {"AYWavetable FX", fxNamesAYWavetable, 0, instAYWavetable},
+  {"Sequencer FX", fxNamesSequencer, 0, 8, instNone},
+  {"Modulation FX", fxNamesModulation, 0, 5, instNone},
+  {"AY Classic FX", fxNamesAY1, 0, 8, instAY1},
+  {"AY Plus FX", fxNamesAY2, 0, 8, instAY2},
+  {"AYSample FX", fxNamesAYSample, 0, 8, instAYSample},
+  {"AYWavetable FX", fxNamesAYWavetable, 0, 8, instAYWavetable},
 };
 int fxGroupCount = sizeof(fxGroups) / sizeof(FXGroup);
 

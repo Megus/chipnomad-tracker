@@ -7,7 +7,49 @@
 #include "common.h"
 #include "misc.h"
 
-char* helpFXHint(uint8_t* fx, int isTable) {
+// Helper function to get modulation type name
+static const char* getModulationTypeName(enum ModulationType type) {
+  switch (type) {
+    case modADSR: return "ADSR";
+    case modAHD: return "AHD";
+    case modLFO: return "LFO";
+    default: return "Unknown";
+  }
+}
+
+// Helper function to get parameter name based on modulation type
+static const char* getModulationParamName(enum ModulationType type, int paramIdx) {
+  switch (type) {
+    case modADSR:
+      switch (paramIdx) {
+        case 0: return "Attack";
+        case 1: return "Decay";
+        case 2: return "Sustain";
+        case 3: return "Release";
+        default: return "Param";
+      }
+    case modAHD:
+      switch (paramIdx) {
+        case 0: return "Attack";
+        case 1: return "Hold";
+        case 2: return "Decay";
+        case 3: return "---";
+        default: return "Param";
+      }
+    case modLFO:
+      switch (paramIdx) {
+        case 0: return "Shape";
+        case 1: return "Trigger";
+        case 2: return "Period";
+        case 3: return "---";
+        default: return "Param";
+      }
+    default:
+      return "Param";
+  }
+}
+
+char* helpFXHint(uint8_t* fx, int isTable, uint8_t instrumentIdx) {
   static char buffer[41]; // Max length of a hint string
 
   buffer[0] = 0; // Terminate string for unsupported FX
@@ -45,7 +87,7 @@ char* helpFXHint(uint8_t* fx, int isTable) {
       sprintf(buffer, "Pitch slide for %hhd tics", fx[1]);
       break;
     case fxPIT: // Pitch offset (semitones)
-      sprintf(buffer, "Pitch offset by %hhd semitones", (int8_t)fx[1]);
+      sprintf(buffer, "Pitch offset by %hhd steps", (int8_t)fx[1]);
       break;
     case fxFIN: // Fine pitch offset
       sprintf(buffer, "Fine pitch offset by %hhd", (int8_t)fx[1]);
@@ -107,67 +149,34 @@ char* helpFXHint(uint8_t* fx, int isTable) {
         sprintf(buffer, "Song hop by %hhd", fx[1]);
       }
       break;
-    // Modulation FX
-    case fxM1A: // Modulation 1 amount
-      sprintf(buffer, "Modulation 1 amount %hhd", (int8_t)fx[1]);
+    // Modulation FX - context-aware based on instrument
+    case fxM1A: case fxM2A: case fxM3A: case fxM4A: {
+      // Amount FX
+      int modSlot = (fx[0] - fxM1A) / 5; // 0-3
+      if (instrumentIdx != EMPTY_VALUE_8 && instrumentIdx < PROJECT_MAX_INSTRUMENTS) {
+        enum ModulationType modType = chipnomadState->project.instruments[instrumentIdx].modulation[modSlot].type;
+        sprintf(buffer, "Mod %d %s amount %+hhd", modSlot + 1, getModulationTypeName(modType), (int8_t)fx[1]);
+      } else {
+        sprintf(buffer, "Mod %d amount %+hhd", modSlot + 1, (int8_t)fx[1]);
+      }
       break;
-    case fxM11: // Modulation 1, parameter 1
-      sprintf(buffer, "Modulation 1 param 1 offset %hhd", (int8_t)fx[1]);
+    }
+    case fxM11: case fxM12: case fxM13: case fxM14:
+    case fxM21: case fxM22: case fxM23: case fxM24:
+    case fxM31: case fxM32: case fxM33: case fxM34:
+    case fxM41: case fxM42: case fxM43: case fxM44: {
+      // Parameter FX
+      int modSlot = (fx[0] - fxM1A) / 5; // 0-3
+      int paramIdx = (fx[0] - fxM1A) % 5 - 1; // 0-3 (subtract 1 because M1A is amount)
+      if (instrumentIdx != EMPTY_VALUE_8 && instrumentIdx < PROJECT_MAX_INSTRUMENTS) {
+        enum ModulationType modType = chipnomadState->project.instruments[instrumentIdx].modulation[modSlot].type;
+        const char* paramName = getModulationParamName(modType, paramIdx);
+        sprintf(buffer, "Mod %d %s %s %+hhd", modSlot + 1, getModulationTypeName(modType), paramName, (int8_t)fx[1]);
+      } else {
+        sprintf(buffer, "Mod %d parameter %d offset %+hhd", modSlot + 1, paramIdx + 1, (int8_t)fx[1]);
+      }
       break;
-    case fxM12: // Modulation 1, parameter 2
-      sprintf(buffer, "Modulation 1 param 2 offset %hhd", (int8_t)fx[1]);
-      break;
-    case fxM13: // Modulation 1, parameter 3
-      sprintf(buffer, "Modulation 1 param 3 offset %hhd", (int8_t)fx[1]);
-      break;
-    case fxM14: // Modulation 1, parameter 4
-      sprintf(buffer, "Modulation 1 param 4 offset %hhd", (int8_t)fx[1]);
-      break;
-    case fxM2A: // Modulation 2 amount
-      sprintf(buffer, "Modulation 2 amount %hhd", (int8_t)fx[1]);
-      break;
-    case fxM21: // Modulation 2, parameter 1
-      sprintf(buffer, "Modulation 2 param 1 offset %hhd", (int8_t)fx[1]);
-      break;
-    case fxM22: // Modulation 2, parameter 2
-      sprintf(buffer, "Modulation 2 param 2 offset %hhd", (int8_t)fx[1]);
-      break;
-    case fxM23: // Modulation 2, parameter 3
-      sprintf(buffer, "Modulation 2 param 3 offset %hhd", (int8_t)fx[1]);
-      break;
-    case fxM24: // Modulation 2, parameter 4
-      sprintf(buffer, "Modulation 2 param 4 offset %hhd", (int8_t)fx[1]);
-      break;
-    case fxM3A: // Modulation 3 amount
-      sprintf(buffer, "Modulation 3 amount %hhd", (int8_t)fx[1]);
-      break;
-    case fxM31: // Modulation 3, parameter 1
-      sprintf(buffer, "Modulation 3 param 1 offset %hhd", (int8_t)fx[1]);
-      break;
-    case fxM32: // Modulation 3, parameter 2
-      sprintf(buffer, "Modulation 3 param 2 offset %hhd", (int8_t)fx[1]);
-      break;
-    case fxM33: // Modulation 3, parameter 3
-      sprintf(buffer, "Modulation 3 param 3 offset %hhd", (int8_t)fx[1]);
-      break;
-    case fxM34: // Modulation 3, parameter 4
-      sprintf(buffer, "Modulation 3 param 4 offset %hhd", (int8_t)fx[1]);
-      break;
-    case fxM4A: // Modulation 4 amount
-      sprintf(buffer, "Modulation 4 amount %hhd", (int8_t)fx[1]);
-      break;
-    case fxM41: // Modulation 4, parameter 1
-      sprintf(buffer, "Modulation 4 param 1 offset %hhd", (int8_t)fx[1]);
-      break;
-    case fxM42: // Modulation 4, parameter 2
-      sprintf(buffer, "Modulation 4 param 2 offset %hhd", (int8_t)fx[1]);
-      break;
-    case fxM43: // Modulation 4, parameter 3
-      sprintf(buffer, "Modulation 4 param 3 offset %hhd", (int8_t)fx[1]);
-      break;
-    case fxM44: // Modulation 4, parameter 4
-      sprintf(buffer, "Modulation 4 param 4 offset %hhd", (int8_t)fx[1]);
-      break;
+    }
     // AY-specific FX
     case fxAYM: // AY Mixer settting
       if (fx[1] & 0xf0) {
@@ -215,13 +224,98 @@ char* helpFXHint(uint8_t* fx, int isTable) {
       sprintf(buffer, "Envelope note %s", noteName(&chipnomadState->project, note));
       break;
     case fxEPT: // Envelope period offset
-      sprintf(buffer, "Envelope offset by %hhd", fx[1]);
+      sprintf(buffer, "Envelope period offset by %hhd", fx[1]);
       break;
     case fxEPL: // Envelope period L
       sprintf(buffer, "Envelope period Low %s", byteToHex(fx[1]));
       break;
     case fxEPH: // Envelope period H
       sprintf(buffer, "Envelope period High %s", byteToHex(fx[1]));
+      break;
+    // Common AY FX
+    case fxTNN: // Tone specific note
+      note = fx[1];
+      if (note >= chipnomadState->project.pitchTable.length)
+        note = chipnomadState->project.pitchTable.length - 1;
+      sprintf(buffer, "Tone note %s", noteName(&chipnomadState->project, note));
+      break;
+    case fxTNP: // Tone pitch offset
+      sprintf(buffer, "Tone pitch offset %+hhd steps", (int8_t)fx[1]);
+      break;
+    case fxTNF: // Tone fine offset
+      sprintf(buffer, "Tone fine offset %+hhd", (int8_t)fx[1]);
+      break;
+    case fxTRT: // Tone phase retrigger
+      sprintf(buffer, "Retrigger tone phase");
+      break;
+    case fxENN: // Envelope specific note
+      note = fx[1];
+      if (note >= chipnomadState->project.pitchTable.length)
+        note = chipnomadState->project.pitchTable.length - 1;
+      sprintf(buffer, "Envelope note %s", noteName(&chipnomadState->project, note));
+      break;
+    case fxENP: // Envelope pitch offset
+      sprintf(buffer, "Envelope pitch offset %+hhd steps", (int8_t)fx[1]);
+      break;
+    case fxENF: // Envelope fine offset
+      sprintf(buffer, "Envelope fine offset %+hhd", (int8_t)fx[1]);
+      break;
+    // AY2-specific FX (software oscillator)
+    case fxSFT: // Software oscillator type
+      sprintf(buffer, "Software osc type %hhu", fx[1]);
+      break;
+    case fxSFV: // Software oscillator aux value
+      sprintf(buffer, "Software osc aux value %hhu", fx[1]);
+      break;
+    case fxSFN: // Software oscillator specific note
+      note = fx[1];
+      if (note >= chipnomadState->project.pitchTable.length)
+        note = chipnomadState->project.pitchTable.length - 1;
+      sprintf(buffer, "Software osc note %s", noteName(&chipnomadState->project, note));
+      break;
+    case fxSFP: // Software oscillator pitch offset
+      sprintf(buffer, "Software osc pitch offset %+hhd steps", (int8_t)fx[1]);
+      break;
+    case fxSFF: // Software oscillator fine offset
+      sprintf(buffer, "Software osc fine offset %+hhd", (int8_t)fx[1]);
+      break;
+    case fxSRT: // Software oscillator phase retrigger
+      sprintf(buffer, "Retrigger software osc phase");
+      break;
+    // AYSample-specific FX
+    case fxSMN: // Sample specific note
+      note = fx[1];
+      if (note >= chipnomadState->project.pitchTable.length)
+        note = chipnomadState->project.pitchTable.length - 1;
+      sprintf(buffer, "Sample playback note %s", noteName(&chipnomadState->project, note));
+      break;
+    case fxSMP: // Sample pitch offset
+      sprintf(buffer, "Sample pitch offset %+hhd steps", (int8_t)fx[1]);
+      break;
+    case fxSMF: // Sample fine offset
+      sprintf(buffer, "Sample fine offset %+hhd", (int8_t)fx[1]);
+      break;
+    case fxSMS: // Sample start position
+      sprintf(buffer, "Sample start position %hhu", fx[1]);
+      break;
+    // AYWavetable-specific FX
+    case fxWTX: // Wavetable index offset
+      sprintf(buffer, "Wavetable index offset %+hhd", (int8_t)fx[1]);
+      break;
+    case fxWTN: // Wavetable specific note
+      note = fx[1];
+      if (note >= chipnomadState->project.pitchTable.length)
+        note = chipnomadState->project.pitchTable.length - 1;
+      sprintf(buffer, "Wavetable playback note %s", noteName(&chipnomadState->project, note));
+      break;
+    case fxWTP: // Wavetable pitch offset
+      sprintf(buffer, "Wavetable pitch offset %+hhd steps", (int8_t)fx[1]);
+      break;
+    case fxWTF: // Wavetable fine offset
+      sprintf(buffer, "Wavetable fine offset %+hhd", (int8_t)fx[1]);
+      break;
+    case fxWRT: // Wavetable phase retrigger
+      sprintf(buffer, "Retrigger wavetable phase");
       break;
     default:
       break;
@@ -276,7 +370,7 @@ static const char* fxHelpText[] = {
   [fxM43] = "Mod 4 Param 3\nOffsets modulation 4\nparameter 3",
   [fxM44] = "Mod 4 Param 4\nOffsets modulation 4\nparameter 4",
   // AY-specific FX
-  [fxAYM] = "AY Mixer\nControls tone/noise mix\nand envelope mode",
+  [fxAYM] = "AY Mixer\nControls tone/noise mix\nand envelope shape",
   [fxERT] = "Envelope Retrigger\nRestarts AY envelope\nfrom beginning",
   [fxNOI] = "Noise Offset\nAdds offset to\nnoise period",
   [fxNOA] = "Noise Absolute\nSets noise period\nto exact value",
@@ -287,18 +381,105 @@ static const char* fxHelpText[] = {
   [fxENT] = "Envelope Note\nSets envelope period\nfrom note value",
   [fxEPT] = "Envelope Offset\nAdds offset to\nenvelope period",
   [fxEPL] = "Envelope Low\nSets low byte of\nenvelope period",
-  [fxEPH] = "Envelope High\nSets high byte of\nenvelope period"
+  [fxEPH] = "Envelope High\nSets high byte of\nenvelope period",
+  // Common AY FX (all AY types)
+  [fxTNN] = "Tone Note\nSets tone oscillator\nto specific note",
+  [fxTNP] = "Tone Pitch\nOffsets tone oscillator\npitch (steps)",
+  [fxTNF] = "Tone Fine\nOffsets tone oscillator\nfine tune (period/cents)",
+  [fxTRT] = "Tone Retrigger\nResest tone oscillator phase",
+  [fxENN] = "Envelope Note\nSets envelope oscillator\nto specific note",
+  [fxENP] = "Envelope Pitch\nOffsets envelope oscillator\npitch (steps)",
+  [fxENF] = "Envelope Fine\nOffsets envelope oscillator\nfine tune (period/cents)",
+  // AY2-specific FX (software oscillator)
+  [fxSFT] = "Software Osc Type\nSets software oscillator type",
+  [fxSFV] = "Software Osc Value\nSets auxiliary value\nfor software osc",
+  [fxSFN] = "Software Osc Note\nSets software oscillator\nto specific note",
+  [fxSFP] = "Software Osc Pitch\nOffsets software oscillator\npitch (steps)",
+  [fxSFF] = "Software Osc Fine\nOffsets software oscillator\nfine tune (period/cents)",
+  [fxSRT] = "Software Osc Retrig\nRestarts software oscillator\nphase from zero",
+  // AYSample-specific FX
+  [fxSMN] = "Sample Note\nSets sample playback\nto specific note",
+  [fxSMP] = "Sample Pitch\nOffsets sample playback\npitch (steps)",
+  [fxSMF] = "Sample Fine\nOffsets sample playback\nfine tune (period/cents)",
+  [fxSMS] = "Sample Start\nSets sample playback\nstart position",
+  // AYWavetable-specific FX
+  [fxWTX] = "Wavetable Index\nOffsets wavetable\nindex position",
+  [fxWTN] = "Wavetable Note\nSets wavetable playback\nto specific note",
+  [fxWTP] = "Wavetable Pitch\nOffsets wavetable\npitch (steps)",
+  [fxWTF] = "Wavetable Fine\nOffsets wavetable\nfine tune (period/cents)",
+  [fxWRT] = "Wavetable Retrigger\nRestarts wavetable\nphase from zero"
 };
 
-char* helpFXDescription(enum FX fxIdx) {
+char* helpFXDescription(enum FX fxIdx, uint8_t instrumentIdx) {
+  static char buffer[120]; // Buffer for dynamic description
+
+  // For modulation FX, generate context-aware descriptions
+  if (fxIdx >= fxM1A && fxIdx <= fxM44) {
+    int modSlot = (fxIdx - fxM1A) / 5; // 0-3
+    int paramIdx = (fxIdx - fxM1A) % 5; // 0=amount, 1-4=params
+
+    if (paramIdx == 0) {
+      // Amount FX
+      if (instrumentIdx != EMPTY_VALUE_8 && instrumentIdx < PROJECT_MAX_INSTRUMENTS) {
+        enum ModulationType modType = chipnomadState->project.instruments[instrumentIdx].modulation[modSlot].type;
+        sprintf(buffer, "Mod %d Amount\n%s: Scales envelope\noutput depth",
+                modSlot + 1, getModulationTypeName(modType));
+      } else {
+        sprintf(buffer, "Mod %d Amount\nSets modulation %d\noutput amount", modSlot + 1, modSlot + 1);
+      }
+    } else {
+      // Parameter FX
+      if (instrumentIdx != EMPTY_VALUE_8 && instrumentIdx < PROJECT_MAX_INSTRUMENTS) {
+        enum ModulationType modType = chipnomadState->project.instruments[instrumentIdx].modulation[modSlot].type;
+
+        // Generate context-specific description
+        switch (modType) {
+          case modADSR:
+            switch (paramIdx - 1) {
+              case 0: sprintf(buffer, "Mod %d Param 1\nADSR: Attack time\n(0-255 tics)", modSlot + 1); break;
+              case 1: sprintf(buffer, "Mod %d Param 2\nADSR: Decay time\n(0-255 tics)", modSlot + 1); break;
+              case 2: sprintf(buffer, "Mod %d Param 3\nADSR: Sustain level\n(0-255)", modSlot + 1); break;
+              case 3: sprintf(buffer, "Mod %d Param 4\nADSR: Release time\n(0-255 tics)", modSlot + 1); break;
+            }
+            break;
+          case modAHD:
+            switch (paramIdx - 1) {
+              case 0: sprintf(buffer, "Mod %d Param 1\nAHD: Attack time\n(0-255 tics)", modSlot + 1); break;
+              case 1: sprintf(buffer, "Mod %d Param 2\nAHD: Hold time\n(0-255 tics)", modSlot + 1); break;
+              case 2: sprintf(buffer, "Mod %d Param 3\nAHD: Decay time\n(0-255 tics)", modSlot + 1); break;
+              case 3: sprintf(buffer, "Mod %d Param 4\nAHD: (unused)", modSlot + 1); break;
+            }
+            break;
+          case modLFO:
+            switch (paramIdx - 1) {
+              case 0: sprintf(buffer, "Mod %d Param 1\nLFO: Wave shape\n(0-7)", modSlot + 1); break;
+              case 1: sprintf(buffer, "Mod %d Param 2\nLFO: Trigger mode\n(0-3)", modSlot + 1); break;
+              case 2: sprintf(buffer, "Mod %d Param 3\nLFO: Period\n(0-255 tics)", modSlot + 1); break;
+              case 3: sprintf(buffer, "Mod %d Param 4\nLFO: (unused)", modSlot + 1); break;
+            }
+            break;
+          default:
+            sprintf(buffer, "Mod %d Param %d\nOffsets modulation %d\nparameter %d",
+                    modSlot + 1, paramIdx, modSlot + 1, paramIdx);
+            break;
+        }
+      } else {
+        sprintf(buffer, "Mod %d Param %d\nOffsets modulation %d\nparameter %d",
+                modSlot + 1, paramIdx, modSlot + 1, paramIdx);
+      }
+    }
+    return buffer;
+  }
+
+  // For non-modulation FX, use static descriptions
   if (fxIdx < fxTotalCount && fxHelpText[fxIdx]) {
     return (char*)fxHelpText[fxIdx];
   }
   return "";
 }
 
-void drawFXHelp(enum FX fxIdx) {
-  const char* helpText = helpFXDescription(fxIdx);
+void drawFXHelp(enum FX fxIdx, uint8_t instrumentIdx) {
+  const char* helpText = helpFXDescription(fxIdx, instrumentIdx);
   if (!helpText || !helpText[0]) return;
 
   gfxSetFgColor(appSettings.colorScheme.textDefault);

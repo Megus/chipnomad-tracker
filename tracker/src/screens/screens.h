@@ -127,10 +127,10 @@ int editCharacter(enum CellEditAction action, char* str, int idx, int maxLen);
 char charEditInput(int keys, int tapCount, char* str, int idx, int maxLen);
 
 // FX edit
-int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable, enum InstrumentType instType);
-int editFXValue(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable);
+int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable, uint8_t instrumentIdx);
+int editFXValue(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable, uint8_t instrumentIdx);
 int fxEditInput(int keys, int tapCount, uint8_t* fx, uint8_t* lastFX);
-void fxEditFullDraw(uint8_t currentFX, enum InstrumentType instType);
+void fxEditFullDraw(uint8_t currentFX, uint8_t instrumentIdx);
 
 // Manage screen functions
 int manageColumnCount(int row);

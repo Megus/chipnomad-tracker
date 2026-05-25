@@ -74,7 +74,7 @@ void test_modInit_ADSR_initializes_correctly(void) {
   TEST_ASSERT_EQUAL(0, state.step);
   TEST_ASSERT_EQUAL(0, state.counter);
   TEST_ASSERT_EQUAL(0, state.data1);
-  TEST_ASSERT_EQUAL(32640, state.data2);
+  TEST_ASSERT_EQUAL(32385, state.data2);
   TEST_ASSERT_EQUAL(0, state.outValue);
   TEST_ASSERT_EQUAL(modADSR, state.cachedType);
   TEST_ASSERT_EQUAL(20, state.cachedP2);
@@ -363,20 +363,20 @@ void test_scaleToRange_negative_value(void) {
 // Test playbackModScaleToRange - different ranges
 void test_scaleToRange_different_maxAmplitudes(void) {
   // Scale to 255 (8-bit)
-  int16_t result = playbackModScaleToRange(32640, 255);
+  int16_t result = playbackModScaleToRange(32385, 255);
   TEST_ASSERT_EQUAL(255, result);
 
-  result = playbackModScaleToRange(-32768, 255);
+  result = playbackModScaleToRange(-32385, 255);
   TEST_ASSERT_INT16_WITHIN(1, -255, result);
 
   result = playbackModScaleToRange(0, 255);
   TEST_ASSERT_EQUAL(0, result);
 
   // Scale to 1 (binary)
-  result = playbackModScaleToRange(32640, 1);
+  result = playbackModScaleToRange(32385, 1);
   TEST_ASSERT_EQUAL(1, result);
 
-  result = playbackModScaleToRange(-32768, 1);
+  result = playbackModScaleToRange(-32385, 1);
   TEST_ASSERT_INT16_WITHIN(1, -1, result);
 }
 
@@ -457,7 +457,7 @@ void test_modInit_AHD_initializes_correctly(void) {
   TEST_ASSERT_EQUAL(0, state.step);
   TEST_ASSERT_EQUAL(0, state.counter);
   TEST_ASSERT_EQUAL(0, state.data1);
-  TEST_ASSERT_EQUAL(32640, state.data2);
+  TEST_ASSERT_EQUAL(32385, state.data2);
   TEST_ASSERT_EQUAL(0, state.outValue);
   TEST_ASSERT_EQUAL(modAHD, state.cachedType);
   TEST_ASSERT_EQUAL(20, state.cachedP2);
