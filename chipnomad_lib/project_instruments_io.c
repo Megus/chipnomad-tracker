@@ -1,13 +1,12 @@
 #include "project.h"
 #include "project_io_common.h"
-#include "corelib/corelib_file.h"
 #include <stdio.h>
 #include <string.h>
 
 // Load AY1 instrument data (legacy format - version 1.0)
-static int loadInstrumentAY1Legacy(int fileId, Instrument* instrument) {
+static int loadInstrumentAY1Legacy(FILE* file, Instrument* instrument) {
   while (1) {
-    char* line = peekLine(fileId);
+    char* line = peekLine(file);
     if (line == NULL) return 1;
     if (line[0] == '#') return 0;
 
@@ -25,14 +24,14 @@ static int loadInstrumentAY1Legacy(int fileId, Instrument* instrument) {
     } else if (strncmp(line, "- Default mixer: ", 17) == 0) {
       sscanf(line, "- Default mixer: %hhX", &instrument->chip.ay.defaultMixer);
     }
-    consumeLine(fileId);
+    consumeLine(file);
   }
 }
 
 // Load AY1 instrument data (new format - version 2.0)
-static int loadInstrumentAY1(int fileId, Instrument* instrument) {
+static int loadInstrumentAY1(FILE* file, Instrument* instrument) {
   while (1) {
-    char* line = peekLine(fileId);
+    char* line = peekLine(file);
     if (line == NULL) return 1;
     if (line[0] == '#') return 0;
 
@@ -50,14 +49,14 @@ static int loadInstrumentAY1(int fileId, Instrument* instrument) {
     } else if (strncmp(line, "- Default mixer: ", 17) == 0) {
       sscanf(line, "- Default mixer: %hhX", &instrument->chip.ay.defaultMixer);
     }
-    consumeLine(fileId);
+    consumeLine(file);
   }
 }
 
 // Load AY2 instrument data
-static int loadInstrumentAY2(int fileId, Instrument* instrument) {
+static int loadInstrumentAY2(FILE* file, Instrument* instrument) {
   while (1) {
-    char* line = peekLine(fileId);
+    char* line = peekLine(file);
     if (line == NULL) return 1;
     if (line[0] == '#') return 0;
 
@@ -101,18 +100,20 @@ static int loadInstrumentAY2(int fileId, Instrument* instrument) {
     } else if (strncmp(line, "- Software fine tune: ", 22) == 0) {
       sscanf(line, "- Software fine tune: %hhd", &instrument->chip.ay2.oscSoftware.fineTune);
     } else if (strncmp(line, "- Software aux parameter: ", 26) == 0) {
-      sscanf(line, "- Software aux parameter: %hhu", &instrument->chip.ay2.oscSoftware.auxParameter);
+      sscanf(line, "- Software aux parameter: %hhu", &instrument->chip.ay2.oscSoftware.p1);
+    } else if (strncmp(line, "- Software aux parameter 2: ", 26) == 0) {
+      sscanf(line, "- Software aux parameter 2: %hhu", &instrument->chip.ay2.oscSoftware.p2);
     }
-    consumeLine(fileId);
+    consumeLine(file);
   }
 }
 
 // Load AYSample instrument data
-static int loadInstrumentAYSample(int fileId, Instrument* instrument) {
+static int loadInstrumentAYSample(FILE* file, Instrument* instrument) {
   while (1) {
-    char* line = peekLine(fileId);
-    if (line == NULL) return 1;
-    if (line[0] == '#') return 0;
+    char* line = peekLine(file);
+    if (line == NULL) break;
+    if (line[0] == '#') break;
 
     // Tone oscillator
     if (strncmp(line, "- Tone on: ", 11) == 0) {
@@ -148,15 +149,50 @@ static int loadInstrumentAYSample(int fileId, Instrument* instrument) {
     } else if (strncmp(line, "- Sample fine tune: ", 20) == 0) {
       sscanf(line, "- Sample fine tune: %hhd", &instrument->chip.aySample.fineTune);
     }
-    // TODO: Sample data loading (binary data)
-    consumeLine(fileId);
+
+    consumeLine(file);
   }
+
+  // Check for #### Sample Data section
+  char* line = peekLine(file);
+  if (line != NULL && strncmp(line, "#### Sample Data", 16) == 0) {
+    consumeLine(file);  // Consume "#### Sample Data"
+
+    // Read "- Length:" line
+    line = peekLine(file);
+    if (line != NULL && strncmp(line, "- Length: ", 10) == 0) {
+      uint16_t dataLen = 0;
+      sscanf(line, "- Length: %hX", &dataLen);
+      consumeLine(file);
+
+      // Validate length
+      if (dataLen > PROJECT_MAX_SAMPLE_SIZE) {
+        dataLen = PROJECT_MAX_SAMPLE_SIZE;
+      }
+      instrument->chip.aySample.fileLength = dataLen;
+
+      // Read "- Data:" line
+      line = peekLine(file);
+      if (line != NULL && strncmp(line, "- Data:", 7) == 0) {
+        consumeLine(file);
+
+        // Load binary data
+        if (dataLen > 0) {
+          if (loadBinaryData(file, &instrument->chip.aySample.sampleData, &dataLen, PROJECT_MAX_SAMPLE_SIZE)) {
+            return 1;
+          }
+        }
+      }
+    }
+  }
+
+  return 0;
 }
 
 // Load AYWavetable instrument data
-static int loadInstrumentAYWavetable(int fileId, Instrument* instrument) {
+static int loadInstrumentAYWavetable(FILE* file, Instrument* instrument) {
   while (1) {
-    char* line = peekLine(fileId);
+    char* line = peekLine(file);
     if (line == NULL) return 1;
     if (line[0] == '#') return 0;
 
@@ -184,14 +220,14 @@ static int loadInstrumentAYWavetable(int fileId, Instrument* instrument) {
     } else if (strncmp(line, "- Wave fine tune: ", 18) == 0) {
       sscanf(line, "- Wave fine tune: %hhd", &instrument->chip.ayWavetable.fineTune);
     }
-    consumeLine(fileId);
+    consumeLine(file);
   }
 }
 
 // Load modulation data
-static int loadModulation(int fileId, Instrument* instrument) {
+static int loadModulation(FILE* file, Instrument* instrument) {
   for (int i = 0; i < 4; i++) {
-    char* line = peekLine(fileId);
+    char* line = peekLine(file);
     if (line == NULL) return 1;
     if (line[0] == '#') return 0;
 
@@ -208,18 +244,18 @@ static int loadModulation(int fileId, Instrument* instrument) {
         &instrument->modulation[i].p3,
         &instrument->modulation[i].p4);
     }
-    consumeLine(fileId);
+    consumeLine(file);
   }
   return 0;
 }
 
 // Main load function
-int instrumentLoadData(int fileId, Instrument* instrument, Project* p) {
+int instrumentLoadData(FILE* file, Instrument* instrument, Project* p) {
   instrumentClear(instrument);
 
   // Read common fields first
   while (1) {
-    char* line = peekLine(fileId);
+    char* line = peekLine(file);
     if (line == NULL) return 1;
     if (line[0] == '#') return 0;
 
@@ -231,11 +267,11 @@ int instrumentLoadData(int fileId, Instrument* instrument, Project* p) {
       sscanf(line, "- Table speed: %hhu", &instrument->tableSpeed);
     } else if (strncmp(line, "- Transpose: ", 13) == 0) {
       sscanf(line, "- Transpose: %hhu", &instrument->transposeEnabled);
-      consumeLine(fileId);
+      consumeLine(file);
       // After reading transpose, check what comes next
       break;
     }
-    consumeLine(fileId);
+    consumeLine(file);
   }
 
   // Check version to determine format
@@ -243,37 +279,37 @@ int instrumentLoadData(int fileId, Instrument* instrument, Project* p) {
     // Legacy format (version 1.0): no modulation, no "Chip data:" separator
     // Only AY1 instruments existed in version 1.0
     if (instrument->type == instAY1) {
-      if (loadInstrumentAY1Legacy(fileId, instrument)) return 1;
+      if (loadInstrumentAY1Legacy(file, instrument)) return 1;
     }
     return 0;
   }
 
   // New format (version 2.0): read modulation and chip data sections
-  char* line = peekLine(fileId);
+  char* line = peekLine(file);
   if (line == NULL) return 1;
 
   if (strncmp(line, "- Modulation:", 13) == 0) {
-    consumeLine(fileId);
-    if (loadModulation(fileId, instrument)) return 1;
-    line = peekLine(fileId);  // Read next line after modulation
+    consumeLine(file);
+    if (loadModulation(file, instrument)) return 1;
+    line = peekLine(file);  // Read next line after modulation
     if (line == NULL) return 1;
   }
 
   if (strncmp(line, "- Chip data:", 12) == 0) {
-    consumeLine(fileId);
+    consumeLine(file);
     // Load chip-specific data based on instrument type
     switch (instrument->type) {
       case instAY1:
-        if (loadInstrumentAY1(fileId, instrument)) return 1;
+        if (loadInstrumentAY1(file, instrument)) return 1;
         break;
       case instAY2:
-        if (loadInstrumentAY2(fileId, instrument)) return 1;
+        if (loadInstrumentAY2(file, instrument)) return 1;
         break;
       case instAYSample:
-        if (loadInstrumentAYSample(fileId, instrument)) return 1;
+        if (loadInstrumentAYSample(file, instrument)) return 1;
         break;
       case instAYWavetable:
-        if (loadInstrumentAYWavetable(fileId, instrument)) return 1;
+        if (loadInstrumentAYWavetable(file, instrument)) return 1;
         break;
       default:
         break;
@@ -284,99 +320,106 @@ int instrumentLoadData(int fileId, Instrument* instrument, Project* p) {
 }
 
 // Save AY1 instrument data
-static int saveInstrumentAY1(int fileId, Instrument* instrument) {
+static int saveInstrumentAY1(FILE* file, Instrument* instrument) {
   // Save volume envelope as ADSR values (for backward compatibility in file format)
   Modulation* ve = &instrument->chip.ay.volumeEnvelope;
-  filePrintf(fileId, "- Volume envelope: %hhu,%hhu,%hhu,%hhu\n",
+  fprintf(file, "- Volume envelope: %hhu,%hhu,%hhu,%hhu\n",
     ve->p1, ve->p2, ve->p3, ve->p4);  // A, D, S, R
-  filePrintf(fileId, "- Auto envelope: %hhd,%hhd\n",
+  fprintf(file, "- Auto envelope: %hhd,%hhd\n",
     instrument->chip.ay.autoEnvN, instrument->chip.ay.autoEnvD);
-  filePrintf(fileId, "- Default mixer: %02X\n", instrument->chip.ay.defaultMixer);
+  fprintf(file, "- Default mixer: %02X\n", instrument->chip.ay.defaultMixer);
   return 0;
 }
 
 // Save AY2 instrument data
-static int saveInstrumentAY2(int fileId, Instrument* instrument) {
+static int saveInstrumentAY2(FILE* file, Instrument* instrument) {
   // Tone oscillator
-  filePrintf(fileId, "- Tone on: %hhu\n", instrument->chip.ay2.oscTone.isOn);
-  filePrintf(fileId, "- Tone pitch flag: %hhu\n", instrument->chip.ay2.oscTone.pitchFlag);
-  filePrintf(fileId, "- Tone pitch offset: %hhd\n", instrument->chip.ay2.oscTone.pitchOffset);
-  filePrintf(fileId, "- Tone fine tune: %hhd\n", instrument->chip.ay2.oscTone.fineTune);
+  fprintf(file, "- Tone on: %hhu\n", instrument->chip.ay2.oscTone.isOn);
+  fprintf(file, "- Tone pitch flag: %hhu\n", instrument->chip.ay2.oscTone.pitchFlag);
+  fprintf(file, "- Tone pitch offset: %hhd\n", instrument->chip.ay2.oscTone.pitchOffset);
+  fprintf(file, "- Tone fine tune: %hhd\n", instrument->chip.ay2.oscTone.fineTune);
 
   // Noise oscillator
-  filePrintf(fileId, "- Noise on: %hhu\n", instrument->chip.ay2.oscNoise.isOn);
-  filePrintf(fileId, "- Noise period: %hhu\n", instrument->chip.ay2.oscNoise.noisePeriod);
+  fprintf(file, "- Noise on: %hhu\n", instrument->chip.ay2.oscNoise.isOn);
+  fprintf(file, "- Noise period: %hhu\n", instrument->chip.ay2.oscNoise.noisePeriod);
 
   // Envelope oscillator
-  filePrintf(fileId, "- Envelope shape: %hhu\n", instrument->chip.ay2.oscEnvelope.shape);
-  filePrintf(fileId, "- Envelope auto N: %hhu\n", instrument->chip.ay2.oscEnvelope.autoEnvN);
-  filePrintf(fileId, "- Envelope auto D: %hhu\n", instrument->chip.ay2.oscEnvelope.autoEnvD);
-  filePrintf(fileId, "- Envelope pitch flag: %hhu\n", instrument->chip.ay2.oscEnvelope.pitchFlag);
-  filePrintf(fileId, "- Envelope pitch offset: %hhd\n", instrument->chip.ay2.oscEnvelope.pitchOffset);
-  filePrintf(fileId, "- Envelope fine tune: %hhd\n", instrument->chip.ay2.oscEnvelope.fineTune);
+  fprintf(file, "- Envelope shape: %hhu\n", instrument->chip.ay2.oscEnvelope.shape);
+  fprintf(file, "- Envelope auto N: %hhu\n", instrument->chip.ay2.oscEnvelope.autoEnvN);
+  fprintf(file, "- Envelope auto D: %hhu\n", instrument->chip.ay2.oscEnvelope.autoEnvD);
+  fprintf(file, "- Envelope pitch flag: %hhu\n", instrument->chip.ay2.oscEnvelope.pitchFlag);
+  fprintf(file, "- Envelope pitch offset: %hhd\n", instrument->chip.ay2.oscEnvelope.pitchOffset);
+  fprintf(file, "- Envelope fine tune: %hhd\n", instrument->chip.ay2.oscEnvelope.fineTune);
 
   // Software oscillator
-  filePrintf(fileId, "- Software type: %hhu\n", instrument->chip.ay2.oscSoftware.type);
-  filePrintf(fileId, "- Software pitch flag: %hhu\n", instrument->chip.ay2.oscSoftware.pitchFlag);
-  filePrintf(fileId, "- Software pitch offset: %hhd\n", instrument->chip.ay2.oscSoftware.pitchOffset);
-  filePrintf(fileId, "- Software fine tune: %hhd\n", instrument->chip.ay2.oscSoftware.fineTune);
-  filePrintf(fileId, "- Software aux parameter: %hhu\n", instrument->chip.ay2.oscSoftware.auxParameter);
+  fprintf(file, "- Software type: %hhu\n", instrument->chip.ay2.oscSoftware.type);
+  fprintf(file, "- Software pitch flag: %hhu\n", instrument->chip.ay2.oscSoftware.pitchFlag);
+  fprintf(file, "- Software pitch offset: %hhd\n", instrument->chip.ay2.oscSoftware.pitchOffset);
+  fprintf(file, "- Software fine tune: %hhd\n", instrument->chip.ay2.oscSoftware.fineTune);
+  fprintf(file, "- Software aux parameter: %hhu\n", instrument->chip.ay2.oscSoftware.p1);
+  fprintf(file, "- Software aux parameter 2: %hhu\n", instrument->chip.ay2.oscSoftware.p2);
 
   return 0;
 }
 
 // Save AYSample instrument data
-static int saveInstrumentAYSample(int fileId, Instrument* instrument) {
+static int saveInstrumentAYSample(FILE* file, Instrument* instrument) {
   // Tone oscillator
-  filePrintf(fileId, "- Tone on: %hhu\n", instrument->chip.aySample.oscTone.isOn);
-  filePrintf(fileId, "- Tone pitch flag: %hhu\n", instrument->chip.aySample.oscTone.pitchFlag);
-  filePrintf(fileId, "- Tone pitch offset: %hhd\n", instrument->chip.aySample.oscTone.pitchOffset);
-  filePrintf(fileId, "- Tone fine tune: %hhd\n", instrument->chip.aySample.oscTone.fineTune);
+  fprintf(file, "- Tone on: %hhu\n", instrument->chip.aySample.oscTone.isOn);
+  fprintf(file, "- Tone pitch flag: %hhu\n", instrument->chip.aySample.oscTone.pitchFlag);
+  fprintf(file, "- Tone pitch offset: %hhd\n", instrument->chip.aySample.oscTone.pitchOffset);
+  fprintf(file, "- Tone fine tune: %hhd\n", instrument->chip.aySample.oscTone.fineTune);
 
   // Noise oscillator
-  filePrintf(fileId, "- Noise on: %hhu\n", instrument->chip.aySample.oscNoise.isOn);
-  filePrintf(fileId, "- Noise period: %hhu\n", instrument->chip.aySample.oscNoise.noisePeriod);
+  fprintf(file, "- Noise on: %hhu\n", instrument->chip.aySample.oscNoise.isOn);
+  fprintf(file, "- Noise period: %hhu\n", instrument->chip.aySample.oscNoise.noisePeriod);
 
   // Sample parameters
-  filePrintf(fileId, "- Sample name: %s\n", instrument->chip.aySample.sampleName);
-  filePrintf(fileId, "- Sample rate: %hu\n", instrument->chip.aySample.sampleRate);
-  filePrintf(fileId, "- Sample start: %04X\n", instrument->chip.aySample.sampleStart);
-  filePrintf(fileId, "- Sample length: %04X\n", instrument->chip.aySample.sampleLength);
-  filePrintf(fileId, "- Sample loop start: %04X\n", instrument->chip.aySample.sampleLoopStart);
-  filePrintf(fileId, "- Sample loop end: %04X\n", instrument->chip.aySample.sampleLoopEnd);
-  filePrintf(fileId, "- Sample pitch offset: %hhd\n", instrument->chip.aySample.pitchOffset);
-  filePrintf(fileId, "- Sample fine tune: %hhd\n", instrument->chip.aySample.fineTune);
+  fprintf(file, "- Sample name: %s\n", instrument->chip.aySample.sampleName);
+  fprintf(file, "- Sample rate: %hu\n", instrument->chip.aySample.sampleRate);
+  fprintf(file, "- Sample start: %04X\n", instrument->chip.aySample.sampleStart);
+  fprintf(file, "- Sample length: %04X\n", instrument->chip.aySample.sampleLength);
+  fprintf(file, "- Sample loop start: %04X\n", instrument->chip.aySample.sampleLoopStart);
+  fprintf(file, "- Sample loop end: %04X\n", instrument->chip.aySample.sampleLoopEnd);
+  fprintf(file, "- Sample pitch offset: %hhd\n", instrument->chip.aySample.pitchOffset);
+  fprintf(file, "- Sample fine tune: %hhd\n", instrument->chip.aySample.fineTune);
 
-  // TODO: Sample data saving (binary data)
+  // Save sample data as a separate #### section
+  if (instrument->chip.aySample.fileLength > 0 && instrument->chip.aySample.sampleData != NULL) {
+    fprintf(file, "\n#### Sample Data\n\n");
+    saveBinaryData(file,
+                  instrument->chip.aySample.sampleData,
+                  instrument->chip.aySample.fileLength);
+  }
 
   return 0;
 }
 
 // Save AYWavetable instrument data
-static int saveInstrumentAYWavetable(int fileId, Instrument* instrument) {
+static int saveInstrumentAYWavetable(FILE* file, Instrument* instrument) {
   // Tone oscillator
-  filePrintf(fileId, "- Tone on: %hhu\n", instrument->chip.ayWavetable.oscTone.isOn);
-  filePrintf(fileId, "- Tone pitch flag: %hhu\n", instrument->chip.ayWavetable.oscTone.pitchFlag);
-  filePrintf(fileId, "- Tone pitch offset: %hhd\n", instrument->chip.ayWavetable.oscTone.pitchOffset);
-  filePrintf(fileId, "- Tone fine tune: %hhd\n", instrument->chip.ayWavetable.oscTone.fineTune);
+  fprintf(file, "- Tone on: %hhu\n", instrument->chip.ayWavetable.oscTone.isOn);
+  fprintf(file, "- Tone pitch flag: %hhu\n", instrument->chip.ayWavetable.oscTone.pitchFlag);
+  fprintf(file, "- Tone pitch offset: %hhd\n", instrument->chip.ayWavetable.oscTone.pitchOffset);
+  fprintf(file, "- Tone fine tune: %hhd\n", instrument->chip.ayWavetable.oscTone.fineTune);
 
   // Noise oscillator
-  filePrintf(fileId, "- Noise on: %hhu\n", instrument->chip.ayWavetable.oscNoise.isOn);
-  filePrintf(fileId, "- Noise period: %hhu\n", instrument->chip.ayWavetable.oscNoise.noisePeriod);
+  fprintf(file, "- Noise on: %hhu\n", instrument->chip.ayWavetable.oscNoise.isOn);
+  fprintf(file, "- Noise period: %hhu\n", instrument->chip.ayWavetable.oscNoise.noisePeriod);
 
   // Wavetable parameters
-  filePrintf(fileId, "- Wave index: %hhu\n", instrument->chip.ayWavetable.waveIndex);
-  filePrintf(fileId, "- Wave pitch offset: %hhd\n", instrument->chip.ayWavetable.pitchOffset);
-  filePrintf(fileId, "- Wave fine tune: %hhd\n", instrument->chip.ayWavetable.fineTune);
+  fprintf(file, "- Wave index: %hhu\n", instrument->chip.ayWavetable.waveIndex);
+  fprintf(file, "- Wave pitch offset: %hhd\n", instrument->chip.ayWavetable.pitchOffset);
+  fprintf(file, "- Wave fine tune: %hhd\n", instrument->chip.ayWavetable.fineTune);
 
   return 0;
 }
 
 // Save modulation data
-static int saveModulation(int fileId, Instrument* instrument) {
-  filePrintf(fileId, "- Modulation:\n");
+static int saveModulation(FILE* file, Instrument* instrument) {
+  fprintf(file, "- Modulation:\n");
   for (int i = 0; i < 4; i++) {
-    filePrintf(fileId, "- Mod%d: %hhu,%hhu,%hhd,%hhu,%hhu,%hhu,%hhu\n",
+    fprintf(file, "- Mod%d: %hhu,%hhu,%hhd,%hhu,%hhu,%hhu,%hhu\n",
       i + 1,
       instrument->modulation[i].type,
       instrument->modulation[i].destination,
@@ -390,30 +433,30 @@ static int saveModulation(int fileId, Instrument* instrument) {
 }
 
 // Main save function
-int instrumentSaveData(int fileId, int idx, Instrument* instrument) {
-  filePrintf(fileId, "\n### Instrument %X\n\n", idx);
-  filePrintf(fileId, "- Name: %s\n", instrument->name);
-  filePrintf(fileId, "- Type: %hhd\n", instrument->type);
-  filePrintf(fileId, "- Table speed: %hhu\n", instrument->tableSpeed);
-  filePrintf(fileId, "- Transpose: %hhu\n", instrument->transposeEnabled);
+int instrumentSaveData(FILE* file, int idx, Instrument* instrument) {
+  fprintf(file, "\n### Instrument %X\n\n", idx);
+  fprintf(file, "- Name: %s\n", instrument->name);
+  fprintf(file, "- Type: %hhd\n", instrument->type);
+  fprintf(file, "- Table speed: %hhu\n", instrument->tableSpeed);
+  fprintf(file, "- Transpose: %hhu\n", instrument->transposeEnabled);
 
   // Save modulation data
-  saveModulation(fileId, instrument);
+  saveModulation(file, instrument);
 
   // Save chip-specific data
-  filePrintf(fileId, "- Chip data:\n");
+  fprintf(file, "- Chip data:\n");
   switch (instrument->type) {
     case instAY1:
-      saveInstrumentAY1(fileId, instrument);
+      saveInstrumentAY1(file, instrument);
       break;
     case instAY2:
-      saveInstrumentAY2(fileId, instrument);
+      saveInstrumentAY2(file, instrument);
       break;
     case instAYSample:
-      saveInstrumentAYSample(fileId, instrument);
+      saveInstrumentAYSample(file, instrument);
       break;
     case instAYWavetable:
-      saveInstrumentAYWavetable(fileId, instrument);
+      saveInstrumentAYWavetable(file, instrument);
       break;
     default:
       break;

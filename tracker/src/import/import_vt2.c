@@ -11,6 +11,8 @@
 #include "pt3_tables.h"
 #include "import_common.h"
 
+static char lineBuffer[1024];
+
 #define VT2_MAX_PATTERNS 256
 #define VT2_MAX_ORNAMENTS 32
 #define VT2_MAX_SAMPLES 32
@@ -540,12 +542,11 @@ static int parseVT2PatternRow(const char* line, VT2PatternRow* row) {
 }
 
 static int loadVT2Module(const char* path, VT2Module* module) {
-  int fileId = fileOpen(path, 0);
-  if (fileId == -1) return 1;
+  FILE* file = fopen(path, "r");
+  if (file == NULL) return 1;
 
   memset(module, 0, sizeof(VT2Module));
 
-  char* line;
   enum {
     SECTION_NONE,
     SECTION_MODULE,
@@ -558,7 +559,8 @@ static int loadVT2Module(const char* path, VT2Module* module) {
   int currentSample = -1;
   int currentPattern = -1;
 
-  while ((line = fileReadString(fileId)) != NULL) {
+  while (fgets(lineBuffer, sizeof(lineBuffer), file) != NULL) {
+    char* line = lineBuffer;
     trimLineEndings(line);
 
     if (strlen(line) == 0) continue;
@@ -653,7 +655,7 @@ static int loadVT2Module(const char* path, VT2Module* module) {
     }
   }
 
-  fileClose(fileId);
+  fclose(file);
   return 0;
 }
 
@@ -1134,10 +1136,9 @@ int projectLoadVT2(const char* path) {
 }
 
 static int importVT2Samples(const char* path, Project* project, int sampleCount) {
-  int fileId = fileOpen(path, 0);
-  if (fileId == -1) return 1;
+  FILE* file = fopen(path, "r");
+  if (file == NULL) return 1;
 
-  char* line;
   int currentSample = -1;
   int inSampleSection = 0;
   char* sampleLines[64];
@@ -1149,12 +1150,13 @@ static int importVT2Samples(const char* path, Project* project, int sampleCount)
       for (int j = 0; j < i; j++) {
         free(sampleLines[j]);
       }
-      fileClose(fileId);
+      fclose(file);
       return 1;
     }
   }
 
-  while ((line = fileReadString(fileId)) != NULL) {
+  while (fgets(lineBuffer, sizeof(lineBuffer), file) != NULL) {
+    char* line = lineBuffer;
     trimLineEndings(line);
 
     if (strlen(line) == 0) continue;
@@ -1195,6 +1197,6 @@ static int importVT2Samples(const char* path, Project* project, int sampleCount)
     free(sampleLines[i]);
   }
 
-  fileClose(fileId);
+  fclose(file);
   return 0;
 }

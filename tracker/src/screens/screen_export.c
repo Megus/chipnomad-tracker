@@ -168,9 +168,9 @@ void exportCommonDrawField(int col, int row, int state) {
 }
 
 static int fileExists(const char* path) {
-  int fileId = fileOpen(path, 0);
-  if (fileId != -1) {
-    fileClose(fileId);
+  FILE* file = fopen(path, "r");
+  if (file != NULL) {
+    fclose(file);
     return 1;
   }
   return 0;

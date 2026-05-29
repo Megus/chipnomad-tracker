@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <stdarg.h>
 #include "project.h"
 #include "project_io_common.h"
-#include "corelib/corelib_file.h"
 #include "utils.h"
 
 // Shared state
@@ -11,6 +13,7 @@ int projectFileVersion = 2;  // Default to current version
 static char chipNames[][16] = { "AY8910" };
 
 // Peek/consume implementation - single global buffer (ChipNomad is single-threaded)
+static char lineBuffer[1024];
 static char* currentLine = NULL;
 static int isConsumed = 1;
 
@@ -19,11 +22,26 @@ void resetPeekConsume(void) {
   isConsumed = 1;
 }
 
-char* peekLine(int fileId) {
+// Helper: Read and trim a line from file
+static char* readAndTrimLine(FILE* file) {
+  char* result = fgets(lineBuffer, sizeof(lineBuffer), file);
+  if (result == NULL) return NULL;
+
+  // Trim trailing whitespace
+  int idx = strlen(lineBuffer) - 1;
+  while (idx >= 0 && isspace((unsigned char)lineBuffer[idx])) {
+    lineBuffer[idx] = 0;
+    idx--;
+  }
+
+  return lineBuffer;
+}
+
+char* peekLine(FILE* file) {
   // If current line is consumed, read next non-empty line
   if (isConsumed) {
     while (1) {
-      currentLine = fileReadString(fileId);
+      currentLine = readAndTrimLine(file);
       if (currentLine == NULL) {
         sprintf(projectFileError, "Unexpected end of file");
         return NULL;
@@ -39,9 +57,140 @@ char* peekLine(int fileId) {
   return currentLine;
 }
 
-void consumeLine(int fileId) {
-  (void)fileId;  // Unused in single-buffer implementation
+void consumeLine(FILE* file) {
+  (void)file;  // Unused in single-buffer implementation
   isConsumed = 1;
+}
+
+// Binary data encoding/decoding functions
+// 6-bit encoding character set (64 printable ASCII characters)
+static const char* encodeTable = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+/";
+
+// Save binary data with 6-bit text encoding
+// Encodes 3 bytes into 4 characters, 80 chars per line = 60 bytes per line
+// Note: Caller is responsible for writing the section header (#### Section Name)
+int saveBinaryData(FILE* file, const uint8_t* data, uint16_t dataLen) {
+  if (dataLen == 0 || data == NULL) {
+    return 0;  // Nothing to save
+  }
+
+  // Write data header (length and data marker)
+  fprintf(file, "- Length: %04X\n", dataLen);
+  fprintf(file, "- Data:\n");
+
+  char lineBuffer[81]; // 80 chars + null terminator
+  int linePos = 0;
+
+  // Encode 3 bytes into 4 characters (6 bits each)
+  for (uint16_t i = 0; i < dataLen; i += 3) {
+    uint32_t triple = 0;
+    int bytesInGroup = 0;
+
+    // Read up to 3 bytes
+    for (int j = 0; j < 3 && (i + j) < dataLen; j++) {
+      triple = (triple << 8) | data[i + j];
+      bytesInGroup++;
+    }
+
+    // Pad with zeros if less than 3 bytes
+    triple <<= (3 - bytesInGroup) * 8;
+
+    // Extract 4 6-bit values
+    for (int j = 0; j < 4; j++) {
+      lineBuffer[linePos++] = encodeTable[(triple >> (18 - j * 6)) & 0x3F];
+
+      // Write line when it reaches 80 characters
+      if (linePos == 80) {
+        lineBuffer[linePos] = '\0';
+        fprintf(file, "%s\n", lineBuffer);
+        linePos = 0;
+      }
+    }
+  }
+
+  // Write remaining characters
+  if (linePos > 0) {
+    lineBuffer[linePos] = '\0';
+    fprintf(file, "%s\n", lineBuffer);
+  }
+
+  return 0;
+}
+
+// Load binary data from a #### section
+// Expects to be called when "- Data:" line has been consumed
+// Returns allocated buffer in outData (caller must free), length in outLen
+int loadBinaryData(FILE* file, uint8_t** outData, uint16_t* outLen, uint16_t maxLen) {
+  // Initialize decode table (static, initialized once)
+  static int8_t decodeTable[256];
+  static int decodeTableInitialized = 0;
+
+  if (!decodeTableInitialized) {
+    memset(decodeTable, -1, sizeof(decodeTable));
+    for (int i = 0; i < 64; i++) {
+      decodeTable[(uint8_t)encodeTable[i]] = i;
+    }
+    decodeTableInitialized = 1;
+  }
+
+  if (*outLen == 0 || *outLen > maxLen) {
+    sprintf(projectFileError, "Invalid data length");
+    return 1;
+  }
+
+  // Allocate buffer
+  uint8_t* buffer = (uint8_t*)malloc(*outLen);
+  if (buffer == NULL) {
+    sprintf(projectFileError, "Memory allocation failed");
+    return 1;
+  }
+
+  uint16_t bufferPos = 0;
+
+  // Read encoded data lines
+  while (bufferPos < *outLen) {
+    char* line = peekLine(file);
+    if (line == NULL) break;
+
+    // Stop if we hit a section header or end of data
+    if (line[0] == '#' || line[0] == '-') {
+      break;
+    }
+
+    // Decode line (each 4 characters encode 3 bytes)
+    int lineLen = strlen(line);
+    for (int i = 0; i < lineLen && bufferPos < *outLen; i += 4) {
+      // Read 4 6-bit values
+      int8_t v[4] = {0, 0, 0, 0};
+      int validChars = 0;
+      for (int j = 0; j < 4 && (i + j) < lineLen; j++) {
+        v[j] = decodeTable[(uint8_t)line[i + j]];
+        if (v[j] >= 0) validChars++;
+      }
+
+      // Decode to 3 bytes if we have valid characters
+      if (validChars >= 2) {
+        uint32_t triple = ((uint32_t)v[0] << 18) | ((uint32_t)v[1] << 12) |
+                         ((uint32_t)v[2] << 6) | (uint32_t)v[3];
+
+        // Extract bytes
+        if (bufferPos < *outLen) {
+          buffer[bufferPos++] = (triple >> 16) & 0xFF;
+        }
+        if (bufferPos < *outLen && validChars >= 3) {
+          buffer[bufferPos++] = (triple >> 8) & 0xFF;
+        }
+        if (bufferPos < *outLen && validChars >= 4) {
+          buffer[bufferPos++] = triple & 0xFF;
+        }
+      }
+    }
+
+    consumeLine(file);
+  }
+
+  *outData = buffer;
+  return 0;
 }
 
 // Helper functions for parsing
@@ -102,27 +251,27 @@ static uint8_t scanFX(char* str, Project* p) {
 ///////////////////////////////////////////////////////////////////////////////
 // Load functions
 
-static int projectLoadPitchTable(int fileId, Project* p) {
+static int projectLoadPitchTable(FILE* file, Project* p) {
   char buf[128];
 
-  char* line = peekLine(fileId);
+  char* line = peekLine(file);
   if (line == NULL) return 1;
   if (strcmp(line, "## Pitch table")) return 1;
-  consumeLine(fileId);
+  consumeLine(file);
 
-  line = peekLine(fileId);
+  line = peekLine(file);
   if (line == NULL) return 1;
   if (sscanf(line, "- Title: %[^\n]", p->pitchTable.name) != 1) return 1;
-  consumeLine(fileId);
+  consumeLine(file);
 
-  line = peekLine(fileId);
+  line = peekLine(file);
   if (line == NULL) return 1;
-  consumeLine(fileId);  // Skip opening ```
+  consumeLine(file);  // Skip opening ```
 
   int idx = 0;
   int period;
   while (1) {
-    line = peekLine(fileId);
+    line = peekLine(file);
     if (line == NULL) return 1;
     if (sscanf(line, "%s %d", buf, &period) != 2) {
       // Couldn't parse - must be closing ``` or next section
@@ -132,7 +281,7 @@ static int projectLoadPitchTable(int fileId, Project* p) {
     strcpy(p->pitchTable.noteNames[idx], buf);
     p->pitchTable.values[idx] = period;
     idx++;
-    consumeLine(fileId);
+    consumeLine(file);
   }
   p->pitchTable.length = idx;
 
@@ -150,26 +299,26 @@ static int projectLoadPitchTable(int fileId, Project* p) {
 
   // Consume the closing ``` if present
   if (line[0] == '`') {
-    consumeLine(fileId);
+    consumeLine(file);
   }
 
   return 0;
 }
 
-static int projectLoadSong(int fileId, Project* p) {
+static int projectLoadSong(FILE* file, Project* p) {
   char buf[4];
-  char* line = peekLine(fileId);
+  char* line = peekLine(file);
   if (line == NULL) return 1;
   if (strcmp(line, "## Song")) return 1;
-  consumeLine(fileId);
+  consumeLine(file);
 
-  line = peekLine(fileId);
+  line = peekLine(file);
   if (line == NULL) return 1;
-  consumeLine(fileId);  // Skip opening ```
+  consumeLine(file);  // Skip opening ```
 
   int idx = 0;
   while (1) {
-    line = peekLine(fileId);
+    line = peekLine(file);
     if (line == NULL) return 1;
     if (line[0] == '#' || line[0] == '`') break;  // Next section or closing ```
     // Minimum length: 2 chars per cell, plus 1 separator for each cell (optional for last)
@@ -194,41 +343,41 @@ static int projectLoadSong(int fileId, Project* p) {
       }
     }
     idx++;
-    consumeLine(fileId);
+    consumeLine(file);
   }
 
   // Consume closing ``` if present
   if (line[0] == '`') {
-    consumeLine(fileId);
+    consumeLine(file);
   }
 
   return 0;
 }
 
-static int projectLoadChains(int fileId, Project* p) {
+static int projectLoadChains(FILE* file, Project* p) {
   int idx;
 
-  char* line = peekLine(fileId);
+  char* line = peekLine(file);
   if (line == NULL) return 1;
   if (strcmp(line, "## Chains")) return 1;
-  consumeLine(fileId);
+  consumeLine(file);
 
   while (1) {
-    line = peekLine(fileId);
+    line = peekLine(file);
     if (line == NULL) return 1;
     if (strncmp(line, "### Chain", 9)) break;
     if (sscanf(line, "### Chain %X", &idx) != 1) return 1;
-    consumeLine(fileId);
+    consumeLine(file);
 
     // Skip opening ```
-    line = peekLine(fileId);
+    line = peekLine(file);
     if (line == NULL) return 1;
     if (line[0] == '`') {
-      consumeLine(fileId);
+      consumeLine(file);
     }
 
     for (int c = 0; c < 16; c++) {
-      line = peekLine(fileId);
+      line = peekLine(file);
       if (line == NULL) return 1;
       if (strlen(line) != 6) return 1;
 
@@ -240,85 +389,85 @@ static int projectLoadChains(int fileId, Project* p) {
         p->chains[idx].rows[c].phrase = result;
       }
       p->chains[idx].rows[c].transpose = scanByteOrEmpty(line + 4);
-      consumeLine(fileId);
+      consumeLine(file);
     }
 
     // Skip closing ```
-    line = peekLine(fileId);
+    line = peekLine(file);
     if (line == NULL) return 1;
     if (line[0] == '`') {
-      consumeLine(fileId);
+      consumeLine(file);
     }
   }
 
   return 0;
 }
 
-static int projectLoadGrooves(int fileId, Project* p) {
+static int projectLoadGrooves(FILE* file, Project* p) {
   int idx;
 
-  char* line = peekLine(fileId);
+  char* line = peekLine(file);
   if (line == NULL) return 1;
   if (strcmp(line, "## Grooves")) return 1;
-  consumeLine(fileId);
+  consumeLine(file);
 
   while (1) {
-    line = peekLine(fileId);
+    line = peekLine(file);
     if (line == NULL) return 1;
     if (strncmp(line, "### Groove", 10)) break;
     if (sscanf(line, "### Groove %X", &idx) != 1) return 1;
-    consumeLine(fileId);
+    consumeLine(file);
 
     // Skip opening ```
-    line = peekLine(fileId);
+    line = peekLine(file);
     if (line == NULL) return 1;
     if (line[0] == '`') {
-      consumeLine(fileId);
+      consumeLine(file);
     }
 
     for (int c = 0; c < 16; c++) {
-      line = peekLine(fileId);
+      line = peekLine(file);
       if (line == NULL) return 1;
       if (strlen(line) != 2) return 1;
       p->grooves[idx].speed[c] = scanByteOrEmpty(line);
-      consumeLine(fileId);
+      consumeLine(file);
     }
 
     // Skip closing ```
-    line = peekLine(fileId);
+    line = peekLine(file);
     if (line == NULL) return 1;
     if (line[0] == '`') {
-      consumeLine(fileId);
+      consumeLine(file);
     }
   }
 
   return 0;
 }
 
-static int projectLoadPhrases(int fileId, Project* p) {
+static int projectLoadPhrases(FILE* file, Project* p) {
   int idx;
 
-  char* line = peekLine(fileId);
+  char* line = peekLine(file);
   if (line == NULL) return 1;
   if (strcmp(line, "## Phrases")) return 1;
-  consumeLine(fileId);
+  consumeLine(file);
 
   while (1) {
-    line = peekLine(fileId);
+    line = peekLine(file);
     if (line == NULL) return 1;
     if (strncmp(line, "### Phrase", 10)) break;
     if (sscanf(line, "### Phrase %X", &idx) != 1) return 1;
-    consumeLine(fileId);
+    consumeLine(file);
 
     // Skip opening ```
-    line = peekLine(fileId);
+    line = peekLine(file);
     if (line == NULL) return 1;
     if (line[0] == '`') {
-      consumeLine(fileId);
+      consumeLine(file);
     }
 
     for (int c = 0; c < 16; c++) {
-      line = peekLine(fileId);
+      line = peekLine(file);
       if (line == NULL) return 1;
       if (strlen(line) != 30) return 1;
       // Note
@@ -332,51 +481,51 @@ static int projectLoadPhrases(int fileId, Project* p) {
         p->phrases[idx].rows[c].fx[d][0] = scanFX(line + 10 + d * 7, p);
         p->phrases[idx].rows[c].fx[d][1] = scanByteOrEmpty(line + 14 + d * 7);
       }
-      consumeLine(fileId);
+      consumeLine(file);
     }
 
     // Skip closing ```
-    line = peekLine(fileId);
+    line = peekLine(file);
     if (line == NULL) return 1;
     if (line[0] == '`') {
-      consumeLine(fileId);
+      consumeLine(file);
     }
   }
 
   return 0;
 }
 
-static int projectLoadInstruments(int fileId, Project* p) {
+static int projectLoadInstruments(FILE* file, Project* p) {
   int idx;
 
-  char* line = peekLine(fileId);
+  char* line = peekLine(file);
   if (line == NULL) return 1;
   if (strcmp(line, "## Instruments")) return 1;
-  consumeLine(fileId);
+  consumeLine(file);
 
-  line = peekLine(fileId);
+  line = peekLine(file);
   if (line == NULL) return 1;
   while (strncmp(line, "### Instrument", 14) == 0) {
     if (sscanf(line, "### Instrument %X", &idx) != 1) return 1;
-    consumeLine(fileId);
-    if (instrumentLoadData(fileId, &p->instruments[idx], p)) return 1;
-    line = peekLine(fileId);
+    consumeLine(file);
+    if (instrumentLoadData(file, &p->instruments[idx], p)) return 1;
+    line = peekLine(file);
     if (line == NULL) return 1;
   }
 
   return 0;
 }
 
-static int loadTable(int fileId, Table* table, Project* p) {
+static int loadTable(FILE* file, Table* table, Project* p) {
   // Skip opening ```
-  char* line = peekLine(fileId);
+  char* line = peekLine(file);
   if (line == NULL) return 1;
   if (line[0] == '`') {
-    consumeLine(fileId);
+    consumeLine(file);
   }
 
   for (int d = 0; d < 16; d++) {
-    line = peekLine(fileId);
+    line = peekLine(file);
     if (line == NULL) return 1;
     if (strlen(line) < 35) return 1;  // Minimum length check
 
@@ -391,46 +540,46 @@ static int loadTable(int fileId, Table* table, Project* p) {
       table->rows[d].fx[e][0] = scanFX(line + 8 + e * 7, p);
       table->rows[d].fx[e][1] = scanByteOrEmpty(line + 12 + e * 7);
     }
-    consumeLine(fileId);
+    consumeLine(file);
   }
 
   // Skip closing ```
-  line = peekLine(fileId);
+  line = peekLine(file);
   if (line == NULL) return 1;
   if (line[0] == '`') {
-    consumeLine(fileId);
+    consumeLine(file);
   }
 
   return 0;
 }
 
-static int projectLoadTables(int fileId, Project* p) {
+static int projectLoadTables(FILE* file, Project* p) {
   int idx;
 
-  char* line = peekLine(fileId);
+  char* line = peekLine(file);
   if (line == NULL) return 1;
   if (strcmp(line, "## Tables")) return 1;
-  consumeLine(fileId);
+  consumeLine(file);
 
   while (1) {
-    line = peekLine(fileId);
+    line = peekLine(file);
     if (line == NULL) return 1;
     if (strncmp(line, "### Table", 9)) break;
     if (sscanf(line, "### Table %X", &idx) != 1) return 1;
-    consumeLine(fileId);
-    if (loadTable(fileId, &p->tables[idx], p)) return 1;
+    consumeLine(file);
+    if (loadTable(file, &p->tables[idx], p)) return 1;
   }
 
   return 0;
 }
 
-static int projectLoadInternal(int fileId, Project* project) {
+static int projectLoadInternal(FILE* file, Project* project) {
   char buf[128];
   Project p;
   projectInit(&p);
 
   sprintf(projectFileError, "Module header");
-  char* line = peekLine(fileId);
+  char* line = peekLine(file);
   if (line == NULL) return 1;
   if (strncmp(line, "# ChipNomad Tracker Module", 26)) {
     sprintf(projectFileError, "Incorrect module format");
@@ -451,9 +600,9 @@ static int projectLoadInternal(int fileId, Project* project) {
     // No version specified = 1.0 (legacy)
     projectFileVersion = 1;
   }
-  consumeLine(fileId);
+  consumeLine(file);
 
-  line = peekLine(fileId);
+  line = peekLine(file);
   if (line == NULL) return 1;
   if (!strncmp(line, "- Title:", 8)) {
     if (sscanf(line, "- Title: %[^\n]", p.title) != 1) {
@@ -464,36 +613,36 @@ static int projectLoadInternal(int fileId, Project* project) {
     sprintf(projectFileError, "Invalid title");
     return 1;
   }
-  consumeLine(fileId);
+  consumeLine(file);
 
-  line = peekLine(fileId);
+  line = peekLine(file);
   if (line == NULL) return 1;
   if (!strncmp(line, "- Author:", 9)) {
     if (sscanf(line, "- Author: %[^\n]", p.author) != 1) {
       p.author[0] = 0;
     }
   }
-  consumeLine(fileId);
+  consumeLine(file);
 
   sprintf(projectFileError, "Invalid project settings");
-  line = peekLine(fileId);
+  line = peekLine(file);
   if (line == NULL) return 1;
   if (sscanf(line, "- Frame rate: %f", &p.tickRate) != 1) return 1;
-  consumeLine(fileId);
+  consumeLine(file);
 
-  line = peekLine(fileId);
+  line = peekLine(file);
   if (line == NULL) return 1;
   if (sscanf(line, "- Chips count: %d", &p.chipsCount) != 1) return 1;
-  consumeLine(fileId);
+  consumeLine(file);
 
   // Try to read linear pitch (optional for backwards compatibility)
-  line = peekLine(fileId);
+  line = peekLine(file);
   if (line == NULL) return 1;
   int tempLinearPitch;
   if (sscanf(line, "- Linear pitch: %d", &tempLinearPitch) == 1) {
     p.linearPitch = (uint8_t)tempLinearPitch;
-    consumeLine(fileId);
-    line = peekLine(fileId);  // Read next line for chip type
+    consumeLine(file);
+    line = peekLine(file);  // Read next line for chip type
     if (line == NULL) return 1;
   }
   // If linear pitch not found, line already contains the chip type line
@@ -510,38 +659,38 @@ static int projectLoadInternal(int fileId, Project* project) {
     sprintf(projectFileError, "Unknown chip type");
     return 1;
   }
-  consumeLine(fileId);
+  consumeLine(file);
 
   // Chip-specific settings
   switch (p.chipType) {
   case chipAY:
-    line = peekLine(fileId);
+    line = peekLine(file);
     if (line == NULL) return 1;
     if (sscanf(line, "- *AY8910* Clock: %d", &p.chipSetup.ay.clock) != 1) return 1;
-    consumeLine(fileId);
+    consumeLine(file);
 
     int tempIsYM;
-    line = peekLine(fileId);
+    line = peekLine(file);
     if (line == NULL) return 1;
     if (sscanf(line, "- *AY8910* AY/YM: %d", &tempIsYM) != 1) return 1;
     p.chipSetup.ay.isYM = (uint8_t)tempIsYM;
-    consumeLine(fileId);
+    consumeLine(file);
 
     // TODO: Remove old pan logic for the first public release
-    line = peekLine(fileId);
+    line = peekLine(file);
     if (line == NULL) return 1;
     if (strncmp(line, "- *AY8910* PanA:", 15) == 0) {
       // Old pan storage
-      consumeLine(fileId);
-      line = peekLine(fileId);  // Skip B
+      consumeLine(file);
+      line = peekLine(file);  // Skip B
       if (line == NULL) return 1;
-      consumeLine(fileId);
-      line = peekLine(fileId);  // Skip C
+      consumeLine(file);
+      line = peekLine(file);  // Skip C
       if (line == NULL) return 1;
-      consumeLine(fileId);
-      line = peekLine(fileId);  // Skip stereo mode
+      consumeLine(file);
+      line = peekLine(file);  // Skip stereo mode
       if (line == NULL) return 1;
-      consumeLine(fileId);
+      consumeLine(file);
       // Default to ABC
       p.chipSetup.ay.stereoMode = ayStereoABC;
       p.chipSetup.ay.stereoSeparation = 100;
@@ -566,12 +715,12 @@ static int projectLoadInternal(int fileId, Project* project) {
         sprintf(projectFileError, "Invalid stereo mode");
         return 1;
       }
-      consumeLine(fileId);
+      consumeLine(file);
 
-      line = peekLine(fileId);
+      line = peekLine(file);
       if (line == NULL) return 1;
       if (sscanf(line, "- *AY8910* Stereo separation: %hhu", &p.chipSetup.ay.stereoSeparation) != 1) return 1;
-      consumeLine(fileId);
+      consumeLine(file);
     }
     break;
   default:
@@ -581,19 +730,19 @@ static int projectLoadInternal(int fileId, Project* project) {
   p.tracksCount = projectGetTotalTracks(&p);
 
   sprintf(projectFileError, "Invalid pitch table");
-  if (projectLoadPitchTable(fileId, &p)) return 1;
+  if (projectLoadPitchTable(file, &p)) return 1;
   sprintf(projectFileError, "Invalid song data");
-  if (projectLoadSong(fileId, &p)) return 1;
+  if (projectLoadSong(file, &p)) return 1;
   sprintf(projectFileError, "Invalid chain data");
-  if (projectLoadChains(fileId, &p)) return 1;
+  if (projectLoadChains(file, &p)) return 1;
   sprintf(projectFileError, "Invalid groove data");
-  if (projectLoadGrooves(fileId, &p)) return 1;
+  if (projectLoadGrooves(file, &p)) return 1;
   sprintf(projectFileError, "Invalid phrase data");
-  if (projectLoadPhrases(fileId, &p)) return 1;
+  if (projectLoadPhrases(file, &p)) return 1;
   sprintf(projectFileError, "Invalid instrument data");
-  if (projectLoadInstruments(fileId, &p)) return 1;
+  if (projectLoadInstruments(file, &p)) return 1;
   sprintf(projectFileError, "Invalid table data");
-  if (projectLoadTables(fileId, &p)) return 1;
+  if (projectLoadTables(file, &p)) return 1;
 
   *project = p;
   return 0;
@@ -603,37 +752,37 @@ int projectLoad(Project* p, const char* path) {
   projectFileError[0] = 0;
   resetPeekConsume();  // Ensure clean state
 
-  int fileId = fileOpen(path, 0);
-  if (fileId == -1) {
+  FILE* file = fopen(path, "rb");
+  if (file == NULL) {
     sprintf(projectFileError, "Can't open file");
     return 1;
   }
 
-  int result = projectLoadInternal(fileId, p);
-  fileClose(fileId);
+  int result = projectLoadInternal(file, p);
+  fclose(file);
   return result;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // Save functions
 
-static int projectSavePitchTable(int fileId, Project* project) {
-  filePrintf(fileId, "\n## Pitch table\n\n");
-  filePrintf(fileId, "- Title: %s\n\n```\n", project->pitchTable.name);
+static int projectSavePitchTable(FILE* file, Project* project) {
+  fprintf(file, "\n## Pitch table\n\n");
+  fprintf(file, "- Title: %s\n\n```\n", project->pitchTable.name);
 
   for (int c = 0; c < project->pitchTable.length; c++) {
-    filePrintf(fileId, "%s %d\n", project->pitchTable.noteNames[c], project->pitchTable.values[c]);
+    fprintf(file, "%s %d\n", project->pitchTable.noteNames[c], project->pitchTable.values[c]);
   }
 
-  filePrintf(fileId, "```\n");
+  fprintf(file, "```\n");
 
   return 0;
 }
 
-static int projectSaveSong(int fileId, Project* project) {
+static int projectSaveSong(FILE* file, Project* project) {
   extern FXName fxNames[256];
 
-  filePrintf(fileId, "\n## Song\n\n```\n");
+  fprintf(file, "\n## Song\n\n```\n");
 
   // Find the last row with values
   int songLength = PROJECT_MAX_LENGTH;
@@ -656,72 +805,72 @@ static int projectSaveSong(int fileId, Project* project) {
       int chain = project->song[c][d];
       int isHighlighted = project->songHighlight[c][d];
       if (chain == EMPTY_VALUE_16) {
-        filePrintf(fileId, "--");
+        fprintf(file, "--");
       } else {
-        filePrintf(fileId, "%s", byteToHex(chain));
+        fprintf(file, "%s", byteToHex(chain));
       }
       // Add asterisk if highlighted, otherwise space (except after last column)
       if (isHighlighted) {
-        filePrintf(fileId, "*");
+        fprintf(file, "*");
       } else if (d < project->tracksCount - 1) {
-        filePrintf(fileId, " ");
+        fprintf(file, " ");
       }
     }
-    filePrintf(fileId, "\n");
+    fprintf(file, "\n");
   }
 
-  filePrintf(fileId, "```\n");
+  fprintf(file, "```\n");
 
   return 0;
 }
 
-static int projectSaveChains(int fileId, Project* project) {
-  filePrintf(fileId, "\n## Chains\n");
+static int projectSaveChains(FILE* file, Project* project) {
+  fprintf(file, "\n## Chains\n");
 
   for (int c = 0; c < PROJECT_MAX_CHAINS; c++) {
     if (!chainIsEmpty(project, c)) {
-      filePrintf(fileId, "\n### Chain %X\n\n```\n", c);
+      fprintf(file, "\n### Chain %X\n\n```\n", c);
       for (int d = 0; d < 16; d++) {
         int phrase = project->chains[c].rows[d].phrase;
         if (phrase == EMPTY_VALUE_16) {
-          filePrintf(fileId, "--- %s\n", byteToHex(project->chains[c].rows[d].transpose));
+          fprintf(file, "--- %s\n", byteToHex(project->chains[c].rows[d].transpose));
         } else {
-          filePrintf(fileId, "%03X %s\n", project->chains[c].rows[d].phrase, byteToHex(project->chains[c].rows[d].transpose));
+          fprintf(file, "%03X %s\n", project->chains[c].rows[d].phrase, byteToHex(project->chains[c].rows[d].transpose));
         }
       }
-      filePrintf(fileId, "```\n");
+      fprintf(file, "```\n");
     }
   }
 
   return 0;
 }
 
-static int projectSaveGrooves(int fileId, Project* project) {
-  filePrintf(fileId, "\n## Grooves\n");
+static int projectSaveGrooves(FILE* file, Project* project) {
+  fprintf(file, "\n## Grooves\n");
 
   for (int c = 0; c < PROJECT_MAX_GROOVES; c++) {
     if (!grooveIsEmpty(project, c)) {
-      filePrintf(fileId, "\n### Groove %X\n\n```\n", c);
+      fprintf(file, "\n### Groove %X\n\n```\n", c);
       for (int d = 0; d < 16; d++) {
-        filePrintf(fileId, "%s\n", byteToHexOrEmpty(project->grooves[c].speed[d]));
+        fprintf(file, "%s\n", byteToHexOrEmpty(project->grooves[c].speed[d]));
       }
-      filePrintf(fileId, "```\n");
+      fprintf(file, "```\n");
     }
   }
 
   return 0;
 }
 
-static int projectSavePhrases(int fileId, Project* project) {
+static int projectSavePhrases(FILE* file, Project* project) {
   extern FXName fxNames[256];
 
-  filePrintf(fileId, "\n## Phrases\n\n");
+  fprintf(file, "\n## Phrases\n\n");
 
   for (int c = 0; c < PROJECT_MAX_PHRASES; c++) {
     if (!phraseIsEmpty(project, c)) {
-      filePrintf(fileId, "### Phrase %X\n\n```\n", c);
+      fprintf(file, "### Phrase %X\n\n```\n", c);
       for (int d = 0; d < 16; d++) {
-        filePrintf(fileId, "%s %s %s %s %s %s %s %s %s\n",
+        fprintf(file, "%s %s %s %s %s %s %s %s %s\n",
           noteName(project, project->phrases[c].rows[d].note),
           byteToHexOrEmpty(project->phrases[c].rows[d].instrument),
           byteToHexOrEmpty(project->phrases[c].rows[d].volume),
@@ -733,19 +882,19 @@ static int projectSavePhrases(int fileId, Project* project) {
           byteToHex(project->phrases[c].rows[d].fx[2][1])
         );
       }
-      filePrintf(fileId, "```\n");
+      fprintf(file, "```\n");
     }
   }
 
   return 0;
 }
 
-int saveTable(int fileId, int idx, Table* table) {
+int saveTable(FILE* file, int idx, Table* table) {
   extern FXName fxNames[256];
 
-  filePrintf(fileId, "\n### Table %X\n\n```\n", idx);
+  fprintf(file, "\n### Table %X\n\n```\n", idx);
   for (int d = 0; d < 16; d++) {
-    filePrintf(fileId, "%c %s %s %s %s %s %s %s %s %s %s\n",
+    fprintf(file, "%c %s %s %s %s %s %s %s %s %s %s\n",
       table->rows[d].pitchFlag ? '=' : '~',
       byteToHex(table->rows[d].pitchOffset),
       byteToHexOrEmpty(table->rows[d].volume),
@@ -754,81 +903,81 @@ int saveTable(int fileId, int idx, Table* table) {
       fxNames[table->rows[d].fx[2][0]].name, byteToHex(table->rows[d].fx[2][1]),
       fxNames[table->rows[d].fx[3][0]].name, byteToHex(table->rows[d].fx[3][1]));
   }
-  filePrintf(fileId, "```\n");
+  fprintf(file, "```\n");
   return 0;
 }
 
-static int projectSaveInstruments(int fileId, Project* project) {
-  filePrintf(fileId, "\n## Instruments\n");
+static int projectSaveInstruments(FILE* file, Project* project) {
+  fprintf(file, "\n## Instruments\n");
   for (int c = 0; c < PROJECT_MAX_INSTRUMENTS; c++) {
     if (!instrumentIsEmpty(project, c)) {
-      instrumentSaveData(fileId, c, &project->instruments[c]);
+      instrumentSaveData(file, c, &project->instruments[c]);
     }
   }
   return 0;
 }
 
-static int projectSaveTables(int fileId, Project* project) {
-  filePrintf(fileId, "\n## Tables\n");
+static int projectSaveTables(FILE* file, Project* project) {
+  fprintf(file, "\n## Tables\n");
   for (int c = 0; c < PROJECT_MAX_TABLES; c++) {
     if (!tableIsEmpty(project, c)) {
-      saveTable(fileId, c, &project->tables[c]);
+      saveTable(file, c, &project->tables[c]);
     }
   }
   return 0;
 }
 
-static int projectSaveInternal(int fileId, Project* project) {
-  filePrintf(fileId, "# ChipNomad Tracker Module 2.0\n\n");
+static int projectSaveInternal(FILE* file, Project* project) {
+  fprintf(file, "# ChipNomad Tracker Module 2.0\n\n");
 
-  filePrintf(fileId, "- Title: %s\n", project->title);
-  filePrintf(fileId, "- Author: %s\n", project->author);
+  fprintf(file, "- Title: %s\n", project->title);
+  fprintf(file, "- Author: %s\n", project->author);
 
-  filePrintf(fileId, "- Frame rate: %f\n", project->tickRate);
-  filePrintf(fileId, "- Chips count: %d\n", project->chipsCount);
-  filePrintf(fileId, "- Linear pitch: %d\n", project->linearPitch);
-  filePrintf(fileId, "- Chip type: %s\n", chipNames[project->chipType]);
+  fprintf(file, "- Frame rate: %f\n", project->tickRate);
+  fprintf(file, "- Chips count: %d\n", project->chipsCount);
+  fprintf(file, "- Linear pitch: %d\n", project->linearPitch);
+  fprintf(file, "- Chip type: %s\n", chipNames[project->chipType]);
 
   switch (project->chipType) {
   case chipAY:
-    filePrintf(fileId, "- *AY8910* Clock: %d\n", project->chipSetup.ay.clock);
-    filePrintf(fileId, "- *AY8910* AY/YM: %d\n", project->chipSetup.ay.isYM);
+    fprintf(file, "- *AY8910* Clock: %d\n", project->chipSetup.ay.clock);
+    fprintf(file, "- *AY8910* AY/YM: %d\n", project->chipSetup.ay.isYM);
     switch (project->chipSetup.ay.stereoMode) {
     case ayStereoABC:
-      filePrintf(fileId, "- *AY8910* Stereo: ABC\n");
+      fprintf(file, "- *AY8910* Stereo: ABC\n");
       break;
     case ayStereoACB:
-      filePrintf(fileId, "- *AY8910* Stereo: ACB\n");
+      fprintf(file, "- *AY8910* Stereo: ACB\n");
       break;
     case ayStereoBAC:
-      filePrintf(fileId, "- *AY8910* Stereo: BAC\n");
+      fprintf(file, "- *AY8910* Stereo: BAC\n");
       break;
     }
-    filePrintf(fileId, "- *AY8910* Stereo separation: %d\n", project->chipSetup.ay.stereoSeparation);
+    fprintf(file, "- *AY8910* Stereo separation: %d\n", project->chipSetup.ay.stereoSeparation);
     break;
   default:
     break;
   }
 
-  projectSavePitchTable(fileId, project);
-  projectSaveSong(fileId, project);
-  projectSaveChains(fileId, project);
-  projectSaveGrooves(fileId, project);
-  projectSavePhrases(fileId, project);
-  projectSaveInstruments(fileId, project);
-  projectSaveTables(fileId, project);
-  filePrintf(fileId, "EOF\n");
+  projectSavePitchTable(file, project);
+  projectSaveSong(file, project);
+  projectSaveChains(file, project);
+  projectSaveGrooves(file, project);
+  projectSavePhrases(file, project);
+  projectSaveInstruments(file, project);
+  projectSaveTables(file, project);
+  fprintf(file, "EOF\n");
   return 0;
 }
 
 int projectSave(Project* p, const char* path) {
   projectFileError[0] = 0;
 
-  int fileId = fileOpen(path, 1);
-  if (fileId == -1) return 1;
+  FILE* file = fopen(path, "wb");
+  if (file == NULL) return 1;
 
-  int result = projectSaveInternal(fileId, p);
-  fileClose(fileId);
+  int result = projectSaveInternal(file, p);
+  fclose(file);
   return result;
 }
 
@@ -838,22 +987,22 @@ int projectSave(Project* p, const char* path) {
 int instrumentSave(Project* project, const char* path, int instrumentIdx) {
   projectFileError[0] = 0;
 
-  int fileId = fileOpen(path, 1);
-  if (fileId == -1) {
+  FILE* file = fopen(path, "wb");
+  if (file == NULL) {
     sprintf(projectFileError, "Can't open file");
     return 1;
   }
 
-  filePrintf(fileId, "# ChipNomad Instrument 2.0\n\n");
-  instrumentSaveData(fileId, 0, &project->instruments[instrumentIdx]);
-  saveTable(fileId, 0, &project->tables[instrumentIdx]);
+  fprintf(file, "# ChipNomad Instrument 2.0\n\n");
+  instrumentSaveData(file, 0, &project->instruments[instrumentIdx]);
+  saveTable(file, 0, &project->tables[instrumentIdx]);
 
-  fileClose(fileId);
+  fclose(file);
   return 0;
 }
 
-static int instrumentLoadInternal(int fileId, Project* project, int instrumentIdx) {
-  char* line = peekLine(fileId);
+static int instrumentLoadInternal(FILE* file, Project* project, int instrumentIdx) {
+  char* line = peekLine(file);
   if (line == NULL) return 1;
   if (strncmp(line, "# ChipNomad Instrument", 22)) {
     sprintf(projectFileError, "Incorrect instrument format");
@@ -874,22 +1023,28 @@ static int instrumentLoadInternal(int fileId, Project* project, int instrumentId
     // No version specified = 1.0 (legacy)
     projectFileVersion = 1;
   }
-  consumeLine(fileId);
+  consumeLine(file);
 
   sprintf(projectFileError, "Invalid instrument data");
-  line = peekLine(fileId);
+  line = peekLine(file);
   if (line == NULL) return 1;
   if (strncmp(line, "### Instrument", 14)) return 1;
-  consumeLine(fileId);
+  consumeLine(file);
 
-  if (instrumentLoadData(fileId, &project->instruments[instrumentIdx], project)) return 1;
+  if (instrumentLoadData(file, &project->instruments[instrumentIdx], project)) return 1;
   // instrumentLoadData leaves the next section header in peek buffer
   sprintf(projectFileError, "Invalid table data");
-  line = peekLine(fileId);
-  if (line == NULL) return 1;
-  if (strncmp(line, "### Table", 9)) return 1;
-  consumeLine(fileId);
-  if (loadTable(fileId, &project->tables[instrumentIdx], project)) return 1;
+  line = peekLine(file);
+  if (line == NULL) {
+    sprintf(projectFileError, "Missing table section");
+    return 1;
+  }
+  if (strncmp(line, "### Table", 9)) {
+    sprintf(projectFileError, "Expected table, got: %.20s", line);
+    return 1;
+  }
+  consumeLine(file);
+  if (loadTable(file, &project->tables[instrumentIdx], project)) return 1;
 
   return 0;
 }
@@ -898,13 +1053,13 @@ int instrumentLoad(Project* project, const char* path, int instrumentIdx) {
   projectFileError[0] = 0;
   resetPeekConsume();  // Ensure clean state
 
-  int fileId = fileOpen(path, 0);
-  if (fileId == -1) {
+  FILE* file = fopen(path, "rb");
+  if (file == NULL) {
     sprintf(projectFileError, "Can't open file");
     return 1;
   }
 
-  int result = instrumentLoadInternal(fileId, project, instrumentIdx);
-  fileClose(fileId);
+  int result = instrumentLoadInternal(file, project, instrumentIdx);
+  fclose(file);
   return result;
 }

@@ -9,6 +9,8 @@
 #define TEXT_COLS 40
 #define TEXT_ROWS 20
 
+static char lineBuffer[1024];
+
 extern uint8_t font12x16[];
 extern uint8_t font16x24[];
 extern uint8_t font24x36[];
@@ -63,12 +65,12 @@ const FontResolution* fontSelectResolution(const Font* font, int screenWidth, in
 }
 
 Font* fontLoad(const char* path) {
-  int f = fileOpen(path, 0);
-  if (f < 0) return NULL;
+  FILE* file = fopen(path, "r");
+  if (file == NULL) return NULL;
 
   Font* font = calloc(1, sizeof(Font));
   if (!font) {
-    fileClose(f);
+    fclose(file);
     return NULL;
   }
 
@@ -76,9 +78,9 @@ Font* fontLoad(const char* path) {
   int charIdx = 0;
   uint8_t* currentData = NULL;
   int bytesPerChar = 0;
-  char* line;
 
-  while ((line = fileReadString(f)) != NULL) {
+  while (fgets(lineBuffer, sizeof(lineBuffer), file) != NULL) {
+    char* line = lineBuffer;
     // Skip comments and empty lines
     char* p = line;
     while (*p && isspace(*p)) p++;
@@ -140,7 +142,7 @@ Font* fontLoad(const char* path) {
   }
 
   font->resolutionCount = resIdx + 1;
-  fileClose(f);
+  fclose(file);
 
   if (font->resolutionCount == 0) {
     free(font);

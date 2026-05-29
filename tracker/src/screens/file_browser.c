@@ -48,6 +48,17 @@ static void fileBrowserDraw(void);
 static int fileBrowserUpdate(void);
 static int fileBrowserInput(int keys, int tapCount);
 
+// Helper: Trim trailing whitespace from a string
+static void trimTrailingWhitespace(char* str) {
+  if (!str) return;
+
+  int len = strlen(str);
+  while (len > 0 && (str[len - 1] == ' ' || str[len - 1] == '\t')) {
+    len--;
+  }
+  str[len] = '\0';
+}
+
 static void doSave(void) {
   if (onFileSelected) {
     onFileSelected(currentPath);
@@ -135,6 +146,10 @@ void fileBrowserSetupFolderMode(const char* title, const char* startPath, const 
   browserTitle[31] = 0;
   strncpy(saveFilename, filename ? filename : "", sizeof(saveFilename) - 1);
   saveFilename[sizeof(saveFilename) - 1] = 0;
+
+  // Trim trailing whitespace from filename
+  trimTrailingWhitespace(saveFilename);
+
   strncpy(saveExtension, extension ? extension : "", sizeof(saveExtension) - 1);
   saveExtension[sizeof(saveExtension) - 1] = 0;
   fileExtension[0] = 0;
@@ -186,7 +201,7 @@ static void formatEntryName(char* buffer, size_t bufferSize, const char* name, i
   int isDirectory = entries[entryIdx].isDirectory;
   int displayLen = maxDisplay;
   const char* displayName = name;
-  
+
   if (isScrolling && nameLen > maxDisplay) {
     int startPos = scrollOffset;
     if (startPos + displayLen > nameLen) {
@@ -194,7 +209,7 @@ static void formatEntryName(char* buffer, size_t bufferSize, const char* name, i
     }
     displayName = name + startPos;
   }
-  
+
   if (isDirectory) {
     snprintf(buffer, bufferSize, "[%.*s]", displayLen, displayName);
   } else {
@@ -206,7 +221,7 @@ static int handleBoundaryWait(int isAtStart, int isAtEnd) {
   if (scrollState.selectionFrameCount < BOUNDARY_WAIT_FRAMES) {
     return 1;
   }
-  
+
   if (isAtStart) {
     scrollState.scrollDirection = 1;
   } else {
@@ -246,7 +261,7 @@ static int fileBrowserUpdate(void) {
 
   int isAtStart = scrollState.scrollOffset == 0 && scrollState.scrollDirection == -1;
   int isAtEnd = scrollState.scrollOffset >= maxScroll && scrollState.scrollDirection == 1;
-  
+
   if (isAtStart || isAtEnd) {
     handleBoundaryWait(isAtStart, isAtEnd);
     return 0;
@@ -409,10 +424,10 @@ static int fileBrowserInput(int keys, int tapCount) {
         snprintf(pendingSavePath, sizeof(pendingSavePath), "%s%s%s%s", currentPath, PATH_SEPARATOR_STR, saveFilename, saveExtension);
 
         // Check if file exists
-        int fileId = fileOpen(pendingSavePath, 0);
-        if (fileId != -1) {
+        FILE* file = fopen(pendingSavePath, "r");
+        if (file != NULL) {
           // File exists, ask for confirmation
-          fileClose(fileId);
+          fclose(file);
           confirmSetup("Overwrite existing file?", doSave, cancelSave);
           screenSetup(&screenConfirm, 0);
         } else {

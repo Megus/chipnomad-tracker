@@ -150,7 +150,7 @@ static int autosaveCounter = 0;
 * @brief Initialize the application: setup audio system, load auto-saved project, show the first screen
 */
 void appSetup(void) {
-  LOGD("--- ChipNomad started ---");
+  // LOGD("--- ChipNomad started ---");
   // Initialize default key mappings if not loaded from settings
   if (appSettings.keyMapping.keyUp[0].deviceType == inputNone) {
     inputInitDefaultKeyMapping();
@@ -241,9 +241,9 @@ void appDraw(void) {
 
     // Draw waveform between track number and note
     gfxSetFgColor(cs.textInfo);
-    uint8_t* waveformBitmap = waveformDisplayGetBitmap(c);
+    Bitmap* waveformBitmap = waveformDisplayGetBitmap(c);
     if (waveformBitmap) {
-      gfxDrawCharBitmap(waveformBitmap, 36, 3 + c);
+      gfxDrawBitmap(waveformBitmap, 36, 3 + c);
     }
 
     uint8_t note = chipnomadState->playbackState.tracks[c].note.pitchFinal;

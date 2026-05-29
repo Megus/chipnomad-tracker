@@ -1,10 +1,12 @@
 #include "common.h"
 #include "corelib/corelib_file.h"
 #include "corelib/corelib_gfx.h"
+#include <stdio.h>
 #include <string.h>
 
 static char settingsPath[PATH_LENGTH + 32];
 static char autosavePath[PATH_LENGTH + 32];
+static char lineBuffer[1024];
 
 AppSettings appSettings = {
   .screenWidth = 0, // 0 to auto-detect resolution
@@ -47,60 +49,61 @@ int settingsSave(void) {
   if (fileGetDefaultDirectory(defaultDir, PATH_LENGTH) != 0) return 1;
   snprintf(settingsPath, sizeof(settingsPath), "%s%ssettings.txt", defaultDir, PATH_SEPARATOR_STR);
 
-  int fileId = fileOpen(settingsPath, 1);
-  if (fileId == -1) return 1;
+  FILE* file = fopen(settingsPath, "w");
+  if (file == NULL) return 1;
 
-  filePrintf(fileId, "screenWidth: %d\n", appSettings.screenWidth);
-  filePrintf(fileId, "screenHeight: %d\n", appSettings.screenHeight);
-  filePrintf(fileId, "audioSampleRate: %d\n", appSettings.audioSampleRate);
-  filePrintf(fileId, "audioBufferSize: %d\n", appSettings.audioBufferSize);
-  filePrintf(fileId, "doubleTapFrames: %d\n", appSettings.doubleTapFrames);
-  filePrintf(fileId, "keyRepeatDelay: %d\n", appSettings.keyRepeatDelay);
-  filePrintf(fileId, "keyRepeatSpeed: %d\n", appSettings.keyRepeatSpeed);
-  filePrintf(fileId, "mixVolume: %f\n", appSettings.mixVolume);
-  filePrintf(fileId, "quality: %d\n", appSettings.quality);
-  filePrintf(fileId, "pitchConflictWarning: %d\n", appSettings.pitchConflictWarning);
+  fprintf(file, "screenWidth: %d\n", appSettings.screenWidth);
+  fprintf(file, "screenHeight: %d\n", appSettings.screenHeight);
+  fprintf(file, "audioSampleRate: %d\n", appSettings.audioSampleRate);
+  fprintf(file, "audioBufferSize: %d\n", appSettings.audioBufferSize);
+  fprintf(file, "doubleTapFrames: %d\n", appSettings.doubleTapFrames);
+  fprintf(file, "keyRepeatDelay: %d\n", appSettings.keyRepeatDelay);
+  fprintf(file, "keyRepeatSpeed: %d\n", appSettings.keyRepeatSpeed);
+  fprintf(file, "mixVolume: %f\n", appSettings.mixVolume);
+  fprintf(file, "quality: %d\n", appSettings.quality);
+  fprintf(file, "pitchConflictWarning: %d\n", appSettings.pitchConflictWarning);
 
   // Save key mapping codes
-  filePrintf(fileId, "keyUp: %d,%d,%d\n", appSettings.keyMapping.keyUp[0].code, appSettings.keyMapping.keyUp[1].code, appSettings.keyMapping.keyUp[2].code);
-  filePrintf(fileId, "keyDown: %d,%d,%d\n", appSettings.keyMapping.keyDown[0].code, appSettings.keyMapping.keyDown[1].code, appSettings.keyMapping.keyDown[2].code);
-  filePrintf(fileId, "keyLeft: %d,%d,%d\n", appSettings.keyMapping.keyLeft[0].code, appSettings.keyMapping.keyLeft[1].code, appSettings.keyMapping.keyLeft[2].code);
-  filePrintf(fileId, "keyRight: %d,%d,%d\n", appSettings.keyMapping.keyRight[0].code, appSettings.keyMapping.keyRight[1].code, appSettings.keyMapping.keyRight[2].code);
-  filePrintf(fileId, "keyEdit: %d,%d,%d\n", appSettings.keyMapping.keyEdit[0].code, appSettings.keyMapping.keyEdit[1].code, appSettings.keyMapping.keyEdit[2].code);
-  filePrintf(fileId, "keyOpt: %d,%d,%d\n", appSettings.keyMapping.keyOpt[0].code, appSettings.keyMapping.keyOpt[1].code, appSettings.keyMapping.keyOpt[2].code);
-  filePrintf(fileId, "keyPlay: %d,%d,%d\n", appSettings.keyMapping.keyPlay[0].code, appSettings.keyMapping.keyPlay[1].code, appSettings.keyMapping.keyPlay[2].code);
-  filePrintf(fileId, "keyShift: %d,%d,%d\n", appSettings.keyMapping.keyShift[0].code, appSettings.keyMapping.keyShift[1].code, appSettings.keyMapping.keyShift[2].code);
+  fprintf(file, "keyUp: %d,%d,%d\n", appSettings.keyMapping.keyUp[0].code, appSettings.keyMapping.keyUp[1].code, appSettings.keyMapping.keyUp[2].code);
+  fprintf(file, "keyDown: %d,%d,%d\n", appSettings.keyMapping.keyDown[0].code, appSettings.keyMapping.keyDown[1].code, appSettings.keyMapping.keyDown[2].code);
+  fprintf(file, "keyLeft: %d,%d,%d\n", appSettings.keyMapping.keyLeft[0].code, appSettings.keyMapping.keyLeft[1].code, appSettings.keyMapping.keyLeft[2].code);
+  fprintf(file, "keyRight: %d,%d,%d\n", appSettings.keyMapping.keyRight[0].code, appSettings.keyMapping.keyRight[1].code, appSettings.keyMapping.keyRight[2].code);
+  fprintf(file, "keyEdit: %d,%d,%d\n", appSettings.keyMapping.keyEdit[0].code, appSettings.keyMapping.keyEdit[1].code, appSettings.keyMapping.keyEdit[2].code);
+  fprintf(file, "keyOpt: %d,%d,%d\n", appSettings.keyMapping.keyOpt[0].code, appSettings.keyMapping.keyOpt[1].code, appSettings.keyMapping.keyOpt[2].code);
+  fprintf(file, "keyPlay: %d,%d,%d\n", appSettings.keyMapping.keyPlay[0].code, appSettings.keyMapping.keyPlay[1].code, appSettings.keyMapping.keyPlay[2].code);
+  fprintf(file, "keyShift: %d,%d,%d\n", appSettings.keyMapping.keyShift[0].code, appSettings.keyMapping.keyShift[1].code, appSettings.keyMapping.keyShift[2].code);
 
   // Save key mapping device types
-  filePrintf(fileId, "keyUpType: %d,%d,%d\n", appSettings.keyMapping.keyUp[0].deviceType, appSettings.keyMapping.keyUp[1].deviceType, appSettings.keyMapping.keyUp[2].deviceType);
-  filePrintf(fileId, "keyDownType: %d,%d,%d\n", appSettings.keyMapping.keyDown[0].deviceType, appSettings.keyMapping.keyDown[1].deviceType, appSettings.keyMapping.keyDown[2].deviceType);
-  filePrintf(fileId, "keyLeftType: %d,%d,%d\n", appSettings.keyMapping.keyLeft[0].deviceType, appSettings.keyMapping.keyLeft[1].deviceType, appSettings.keyMapping.keyLeft[2].deviceType);
-  filePrintf(fileId, "keyRightType: %d,%d,%d\n", appSettings.keyMapping.keyRight[0].deviceType, appSettings.keyMapping.keyRight[1].deviceType, appSettings.keyMapping.keyRight[2].deviceType);
-  filePrintf(fileId, "keyEditType: %d,%d,%d\n", appSettings.keyMapping.keyEdit[0].deviceType, appSettings.keyMapping.keyEdit[1].deviceType, appSettings.keyMapping.keyEdit[2].deviceType);
-  filePrintf(fileId, "keyOptType: %d,%d,%d\n", appSettings.keyMapping.keyOpt[0].deviceType, appSettings.keyMapping.keyOpt[1].deviceType, appSettings.keyMapping.keyOpt[2].deviceType);
-  filePrintf(fileId, "keyPlayType: %d,%d,%d\n", appSettings.keyMapping.keyPlay[0].deviceType, appSettings.keyMapping.keyPlay[1].deviceType, appSettings.keyMapping.keyPlay[2].deviceType);
-  filePrintf(fileId, "keyShiftType: %d,%d,%d\n", appSettings.keyMapping.keyShift[0].deviceType, appSettings.keyMapping.keyShift[1].deviceType, appSettings.keyMapping.keyShift[2].deviceType);
+  fprintf(file, "keyUpType: %d,%d,%d\n", appSettings.keyMapping.keyUp[0].deviceType, appSettings.keyMapping.keyUp[1].deviceType, appSettings.keyMapping.keyUp[2].deviceType);
+  fprintf(file, "keyDownType: %d,%d,%d\n", appSettings.keyMapping.keyDown[0].deviceType, appSettings.keyMapping.keyDown[1].deviceType, appSettings.keyMapping.keyDown[2].deviceType);
+  fprintf(file, "keyLeftType: %d,%d,%d\n", appSettings.keyMapping.keyLeft[0].deviceType, appSettings.keyMapping.keyLeft[1].deviceType, appSettings.keyMapping.keyLeft[2].deviceType);
+  fprintf(file, "keyRightType: %d,%d,%d\n", appSettings.keyMapping.keyRight[0].deviceType, appSettings.keyMapping.keyRight[1].deviceType, appSettings.keyMapping.keyRight[2].deviceType);
+  fprintf(file, "keyEditType: %d,%d,%d\n", appSettings.keyMapping.keyEdit[0].deviceType, appSettings.keyMapping.keyEdit[1].deviceType, appSettings.keyMapping.keyEdit[2].deviceType);
+  fprintf(file, "keyOptType: %d,%d,%d\n", appSettings.keyMapping.keyOpt[0].deviceType, appSettings.keyMapping.keyOpt[1].deviceType, appSettings.keyMapping.keyOpt[2].deviceType);
+  fprintf(file, "keyPlayType: %d,%d,%d\n", appSettings.keyMapping.keyPlay[0].deviceType, appSettings.keyMapping.keyPlay[1].deviceType, appSettings.keyMapping.keyPlay[2].deviceType);
+  fprintf(file, "keyShiftType: %d,%d,%d\n", appSettings.keyMapping.keyShift[0].deviceType, appSettings.keyMapping.keyShift[1].deviceType, appSettings.keyMapping.keyShift[2].deviceType);
 
-  filePrintf(fileId, "colorBackground: 0x%06x\n", appSettings.colorScheme.background);
-  filePrintf(fileId, "colorTextEmpty: 0x%06x\n", appSettings.colorScheme.textEmpty);
-  filePrintf(fileId, "colorTextInfo: 0x%06x\n", appSettings.colorScheme.textInfo);
-  filePrintf(fileId, "colorTextDefault: 0x%06x\n", appSettings.colorScheme.textDefault);
-  filePrintf(fileId, "colorTextValue: 0x%06x\n", appSettings.colorScheme.textValue);
-  filePrintf(fileId, "colorTextTitles: 0x%06x\n", appSettings.colorScheme.textTitles);
-  filePrintf(fileId, "colorPlayMarkers: 0x%06x\n", appSettings.colorScheme.playMarkers);
-  filePrintf(fileId, "colorCursor: 0x%06x\n", appSettings.colorScheme.cursor);
-  filePrintf(fileId, "colorSelection: 0x%06x\n", appSettings.colorScheme.selection);
-  filePrintf(fileId, "colorWarning: 0x%06x\n", appSettings.colorScheme.warning);
-  filePrintf(fileId, "themeName: %s\n", appSettings.themeName);
-  filePrintf(fileId, "projectFilename: %s\n", appSettings.projectFilename);
-  filePrintf(fileId, "projectPath: %s\n", appSettings.projectPath);
-  filePrintf(fileId, "pitchTablePath: %s\n", appSettings.pitchTablePath);
-  filePrintf(fileId, "instrumentPath: %s\n", appSettings.instrumentPath);
-  filePrintf(fileId, "themePath: %s\n", appSettings.themePath);
-  filePrintf(fileId, "fontPath: %s\n", appSettings.fontPath);
-  filePrintf(fileId, "fontFolderPath: %s\n", appSettings.fontFolderPath);
+  fprintf(file, "colorBackground: 0x%06x\n", appSettings.colorScheme.background);
+  fprintf(file, "colorTextEmpty: 0x%06x\n", appSettings.colorScheme.textEmpty);
+  fprintf(file, "colorTextInfo: 0x%06x\n", appSettings.colorScheme.textInfo);
+  fprintf(file, "colorTextDefault: 0x%06x\n", appSettings.colorScheme.textDefault);
+  fprintf(file, "colorTextValue: 0x%06x\n", appSettings.colorScheme.textValue);
+  fprintf(file, "colorTextTitles: 0x%06x\n", appSettings.colorScheme.textTitles);
+  fprintf(file, "colorPlayMarkers: 0x%06x\n", appSettings.colorScheme.playMarkers);
+  fprintf(file, "colorCursor: 0x%06x\n", appSettings.colorScheme.cursor);
+  fprintf(file, "colorSelection: 0x%06x\n", appSettings.colorScheme.selection);
+  fprintf(file, "colorWarning: 0x%06x\n", appSettings.colorScheme.warning);
+  fprintf(file, "themeName: %s\n", appSettings.themeName);
+  fprintf(file, "projectFilename: %s\n", appSettings.projectFilename);
+  fprintf(file, "projectPath: %s\n", appSettings.projectPath);
+  fprintf(file, "pitchTablePath: %s\n", appSettings.pitchTablePath);
+  fprintf(file, "instrumentPath: %s\n", appSettings.instrumentPath);
+  fprintf(file, "themePath: %s\n", appSettings.themePath);
+  fprintf(file, "fontPath: %s\n", appSettings.fontPath);
+  fprintf(file, "fontFolderPath: %s\n", appSettings.fontFolderPath);
+  fprintf(file, "samplePath: %s\n", appSettings.samplePath);
 
-  fileClose(fileId);
+  fclose(file);
   return 0;
 }
 
@@ -109,11 +112,18 @@ int settingsLoad(void) {
   if (fileGetDefaultDirectory(defaultDir, PATH_LENGTH) != 0) return 1;
   snprintf(settingsPath, sizeof(settingsPath), "%s%ssettings.txt", defaultDir, PATH_SEPARATOR_STR);
 
-  int fileId = fileOpen(settingsPath, 0);
-  if (fileId == -1) return 1;
+  FILE* file = fopen(settingsPath, "r");
+  if (file == NULL) return 1;
 
-  char* line;
-  while ((line = fileReadString(fileId)) != NULL) {
+  while (fgets(lineBuffer, sizeof(lineBuffer), file) != NULL) {
+    char* line = lineBuffer;
+    // Strip newline characters from the end of the line
+    int len = strlen(line);
+    while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r')) {
+      line[len - 1] = '\0';
+      len--;
+    }
+
     if (strncmp(line, "screenWidth: ", 13) == 0) {
       sscanf(line + 13, "%d", &appSettings.screenWidth);
     } else if (strncmp(line, "screenHeight: ", 14) == 0) {
@@ -210,10 +220,13 @@ int settingsLoad(void) {
     } else if (strncmp(line, "fontFolderPath: ", 16) == 0) {
       strncpy(appSettings.fontFolderPath, line + 16, PATH_LENGTH);
       appSettings.fontFolderPath[PATH_LENGTH] = 0;
+    } else if (strncmp(line, "samplePath: ", 12) == 0) {
+      strncpy(appSettings.samplePath, line + 12, PATH_LENGTH);
+      appSettings.samplePath[PATH_LENGTH] = 0;
     }
   }
 
-  fileClose(fileId);
+  fclose(file);
   return 0;
 }
 
@@ -231,33 +244,33 @@ void resetToDefaultColors(void) {
 }
 
 int saveTheme(const char* path) {
-  int fileId = fileOpen(path, 1);
-  if (fileId == -1) return 1;
+  FILE* file = fopen(path, "w");
+  if (file == NULL) return 1;
 
-  filePrintf(fileId, "colorBackground: 0x%06x\n", appSettings.colorScheme.background);
-  filePrintf(fileId, "colorTextEmpty: 0x%06x\n", appSettings.colorScheme.textEmpty);
-  filePrintf(fileId, "colorTextInfo: 0x%06x\n", appSettings.colorScheme.textInfo);
-  filePrintf(fileId, "colorTextDefault: 0x%06x\n", appSettings.colorScheme.textDefault);
-  filePrintf(fileId, "colorTextValue: 0x%06x\n", appSettings.colorScheme.textValue);
-  filePrintf(fileId, "colorTextTitles: 0x%06x\n", appSettings.colorScheme.textTitles);
-  filePrintf(fileId, "colorPlayMarkers: 0x%06x\n", appSettings.colorScheme.playMarkers);
-  filePrintf(fileId, "colorCursor: 0x%06x\n", appSettings.colorScheme.cursor);
-  filePrintf(fileId, "colorSelection: 0x%06x\n", appSettings.colorScheme.selection);
-  filePrintf(fileId, "colorWarning: 0x%06x\n", appSettings.colorScheme.warning);
+  fprintf(file, "colorBackground: 0x%06x\n", appSettings.colorScheme.background);
+  fprintf(file, "colorTextEmpty: 0x%06x\n", appSettings.colorScheme.textEmpty);
+  fprintf(file, "colorTextInfo: 0x%06x\n", appSettings.colorScheme.textInfo);
+  fprintf(file, "colorTextDefault: 0x%06x\n", appSettings.colorScheme.textDefault);
+  fprintf(file, "colorTextValue: 0x%06x\n", appSettings.colorScheme.textValue);
+  fprintf(file, "colorTextTitles: 0x%06x\n", appSettings.colorScheme.textTitles);
+  fprintf(file, "colorPlayMarkers: 0x%06x\n", appSettings.colorScheme.playMarkers);
+  fprintf(file, "colorCursor: 0x%06x\n", appSettings.colorScheme.cursor);
+  fprintf(file, "colorSelection: 0x%06x\n", appSettings.colorScheme.selection);
+  fprintf(file, "colorWarning: 0x%06x\n", appSettings.colorScheme.warning);
 
-  fileClose(fileId);
+  fclose(file);
   return 0;
 }
 
 int loadTheme(const char* path) {
-  int fileId = fileOpen(path, 0);
-  if (fileId == -1) return 1;
+  FILE* file = fopen(path, "r");
+  if (file == NULL) return 1;
 
   // First reset to defaults to ensure all colors have valid values
   resetToDefaultColors();
 
-  char* line;
-  while ((line = fileReadString(fileId)) != NULL) {
+  while (fgets(lineBuffer, sizeof(lineBuffer), file) != NULL) {
+    char* line = lineBuffer;
     if (strncmp(line, "colorBackground: ", 17) == 0) {
       sscanf(line + 17, "0x%x", &appSettings.colorScheme.background);
     } else if (strncmp(line, "colorTextEmpty: ", 16) == 0) {
@@ -281,7 +294,7 @@ int loadTheme(const char* path) {
     }
   }
 
-  fileClose(fileId);
+  fclose(file);
   return 0;
 }
 

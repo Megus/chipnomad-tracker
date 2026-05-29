@@ -385,9 +385,14 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
       fullRedraw();
     }
   } else {
+    // Allow instrument-specific input handling (e.g., loop preview for AY Sample)
+    ScreenData* screen = instrumentScreen();
+    if (screen->onInput && screen->onInput(isKeyDown, keys, tapCount)) {
+      return 1;
+    }
+
     if (inputScreenNavigation(keys, tapCount)) return 1;
 
-    ScreenData* screen = instrumentScreen();
     if (screenInput(screen, isKeyDown, keys, tapCount)) return 1;
   }
   return 0;

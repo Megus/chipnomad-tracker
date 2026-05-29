@@ -1,6 +1,7 @@
 #ifndef __PROJECT_H__
 #define __PROJECT_H__
 
+#include <stdio.h>
 #include <stdint.h>
 #include "project_instruments.h"
 #include "project_constants.h"
@@ -239,13 +240,6 @@ int projectSave(Project* p, const char* path);
 int instrumentSave(Project* p, const char* path, int instrumentIdx);
 // Load instrument from a file
 int instrumentLoad(Project* p, const char* path, int instrumentIdx);
-
-// Low-level instrument I/O functions (used by project_io.c)
-int instrumentSaveData(int fileId, int idx, Instrument* instrument);
-int instrumentLoadData(int fileId, Instrument* instrument, Project* p);
-
-// Low-level table I/O function (used by project_io.c and instrument I/O)
-int saveTable(int fileId, int idx, Table* table);
 
 // Is chain empty?
 int8_t chainIsEmpty(Project* p, int chain);

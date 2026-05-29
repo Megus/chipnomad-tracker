@@ -12,8 +12,7 @@ INCLUDES = -Isrc -I../chipnomad_lib
 SOURCES = $(wildcard src/*.c) \
           $(wildcard ../chipnomad_lib/*.c) \
           $(wildcard ../chipnomad_lib/chips/*.c) \
-          $(wildcard ../chipnomad_lib/external/ayumi/*.c) \
-          $(wildcard ../chipnomad_lib/corelib_file_stdio/*.c)
+          $(wildcard ../chipnomad_lib/external/ayumi/*.c)
 
 # Generate object files (flattened to build directory)
 OBJECTS = $(addprefix $(BUILD_DIR)/, $(notdir $(SOURCES:.c=.o)))
@@ -29,7 +28,7 @@ $(TARGET): $(OBJECTS)
 	$(CC) $(OBJECTS) -o $@ $(LDFLAGS)
 
 # Generic build rule
-$(BUILD_DIR)/%.o: 
+$(BUILD_DIR)/%.o:
 	@mkdir -p $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $(filter %/$(basename $(notdir $@)).c, $(SOURCES)) -o $@
 

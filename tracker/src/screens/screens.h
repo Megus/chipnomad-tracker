@@ -58,7 +58,7 @@ typedef struct ScreenData {
   void (*drawColHeader)(int col, int state);
   void (*drawField)(int col, int row, int state);
   int (*onEdit)(int col, int row, enum CellEditAction action);
-  int (*onKey)(enum Key key, int isDown);  // Optional: handle keys before standard processing
+  int (*onInput)(int isKeyDown, int keys, int tapCount);  // Optional: handle input before standard processing (return 1 if handled completely, 0 to continue)
   int (*onRawInput)(int keyCode, int isKeyboard, int isDown);  // Optional: capture raw SDL input
   int (*isCellValid)(int col, int row);  // Optional: return 0 for dead cells that cursor should skip
   LoopRange (*getLoopRange)(void);  // Optional: return loop range for ranged playback
@@ -114,6 +114,7 @@ int edit8noLimit(enum CellEditAction action, uint8_t* value, uint8_t* lastValue,
 int edit8noLast(enum CellEditAction action, uint8_t* value, uint8_t bigStep, uint8_t min, uint8_t max);
 int editSigned16(enum CellEditAction action, int16_t* value, int16_t bigStep, int16_t min, int16_t max);
 int editSigned8(enum CellEditAction action, int8_t* value, int8_t bigStep, int8_t min, int8_t max);
+int edit16withMinMax(enum CellEditAction action, uint16_t* value, uint16_t bigStep, uint16_t min, uint16_t max);
 int edit16withOverflow(enum CellEditAction action, uint16_t* value, uint16_t bigStep, uint16_t min, uint16_t max);
 int applyMultiEdit(int startCol, int startRow, int endCol, int endRow, enum CellEditAction action, int (*editFunc)(int col, int row, enum CellEditAction action));
 int applyPhraseRotation(int phraseIdx, int startRow, int endRow, int direction);

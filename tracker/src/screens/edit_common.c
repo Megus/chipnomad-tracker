@@ -196,6 +196,33 @@ int editSigned8(enum CellEditAction action, int8_t* value, int8_t bigStep, int8_
   return result;
 }
 
+int edit16withMinMax(enum CellEditAction action, uint16_t* value, uint16_t bigStep, uint16_t min, uint16_t max) {
+  action = convertMultiAction(action);
+
+  switch (action) {
+    case editTap:
+      return 1;
+    case editClear:
+      *value = min;
+      return 1;
+    case editIncrease:
+      if (*value < max) *value += 1;
+      return 1;
+    case editDecrease:
+      if (*value > min) *value -= 1;
+      return 1;
+    case editIncreaseBig:
+      *value = *value > max - bigStep ? max : *value + bigStep;
+      return 1;
+    case editDecreaseBig:
+      *value = *value < min + bigStep ? min : *value - bigStep;
+      return 1;
+    default:
+      break;
+  }
+  return 0;
+}
+
 int edit16withOverflow(enum CellEditAction action, uint16_t* value, uint16_t bigStep, uint16_t min, uint16_t max) {
   switch (action) {
     case editTap:

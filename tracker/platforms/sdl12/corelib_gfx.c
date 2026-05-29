@@ -337,6 +337,76 @@ void gfxDrawCharBitmap(uint8_t* bitmap, int col, int row) {
   isDirty = 1;
 }
 
+Bitmap* gfxBitmapCreate(int widthChars, int heightChars) {
+  Bitmap* bitmap = (Bitmap*)malloc(sizeof(Bitmap));
+  if (!bitmap) return NULL;
+
+  int charW = fontW * 8;
+  bitmap->widthChars = widthChars;
+  bitmap->heightChars = heightChars;
+  bitmap->widthPixels = widthChars * charW;
+  bitmap->heightPixels = heightChars * fontH;
+
+  int dataSize = bitmap->widthPixels * bitmap->heightPixels;
+  bitmap->data = (uint8_t*)malloc(dataSize);
+  if (!bitmap->data) {
+    free(bitmap);
+    return NULL;
+  }
+  memset(bitmap->data, 0, dataSize);
+  bitmap->userdata = NULL;  // SDL1.2 doesn't use textures
+
+  return bitmap;
+}
+
+void gfxBitmapFree(Bitmap* bitmap) {
+  if (!bitmap) return;
+  if (bitmap->data) {
+    free(bitmap->data);
+  }
+  free(bitmap);
+}
+
+void gfxDrawBitmap(Bitmap* bitmap, int col, int row) {
+  if (!bitmap || !bitmap->data) return;
+
+  int cx = CHAR_X(col);
+  int cy = CHAR_Y(row);
+
+#ifdef MIYOOPORTS_BUILD
+  for (int y = 0; y < bitmap->heightPixels; y++) {
+    for (int x = 0; x < bitmap->widthPixels; x++) {
+      uint8_t alpha = bitmap->data[y * bitmap->widthPixels + x];
+      uint8_t r = bgR + ((fgR - bgR) * alpha) / 255;
+      uint8_t g = bgG + ((fgG - bgG) * alpha) / 255;
+      uint8_t b = bgB + ((fgB - bgB) * alpha) / 255;
+      uint32_t color = SDL_MapRGB(offscreenSurface->format, r, g, b);
+      int px = cx + x;
+      int py = cy + y;
+      if (px >= 0 && px < offscreenSurface->w && py >= 0 && py < offscreenSurface->h) {
+        ((Uint32 *)offscreenSurface->pixels)[py * offscreenSurface->w + px] = color;
+      }
+    }
+  }
+#else
+  for (int y = 0; y < bitmap->heightPixels; y++) {
+    for (int x = 0; x < bitmap->widthPixels; x++) {
+      uint8_t alpha = bitmap->data[y * bitmap->widthPixels + x];
+      uint8_t r = bgR + ((fgR - bgR) * alpha) / 255;
+      uint8_t g = bgG + ((fgG - bgG) * alpha) / 255;
+      uint8_t b = bgB + ((fgB - bgB) * alpha) / 255;
+      uint32_t color = SDL_MapRGB(sdlScreen->format, r, g, b);
+      int px = cx + x;
+      int py = cy + y;
+      if (px >= 0 && px < sdlScreen->w && py >= 0 && py < sdlScreen->h) {
+        ((Uint32 *)sdlScreen->pixels)[py * sdlScreen->w + px] = color;
+      }
+    }
+  }
+#endif
+  isDirty = 1;
+}
+
 int gfxGetCharWidth(void) {
   return fontW * 8;
 }

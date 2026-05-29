@@ -110,12 +110,13 @@ void test_projectSave_always_version_2_0(void) {
   TEST_ASSERT_EQUAL(0, result);
 
   // Read the file and check it starts with version 2.0
-  int fileId = fileOpen("tests/test_v2_output.cnm", 0);
-  TEST_ASSERT_NOT_EQUAL(-1, fileId);
-  char* firstLine = fileReadString(fileId);
-  TEST_ASSERT_NOT_NULL(firstLine);
+  FILE* file = fopen("tests/test_v2_output.cnm", "r");
+  TEST_ASSERT_NOT_NULL(file);
+  char firstLine[256];
+  char* readResult = fgets(firstLine, sizeof(firstLine), file);
+  TEST_ASSERT_NOT_NULL(readResult);
   TEST_ASSERT_TRUE(strstr(firstLine, "# ChipNomad Tracker Module 2.0") != NULL);
-  fileClose(fileId);
+  fclose(file);
 }
 
 void test_projectLoad_real_file_skytrain_funk(void) {

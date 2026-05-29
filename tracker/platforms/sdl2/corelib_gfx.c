@@ -361,14 +361,14 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
   void gfxDrawCharBitmap(uint8_t* bitmap, int col, int row) {
     int cx = CHAR_X(col);
     int cy = CHAR_Y(row);
-    
+
     uint8_t fgR = (fgColor >> 16) & 0xFF;
     uint8_t fgG = (fgColor >> 8) & 0xFF;
     uint8_t fgB = fgColor & 0xFF;
     uint8_t bgR = (bgColor >> 16) & 0xFF;
     uint8_t bgG = (bgColor >> 8) & 0xFF;
     uint8_t bgB = bgColor & 0xFF;
-    
+
     for (int y = 0; y < charH; y++) {
       for (int x = 0; x < charW; x++) {
         uint8_t alpha = bitmap[y * charW + x];
@@ -379,6 +379,99 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
         SDL_RenderDrawPoint(renderer, cx + x, cy + y);
       }
     }
+    isDirty = 1;
+  }
+
+  Bitmap* gfxBitmapCreate(int widthChars, int heightChars) {
+    Bitmap* bitmap = (Bitmap*)malloc(sizeof(Bitmap));
+    if (!bitmap) return NULL;
+
+    bitmap->widthChars = widthChars;
+    bitmap->heightChars = heightChars;
+    bitmap->widthPixels = widthChars * charW;
+    bitmap->heightPixels = heightChars * charH;
+
+    // Allocate and zero the pixel data
+    int dataSize = bitmap->widthPixels * bitmap->heightPixels;
+    bitmap->data = (uint8_t*)malloc(dataSize);
+    if (!bitmap->data) {
+      free(bitmap);
+      return NULL;
+    }
+    memset(bitmap->data, 0, dataSize);
+
+    // Create SDL texture for hardware-accelerated rendering
+    SDL_Texture* texture = SDL_CreateTexture(
+      renderer,
+      SDL_PIXELFORMAT_RGBA8888,
+      SDL_TEXTUREACCESS_STREAMING,
+      bitmap->widthPixels,
+      bitmap->heightPixels
+    );
+    if (texture) {
+      SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+    }
+    bitmap->userdata = texture;
+
+    return bitmap;
+  }
+
+  void gfxBitmapFree(Bitmap* bitmap) {
+    if (!bitmap) return;
+
+    if (bitmap->userdata) {
+      SDL_DestroyTexture((SDL_Texture*)bitmap->userdata);
+    }
+    if (bitmap->data) {
+      free(bitmap->data);
+    }
+    free(bitmap);
+  }
+
+  void gfxDrawBitmap(Bitmap* bitmap, int col, int row) {
+    if (!bitmap || !bitmap->data) return;
+
+    SDL_Texture* texture = (SDL_Texture*)bitmap->userdata;
+    if (!texture) return;
+
+    // Extract color components
+    uint8_t fgR = (fgColor >> 16) & 0xFF;
+    uint8_t fgG = (fgColor >> 8) & 0xFF;
+    uint8_t fgB = fgColor & 0xFF;
+    uint8_t bgR = (bgColor >> 16) & 0xFF;
+    uint8_t bgG = (bgColor >> 8) & 0xFF;
+    uint8_t bgB = bgColor & 0xFF;
+
+    // Lock texture and update pixels
+    void* pixels;
+    int pitch;
+    if (SDL_LockTexture(texture, NULL, &pixels, &pitch) == 0) {
+      uint32_t* pixelData = (uint32_t*)pixels;
+
+      for (int y = 0; y < bitmap->heightPixels; y++) {
+        for (int x = 0; x < bitmap->widthPixels; x++) {
+          uint8_t alpha = bitmap->data[y * bitmap->widthPixels + x];
+          uint8_t r = bgR + ((fgR - bgR) * alpha) / 255;
+          uint8_t g = bgG + ((fgG - bgG) * alpha) / 255;
+          uint8_t b = bgB + ((fgB - bgB) * alpha) / 255;
+
+          // RGBA8888 format
+          pixelData[y * (pitch / 4) + x] = (r << 24) | (g << 16) | (b << 8) | 0xFF;
+        }
+      }
+
+      SDL_UnlockTexture(texture);
+    }
+
+    // Draw the texture at the specified character position
+    SDL_Rect destRect = {
+      CHAR_X(col),
+      CHAR_Y(row),
+      bitmap->widthPixels,
+      bitmap->heightPixels
+    };
+
+    SDL_RenderCopy(renderer, texture, NULL, &destRect);
     isDirty = 1;
   }
 

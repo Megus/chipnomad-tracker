@@ -2,6 +2,7 @@
 #define __PROJECT_INSTRUMENTS_H__
 
 #include <stdlib.h>
+#include <stdint.h>
 #include "project_constants.h"
 
 // Forward declarations
@@ -97,7 +98,8 @@ typedef struct InstrumentAYOscSoftware {
   uint8_t pitchFlag;
   int8_t pitchOffset;
   int8_t fineTune;
-  uint8_t auxParameter;
+  uint8_t p1;
+  uint8_t p2;
 } InstrumentAYOscSoftware;
 
 typedef struct InstrumentAY2 {

@@ -60,8 +60,45 @@ void gfxPrint(int x, int y, const char* text);
 void gfxPrintf(int x, int y, const char* format, ...);
 
 /**
- * @brief Draw 8-bit grayscale bitmap at character position
- * 
+ * @brief Bitmap structure for multi-character grayscale images
+ */
+typedef struct Bitmap {
+  int widthChars;      // Width in characters
+  int heightChars;     // Height in characters
+  int widthPixels;     // Actual pixel width (widthChars * charWidth)
+  int heightPixels;    // Actual pixel height (heightChars * charHeight)
+  uint8_t* data;       // Grayscale data (0=background, 255=foreground), row-major order
+  void* userdata;      // Platform-specific data (e.g., SDL_Texture*)
+} Bitmap;
+
+/**
+ * @brief Create a bitmap with specified size in characters
+ *
+ * @param widthChars Width in characters
+ * @param heightChars Height in characters
+ * @return Bitmap* Allocated bitmap (caller must free with gfxBitmapFree)
+ */
+Bitmap* gfxBitmapCreate(int widthChars, int heightChars);
+
+/**
+ * @brief Free a bitmap and its resources
+ *
+ * @param bitmap Bitmap to free
+ */
+void gfxBitmapFree(Bitmap* bitmap);
+
+/**
+ * @brief Draw a bitmap at character grid position
+ *
+ * @param bitmap Bitmap to draw
+ * @param col Column position in characters
+ * @param row Row position in characters
+ */
+void gfxDrawBitmap(Bitmap* bitmap, int col, int row);
+
+/**
+ * @brief Draw 8-bit grayscale bitmap at character position (legacy, single character)
+ *
  * @param bitmap Grayscale bitmap data (row by row, 0=background, 255=foreground)
  * @param col Column position in characters
  * @param row Row position in characters
@@ -70,14 +107,14 @@ void gfxDrawCharBitmap(uint8_t* bitmap, int col, int row);
 
 /**
  * @brief Get character width in pixels
- * 
+ *
  * @return int Character width
  */
 int gfxGetCharWidth(void);
 
 /**
  * @brief Get character height in pixels
- * 
+ *
  * @return int Character height
  */
 int gfxGetCharHeight(void);

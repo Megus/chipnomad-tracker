@@ -7,9 +7,8 @@
 
 #define ENVELOPE_DIM_BRIGHTNESS 160
 
-static uint8_t* emptyBitmap = NULL;
-static uint8_t* waveformBitmaps[PROJECT_MAX_TRACKS];
-static int bitmapSize = 0;
+static Bitmap* emptyBitmap = NULL;
+static Bitmap* waveformBitmaps[PROJECT_MAX_TRACKS];
 static int charW = 0;
 static int charH = 0;
 static uint8_t noisePattern[512];
@@ -18,18 +17,11 @@ static int noiseAnimIdx = 0;
 void waveformDisplayInit(void) {
   charW = gfxGetCharWidth();
   charH = gfxGetCharHeight();
-  bitmapSize = charW * charH;
 
-  emptyBitmap = malloc(bitmapSize);
-  if (emptyBitmap) {
-    memset(emptyBitmap, 0, bitmapSize);
-  }
+  emptyBitmap = gfxBitmapCreate(1, 1);
 
   for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
-    waveformBitmaps[i] = malloc(bitmapSize);
-    if (waveformBitmaps[i]) {
-      memset(waveformBitmaps[i], 0, bitmapSize);
-    }
+    waveformBitmaps[i] = gfxBitmapCreate(1, 1);
   }
 
   for (int i = 0; i < 512; i++) {
@@ -37,15 +29,15 @@ void waveformDisplayInit(void) {
   }
 }
 
-static void drawVerticalLine(uint8_t* bitmap, int x, int y1, int y2, uint8_t shade) {
+static void drawVerticalLine(Bitmap* bitmap, int x, int y1, int y2, uint8_t shade) {
   int startY = y1 < y2 ? y1 : y2;
   int endY = y1 > y2 ? y1 : y2;
   for (int dy = startY; dy <= endY; dy++) {
-    bitmap[dy * charW + x] = shade;
+    bitmap->data[dy * charW + x] = shade;
   }
 }
 
-static void drawSlice(uint8_t* bitmap, int x, int amplitude, int toneHigh, int hasEnvelope, int hasNoise, int noiseShadeBase) {
+static void drawSlice(Bitmap* bitmap, int x, int amplitude, int toneHigh, int hasEnvelope, int hasNoise, int noiseShadeBase) {
   static int prevAmplitude = -1;
   static int prevToneHigh = 1;
   static int prevEnvAmplitude = -1;
@@ -62,7 +54,7 @@ static void drawSlice(uint8_t* bitmap, int x, int amplitude, int toneHigh, int h
   int lowY = charH - 1;
 
   if (toneHigh) {
-    bitmap[y * charW + x] = 255;
+    bitmap->data[y * charW + x] = 255;
 
     if (prevAmplitude >= 0) {
       int prevY = charH - 1 - prevAmplitude;
@@ -73,10 +65,10 @@ static void drawSlice(uint8_t* bitmap, int x, int amplitude, int toneHigh, int h
       }
     }
   } else {
-    bitmap[lowY * charW + x] = 255;
+    bitmap->data[lowY * charW + x] = 255;
 
     if (hasEnvelope) {
-      bitmap[y * charW + x] = ENVELOPE_DIM_BRIGHTNESS;
+      bitmap->data[y * charW + x] = ENVELOPE_DIM_BRIGHTNESS;
       if (prevEnvAmplitude >= 0) {
         int prevY = charH - 1 - prevEnvAmplitude;
         drawVerticalLine(bitmap, x, y, prevY, ENVELOPE_DIM_BRIGHTNESS);
@@ -93,7 +85,7 @@ static void drawSlice(uint8_t* bitmap, int x, int amplitude, int toneHigh, int h
     for (int dy = y + 1; dy < charH; dy++) {
       int noiseShade = noisePattern[noiseAnimIdx] ? noiseShadeBase : 64;
       noiseAnimIdx = (noiseAnimIdx + 1) & 511;
-      bitmap[dy * charW + x] = noiseShade;
+      bitmap->data[dy * charW + x] = noiseShade;
     }
   }
 
@@ -125,7 +117,7 @@ static int getEnvelopeHeight(int x, int envShape) {
   return 0;
 }
 
-uint8_t* waveformDisplayGetBitmap(int trackIdx) {
+Bitmap* waveformDisplayGetBitmap(int trackIdx) {
   PlaybackTrackState* track = &chipnomadState->playbackState.tracks[trackIdx];
 
   // Check if track is playing
@@ -152,7 +144,8 @@ uint8_t* waveformDisplayGetBitmap(int trackIdx) {
   uint8_t noisePeriod = chip->regs[6] & 0x1F;
   int noiseShadeBase = 128 + noisePeriod * 2;
 
-  memset(waveformBitmaps[trackIdx], 0, bitmapSize);
+  Bitmap* bitmap = waveformBitmaps[trackIdx];
+  memset(bitmap->data, 0, bitmap->widthPixels * bitmap->heightPixels);
 
   if (!envEnabled) {
     // Simple volume-based waveform
@@ -162,28 +155,28 @@ uint8_t* waveformDisplayGetBitmap(int trackIdx) {
     if (!hasTone && !hasNoise) {
       // Both disabled - horizontal line (tone always HIGH)
       for (int x = 0; x < charW; x++) {
-        drawSlice(waveformBitmaps[trackIdx], x, amplitude, 1, 0, 0, 0);
+        drawSlice(bitmap, x, amplitude, 1, 0, 0, 0);
       }
     } else if (hasTone && !hasNoise) {
       // Tone only - square wave
       for (int x = 0; x < charW / 2; x++) {
-        drawSlice(waveformBitmaps[trackIdx], x, amplitude, 1, 0, 0, 0);
+        drawSlice(bitmap, x, amplitude, 1, 0, 0, 0);
       }
       for (int x = charW / 2; x < charW; x++) {
-        drawSlice(waveformBitmaps[trackIdx], x, amplitude, 0, 0, 0, 0);
+        drawSlice(bitmap, x, amplitude, 0, 0, 0, 0);
       }
     } else if (!hasTone && hasNoise) {
       // Noise only (tone always HIGH)
       for (int x = 0; x < charW; x++) {
-        drawSlice(waveformBitmaps[trackIdx], x, amplitude, 1, 0, 1, noiseShadeBase);
+        drawSlice(bitmap, x, amplitude, 1, 0, 1, noiseShadeBase);
       }
     } else {
       // Tone + noise - square wave with noise
       for (int x = 0; x < charW / 2; x++) {
-        drawSlice(waveformBitmaps[trackIdx], x, amplitude, 1, 0, 1, noiseShadeBase);
+        drawSlice(bitmap, x, amplitude, 1, 0, 1, noiseShadeBase);
       }
       for (int x = charW / 2; x < charW; x++) {
-        drawSlice(waveformBitmaps[trackIdx], x, amplitude, 0, 0, 1, noiseShadeBase);
+        drawSlice(bitmap, x, amplitude, 0, 0, 1, noiseShadeBase);
       }
     }
   } else {
@@ -201,9 +194,9 @@ uint8_t* waveformDisplayGetBitmap(int trackIdx) {
         toneHigh = periodPhase < 0.5f;
       }
 
-      drawSlice(waveformBitmaps[trackIdx], x, amplitude, toneHigh, 1, hasNoise, noiseShadeBase);
+      drawSlice(bitmap, x, amplitude, toneHigh, 1, hasNoise, noiseShadeBase);
     }
   }
 
-  return waveformBitmaps[trackIdx];
+  return bitmap;
 }

@@ -7,6 +7,8 @@
 #include "common.h"
 #include "import_common.h"
 
+static char lineBuffer[1024];
+
 #define VTS_COL_TONE        0
 #define VTS_COL_NOISE       1
 #define VTS_COL_ENVELOPE    2
@@ -289,8 +291,8 @@ int instrumentLoadVTS(const char* path, int instrumentIdx) {
     return 1;
   }
 
-  int fileId = fileOpen(path, 0);
-  if (fileId == -1) {
+  FILE* file = fopen(path, "r");
+  if (file == NULL) {
     return 1;
   }
 
@@ -299,13 +301,12 @@ int instrumentLoadVTS(const char* path, int instrumentIdx) {
 
   getInstrumentFunctions(instAY1).init(inst);
 
-  char* lpstr = fileReadString(fileId);
-  if (lpstr == NULL) {
-    fileClose(fileId);
+  if (fgets(lineBuffer, sizeof(lineBuffer), file) == NULL) {
+    fclose(file);
     return 1;
   }
 
-  extractInstrumentName(lpstr, path, inst->name, PROJECT_INSTRUMENT_NAME_LENGTH);
+  extractInstrumentName(lineBuffer, path, inst->name, PROJECT_INSTRUMENT_NAME_LENGTH);
 
   int rowCount = 0;
   int loopRow = -1;
@@ -313,16 +314,15 @@ int instrumentLoadVTS(const char* path, int instrumentIdx) {
   int vtsOffsetTypes[TABLE_ROW_COUNT] = {0};
 
   while (rowCount < TABLE_ROW_COUNT) {
-    lpstr = fileReadString(fileId);
-    if (lpstr == NULL || lpstr[0] == '[') break;
+    if (fgets(lineBuffer, sizeof(lineBuffer), file) == NULL || lineBuffer[0] == '[') break;
 
-    processVTSLine(table, lpstr, rowCount, &loopRow, vtsOffsets, vtsOffsetTypes);
+    processVTSLine(table, lineBuffer, rowCount, &loopRow, vtsOffsets, vtsOffsetTypes);
     rowCount++;
   }
 
   finalizeVTSInstrument(table, rowCount, loopRow, vtsOffsets, vtsOffsetTypes);
 
-  fileClose(fileId);
+  fclose(file);
   return 0;
 }
 

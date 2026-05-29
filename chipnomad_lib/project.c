@@ -2,7 +2,6 @@
 #include <string.h>
 #include "project.h"
 #include "project_instruments.h"
-#include "corelib/corelib_file.h"
 #include "utils.h"
 
 FXName fxNames[256];

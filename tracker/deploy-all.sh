@@ -21,7 +21,7 @@ make clean
 # Run tests
 echo ""
 echo "Running tests..."
-make test
+make -f Makefile.test run
 echo "All tests passed."
 
 # Build all platforms
