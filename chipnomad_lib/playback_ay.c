@@ -127,10 +127,6 @@ void setupInstrumentAYSample(PlaybackState* state, int trackIdx) {
   // TODO: Implement in future
 }
 
-void setupInstrumentAYWavetable(PlaybackState* state, int trackIdx) {
-  // TODO: Implement in future
-}
-
 void setupInstrument(PlaybackState* state, int trackIdx) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
   Project* p = state->p;
@@ -148,9 +144,6 @@ void setupInstrument(PlaybackState* state, int trackIdx) {
       break;
     case instAYSample:
       setupInstrumentAYSample(state, trackIdx);
-      break;
-    case instAYWavetable:
-      setupInstrumentAYWavetable(state, trackIdx);
       break;
     case instNone:
       // No setup needed
@@ -190,17 +183,8 @@ void handleInstrumentAY1(PlaybackState* state, int trackIdx) {
 
     switch (mod->modulation->destination) {
       case 1: { // Volume
-        if (mod->modulation->type == modLFO) {
-          // LFO: Add to volumeOffset
-          track->note.volumeOffset += playbackModScaleToRange(mod->outValue, 127);
-        } else {
-          // ADSR/AHD: Rewrite volume
-          int stopNote = 0;
-          int16_t envelopeVolume = playbackApplyVolumeEnvelope(mod, 15, &stopNote);
-          track->note.chip.ay.volume = envelopeVolume;
-          if (stopNote) {
-            track->note.pitchBase = EMPTY_VALUE_8;
-          }
+        if (playbackApplyVolumeModulation(mod, &track->note.volumeOffset, &track->note.chip.ay.volume, 15)) {
+          track->note.pitchBase = EMPTY_VALUE_8;
         }
         break;
       }
@@ -236,17 +220,8 @@ void handleInstrumentAY2(PlaybackState* state, int trackIdx) {
 
     switch (mod->modulation->destination) {
       case 1: { // Volume
-        if (mod->modulation->type == modLFO) {
-          // LFO: Add to volumeOffset
-          track->note.volumeOffset += playbackModScaleToRange(mod->outValue, 127);
-        } else {
-          // ADSR/AHD: Rewrite volume
-          int stopNote = 0;
-          int16_t envelopeVolume = playbackApplyVolumeEnvelope(mod, 15, &stopNote);
-          track->note.chip.ay.volume = envelopeVolume;
-          if (stopNote) {
-            track->note.pitchBase = EMPTY_VALUE_8;
-          }
+        if (playbackApplyVolumeModulation(mod, &track->note.volumeOffset, &track->note.chip.ay.volume, 15)) {
+          track->note.pitchBase = EMPTY_VALUE_8;
         }
         break;
       }
@@ -283,13 +258,51 @@ void handleInstrumentAY2(PlaybackState* state, int trackIdx) {
 }
 
 void handleInstrumentAYSample(PlaybackState* state, int trackIdx) {
-  // TODO
-}
+  PlaybackTrackState* track = &state->tracks[trackIdx];
+  Project* p = state->p;
 
-void handleInstrumentAYWavetable(PlaybackState* state, int trackIdx) {
-  // TODO
-}
+  // Initialize volume to full (15) before applying modulations
+  track->note.chip.ay.volume = 15;
 
+  // Apply all 4 generic modulation slots
+  // AYSample destinations: 1=Volume, 2=Pitch, 3=SmplPit, 4=TonePit, 5=Noise
+  for (int i = 0; i < 4; i++) {
+    PlaybackModState* mod = &track->note.modulation[i];
+    if (!mod->modulation || mod->modulation->destination == 0) continue;
+
+    switch (mod->modulation->destination) {
+      case 1: { // Volume
+        if (playbackApplyVolumeModulation(mod, &track->note.volumeOffset, &track->note.chip.ay.volume, 15)) {
+          track->note.pitchBase = EMPTY_VALUE_8;
+        }
+        break;
+      }
+      case 2: { // Pitch (main pitch)
+        track->note.fineOffset += playbackModScaleToRange(mod->outValue, p->linearPitch ? PITCH_MOD_RANGE_CENTS : PITCH_MOD_RANGE_PERIOD);
+        break;
+      }
+      case 3: { // Sample Pitch
+        track->note.chip.ay.softFineOffset += playbackModScaleToRange(mod->outValue, p->linearPitch ? PITCH_MOD_RANGE_CENTS : PITCH_MOD_RANGE_PERIOD);
+        break;
+      }
+      case 4: { // Tone Pitch
+        track->note.chip.ay.toneFineOffset += playbackModScaleToRange(mod->outValue, p->linearPitch ? PITCH_MOD_RANGE_CENTS : PITCH_MOD_RANGE_PERIOD);
+        break;
+      }
+      case 5: { // Noise
+        track->note.chip.ay.noiseOffset += playbackModScaleToRange(mod->outValue, 127);
+        break;
+      }
+    }
+  }
+
+  // Offsets from instrument parameters
+  InstrumentAYSample* aySample = &p->instruments[track->note.instrument].chip.aySample;
+  track->note.chip.ay.tonePitchOffset += aySample->oscTone.pitchOffset;
+  track->note.chip.ay.toneFineOffset += aySample->oscTone.fineTune;
+  track->note.chip.ay.softPitchOffset += aySample->pitchOffset;
+  track->note.chip.ay.softFineOffset += aySample->fineTune;
+}
 
 void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx) {
   PlaybackState* state = &chipNomadState->playbackState;
@@ -297,12 +310,23 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
   SoundChip* chip = &chipNomadState->chips[chipIdx];
   int ayChannel = 0;
 
+  // Tracking chip-wide reg values
   uint8_t mixer = 0;
-  uint8_t noise = EMPTY_VALUE_8;
+  uint8_t noise = 0;
   uint8_t envShape = 0;
   int16_t envPeriod = 0;
 
+  // Write flags for chip-wide registers
+  int shouldWriteMixer = 1; // Always write mixer, but have the variable just in case
+  int shouldWriteNoise = 0;
+  int shouldWriteEnvPeriod = 0;
+  int shouldWriteEnvShape = 0;
+
   for (int t = trackIdx; t < trackIdx + projectGetChipTracks(p, chipIdx); t++) {
+    // Write flags for channel registers
+    int shouldWriteTonePeriod = 0;
+    int shouldWriteVolume = 0;
+
     PlaybackTrackState* track = &state->tracks[t];
 
     if (track->note.pitchFinal == EMPTY_VALUE_8 || p->instruments[track->note.instrument].type == instNone) {
@@ -337,15 +361,21 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
       // Clamp period to valid AY range
       if (period < 1) period = 1;
       if (period > 4095) period = 4095;
-      chip->setRegister(chip, ayChannel * 2, period & 0xff);
-      chip->setRegister(chip, ayChannel * 2 + 1, (period & 0xf00) >> 8);
+      track->note.chip.ay.outTonePeriod = period;
+
+      // Shouldn't write only when soft osc type is SyncTone, timer function will handle it
+      if (track->note.chip.ay.softType != aySoftwareOscSyncTone) {
+        shouldWriteTonePeriod = 1;
+      }
 
       // ===============
       // Volume register
       // ===============
 
       int volume = 0;
-      if (track->note.chip.ay.envShape != 0) {
+      // Envelope is on only when envShape is non-zero and software oscillator type
+      // is not Pulse or Wavetable (which modulate volume and not compatible with envelope)
+      if (track->note.chip.ay.envShape != 0 && track->note.chip.ay.softType != aySoftwareOscPulse && track->note.chip.ay.softType != aySoftwareOscWavetable) {
         // ===========
         // Envelope on
         // ===========
@@ -424,13 +454,20 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
         if (volume > 15) volume = 15;
       }
 
-      chip->setRegister(chip, 8 + ayChannel, state->trackEnabled[t] ? volume : 0);
+      track->note.chip.ay.outVolume = volume;
+
+      // Pulse, Wavetable, and Sample modulate volume. They will use outVolume to scale their output
+      // Don't output volume, timer function will handle it
+      if (!(track->note.chip.ay.softType == aySoftwareOscPulse || track->note.chip.ay.softType == aySoftwareOscWavetable || track->note.chip.ay.softType == aySoftwareOscSample)) {
+        shouldWriteVolume = 1;
+      }
 
       // =====
       // Noise
       // =====
       if ((track->note.chip.ay.mixer & 8) == 0 && track->note.chip.ay.noiseBase != EMPTY_VALUE_8) {
         noise = track->note.chip.ay.noiseBase + track->note.chip.ay.noiseOffset;
+        shouldWriteNoise = 1;
       }
 
       // =====
@@ -440,8 +477,19 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
       mixer = mixer | ((track->note.chip.ay.mixer & 9) << ayChannel);
     }
 
+    // Channel register writes
+    if (shouldWriteTonePeriod) {
+      chip->setRegister(chip, ayChannel * 2, track->note.chip.ay.outTonePeriod & 0xff);
+      chip->setRegister(chip, ayChannel * 2 + 1, (track->note.chip.ay.outTonePeriod & 0xf00) >> 8);
+    }
+    if (shouldWriteVolume) {
+      chip->setRegister(chip, 8 + ayChannel, state->trackEnabled[t] ? track->note.chip.ay.outVolume : 0);
+    }
+
     ayChannel++;
   }
+
+  // Chip-wide register writes
 
   // Env register write
   if (envShape != 0) {
@@ -449,16 +497,20 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
       chip->setRegister(chip, 13, envShape);
       state->chips[chipIdx].ay.envShape = envShape;
     }
-    chip->setRegister(chip, 11, envPeriod & 0xff);
-    chip->setRegister(chip, 12, (envPeriod & 0xff00) >> 8);
+    if (shouldWriteEnvPeriod) {
+      chip->setRegister(chip, 11, envPeriod & 0xff);
+      chip->setRegister(chip, 12, (envPeriod & 0xff00) >> 8);
+    }
   }
 
   // Noise register write
-  if (noise != EMPTY_VALUE_8) {
+  if (shouldWriteNoise) {
     chip->setRegister(chip, 6, noise);
   }
   // Mixer register write
-  chip->setRegister(chip, 7, mixer);
+  if (shouldWriteMixer) {
+    chip->setRegister(chip, 7, mixer);
+  }
 }
 
 // Convert frequency to AY period

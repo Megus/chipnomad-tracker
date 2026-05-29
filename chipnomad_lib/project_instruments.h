@@ -15,7 +15,6 @@ enum InstrumentType {
   instAY1 = 1,
   instAY2 = 2,
   instAYSample = 3,
-  instAYWavetable = 4,
 };
 
 enum ModulationType {
@@ -87,10 +86,13 @@ typedef struct InstrumentAYOscEnvelope {
 
 enum AYSoftwareOscType {
   aySoftwareOscNone = 0,
-  aySoftwareOscRingMod = 1,
+  aySoftwareOscPulse = 1,
   aySoftwareOscSyncTone = 2,
   aySoftwareOscSyncEnvelope = 3,
-  aysoftwareOscTotalCount,
+  aySoftwareOscWavetable = 4,
+  aySoftwareOscNoiseWavetable = 5,
+  aySoftwareOscSample = 6, // Needs to be last for various conditions for AY2 instrument
+  aySoftwareOscTotalCount,
 };
 
 typedef struct InstrumentAYOscSoftware {
@@ -124,19 +126,10 @@ typedef struct InstrumentAYSample {
   int8_t fineTune;
 } InstrumentAYSample;
 
-typedef struct InstrumentAYWavetable {
-  InstrumentAYOscTone oscTone;
-  InstrumentAYOscNoise oscNoise;
-  uint8_t waveIndex;
-  int8_t pitchOffset;
-  int8_t fineTune;
-} InstrumentAYWavetable;
-
 typedef union InstrumentChipData {
   InstrumentAY1 ay;
   InstrumentAY2 ay2;
   InstrumentAYSample aySample;
-  InstrumentAYWavetable ayWavetable;
 } InstrumentChipData;
 
 typedef struct Instrument {

@@ -11,7 +11,7 @@ static int getInstrumentType(PlaybackState* state, int trackIdx) {
 static int isAYInstrument(PlaybackState* state, int trackIdx) {
   uint8_t type = getInstrumentType(state, trackIdx);
 
-  if (type == instAY1 || type == instAY2 || type == instAYSample || type == instAYWavetable) {
+  if (type == instAY1 || type == instAY2 || type == instAYSample) {
     return 1;
   }
   return 0;
@@ -380,7 +380,7 @@ static void handleFX_SMN(PlaybackState* state, PlaybackTrackState* track, int tr
   fx->isOn = 0; // Atomic effect
   if (getInstrumentType(state, trackIdx) != instAYSample) return;
 
-  track->note.chip.ay.sampleFixedPitch = fx->fxValue;
+  track->note.chip.ay.softFixedPitch = fx->fxValue;
 }
 
 // SMP - Sample pitch offset
@@ -398,7 +398,7 @@ static void restartFX_SMP(PlaybackState* state, PlaybackTrackState* track, int t
 }
 
 static void handleFX_SMP(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
-  track->note.chip.ay.samplePitchOffset += fx->acc;
+  track->note.chip.ay.softPitchOffset += fx->acc;
 }
 
 // SMF - Sample fine offset
@@ -416,7 +416,7 @@ static void restartFX_SMF(PlaybackState* state, PlaybackTrackState* track, int t
 }
 
 static void handleFX_SMF(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
-  track->note.chip.ay.sampleFineOffset += fx->acc;
+  track->note.chip.ay.softFineOffset += fx->acc;
 }
 
 // SMS - Sample start position
@@ -427,79 +427,6 @@ static void handleFX_SMS(PlaybackState* state, PlaybackTrackState* track, int tr
   // TODO: Implement sample start position setting
 }
 
-
-// ============================
-// AYWavetable specific effects
-// ============================
-
-// WTX - Wavetable index offset
-static void initFX_WTX(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn) {
-  if (getInstrumentType(state, trackIdx) != instAYWavetable) {
-    fx->isOn = 0;
-    return;
-  }
-
-  fx->acc += (int8_t)fx->fxValue;
-}
-
-static void restartFX_WTX(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
-  // Do nothing - WTX should keep the accumulated offset
-}
-
-static void handleFX_WTX(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
-  track->note.chip.ay.wavetableIndexOffset += fx->acc;
-}
-
-// WTN - Wavetable specific note
-static void handleFX_WTN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
-  fx->isOn = 0; // Atomic effect
-  if (getInstrumentType(state, trackIdx) != instAYWavetable) return;
-
-  track->note.chip.ay.wavetableFixedPitch = fx->fxValue;
-}
-
-// WTP - Wavetable pitch offset
-static void initFX_WTP(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn) {
-  if (getInstrumentType(state, trackIdx) != instAYWavetable) {
-    fx->isOn = 0;
-    return;
-  }
-
-  fx->acc += (int8_t)fx->fxValue;
-}
-
-static void restartFX_WTP(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
-  // Do nothing - WTP should keep the accumulated offset
-}
-
-static void handleFX_WTP(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
-  track->note.chip.ay.wavetablePitchOffset += fx->acc;
-}
-
-// WTF - Wavetable fine offset
-static void initFX_WTF(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn) {
-  if (getInstrumentType(state, trackIdx) != instAYWavetable) {
-    fx->isOn = 0;
-    return;
-  }
-
-  fx->acc += (int8_t)fx->fxValue;
-}
-
-static void restartFX_WTF(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
-  // Do nothing - WTF should keep the accumulated offset
-}
-
-static void handleFX_WTF(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
-  track->note.chip.ay.wavetableFineOffset += fx->acc;
-}
-
-// WRT - Wavetable phase retrigger
-static void handleFX_WRT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
-  fx->isOn = 0; // Atomic effect
-  if (getInstrumentType(state, trackIdx) != instAYWavetable) return;
-  // TODO: Implement wavetable phase retrigger
-}
 
 void registerFXHandlers_AY(void) {
   // Common AY FX
@@ -540,11 +467,4 @@ void registerFXHandlers_AY(void) {
   fxHandlers[fxSMP] = (PlaybackFXHandler){initFX_SMP, handleFX_SMP, restartFX_SMP};
   fxHandlers[fxSMF] = (PlaybackFXHandler){initFX_SMF, handleFX_SMF, restartFX_SMF};
   fxHandlers[fxSMS] = (PlaybackFXHandler){NULL, handleFX_SMS, NULL};
-
-  // AYWavetable-specific FX
-  fxHandlers[fxWTX] = (PlaybackFXHandler){initFX_WTX, handleFX_WTX, restartFX_WTX};
-  fxHandlers[fxWTN] = (PlaybackFXHandler){NULL, handleFX_WTN, NULL};
-  fxHandlers[fxWTP] = (PlaybackFXHandler){initFX_WTP, handleFX_WTP, restartFX_WTP};
-  fxHandlers[fxWTF] = (PlaybackFXHandler){initFX_WTF, handleFX_WTF, restartFX_WTF};
-  fxHandlers[fxWRT] = (PlaybackFXHandler){NULL, handleFX_WRT, NULL};
 }

@@ -60,17 +60,6 @@ FXName fxNamesAYSample[] = {
 };
 int fxAYSampleCount = sizeof(fxNamesAYSample) / sizeof(FXName);
 
-// AYWavetable FX
-FXName fxNamesAYWavetable[] = {
-  // Mixer and noise
-  {fxAYM, "AYM"}, {fxNOI, "NOI"}, {fxNOA, "NOA"},
-  // Tone
-  {fxTNN, "TNN"}, {fxTNP, "TNP"}, {fxTNF, "TNF"}, {fxTRT, "TRT"},
-  // Wavetable
-  {fxWTX, "WTX"}, {fxWTN, "WTN"}, {fxWTP, "WTP"}, {fxWTF, "WTF"}, {fxWRT, "WRT"},
-};
-int fxAYWavetableCount = sizeof(fxNamesAYWavetable) / sizeof(FXName);
-
 // FX Groups array. FX counts are filled in fillFXNames()
 FXGroup fxGroups[] = {
   {"Sequencer FX", fxNamesSequencer, 0, 8, instNone},
@@ -78,7 +67,6 @@ FXGroup fxGroups[] = {
   {"AY Classic FX", fxNamesAY1, 0, 8, instAY1},
   {"AY Plus FX", fxNamesAY2, 0, 8, instAY2},
   {"AYSample FX", fxNamesAYSample, 0, 8, instAYSample},
-  {"AYWavetable FX", fxNamesAYWavetable, 0, 8, instAYWavetable},
 };
 int fxGroupCount = sizeof(fxGroups) / sizeof(FXGroup);
 
@@ -96,7 +84,6 @@ void fillFXNames() {
   fxGroups[2].count = fxAY1Count;
   fxGroups[3].count = fxAY2Count;
   fxGroups[4].count = fxAYSampleCount;
-  fxGroups[5].count = fxAYWavetableCount;
 
   // Fill FX names from all groups
   for (int g = 0; g < fxGroupCount; g++) {

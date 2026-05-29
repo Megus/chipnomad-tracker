@@ -64,8 +64,6 @@ char* instrumentTypeName(uint8_t type) {
       return "AY Plus";
     case instAYSample:
       return "AY Sample";
-    case instAYWavetable:
-      return "AY Wavetable";
     case instNone:
       return "None";
     default:

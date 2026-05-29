@@ -91,24 +91,6 @@ static int freeAYSampleInstrument(Instrument* instrument) {
   return 0;
 }
 
-// Instrument type: AY Wavetable
-static char* modNameAYWavetable(int modIndex) {
-  static char *names[] = {"Off", "Volume", "Pitch", "WavePit", "Wave", "TonePit", "Noise"};
-  return names[modIndex];
-}
-
-static int initAYWavetableInstrument(Instrument* instrument) {
-  initCommon(instrument);
-  instrument->type = instAYWavetable;
-  return 0;
-}
-
-static int freeAYWavetableInstrument(Instrument* instrument) {
-  freeCommon(instrument);
-  return 0;
-}
-
-
 // Get function pointers for instrument type
 InstrumentFunctions getInstrumentFunctions(enum InstrumentType type) {
   switch (type) {
@@ -132,13 +114,6 @@ InstrumentFunctions getInstrumentFunctions(enum InstrumentType type) {
         .modName = modNameAYSample,
         .init = initAYSampleInstrument,
         .free = freeAYSampleInstrument
-      };
-    case instAYWavetable:
-      return (InstrumentFunctions){
-        .modDestinationsCount = 6,
-        .modName = modNameAYWavetable,
-        .init = initAYWavetableInstrument,
-        .free = freeAYWavetableInstrument
       };
     default:
       return (InstrumentFunctions){

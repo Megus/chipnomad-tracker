@@ -46,9 +46,11 @@ static int rowToY(int row) {
 static const char* softwareOscTypeName(enum AYSoftwareOscType type) {
   switch (type) {
     case aySoftwareOscNone:           return "Off  ";
-    case aySoftwareOscRingMod:        return "Ring ";
+    case aySoftwareOscPulse:          return "Pulse";
     case aySoftwareOscSyncTone:       return "SyncT";
     case aySoftwareOscSyncEnvelope:   return "SyncE";
+    case aySoftwareOscWavetable:      return "WavTb";
+    case aySoftwareOscNoiseWavetable: return "NoiWT";
     default:                          return "?    ";
   }
 }
@@ -292,7 +294,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       case 7: // Software osc type
         {
           uint8_t type = (uint8_t)ay2->oscSoftware.type;
-          handled = edit8noLast(action, &type, 1, 0, aysoftwareOscTotalCount - 1);
+          handled = edit8noLast(action, &type, 1, 0, aySoftwareOscSample - 1);
           ay2->oscSoftware.type = (enum AYSoftwareOscType)type;
         }
         break;

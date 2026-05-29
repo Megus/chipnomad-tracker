@@ -34,22 +34,27 @@ typedef struct PlaybackAYNoteState {
 
   // Software oscillator
   enum AYSoftwareOscType softType;
+  uint16_t softPeriodCounter; // Counter for software oscillator timing
+
   uint8_t softFixedPitch; // If not EMPTY_VALUE_8, use this fixed pitch instead of note pitch
   int8_t softPitchOffset;
   int16_t softFineOffset;
+  uint8_t softP1Offset; // Meaning depends on software osc type
+  uint8_t softP2Offset; // Meaning depends on software osc type
 
-  // Sample
-  uint8_t sampleFixedPitch; // If not EMPTY_VALUE_8, use this fixed pitch instead of note pitch
-  int8_t samplePitchOffset;
-  int16_t sampleFineOffset;
+  // Sample and wavetable positions
   uint32_t samplePosition;
+  uint32_t wavetablePosition;
 
-  // Wavetable
-  uint8_t wavetableIndexOffset;
-  uint8_t wavetableFixedPitch; // If not EMPTY_VALUE_8, use this fixed pitch instead of note pitch
-  int8_t wavetablePitchOffset;
-  int16_t wavetableFineOffset;
-  uint16_t wavetablePhase;
+  // Calculated values for the current tick. Used for timer function and visualization
+  // Channel outputs
+  uint8_t outVolume;
+  uint16_t outTonePeriod;
+  uint16_t outSoftPeriod;
+  // Chip-wide outputs. Combined with other channels
+  uint8_t outNoisePeriod;
+  uint8_t outEnvShape;
+  uint16_t outEnvPeriod;
 } PlaybackAYNoteState;
 
 typedef union PlaybackChipNoteState {

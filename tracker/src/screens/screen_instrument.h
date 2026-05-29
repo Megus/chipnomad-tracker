@@ -14,6 +14,5 @@ int instrumentCommonOnEdit(int col, int row, enum CellEditAction action);
 extern ScreenData screenInstrumentAY;
 extern ScreenData screenInstrumentAY2;
 extern ScreenData screenInstrumentAYSample;
-extern ScreenData screenInstrumentAYWavetable;
 
 #endif

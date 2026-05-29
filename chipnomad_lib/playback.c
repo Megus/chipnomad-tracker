@@ -517,7 +517,6 @@ void resetOffsets(PlaybackState* state, int trackIdx) {
       case instAY1:
       case instAY2:
       case instAYSample:
-      case instAYWavetable:
         resetOffsetsAY(state, trackIdx);
         break;
       default:
@@ -556,9 +555,6 @@ static void handleInstrument(PlaybackState* state, int trackIdx) {
     break;
   case instAYSample:
     handleInstrumentAYSample(state, trackIdx);
-    break;
-  case instAYWavetable:
-    handleInstrumentAYWavetable(state, trackIdx);
     break;
   case instNone:
     break;

@@ -86,7 +86,7 @@ void test_instrument_type_change_ay2_to_sample(void) {
   TEST_ASSERT_NULL(inst->chip.aySample.sampleData);
 }
 
-// Test changing from instAYSample with allocated data to instAYWavetable
+// Test changing from instAYSample with allocated data to another type
 // This tests the critical memory leak scenario
 void test_instrument_type_change_sample_with_data(void) {
   Instrument* inst = &state->project.instruments[cInstrument];
@@ -97,11 +97,11 @@ void test_instrument_type_change_sample_with_data(void) {
   TEST_ASSERT_NOT_NULL(inst->chip.aySample.sampleData);
   memset(inst->chip.aySample.sampleData, 0xAA, 1024);
 
-  // Simulate user pressing right arrow (should free the sample data)
-  int handled = instrumentCommonOnEdit(0, 0, editIncrease);
+  // Simulate user pressing left arrow to decrease type (should free the sample data)
+  int handled = instrumentCommonOnEdit(0, 0, editDecrease);
 
   TEST_ASSERT_EQUAL(1, handled);
-  TEST_ASSERT_EQUAL(instAYWavetable, inst->type);
+  TEST_ASSERT_EQUAL(instAY2, inst->type);
   TEST_ASSERT_EQUAL(1, inst->tableSpeed);
 
   // The old sampleData should have been freed
@@ -139,20 +139,20 @@ void test_instrument_type_change_big_step(void) {
   TEST_ASSERT_EQUAL(instAY1, inst->type);
 }
 
-// Test that type doesn't go beyond max (instAYWavetable = 4)
+// Test that type doesn't go beyond max (instAYSample = 3)
 void test_instrument_type_change_at_max(void) {
   Instrument* inst = &state->project.instruments[cInstrument];
 
-  // Start with AYWavetable (max type)
-  getInstrumentFunctions(instAYWavetable).init(inst);
-  TEST_ASSERT_EQUAL(instAYWavetable, inst->type);
+  // Start with AYSample (max type)
+  getInstrumentFunctions(instAYSample).init(inst);
+  TEST_ASSERT_EQUAL(instAYSample, inst->type);
 
   // Try to increase beyond max
   int handled = instrumentCommonOnEdit(0, 0, editIncrease);
 
   TEST_ASSERT_EQUAL(1, handled);
   // Should stay at max
-  TEST_ASSERT_EQUAL(instAYWavetable, inst->type);
+  TEST_ASSERT_EQUAL(instAYSample, inst->type);
 }
 
 // Test that type doesn't go below min (instNone = 0)

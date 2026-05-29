@@ -298,25 +298,6 @@ char* helpFXHint(uint8_t* fx, int isTable, uint8_t instrumentIdx) {
     case fxSMS: // Sample start position
       sprintf(buffer, "Sample start position %hhu", fx[1]);
       break;
-    // AYWavetable-specific FX
-    case fxWTX: // Wavetable index offset
-      sprintf(buffer, "Wavetable index offset %+hhd", (int8_t)fx[1]);
-      break;
-    case fxWTN: // Wavetable specific note
-      note = fx[1];
-      if (note >= chipnomadState->project.pitchTable.length)
-        note = chipnomadState->project.pitchTable.length - 1;
-      sprintf(buffer, "Wavetable playback note %s", noteName(&chipnomadState->project, note));
-      break;
-    case fxWTP: // Wavetable pitch offset
-      sprintf(buffer, "Wavetable pitch offset %+hhd steps", (int8_t)fx[1]);
-      break;
-    case fxWTF: // Wavetable fine offset
-      sprintf(buffer, "Wavetable fine offset %+hhd", (int8_t)fx[1]);
-      break;
-    case fxWRT: // Wavetable phase retrigger
-      sprintf(buffer, "Retrigger wavetable phase");
-      break;
     default:
       break;
   }
@@ -401,13 +382,7 @@ static const char* fxHelpText[] = {
   [fxSMN] = "Sample Note\nSets sample playback\nto specific note",
   [fxSMP] = "Sample Pitch\nOffsets sample playback\npitch (steps)",
   [fxSMF] = "Sample Fine\nOffsets sample playback\nfine tune (period/cents)",
-  [fxSMS] = "Sample Start\nSets sample playback\nstart position",
-  // AYWavetable-specific FX
-  [fxWTX] = "Wavetable Index\nOffsets wavetable\nindex position",
-  [fxWTN] = "Wavetable Note\nSets wavetable playback\nto specific note",
-  [fxWTP] = "Wavetable Pitch\nOffsets wavetable\npitch (steps)",
-  [fxWTF] = "Wavetable Fine\nOffsets wavetable\nfine tune (period/cents)",
-  [fxWRT] = "Wavetable Retrigger\nRestarts wavetable\nphase from zero"
+  [fxSMS] = "Sample Start\nSets sample playback\nstart position"
 };
 
 char* helpFXDescription(enum FX fxIdx, uint8_t instrumentIdx) {

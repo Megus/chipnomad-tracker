@@ -16,4 +16,10 @@ typedef struct PlaybackInstrument {
 // stopNote: set to 1 if the note should be stopped (ADSR release complete)
 int16_t playbackApplyVolumeEnvelope(PlaybackModState* mod, int maxVolume, int* stopNote);
 
+// Apply volume modulation (handles both LFO and ADSR/AHD)
+// For LFO: adds to volumeOffset
+// For ADSR/AHD: rewrites the volume directly
+// Returns 1 if note should be stopped (ADSR release complete), 0 otherwise
+int playbackApplyVolumeModulation(PlaybackModState* mod, int16_t* volumeOffset, uint8_t* volume, int maxVolume);
+
 #endif
