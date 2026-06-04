@@ -99,10 +99,12 @@ static int loadInstrumentAY2(FILE* file, Instrument* instrument) {
       sscanf(line, "- Software pitch offset: %hhd", &instrument->chip.ay2.oscSoftware.pitchOffset);
     } else if (strncmp(line, "- Software fine tune: ", 22) == 0) {
       sscanf(line, "- Software fine tune: %hhd", &instrument->chip.ay2.oscSoftware.fineTune);
-    } else if (strncmp(line, "- Software aux parameter: ", 26) == 0) {
-      sscanf(line, "- Software aux parameter: %hhu", &instrument->chip.ay2.oscSoftware.p1);
-    } else if (strncmp(line, "- Software aux parameter 2: ", 26) == 0) {
-      sscanf(line, "- Software aux parameter 2: %hhu", &instrument->chip.ay2.oscSoftware.p2);
+    } else if (strncmp(line, "- Pulse Width: ", 15) == 0) {
+      sscanf(line, "- Pulse Width: %hhu", &instrument->chip.ay2.oscSoftware.pulseWidth);
+    } else if (strncmp(line, "- Pulse Low: ", 13) == 0) {
+      sscanf(line, "- Pulse Low: %hhu", &instrument->chip.ay2.oscSoftware.pulseLow);
+    } else if (strncmp(line, "- Wavetable Index: ", 19) == 0) {
+      sscanf(line, "- Wavetable Index: %hhu", &instrument->chip.ay2.oscSoftware.wavetableIndex);
     }
     consumeLine(file);
   }
@@ -142,8 +144,6 @@ static int loadInstrumentAYSample(FILE* file, Instrument* instrument) {
       sscanf(line, "- Sample length: %hX", &instrument->chip.aySample.sampleLength);
     } else if (strncmp(line, "- Sample loop start: ", 21) == 0) {
       sscanf(line, "- Sample loop start: %hX", &instrument->chip.aySample.sampleLoopStart);
-    } else if (strncmp(line, "- Sample loop end: ", 19) == 0) {
-      sscanf(line, "- Sample loop end: %hX", &instrument->chip.aySample.sampleLoopEnd);
     } else if (strncmp(line, "- Sample pitch offset: ", 23) == 0) {
       sscanf(line, "- Sample pitch offset: %hhd", &instrument->chip.aySample.pitchOffset);
     } else if (strncmp(line, "- Sample fine tune: ", 20) == 0) {
@@ -318,8 +318,9 @@ static int saveInstrumentAY2(FILE* file, Instrument* instrument) {
   fprintf(file, "- Software pitch flag: %hhu\n", instrument->chip.ay2.oscSoftware.pitchFlag);
   fprintf(file, "- Software pitch offset: %hhd\n", instrument->chip.ay2.oscSoftware.pitchOffset);
   fprintf(file, "- Software fine tune: %hhd\n", instrument->chip.ay2.oscSoftware.fineTune);
-  fprintf(file, "- Software aux parameter: %hhu\n", instrument->chip.ay2.oscSoftware.p1);
-  fprintf(file, "- Software aux parameter 2: %hhu\n", instrument->chip.ay2.oscSoftware.p2);
+  fprintf(file, "- Pulse Width: %hhu\n", instrument->chip.ay2.oscSoftware.pulseWidth);
+  fprintf(file, "- Pulse Low: %hhu\n", instrument->chip.ay2.oscSoftware.pulseLow);
+  fprintf(file, "- Wavetable Index: %hhu\n", instrument->chip.ay2.oscSoftware.wavetableIndex);
 
   return 0;
 }
@@ -342,7 +343,6 @@ static int saveInstrumentAYSample(FILE* file, Instrument* instrument) {
   fprintf(file, "- Sample start: %04X\n", instrument->chip.aySample.sampleStart);
   fprintf(file, "- Sample length: %04X\n", instrument->chip.aySample.sampleLength);
   fprintf(file, "- Sample loop start: %04X\n", instrument->chip.aySample.sampleLoopStart);
-  fprintf(file, "- Sample loop end: %04X\n", instrument->chip.aySample.sampleLoopEnd);
   fprintf(file, "- Sample pitch offset: %hhd\n", instrument->chip.aySample.pitchOffset);
   fprintf(file, "- Sample fine tune: %hhd\n", instrument->chip.aySample.fineTune);
 

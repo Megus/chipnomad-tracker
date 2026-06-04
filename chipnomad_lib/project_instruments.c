@@ -2,6 +2,8 @@
 #include "project_instruments.h"
 #include "project.h"
 
+// Convention: the first modulation destination should be volume
+
 static void initCommon(Instrument* instrument) {
   memset(instrument, 0, sizeof(Instrument));
   instrument->tableSpeed = 1;
@@ -53,7 +55,7 @@ static int freeAY1Instrument(Instrument* instrument) {
 
 // Instrument type: AY2
 static char* modNameAY2(int modIndex) {
-  static char *names[] = {"Off", "Volume", "Pitch", "TonePit", "Noise", "EnvPit", "SoftPit"};
+  static char *names[] = {"Off", "Volume", "Pitch", "TonePit", "Noise", "EnvPit", "SoftPit", "PulseW", "PulseL", "WavIdx"};
   return names[modIndex];
 }
 
@@ -61,7 +63,8 @@ static int initAY2Instrument(Instrument* instrument) {
   initCommon(instrument);
   instrument->type = instAY2;
   instrument->chip.ay2.oscTone.isOn = 1;
-  instrument->chip.ay2.oscEnvelope.pitchOffset = 48;
+  instrument->chip.ay2.oscEnvelope.pitchOffset = 48; // +4 octaves because envelope is lower
+  instrument->chip.ay2.oscSoftware.pulseWidth = 0x80; // 50% duty cycle
   return 0;
 }
 
@@ -103,7 +106,7 @@ InstrumentFunctions getInstrumentFunctions(enum InstrumentType type) {
       };
     case instAY2:
       return (InstrumentFunctions){
-        .modDestinationsCount = 6,
+        .modDestinationsCount = 9,
         .modName = modNameAY2,
         .init = initAY2Instrument,
         .free = freeAY2Instrument

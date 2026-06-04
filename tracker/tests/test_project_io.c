@@ -28,6 +28,7 @@ void test_projectSaveLoad_song_data_preserved(void) {
   p1.chipSetup.ay.isYM = 0;
   p1.chipSetup.ay.stereoMode = ayStereoABC;
   p1.chipSetup.ay.stereoSeparation = 100;
+  p1.chipSetup.ay.pwmFullRange = 0;
   p1.tracksCount = 3;
 
   // Set up pitch table
@@ -99,6 +100,7 @@ void test_projectSave_always_version_2_0(void) {
   p.chipSetup.ay.isYM = 0;
   p.chipSetup.ay.stereoMode = ayStereoABC;
   p.chipSetup.ay.stereoSeparation = 100;
+  p.chipSetup.ay.pwmFullRange = 0;
   p.tracksCount = 3;
 
   strcpy(p.pitchTable.name, "Test");
@@ -164,6 +166,7 @@ void test_projectSaveLoad_octaveSize_preserved(void) {
   p1.chipSetup.ay.isYM = 0;
   p1.chipSetup.ay.stereoMode = ayStereoABC;
   p1.chipSetup.ay.stereoSeparation = 100;
+  p1.chipSetup.ay.pwmFullRange = 0;
   p1.tracksCount = 3;
 
   // Create a pitch table with 2 octaves (24 notes)
@@ -200,6 +203,80 @@ void test_projectSaveLoad_octaveSize_preserved(void) {
   TEST_ASSERT_EQUAL(24, p2.pitchTable.length);
 }
 
+void test_projectSaveLoad_empty_title(void) {
+  Project p1, p2;
+  projectInit(&p1);
+  projectInit(&p2);
+
+  // Set up project with empty title (this should be allowed)
+  p1.title[0] = '\0';  // Empty title
+  strcpy(p1.author, "Test Author");
+  p1.tickRate = 50.0f;
+  p1.chipsCount = 1;
+  p1.chipType = chipAY;
+  p1.chipSetup.ay.clock = 1773400;
+  p1.chipSetup.ay.isYM = 0;
+  p1.chipSetup.ay.stereoMode = ayStereoABC;
+  p1.chipSetup.ay.stereoSeparation = 100;
+  p1.chipSetup.ay.pwmFullRange = 0;
+  p1.tracksCount = 3;
+
+  strcpy(p1.pitchTable.name, "Test");
+  p1.pitchTable.length = 1;
+  strcpy(p1.pitchTable.noteNames[0], "C-4");
+  p1.pitchTable.values[0] = 1000;
+
+  // Save project with empty title
+  int result = projectSave(&p1, "tests/test_empty_title.cnm");
+  TEST_ASSERT_EQUAL_MESSAGE(0, result, "Should save project with empty title");
+
+  // Load project - this currently fails!
+  result = projectLoad(&p2, "tests/test_empty_title.cnm");
+  if (result != 0) {
+    printf("Failed to load project with empty title: %s\n", projectFileError);
+  }
+  TEST_ASSERT_EQUAL_MESSAGE(0, result, "Should load project with empty title");
+
+  // Verify the title is empty
+  TEST_ASSERT_EQUAL_STRING("", p2.title);
+  TEST_ASSERT_EQUAL_STRING("Test Author", p2.author);
+}
+
+void test_projectSaveLoad_empty_author(void) {
+  Project p1, p2;
+  projectInit(&p1);
+  projectInit(&p2);
+
+  // Set up project with empty author (this already works)
+  strcpy(p1.title, "Test Title");
+  p1.author[0] = '\0';  // Empty author
+  p1.tickRate = 50.0f;
+  p1.chipsCount = 1;
+  p1.chipType = chipAY;
+  p1.chipSetup.ay.clock = 1773400;
+  p1.chipSetup.ay.isYM = 0;
+  p1.chipSetup.ay.stereoMode = ayStereoABC;
+  p1.chipSetup.ay.stereoSeparation = 100;
+  p1.chipSetup.ay.pwmFullRange = 0;
+  p1.tracksCount = 3;
+
+  strcpy(p1.pitchTable.name, "Test");
+  p1.pitchTable.length = 1;
+  strcpy(p1.pitchTable.noteNames[0], "C-4");
+  p1.pitchTable.values[0] = 1000;
+
+  // Save and load
+  int result = projectSave(&p1, "tests/test_empty_author.cnm");
+  TEST_ASSERT_EQUAL(0, result);
+
+  result = projectLoad(&p2, "tests/test_empty_author.cnm");
+  TEST_ASSERT_EQUAL(0, result);
+
+  // Verify
+  TEST_ASSERT_EQUAL_STRING("Test Title", p2.title);
+  TEST_ASSERT_EQUAL_STRING("", p2.author);
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_projectSaveLoad_song_data_preserved);
@@ -208,5 +285,7 @@ int main(void) {
   RUN_TEST(test_projectLoad_real_file_skytrain_funk);
   RUN_TEST(test_projectLoad_octaveSize_calculated);
   RUN_TEST(test_projectSaveLoad_octaveSize_preserved);
+  RUN_TEST(test_projectSaveLoad_empty_title);
+  RUN_TEST(test_projectSaveLoad_empty_author);
   return UNITY_END();
 }

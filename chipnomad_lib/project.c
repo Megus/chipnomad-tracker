@@ -55,8 +55,10 @@ FXName fxNamesAYSample[] = {
   {fxAYM, "AYM"}, {fxNOI, "NOI"}, {fxNOA, "NOA"},
   // Tone
   {fxTNN, "TNN"}, {fxTNP, "TNP"}, {fxTNF, "TNF"}, {fxTRT, "TRT"},
-  // Sample
-  {fxSMN, "SMN"}, {fxSMP, "SMP"}, {fxSMF, "SMF"}, {fxSMS, "SMS"},
+  // Software osc (unified with AY2)
+  {fxSFN, "SFN"}, {fxSFP, "SFP"}, {fxSFF, "SFF"}, {fxSRT, "SRT"},
+  // Sample-specific
+  {fxSMS, "SMS"},
 };
 int fxAYSampleCount = sizeof(fxNamesAYSample) / sizeof(FXName);
 

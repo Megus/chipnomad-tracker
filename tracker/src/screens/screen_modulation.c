@@ -267,7 +267,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       if (oldType != type) {
         mod->p1 = 0;
         mod->p2 = 0;
-        mod->p3 = 0;
+        mod->p3 = (mod->type == modADSR) ? 255 : 6;
         mod->p4 = 0;
         screenFullRedraw(&screenData);
       }
@@ -410,10 +410,15 @@ static ScreenData screenData = {
   .isCellValid = isCellValid,
 };
 
+static enum ScreenPlaybackLevel getPlaybackLevel(void) {
+  return screenPlaybackPhrase;
+}
+
 const AppScreen screenModulation = {
   .init = init,
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
   .onInput = onInput,
+  .getPlaybackLevel = getPlaybackLevel
 };

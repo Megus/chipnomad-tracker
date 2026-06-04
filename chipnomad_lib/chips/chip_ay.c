@@ -23,7 +23,7 @@ static void render(SoundChip* self, float* buffer, int samples) {
 
   for (int c = 0; c < samples; c++) {
     ayumi_process(ay);
-    ayumi_remove_dc(ay);
+    //ayumi_remove_dc(ay);
 
     *buffer++ = ay->left;
     *buffer++ = ay->right;

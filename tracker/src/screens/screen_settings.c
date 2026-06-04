@@ -20,7 +20,7 @@ static void settingsDrawField(int col, int row, int state);
 static int settingsOnEdit(int col, int row, enum CellEditAction action);
 
 static ScreenData screenSettingsData = {
-  .rows = 7,
+  .rows = 8,
   .cursorRow = 0,
   .cursorCol = 0,
   .selectMode = -1,
@@ -91,12 +91,14 @@ void settingsDrawCursor(int col, int row) {
   } else if (row == 2 && col == 0) {
     gfxCursor(23, 4, 6);
   } else if (row == 3 && col == 0) {
-    gfxCursor(0, 5, 11);
+    gfxCursor(23, 5, 3);
   } else if (row == 4 && col == 0) {
-    gfxCursor(0, 6, 9);
+    gfxCursor(0, 6, 11);
   } else if (row == 5 && col == 0) {
-    gfxCursor(0, 7, 16);
+    gfxCursor(0, 7, 9);
   } else if (row == 6 && col == 0) {
+    gfxCursor(0, 8, 16);
+  } else if (row == 7 && col == 0) {
     gfxCursor(0, 17, 14);
   }
 }
@@ -126,15 +128,20 @@ void settingsDrawField(int col, int row, int state) {
     const char* qualityNames[] = {"LOW   ", "MEDIUM", "HIGH  ", "BEST  "};
     gfxPrint(23, 4, qualityNames[appSettings.quality]);
   } else if (row == 3 && col == 0) {
+    gfxSetFgColor(appSettings.colorScheme.textDefault);
+    gfxPrint(0, 5, "Sample dithering");
     gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(0, 5, "Key mapping");
+    gfxPrint(23, 5, appSettings.aySampleDithering ? "ON " : "OFF");
   } else if (row == 4 && col == 0) {
     gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(0, 6, "Load font");
+    gfxPrint(0, 6, "Key mapping");
   } else if (row == 5 && col == 0) {
     gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(0, 7, "Edit color theme");
+    gfxPrint(0, 7, "Load font");
   } else if (row == 6 && col == 0) {
+    gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    gfxPrint(0, 8, "Edit color theme");
+  } else if (row == 7 && col == 0) {
     gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     gfxPrint(0, 17, "Quit ChipNomad");
   }
@@ -163,19 +170,26 @@ int settingsOnEdit(int col, int row, enum CellEditAction action) {
       chipnomadSetQuality(chipnomadState, appSettings.quality);
     }
     return handled;
-  } else if (row == 3 && col == 0 && action == editTap) {
+  } else if (row == 3 && col == 0) {
+    // Sample dithering (0/1)
+    int handled = edit8noLast(action, (uint8_t*)&appSettings.aySampleDithering, 1, 0, 1);
+    if (handled && chipnomadState) {
+      chipnomadState->aySampleDithering = appSettings.aySampleDithering;
+    }
+    return handled;
+  } else if (row == 4 && col == 0 && action == editTap) {
     screenSetup(&screenKeyMapping, 0);
     return 0;
-  } else if (row == 4 && col == 0 && action == editTap) {
+  } else if (row == 5 && col == 0 && action == editTap) {
     fileBrowserSetup("LOAD FONT", ".cnfont", appSettings.fontFolderPath,
       (void (*)(const char*))fontLoadCallback,
       (void (*)(void))fontCancelCallback);
     screenSetup(&screenFileBrowser, 0);
     return 0;
-  } else if (row == 5 && col == 0 && action == editTap) {
+  } else if (row == 6 && col == 0 && action == editTap) {
     screenSetup(&screenColorTheme, 0);
     return 0;
-  } else if (row == 6 && col == 0 && action == editTap) {
+  } else if (row == 7 && col == 0 && action == editTap) {
     // Trigger exit event
     mainLoopTriggerQuit();
     return 1;
@@ -196,9 +210,14 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   return screenInput(&screenSettingsData, isKeyDown, keys, tapCount);
 }
 
+static enum ScreenPlaybackLevel getPlaybackLevel(void) {
+  return screenPlaybackSong;
+}
+
 const AppScreen screenSettings = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
-  .onInput = onInput
+  .onInput = onInput,
+  .getPlaybackLevel = getPlaybackLevel
 };

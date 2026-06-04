@@ -10,10 +10,17 @@ static void mockSetRegister(SoundChip* self, uint16_t reg, uint8_t value) {
   if (reg < 256) self->regs[reg] = value;
 }
 
+static void mockSetTimerFunc(SoundChip* self, int (*timerFunc)(struct SoundChip* self, void* userdata), void* timerUserdata) {
+  // Mock implementation - just store the function pointer
+  self->timerFunc = timerFunc;
+  self->timerUserdata = timerUserdata;
+}
+
 static SoundChip mockChipFactory(int chipIndex, int sampleRate, ChipSetup setup) {
   SoundChip chip;
   memset(&chip, 0, sizeof(SoundChip));
   chip.setRegister = mockSetRegister;
+  chip.setTimerFunc = mockSetTimerFunc;
   chip.regs[7] = 0x3f;
   return chip;
 }
@@ -29,7 +36,7 @@ static void setupAYProject(void) {
   p->tickRate = 50;
   p->chipType = chipAY;
   p->chipsCount = 1;
-  p->chipSetup.ay = (ChipSetupAY){ .clock = 1773400, .isYM = 0, .stereoMode = ayStereoABC, .stereoSeparation = 50 };
+  p->chipSetup.ay = (ChipSetupAY){ .clock = 1773400, .isYM = 0, .stereoMode = ayStereoABC, .stereoSeparation = 50, .pwmFullRange = 0 };
   p->tracksCount = projectGetTotalTracks(p);
   calculatePitchTableAY(p);
 

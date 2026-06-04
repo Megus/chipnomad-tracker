@@ -1,5 +1,6 @@
 #include "playback.h"
 #include "playback_internal.h"
+#include "project_instruments.h"
 #include "utils.h"
 #include <stdio.h>
 
@@ -323,14 +324,16 @@ static void handleFX_SFV(PlaybackState* state, PlaybackTrackState* track, int tr
 // SFN - Software oscillator specific note
 static void handleFX_SFN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   fx->isOn = 0; // Atomic effect
-  if (getInstrumentType(state, trackIdx) != instAY2) return;
+  int type = getInstrumentType(state, trackIdx);
+  if (type != instAY2 && type != instAYSample) return;
 
   track->note.chip.ay.softFixedPitch = fx->fxValue;
 }
 
 // SFP - Software oscillator pitch offset
 static void initFX_SFP(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn) {
-  if (getInstrumentType(state, trackIdx) != instAY2) {
+  int type = getInstrumentType(state, trackIdx);
+  if (type != instAY2 && type != instAYSample) {
     fx->isOn = 0;
     return;
   }
@@ -348,7 +351,8 @@ static void handleFX_SFP(PlaybackState* state, PlaybackTrackState* track, int tr
 
 // SFF - Software oscillator fine offset
 static void initFX_SFF(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn) {
-  if (getInstrumentType(state, trackIdx) != instAY2) {
+  int type = getInstrumentType(state, trackIdx);
+  if (type != instAY2 && type != instAYSample) {
     fx->isOn = 0;
     return;
   }
@@ -367,7 +371,7 @@ static void handleFX_SFF(PlaybackState* state, PlaybackTrackState* track, int tr
 // SRT - Software oscillator phase retrigger
 static void handleFX_SRT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   fx->isOn = 0; // Atomic effect
-  // TODO: Implement software oscillator phase retrigger
+  track->note.chip.ay.softPeriodCounter = 0;
 }
 
 
@@ -375,56 +379,13 @@ static void handleFX_SRT(PlaybackState* state, PlaybackTrackState* track, int tr
 // AYSample specific effects
 // =========================
 
-// SMN - Sample specific note
-static void handleFX_SMN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
-  fx->isOn = 0; // Atomic effect
-  if (getInstrumentType(state, trackIdx) != instAYSample) return;
-
-  track->note.chip.ay.softFixedPitch = fx->fxValue;
-}
-
-// SMP - Sample pitch offset
-static void initFX_SMP(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn) {
-  if (getInstrumentType(state, trackIdx) != instAYSample) {
-    fx->isOn = 0;
-    return;
-  }
-
-  fx->acc += (int8_t)fx->fxValue;
-}
-
-static void restartFX_SMP(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
-  // Do nothing - SMP should keep the accumulated offset
-}
-
-static void handleFX_SMP(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
-  track->note.chip.ay.softPitchOffset += fx->acc;
-}
-
-// SMF - Sample fine offset
-static void initFX_SMF(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn) {
-  if (getInstrumentType(state, trackIdx) != instAYSample) {
-    fx->isOn = 0;
-    return;
-  }
-
-  fx->acc += (int8_t)fx->fxValue;
-}
-
-static void restartFX_SMF(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
-  // Do nothing - SMF should keep the accumulated offset
-}
-
-static void handleFX_SMF(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
-  track->note.chip.ay.softFineOffset += fx->acc;
-}
-
 // SMS - Sample start position
 static void handleFX_SMS(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   fx->isOn = 0; // Atomic effect
   if (getInstrumentType(state, trackIdx) != instAYSample) return;
-
-  // TODO: Implement sample start position setting
+  int32_t sampleStart = state->p->instruments[track->note.instrument].chip.aySample.sampleStart;
+  sampleStart += (int32_t)(fx->fxValue * 64);
+  track->note.chip.ay.samplePosition = sampleStart << 16; // Convert to 16.16 fixed point
 }
 
 
@@ -463,8 +424,5 @@ void registerFXHandlers_AY(void) {
   fxHandlers[fxSRT] = (PlaybackFXHandler){NULL, handleFX_SRT, NULL};
 
   // AYSample-specific FX
-  fxHandlers[fxSMN] = (PlaybackFXHandler){NULL, handleFX_SMN, NULL};
-  fxHandlers[fxSMP] = (PlaybackFXHandler){initFX_SMP, handleFX_SMP, restartFX_SMP};
-  fxHandlers[fxSMF] = (PlaybackFXHandler){initFX_SMF, handleFX_SMF, restartFX_SMF};
   fxHandlers[fxSMS] = (PlaybackFXHandler){NULL, handleFX_SMS, NULL};
 }

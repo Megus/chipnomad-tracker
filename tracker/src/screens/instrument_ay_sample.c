@@ -39,16 +39,15 @@
 // 5: Start        | Tone pitch
 // 6: Length       | Tone fine
 // 7: Loop Start   | (empty)
-// 8: Loop End     | (empty)
-// 9: Pitch        | Noise on/off
-// 10: Fine        | Noise period
+// 8: Pitch        | Noise on/off
+// 9: Fine         | Noise period
 
 #define COL_LEFT_X    0
 #define COL_LEFT_VAL  8
 #define COL_RIGHT_X   17
 #define COL_RIGHT_VAL 26
 
-#define ROW_TOTAL 11
+#define ROW_TOTAL 10
 
 Bitmap* samplePreviewBitmap = NULL;  // Non-static so instrument screen can access it
 int isLoopPreview = 0;  // Flag to track if we're showing loop preview (non-static so instrument screen can access it)
@@ -62,7 +61,6 @@ static int rowToY(int row) {
     case 7: return 11;
     case 8: return 12;
     case 9: return 13;
-    case 10: return 14;
     default: return 0;
   }
 }
@@ -115,8 +113,7 @@ static void onSampleLoaded(const char* path) {
 
   // Reset sample playback parameters to sensible defaults
   smp->sampleStart = 0;
-  smp->sampleLoopStart = sampleLength - 1;  // No loop (loop start == loop end)
-  smp->sampleLoopEnd = sampleLength - 1;
+  smp->sampleLoopStart = sampleLength;  // No loop (loop start at end)
 
   // Extract filename for display
   char* lastSeparator = strrchr(path, PATH_SEPARATOR);
@@ -153,10 +150,10 @@ static int getColumnCount(int row) {
   if (row == 3) return 2; // Load button + Lift button
   // Rows 4-6: col 0 = sample params, col 1 = tone
   if (row >= 4 && row <= 6) return 2;
-  // Rows 7-8: col 0 = sample params only
-  if (row == 7 || row == 8) return 1;
-  // Rows 9-10: col 0 = sample pitch/fine, col 1 = noise
-  if (row == 9 || row == 10) return 2;
+  // Row 7: col 0 = loop start only
+  if (row == 7) return 1;
+  // Rows 8-9: col 0 = sample pitch/fine, col 1 = noise
+  if (row == 8 || row == 9) return 2;
   return 1;
 }
 
@@ -176,15 +173,14 @@ static void drawStatic(void) {
     gfxPrint(COL_LEFT_X, 7, smp->sampleName);
   }
 
-  // Sample params labels (y 8-14)
+  // Sample params labels (y 8-13)
   gfxSetFgColor(cs.textDefault);
   gfxPrint(COL_LEFT_X, 8, "Rate");
   gfxPrint(COL_LEFT_X, 9, "Start");
   gfxPrint(COL_LEFT_X, 10, "Length");
   gfxPrint(COL_LEFT_X, 11, "LoopSt");
-  gfxPrint(COL_LEFT_X, 12, "LoopEnd");
-  gfxPrint(COL_LEFT_X, 13, "Pitch");
-  gfxPrint(COL_LEFT_X, 14, "Fine");
+  gfxPrint(COL_LEFT_X, 12, "Pitch");
+  gfxPrint(COL_LEFT_X, 13, "Fine");
 
   // Tone header (y 8)
   gfxSetFgColor(cs.textTitles);
@@ -195,13 +191,13 @@ static void drawStatic(void) {
   gfxPrint(COL_RIGHT_X, 9, "Pitch");
   gfxPrint(COL_RIGHT_X, 10, "Fine");
 
-  // Noise header (y 13)
+  // Noise header and on/off label (y 12)
   gfxSetFgColor(cs.textTitles);
-  gfxPrint(COL_RIGHT_X, 13, "Noise");
+  gfxPrint(COL_RIGHT_X, 12, "Noise");
 
-  // Noise labels (y 14)
+  // Noise period label (y 13)
   gfxSetFgColor(cs.textDefault);
-  gfxPrint(COL_RIGHT_X, 14, "Period");
+  gfxPrint(COL_RIGHT_X, 13, "Period");
 
   // Update and draw sample preview
   updateSamplePreview();
@@ -233,17 +229,16 @@ static void drawCursor(int col, int row) {
       case 5: gfxCursor(COL_LEFT_VAL, y, 4); break;  // Start
       case 6: gfxCursor(COL_LEFT_VAL, y, 4); break;  // Length
       case 7: gfxCursor(COL_LEFT_VAL, y, 4); break;  // Loop Start
-      case 8: gfxCursor(COL_LEFT_VAL, y, 4); break;  // Loop End
-      case 9: gfxCursor(COL_LEFT_VAL, y, 2); break;  // Pitch (hex)
-      case 10: gfxCursor(COL_LEFT_VAL, y, 2); break; // Fine (hex)
+      case 8: gfxCursor(COL_LEFT_VAL, y, 2); break;  // Pitch (hex)
+      case 9: gfxCursor(COL_LEFT_VAL, y, 2); break;  // Fine (hex)
     }
   } else if (col == 1) {
     switch (row) {
       case 4: gfxCursor(COL_RIGHT_VAL, y, 3); break; // Tone on/off
       case 5: gfxCursor(COL_RIGHT_VAL, y, 2); break; // Tone pitch (hex)
       case 6: gfxCursor(COL_RIGHT_VAL, y, 2); break; // Tone fine (hex)
-      case 9: gfxCursor(COL_RIGHT_VAL, y, 3); break; // Noise on/off
-      case 10: gfxCursor(COL_RIGHT_VAL, y, 2); break; // Noise period
+      case 8: gfxCursor(COL_RIGHT_VAL, y, 3); break; // Noise on/off
+      case 9: gfxCursor(COL_RIGHT_VAL, y, 2); break; // Noise period
     }
   }
 }
@@ -285,15 +280,11 @@ static void drawField(int col, int row, int state) {
         gfxClearRect(COL_LEFT_VAL, y, 4, 1);
         gfxPrintf(COL_LEFT_VAL, y, "%04X", smp->sampleLoopStart);
         break;
-      case 8: // Loop End
-        gfxClearRect(COL_LEFT_VAL, y, 4, 1);
-        gfxPrintf(COL_LEFT_VAL, y, "%04X", smp->sampleLoopEnd);
-        break;
-      case 9: // Pitch
+      case 8: // Pitch
         gfxClearRect(COL_LEFT_VAL, y, 2, 1);
         gfxPrint(COL_LEFT_VAL, y, byteToHex((uint8_t)smp->pitchOffset));
         break;
-      case 10: // Fine
+      case 9: // Fine
         gfxClearRect(COL_LEFT_VAL, y, 2, 1);
         gfxPrint(COL_LEFT_VAL, y, byteToHex((uint8_t)smp->fineTune));
         break;
@@ -311,10 +302,10 @@ static void drawField(int col, int row, int state) {
         gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
         gfxPrint(COL_RIGHT_VAL, y, byteToHex((uint8_t)smp->oscTone.fineTune));
         break;
-      case 9: // Noise on/off
+      case 8: // Noise on/off
         gfxPrintf(COL_RIGHT_VAL, y, smp->oscNoise.isOn ? "On " : "Off");
         break;
-      case 10: // Noise period
+      case 9: // Noise period
         gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
         gfxPrint(COL_RIGHT_VAL, y, byteToHex(smp->oscNoise.noisePeriod));
         break;
@@ -371,24 +362,17 @@ static int onEdit(int col, int row, enum CellEditAction action) {
           } else {
             uint16_t oldStart = smp->sampleStart;
             uint16_t oldLoopStart = smp->sampleLoopStart;
-            uint16_t oldLoopEnd = smp->sampleLoopEnd;
             handled = edit16withMinMax(action, &smp->sampleStart, 256, 0, smp->sampleLength > 0 ? smp->sampleLength - 1 : 0);
 
-            // If start increased beyond loop points, adjust loop points
+            // If start increased beyond loop start, adjust loop start
             if (handled && smp->sampleStart > oldStart) {
               if (smp->sampleLoopStart < smp->sampleStart) {
                 smp->sampleLoopStart = smp->sampleStart;
               }
-              if (smp->sampleLoopEnd < smp->sampleStart) {
-                smp->sampleLoopEnd = smp->sampleStart;
-              }
 
-              // Redraw loop fields if they changed
+              // Redraw loop start if it changed
               if (smp->sampleLoopStart != oldLoopStart) {
                 drawField(0, 7, 0);  // Loop Start
-              }
-              if (smp->sampleLoopEnd != oldLoopEnd) {
-                drawField(0, 8, 0);  // Loop End
               }
             }
           }
@@ -403,7 +387,6 @@ static int onEdit(int col, int row, enum CellEditAction action) {
             uint16_t oldLength = smp->sampleLength;
             uint16_t oldStart = smp->sampleStart;
             uint16_t oldLoopStart = smp->sampleLoopStart;
-            uint16_t oldLoopEnd = smp->sampleLoopEnd;
             // Length can't exceed fileLength
             uint16_t maxLength = smp->fileLength;
             handled = edit16withMinMax(action, &smp->sampleLength, 256, 1, maxLength);
@@ -413,15 +396,8 @@ static int onEdit(int col, int row, enum CellEditAction action) {
               if (smp->sampleStart >= smp->sampleLength) {
                 smp->sampleStart = smp->sampleLength > 0 ? smp->sampleLength - 1 : 0;
               }
-              if (smp->sampleLoopEnd >= smp->sampleLength) {
-                smp->sampleLoopEnd = smp->sampleLength > 0 ? smp->sampleLength - 1 : 0;
-              }
-              if (smp->sampleLoopStart >= smp->sampleLength) {
-                smp->sampleLoopStart = smp->sampleLength > 0 ? smp->sampleLength - 1 : 0;
-              }
-              // Ensure loop start <= loop end
-              if (smp->sampleLoopStart > smp->sampleLoopEnd) {
-                smp->sampleLoopStart = smp->sampleLoopEnd;
+              if (smp->sampleLoopStart > smp->sampleLength) {
+                smp->sampleLoopStart = smp->sampleLength;
               }
 
               // Redraw affected fields
@@ -431,9 +407,6 @@ static int onEdit(int col, int row, enum CellEditAction action) {
               if (smp->sampleLoopStart != oldLoopStart) {
                 drawField(0, 7, 0);  // Loop Start
               }
-              if (smp->sampleLoopEnd != oldLoopEnd) {
-                drawField(0, 8, 0);  // Loop End
-              }
             }
           }
         }
@@ -441,19 +414,12 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       case 7: // Loop Start
         {
           if (action == editClear) {
-            // Set to fileLength - 1, but clamp to loopEnd if it's lower
-            uint16_t defaultLoopStart = smp->fileLength > 0 ? smp->fileLength - 1 : 0;
-            if (defaultLoopStart > smp->sampleLoopEnd) {
-              defaultLoopStart = smp->sampleLoopEnd;
-            }
-            smp->sampleLoopStart = defaultLoopStart;
+            // Set to end of sample (no loop)
+            smp->sampleLoopStart = smp->sampleLength;
             handled = 1;
           } else {
-            // Loop start can't be greater than loop end or length-1
-            uint16_t maxLoopStart = smp->sampleLoopEnd;
-            if (smp->sampleLength > 0 && maxLoopStart >= smp->sampleLength) {
-              maxLoopStart = smp->sampleLength - 1;
-            }
+            // Loop start can be up to length (inclusive) for "no loop"
+            uint16_t maxLoopStart = smp->sampleLength;
             handled = edit16withMinMax(action, &smp->sampleLoopStart, 256, smp->sampleStart, maxLoopStart);
           }
           // Update loop preview if it's active
@@ -462,44 +428,20 @@ static int onEdit(int col, int row, enum CellEditAction action) {
               if (!samplePreviewBitmap) {
                 samplePreviewBitmap = gfxBitmapCreate(PREVIEW_WIDTH_CHARS, PREVIEW_HEIGHT_CHARS);
               }
-              renderSamplePreview(samplePreviewBitmap, smp->sampleData, smp->sampleLoopStart, smp->sampleLoopEnd + 1);
+              renderSamplePreview(samplePreviewBitmap, smp->sampleData, smp->sampleLoopStart, smp->sampleLength);
               gfxSetFgColor(appSettings.colorScheme.textInfo);
               gfxDrawBitmap(samplePreviewBitmap, PREVIEW_COL, PREVIEW_ROW);
             }
           }
         }
         break;
-      case 8: // Loop End
-        {
-          if (action == editClear) {
-            // Set to fileLength - 1
-            smp->sampleLoopEnd = smp->fileLength > 0 ? smp->fileLength - 1 : 0;
-            handled = 1;
-          } else {
-            // Loop end can't be greater than length-1, and can't be less than loop start
-            uint16_t maxLoopEnd = smp->sampleLength > 0 ? smp->sampleLength - 1 : 0;
-            handled = edit16withMinMax(action, &smp->sampleLoopEnd, 256, smp->sampleLoopStart, maxLoopEnd);
-          }
-          // Update loop preview if it's active
-          if (handled && isLoopPreview) {
-            if (smp->sampleData && smp->sampleLength > 0) {
-              if (!samplePreviewBitmap) {
-                samplePreviewBitmap = gfxBitmapCreate(PREVIEW_WIDTH_CHARS, PREVIEW_HEIGHT_CHARS);
-              }
-              renderSamplePreview(samplePreviewBitmap, smp->sampleData, smp->sampleLoopStart, smp->sampleLoopEnd + 1);
-              gfxSetFgColor(appSettings.colorScheme.textInfo);
-              gfxDrawBitmap(samplePreviewBitmap, PREVIEW_COL, PREVIEW_ROW);
-            }
-          }
-        }
-        break;
-      case 9: // Pitch
+      case 8: // Pitch
         handled = editSigned8(action, &smp->pitchOffset, chipnomadState->project.pitchTable.octaveSize, -128, 127);
         if (handled) {
           screenMessage(0, "Sample pitch offset %hhd", smp->pitchOffset);
         }
         break;
-      case 10: // Fine
+      case 9: // Fine
         handled = editSigned8(action, &smp->fineTune, 16, -128, 127);
         if (handled) {
           screenMessage(0, "Sample fine tune %hhd", smp->fineTune);
@@ -523,10 +465,10 @@ static int onEdit(int col, int row, enum CellEditAction action) {
           screenMessage(0, "Tone fine tune %hhd", smp->oscTone.fineTune);
         }
         break;
-      case 9: // Noise on/off
+      case 8: // Noise on/off
         handled = edit8noLast(action, &smp->oscNoise.isOn, 1, 0, 1);
         break;
-      case 10: // Noise period
+      case 9: // Noise period
         handled = edit8noLast(action, &smp->oscNoise.noisePeriod, 8, 0, 31);
         break;
     }
@@ -549,8 +491,8 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 }
 
 static int isCellValid(int col, int row) {
-  // Rows 7-8 only have left column (loop params)
-  if ((row == 7 || row == 8) && col == 1) return 0;
+  // Row 7 only has left column (loop start)
+  if (row == 7 && col == 1) return 0;
   return 1;
 }
 
@@ -567,18 +509,18 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
       }
     }
   } else if (keys & keyEdit) {
-    // EDIT is held - check if we're on loop fields
+    // EDIT is held - check if we're on loop start field
     if (screenInstrumentAYSample.cursorCol == 0 &&
-        (screenInstrumentAYSample.cursorRow == 7 || screenInstrumentAYSample.cursorRow == 8)) {
+        screenInstrumentAYSample.cursorRow == 7) {
       InstrumentAYSample* smp = &chipnomadState->project.instruments[cInstrument].chip.aySample;
 
-      // Show loop preview if not already showing and we have valid loop data
-      if (!isLoopPreview && smp->sampleData && smp->sampleLength > 0) {
+      // Show loop preview if not already showing, we have valid loop data, and loop is not at the end
+      if (!isLoopPreview && smp->sampleData && smp->sampleLength > 0 && smp->sampleLoopStart < smp->sampleLength) {
         if (!samplePreviewBitmap) {
           samplePreviewBitmap = gfxBitmapCreate(PREVIEW_WIDTH_CHARS, PREVIEW_HEIGHT_CHARS);
         }
         renderSamplePreview(samplePreviewBitmap, smp->sampleData,
-                          smp->sampleLoopStart, smp->sampleLoopEnd + 1);
+                          smp->sampleLoopStart, smp->sampleLength);
         gfxSetFgColor(appSettings.colorScheme.textInfo);
         gfxDrawBitmap(samplePreviewBitmap, PREVIEW_COL, PREVIEW_ROW);
         isLoopPreview = 1;

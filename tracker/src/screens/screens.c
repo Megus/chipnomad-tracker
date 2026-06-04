@@ -603,3 +603,10 @@ LoopRange screenGetLoopRange(const AppScreen* screen) {
   LoopRange range = {0};
   return range;
 }
+
+enum ScreenPlaybackLevel screenGetPlaybackLevel(const AppScreen* screen) {
+  if (screen && screen->getPlaybackLevel) {
+    return screen->getPlaybackLevel();
+  }
+  return screenPlaybackNone;
+}

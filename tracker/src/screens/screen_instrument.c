@@ -397,10 +397,15 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   return 0;
 }
 
+static enum ScreenPlaybackLevel getPlaybackLevel(void) {
+  return screenPlaybackPhrase;
+}
+
 const AppScreen screenInstrument = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
   .onInput = onInput,
-  .init = init
+  .init = init,
+  .getPlaybackLevel = getPlaybackLevel
 };

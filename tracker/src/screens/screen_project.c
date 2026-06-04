@@ -425,9 +425,14 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   return 0;
 }
 
+static enum ScreenPlaybackLevel getPlaybackLevel(void) {
+  return screenPlaybackSong;
+}
+
 const AppScreen screenProject = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
-  .onInput = onInput
+  .onInput = onInput,
+  .getPlaybackLevel = getPlaybackLevel
 };

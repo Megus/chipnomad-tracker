@@ -2,6 +2,7 @@
 #include "playback_internal.h"
 #include "playback_modulation.h"
 #include "playback_instruments.h"
+#include "project_constants.h"
 #include "utils.h"
 #include <stdio.h>
 #include <string.h>
@@ -11,30 +12,264 @@
 #define PITCH_MOD_RANGE_CENTS (2400)
 #define PITCH_MOD_RANGE_PERIOD (1024)
 
-///////////////////////////////////////////////////////////////////////////////
-//
-// AY-specific logic
-//
+// DAC levels for AY/YM chips. Taken from Ayumi.
+static float dacTableAYfloat[32] = {
+  0.0, 0.0,
+  0.00999465934234, 0.00999465934234,
+  0.0144502937362, 0.0144502937362,
+  0.0210574502174, 0.0210574502174,
+  0.0307011520562, 0.0307011520562,
+  0.0455481803616, 0.0455481803616,
+  0.0644998855573, 0.0644998855573,
+  0.107362478065, 0.107362478065,
+  0.126588845655, 0.126588845655,
+  0.20498970016, 0.20498970016,
+  0.292210269322, 0.292210269322,
+  0.372838941024, 0.372838941024,
+  0.492530708782, 0.492530708782,
+  0.635324635691, 0.635324635691,
+  0.805584802014, 0.805584802014,
+  1.0, 1.0
+};
+static float dacTableYMfloat[32] = {
+  0.0, 0.0,
+  0.00465400167849, 0.00772106507973,
+  0.0109559777218, 0.0139620050355,
+  0.0169985503929, 0.0200198367285,
+  0.024368657969, 0.029694056611,
+  0.0350652323186, 0.0403906309606,
+  0.0485389486534, 0.0583352407111,
+  0.0680552376593, 0.0777752346075,
+  0.0925154497597, 0.111085679408,
+  0.129747463188, 0.148485542077,
+  0.17666895552, 0.211551079576,
+  0.246387426566, 0.281101701381,
+  0.333730067903, 0.400427252613,
+  0.467383840696, 0.53443198291,
+  0.635172045472, 0.75800717174,
+  0.879926756695, 1.0
+};
 
-int timerFunctionAY(struct SoundChip* chip, void* userdata) {
-  static int counter = 0;
-  static int vol = 15;
+uint8_t cnDACTableAY[16];
+uint8_t cnDACTableYM[16];
+uint8_t cnSampleLookupAY[256];
+uint8_t cnSampleLookupYM[256];
 
-  //ChipNomadState* state = (ChipNomadState*)userdata;
+// ========================================
+// Timer functions for software oscillators
+// =======================================
 
-  //int chipIdx = chip - state->chips;
-  int period = ((chip->regs[1] << 8) | chip->regs[0]) + 1;
-  counter++;
-  if (counter >= period) {
-    counter = 0;
-    vol ^= 15;
+// Pulse
+static void timerFunctionPulse(ChipNomadState *chipNomadState, struct SoundChip* chip, int channel, PlaybackTrackState* track) {
+  PlaybackState* state = &chipNomadState->playbackState;
+  Instrument *instrument = &state->p->instruments[track->note.instrument];
+  if (instrument->type != instAY2) return;
+
+  // Period reset
+  if (track->note.chip.ay.softPeriodCounter >= track->note.chip.ay.outSoftPeriod * 2) {
+    track->note.chip.ay.softPeriodCounter = 0;
+
   }
 
-  chip->setRegister(chip, 8, vol); // Random noise value for channel A
+  // Avoid zero pulse width which can happen when there's no cached pulse width
+  if (track->note.chip.ay.pulseWidthCurrent == 0 || track->note.chip.ay.softPeriodCounter) {
+    track->note.chip.ay.pulseWidthCurrent = clampInt(instrument->chip.ay2.oscSoftware.pulseWidth + track->note.chip.ay.pulseWidthOffset, 1, 255);
+  }
+
+  // First phase - high volume
+  if (track->note.chip.ay.softPeriodCounter == 0) {
+    chip->setRegister(chip, channel + 8, track->note.chip.ay.outVolume);
+  }
+
+  // Second phase - low volume
+  int pulseWidth = track->note.chip.ay.pulseWidthCurrent;
+  if (!state->p->chipSetup.ay.pwmFullRange) {
+    pulseWidth = pulseWidth & 0xf0;
+    if (pulseWidth == 0) pulseWidth = 16; // Avoid zero pulse width in 16-step mode
+  }
+  int phase2 = track->note.chip.ay.outSoftPeriod * pulseWidth / 128;
+
+  if (track->note.chip.ay.softPeriodCounter >= phase2) {
+    int lowVolume = clampInt(instrument->chip.ay2.oscSoftware.pulseLow + track->note.chip.ay.pulseLowOffset, 0, 15);
+    lowVolume = (lowVolume * track->note.chip.ay.outVolume) / 15; // Apply volume scaling
+    chip->setRegister(chip, channel + 8, lowVolume);
+  }
+}
+
+// Sync Tone
+static void timerFunctionSyncTone(ChipNomadState *chipNomadState, struct SoundChip* chip, int channel, PlaybackTrackState* track) {
+  PlaybackState* state = &chipNomadState->playbackState;
+  Instrument *instrument = &state->p->instruments[track->note.instrument];
+  if (instrument->type != instAY2) return;
+
+  // Period reset
+  if (track->note.chip.ay.softPeriodCounter >= track->note.chip.ay.outSoftPeriod * 2) {
+    track->note.chip.ay.softPeriodCounter = 0;
+  }
+
+  // Reset tone phase
+  uint16_t periodCounter = track->note.chip.ay.softPeriodCounter;
+  if (periodCounter == 0) {
+    // Set tone period to 0 to reset AY tone phase to 0/180 degrees
+    chip->setRegister(chip, channel * 2, 0);
+    chip->setRegister(chip, channel * 2 + 1, 0);
+  } else if (periodCounter == 1) {
+    // Set tone period back
+    chip->setRegister(chip, channel * 2, track->note.chip.ay.outTonePeriod & 0xff);
+    chip->setRegister(chip, channel * 2 + 1, (track->note.chip.ay.outTonePeriod >> 8) & 0xff);
+  }
+}
+
+// Sync Envelope
+static void timerFunctionSyncEnv(ChipNomadState *chipNomadState, struct SoundChip* chip, int channel, PlaybackTrackState* track) {
+  PlaybackState* state = &chipNomadState->playbackState;
+  Instrument *instrument = &state->p->instruments[track->note.instrument];
+  if (instrument->type != instAY2) return;
+
+  // Period reset
+  if (track->note.chip.ay.softPeriodCounter >= track->note.chip.ay.outSoftPeriod * 2) {
+    track->note.chip.ay.softPeriodCounter = 0;
+  }
+
+  // Reset envelope phase
+  if (track->note.chip.ay.softPeriodCounter == 0) {
+    chip->setRegister(chip, 13, track->note.chip.ay.envShape);
+  }
+}
+
+// Samples
+static void timerFunctionSample(ChipNomadState *chipNomadState, struct SoundChip* chip, int channel, PlaybackTrackState* track) {
+  PlaybackState* state = &chipNomadState->playbackState;
+  Instrument *instrument = &state->p->instruments[track->note.instrument];
+  if (instrument->type != instAYSample) return;
+  if (instrument->chip.aySample.sampleData == NULL) return;
+
+  uint8_t* dacTable;
+  uint8_t* dacLUT;
+
+  // Period reset. Not  needed for samples
+  if (track->note.chip.ay.softPeriodCounter >= track->note.chip.ay.outSoftPeriod) {
+    track->note.chip.ay.softPeriodCounter = 0;
+  }
+
+  // Bounds check
+  uint32_t sampleIndex = track->note.chip.ay.samplePosition >> 16;
+  if (sampleIndex >= instrument->chip.aySample.sampleLength) {
+    // Handle loop or stop
+    uint16_t loopStart = instrument->chip.aySample.sampleLoopStart;
+    if (loopStart < instrument->chip.aySample.sampleLength) {
+      // Loop is active - calculate overshoot and wrap to loop start
+      int32_t overshoot16 = (int32_t)track->note.chip.ay.samplePosition - ((int32_t)instrument->chip.aySample.sampleLength << 16);
+      track->note.chip.ay.samplePosition = ((int32_t)loopStart << 16) + overshoot16;
+
+      // Safety check: if still out of bounds, clamp to loop start
+      // This can happen if overshoot is larger than (length - loopStart)
+      if (track->note.chip.ay.samplePosition >= (instrument->chip.aySample.sampleLength << 16)) {
+        track->note.chip.ay.samplePosition = (int32_t)loopStart << 16;
+      }
+      // Additional safety: check for negative values (shouldn't happen)
+      if ((int32_t)track->note.chip.ay.samplePosition < ((int32_t)loopStart << 16)) {
+        track->note.chip.ay.samplePosition = (int32_t)loopStart << 16;
+      }
+
+      // Recalculate index after loop adjustment
+      sampleIndex = track->note.chip.ay.samplePosition >> 16;
+    } else {
+      // No loop (one-shot) - stop playback
+      chip->setRegister(chip, channel + 8, 0);
+      track->note.pitchBase = EMPTY_VALUE_8; // Mark note as stopped
+      track->note.chip.ay.softType = aySoftwareOscNone;
+      return;
+    }
+  }
+
+  // Get sample value
+  uint8_t sampleValue = instrument->chip.aySample.sampleData[sampleIndex];
+
+  // Apply volume
+  if (state->p->chipType == chipAY) {
+    dacTable = cnDACTableAY;
+    dacLUT = cnSampleLookupAY;
+  } else {
+    dacTable = cnDACTableYM;
+    dacLUT = cnSampleLookupYM;
+  }
+
+  // Scale sample by volume (result is 0-255)
+  int16_t scaledSample = (uint16_t)(sampleValue * dacTable[track->note.chip.ay.outVolume]) / 255;
+
+  // Apply error diffusion dithering if enabled
+  if (chipNomadState->aySampleDithering) {
+    // Add accumulated error from previous sample
+    scaledSample += track->note.chip.ay.sampleDitherError;
+
+    // Clamp to valid range and quantize to 4-bit using lookup table
+    scaledSample = clampInt(scaledSample, 0, 255);
+    uint8_t quantized = dacLUT[scaledSample];
+
+    // Calculate quantization error (difference between input and quantized output)
+    // Convert quantized 4-bit value back to 8-bit for error calculation
+    int16_t quantizedValue = dacTable[quantized];
+    int16_t error = scaledSample - quantizedValue;
+
+    // Store error for next sample (simple error diffusion)
+    track->note.chip.ay.sampleDitherError = error;
+
+    sampleValue = quantized;
+  } else {
+    // No dithering - just quantize directly
+    sampleValue = dacLUT[scaledSample];
+  }
+
+
+
+  chip->setRegister(chip, channel + 8, sampleValue);
+
+  track->note.chip.ay.samplePosition += track->note.chip.ay.sampleIncrement;
+}
+
+int timerFunctionAY(struct SoundChip* chip, void* userdata) {
+  ChipNomadState* chipNomadState = (ChipNomadState*)userdata;
+  PlaybackState* state = &chipNomadState->playbackState;
+  int chipIdx = chip - chipNomadState->chips;
+  int firstTrack = chipIdx * 3;
+
+  for (int ch = 0; ch < 3; ch++) {
+    PlaybackTrackState* track = &state->tracks[firstTrack + ch];
+    if (track->note.instrument == EMPTY_VALUE_8) continue; // No instrument, skip
+
+    switch (track->note.chip.ay.softType) {
+      case aySoftwareOscPulse:
+        timerFunctionPulse(chipNomadState, chip, ch, track);
+        break;
+      case aySoftwareOscSyncTone:
+        timerFunctionSyncTone(chipNomadState, chip, ch, track);
+        break;
+      case aySoftwareOscSyncEnvelope:
+        timerFunctionSyncEnv(chipNomadState, chip, ch, track);
+        break;
+      case aySoftwareOscWavetable:
+        break;
+      case aySoftwareOscNoiseWavetable:
+        break;
+      case aySoftwareOscSample:
+        timerFunctionSample(chipNomadState, chip, ch, track);
+        break;
+      default:
+        break;
+    }
+
+    // Period counter
+    track->note.chip.ay.softPeriodCounter++;
+  }
+
 
   return 1;
 }
 
+
+
+// Core AY playback logic
 
 void resetTrackAY(PlaybackState* state, int trackIdx) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
@@ -64,6 +299,9 @@ void resetOffsetsAY(PlaybackState* state, int trackIdx) {
   track->note.chip.ay.envFineOffset = 0;
   track->note.chip.ay.softPitchOffset = 0;
   track->note.chip.ay.softFineOffset = 0;
+  track->note.chip.ay.pulseWidthOffset = 0;
+  track->note.chip.ay.pulseLowOffset = 0;
+  track->note.chip.ay.wavetableIndexOffset = 0;
   track->note.chip.ay.volumeOffset = 0;
 }
 
@@ -78,6 +316,11 @@ void setupInstrumentAY1(PlaybackState* state, int trackIdx) {
 
   // Noise
   track->note.chip.ay.noiseBase = EMPTY_VALUE_8;
+
+  // Reset fixed pitches
+  track->note.chip.ay.toneFixedPitch = EMPTY_VALUE_8;
+  track->note.chip.ay.envFixedPitch = EMPTY_VALUE_8;
+  track->note.chip.ay.softFixedPitch = EMPTY_VALUE_8;
 
   // Envelope
   track->note.chip.ay.envShape = (defaultMixer >> 4) & 0x0F;
@@ -113,6 +356,11 @@ void setupInstrumentAY2(PlaybackState* state, int trackIdx) {
   // Noise
   track->note.chip.ay.noiseBase = ay2->oscNoise.isOn ? ay2->oscNoise.noisePeriod : EMPTY_VALUE_8;
 
+  // Reset fixed pitches
+  track->note.chip.ay.toneFixedPitch = EMPTY_VALUE_8;
+  track->note.chip.ay.envFixedPitch = EMPTY_VALUE_8;
+  track->note.chip.ay.softFixedPitch = EMPTY_VALUE_8;
+
   // Envelope
   track->note.chip.ay.envShape = ay2->oscEnvelope.shape;
   track->note.chip.ay.envAutoN = ay2->oscEnvelope.autoEnvN;
@@ -124,7 +372,34 @@ void setupInstrumentAY2(PlaybackState* state, int trackIdx) {
 }
 
 void setupInstrumentAYSample(PlaybackState* state, int trackIdx) {
-  // TODO: Implement in future
+  PlaybackTrackState* track = &state->tracks[trackIdx];
+  Project* p = state->p;
+  InstrumentAYSample* aySample = &p->instruments[track->note.instrument].chip.aySample;
+
+  // Mixer
+  uint8_t mixer = 0;
+  if (!aySample->oscTone.isOn) mixer |= 1;
+  if (!aySample->oscNoise.isOn) mixer |= 8;
+  track->note.chip.ay.mixer = mixer;
+
+  // Noise
+  track->note.chip.ay.noiseBase = aySample->oscNoise.isOn ? aySample->oscNoise.noisePeriod : EMPTY_VALUE_8;
+
+  // Reset fixed pitches
+  track->note.chip.ay.toneFixedPitch = EMPTY_VALUE_8;
+  track->note.chip.ay.envFixedPitch = EMPTY_VALUE_8;
+  track->note.chip.ay.softFixedPitch = EMPTY_VALUE_8;
+
+  // Envelope (always off for sample instruments)
+  track->note.chip.ay.envShape = 0;
+  track->note.chip.ay.envAutoN = 0;
+  track->note.chip.ay.envAutoD = 0;
+  track->note.chip.ay.envPeriodBase = 0;
+
+  // Software oscillator (always sample type)
+  track->note.chip.ay.softType = aySoftwareOscSample;
+  track->note.chip.ay.samplePosition = aySample->sampleStart << 16; // Sample position is 16.16 fixed point
+  track->note.chip.ay.sampleDitherError = 0;
 }
 
 void setupInstrument(PlaybackState* state, int trackIdx) {
@@ -166,8 +441,7 @@ void handleInstrumentAY1(PlaybackState* state, int trackIdx) {
   // Apply AY1 legacy volume modulation (backward compatibility)
   if (track->note.chip.ay.volumeModulation.modulation) {
     int16_t scaledVolume = playbackModScaleToRange(track->note.chip.ay.volumeModulation.outValue, 15);
-    if (scaledVolume < 0) scaledVolume = 0;
-    if (scaledVolume > 15) scaledVolume = 15;
+    scaledVolume = clampInt16(scaledVolume, 0, 15);
     track->note.chip.ay.volume = (uint8_t)scaledVolume;
     // Check if note should be stopped (release phase complete)
     if (track->note.chip.ay.volumeModulation.step == 0xff) {
@@ -245,6 +519,18 @@ void handleInstrumentAY2(PlaybackState* state, int trackIdx) {
         track->note.chip.ay.softFineOffset += playbackModScaleToRange(mod->outValue, p->linearPitch ? PITCH_MOD_RANGE_CENTS : PITCH_MOD_RANGE_PERIOD);
         break;
       }
+      case 7: { // Pulse Width
+        track->note.chip.ay.pulseWidthOffset += playbackModScaleToRange(mod->outValue, 127);
+        break;
+      }
+      case 8: { // Pulse Low
+        track->note.chip.ay.pulseLowOffset += playbackModScaleToRange(mod->outValue, 127);
+        break;
+      }
+      case 9: { // Wavetable index
+        // TODO
+        break;
+      }
     }
   }
 
@@ -320,7 +606,7 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
   int shouldWriteMixer = 1; // Always write mixer, but have the variable just in case
   int shouldWriteNoise = 0;
   int shouldWriteEnvPeriod = 0;
-  int shouldWriteEnvShape = 0;
+  int hasSoftOsc = 0;
 
   for (int t = trackIdx; t < trackIdx + projectGetChipTracks(p, chipIdx); t++) {
     // Write flags for channel registers
@@ -339,33 +625,45 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
       // Calculate tone period
       // =====================
 
-      int16_t period;
       uint8_t toneBasePitch = (track->note.chip.ay.toneFixedPitch != EMPTY_VALUE_8) ? track->note.chip.ay.toneFixedPitch : track->note.pitchFinal;
-      int8_t tonePitch = toneBasePitch + track->note.chip.ay.tonePitchOffset;
-
-      if (tonePitch < 0) tonePitch = 0;
-      if (tonePitch > p->pitchTable.length - 1) tonePitch = p->pitchTable.length - 1;
-
-      if (p->linearPitch) {
-        // Linear pitch mode: convert cents to frequency, then to period
-        int cents = p->pitchTable.values[tonePitch] + track->note.fineOffset + track->note.chip.ay.toneFineOffset;
-
-        float frequency = centsToFrequency(cents);
-        period = frequencyToAYPeriod(frequency, p->chipSetup.ay.clock);
-      } else {
-        // Traditional period mode
-        period = p->pitchTable.values[tonePitch] - track->note.fineOffset - track->note.chip.ay.toneFineOffset;
-      }
-      period -= track->note.periodOffset;
-
-      // Clamp period to valid AY range
-      if (period < 1) period = 1;
-      if (period > 4095) period = 4095;
+      int16_t period = calculateAYPeriod(p, toneBasePitch, track->note.chip.ay.tonePitchOffset,
+                                         track->note.fineOffset, track->note.chip.ay.toneFineOffset,
+                                         track->note.periodOffset, 1);
       track->note.chip.ay.outTonePeriod = period;
 
       // Shouldn't write only when soft osc type is SyncTone, timer function will handle it
       if (track->note.chip.ay.softType != aySoftwareOscSyncTone) {
         shouldWriteTonePeriod = 1;
+      }
+
+      // ===============================
+      // Calculate software osc period
+      // ===============================
+      // Software oscillator period calculation is identical to tone period
+      // (uses fineOffset in both linear and period modes)
+
+      if (track->note.chip.ay.softType != aySoftwareOscNone) {
+        uint8_t softBasePitch = (track->note.chip.ay.softFixedPitch != EMPTY_VALUE_8) ? track->note.chip.ay.softFixedPitch : track->note.pitchFinal;
+        track->note.chip.ay.outSoftPeriod = calculateAYPeriod(p, softBasePitch, track->note.chip.ay.softPitchOffset,
+          track->note.fineOffset, track->note.chip.ay.softFineOffset, track->note.periodOffset, 1);
+
+        // Calculate sample increment if we're playing a sample
+        if (track->note.chip.ay.softType == aySoftwareOscSample) {
+            // Safety check: ensure instrument is valid and is a sample type
+            if (track->note.instrument != EMPTY_VALUE_8 &&
+                p->instruments[track->note.instrument].type == instAYSample) {
+              uint16_t period = track->note.chip.ay.outSoftPeriod;
+              if (period == 0) period = 1; // Avoid division by zero
+
+              uint32_t sampleRate = p->instruments[track->note.instrument].chip.aySample.sampleRate;
+              // Calculate sample increment. 26163 is the reference frequency (C-4)
+              uint64_t numerator = ((uint64_t)sampleRate * 50) << 16;
+              uint32_t denominator = (uint32_t)period * 26163;
+              track->note.chip.ay.sampleIncrement = (uint32_t)(numerator / denominator);
+            }
+        }
+
+        hasSoftOsc = 1;
       }
 
       // ===============
@@ -374,8 +672,9 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
 
       int volume = 0;
       // Envelope is on only when envShape is non-zero and software oscillator type
-      // is not Pulse or Wavetable (which modulate volume and not compatible with envelope)
-      if (track->note.chip.ay.envShape != 0 && track->note.chip.ay.softType != aySoftwareOscPulse && track->note.chip.ay.softType != aySoftwareOscWavetable) {
+      // is none, SyncTone, or SyncEnvelope (other soft osc types are not compatible with envelope
+      // because they modulate the volume)
+      if (track->note.chip.ay.envShape != 0 && (track->note.chip.ay.softType == aySoftwareOscNone || track->note.chip.ay.softType == aySoftwareOscSyncTone || track->note.chip.ay.softType == aySoftwareOscSyncEnvelope)) {
         // ===========
         // Envelope on
         // ===========
@@ -394,40 +693,30 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
           if (instType == instAY2) {
             // AY2: Calculate envelope period from pitch
             uint8_t envBasePitch = (track->note.chip.ay.envFixedPitch != EMPTY_VALUE_8) ? track->note.chip.ay.envFixedPitch : track->note.pitchFinal;
-            int8_t envPitch = envBasePitch + track->note.chip.ay.envPitchOffset;
-            if (envPitch < 0) envPitch = 0;
-            if (envPitch > p->pitchTable.length - 1) envPitch = p->pitchTable.length - 1;
-
-            if (p->linearPitch) {
-              int envCents = p->pitchTable.values[envPitch] + track->note.fineOffset;
-              envCents += track->note.chip.ay.envFineOffset;
-              float envFrequency = centsToFrequency(envCents);
-              envPeriod = frequencyToAYPeriod(envFrequency, p->chipSetup.ay.clock);
-            } else {
-              envPeriod = p->pitchTable.values[envPitch] /* - track->note.fineOffset */;
-              envPeriod -= track->note.chip.ay.envFineOffset;
-            }
+            // Note: envelope uses fineOffset in linear mode only (not in period mode)
+            envPeriod = calculateAYPeriod(p, envBasePitch, track->note.chip.ay.envPitchOffset,
+                                          track->note.fineOffset, track->note.chip.ay.envFineOffset,
+                                          track->note.chip.ay.envPeriodOffset, p->linearPitch);
           } else {
             // AY1: Use manual envelope period base
             envPeriod = track->note.chip.ay.envPeriodBase;
+            envPeriod -= track->note.chip.ay.envPeriodOffset;
+            // Clamp envelope period to valid range
+            envPeriod = clampInt(envPeriod, 0, 4095);
           }
         }
 
-        // Envelope period modification
-        envPeriod -= track->note.chip.ay.envPeriodOffset;
-        // Clamp envelope period to valid range
-        if (envPeriod < 0) envPeriod = 0;
-        if (envPeriod > 4095) envPeriod = 4095;
+        // Note: For AY2, clamping is done inside calculateAYPeriod
+        // For AY1, clamping is done above after applying envPeriodOffset
 
+        shouldWriteEnvPeriod = 1;
         volume = 16;
       } else {
         // ===============================
         // Envelope off - calculate volume
         // ===============================
 
-        volume = track->note.volume + track->note.volumeOffset;
-        if (volume < 0) volume = 0;
-        if (volume > 15) volume = 15;
+        volume = clampInt(track->note.volume + track->note.volumeOffset, 0, 15);
         volume *= track->note.chip.ay.volume; // Instrument volume
 
         // Instrument table volume
@@ -450,8 +739,7 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
         volume = volume / (15 * 15 * 15);
 
         // Sanity limits (even though it should never happen)
-        if (volume < 0) volume = 0;
-        if (volume > 15) volume = 15;
+        volume = clampInt(volume, 0, 15);
       }
 
       track->note.chip.ay.outVolume = volume;
@@ -511,6 +799,12 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
   if (shouldWriteMixer) {
     chip->setRegister(chip, 7, mixer);
   }
+  // Soft osc
+  if (hasSoftOsc) {
+    chip->setTimerFunc(chip, timerFunctionAY, chipNomadState);
+  } else {
+    chip->setTimerFunc(chip, NULL, NULL);
+  }
 }
 
 // Convert frequency to AY period
@@ -523,8 +817,64 @@ int frequencyToAYPeriod(float frequency, int clockHz) {
 
   int period = (fabsf(freqL - frequency) < fabsf(freqH - frequency)) ? floorf(periodf) : ceilf(periodf);
   // Clamp to AY period range
-  if (period > 4095) period = 4095;
-  if (period < 0) period = 0;
+  return clampInt(period, 0, 4095);
+}
+
+// Calculate AY period from pitch with offsets
+// This function handles both linear (cents-based) and traditional (period-based) pitch modes
+int16_t calculateAYPeriod(Project* p, uint8_t basePitch, int8_t pitchOffset, int16_t fineOffset,
+                          int16_t specificFineOffset, int16_t periodOffset, int useFineOffset) {
+  // Apply coarse pitch offset and clamp to pitch table range
+  int8_t pitch = clampInt8(basePitch + pitchOffset, 0, p->pitchTable.length - 1);
+
+  int16_t period;
+
+  if (p->linearPitch) {
+    // Linear pitch mode: convert cents to frequency, then to period
+    int cents = p->pitchTable.values[pitch];
+    if (useFineOffset) {
+      cents += fineOffset;
+    }
+    cents += specificFineOffset;
+
+    float frequency = centsToFrequency(cents);
+    period = frequencyToAYPeriod(frequency, p->chipSetup.ay.clock);
+  } else {
+    // Traditional period mode
+    period = p->pitchTable.values[pitch];
+    if (useFineOffset) {
+      period -= fineOffset;
+    }
+    period -= specificFineOffset;
+  }
+
+  // Apply period offset
+  period -= periodOffset;
+
+  // Clamp period to valid AY range
+  period = clampInt16(period, 1, 4095);
 
   return period;
 }
+
+// Initialize additional tables for sample playback
+void initAYSampleTables(void) {
+  // Fill 8-bit DAC tables
+  for (int i = 0; i < 16; i++) {
+    cnDACTableAY[i] = (uint8_t)(dacTableAYfloat[i * 2 + 1] * 255);
+    cnDACTableYM[i] = (uint8_t)(dacTableYMfloat[i * 2 + 1] * 255);
+    //printf("AY volume %d -> DAC value %d, YM DAC value %d\n", i, cnDACTableAY[i], cnDACTableYM[i]);
+  }
+
+  // Create sample LUTs by mapping 8-bit sample values to 4-bit AY volume levels
+  uint8_t volumeAY = 0;
+  uint8_t volumeYM = 0;
+  for (int i = 0; i < 256; i++) {
+    if (i > cnDACTableAY[volumeAY]) volumeAY++;
+    if (i > cnDACTableYM[volumeYM]) volumeYM++;
+    cnSampleLookupAY[i] = volumeAY;
+    cnSampleLookupYM[i] = volumeYM;
+    //printf("Sample value %d -> AY volume %d, YM volume %d\n", i, cnSampleLookupAY[i], cnSampleLookupYM[i]);
+  }
+}
+

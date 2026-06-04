@@ -230,14 +230,25 @@ void handleNoteOff(PlaybackState* state, int trackIdx) {
 
   if (instType == instNone) return;
 
+  int hasVolumeADSR = 0;
+
   if (instType == instAY1) {
     // Handle legacy AY1 volume modulation
     playbackModNoteOff(&track->note.chip.ay.volumeModulation);
+    hasVolumeADSR = 1;
   }
 
   // Common note off for all instruments - send note off to all modulations
   for (int i = 0; i < 4; i++) {
+    if (track->note.modulation[i].modulation->destination == 1 && track->note.modulation[i].modulation->type == modADSR) {
+      hasVolumeADSR = 1;
+    }
     playbackModNoteOff(&track->note.modulation[i]);
+  }
+
+  if (!hasVolumeADSR) {
+    // If no volume ADSR, turn off note immediately
+    track->note.pitchBase = EMPTY_VALUE_8;
   }
 }
 
@@ -606,8 +617,7 @@ static void nextFrame(PlaybackState* state, int trackIdx, int chipIdx) {
     pitch += track->note.pitchOffset;
 
     // Clamp pitch to valid range
-    if (pitch < 0) pitch = 0;
-    if (pitch >= p->pitchTable.length) pitch = p->pitchTable.length - 1;
+    pitch = clampInt8(pitch, 0, p->pitchTable.length - 1);
 
     track->note.pitchFinal = pitch;
   }
@@ -751,6 +761,7 @@ void playbackInit(PlaybackState* state, Project* project) {
   state->p = project;
 
   initFXHandlers();
+  initAYSampleTables();
 
   for (int c = 0; c < PROJECT_MAX_TRACKS; c++) {
     resetTrack(state, c);
@@ -874,6 +885,7 @@ void playbackStop(PlaybackState* state) {
     resetTrack(state, c);
     state->tracks[c].queue.mode = playbackModeNone;
   }
+  // TODO: Move to AY-specific code when other chip types are added
   // Reset chip states to ensure envelope shapes retrigger on next playback
   for (int c = 0; c < PROJECT_MAX_CHIPS; c++) {
     state->chips[c].ay.envShape = 0;

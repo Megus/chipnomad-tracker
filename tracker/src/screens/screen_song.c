@@ -460,12 +460,17 @@ static LoopRange getLoopRange(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+static enum ScreenPlaybackLevel getPlaybackLevel(void) {
+  return screenPlaybackSong;
+}
+
 const AppScreen screenSong = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
   .onInput = onInput,
-  .init = init
+  .init = init,
+  .getPlaybackLevel = getPlaybackLevel
 };
 
 LoopRange songScreenGetLoopRange(void) {

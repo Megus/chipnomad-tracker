@@ -10,6 +10,7 @@
 - *AY8910* AY/YM: 0
 - *AY8910* Stereo: ABC
 - *AY8910* Stereo separation: 100
+- *AY8910* PWM range: 0
 
 ## Pitch table
 

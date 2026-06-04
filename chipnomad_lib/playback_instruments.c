@@ -1,5 +1,6 @@
 #include "playback_instruments.h"
 #include "playback_modulation.h"
+#include "utils.h"
 
 // Apply ADSR/AHD volume modulation and return the resulting volume
 // Takes a single modulation state and returns the calculated volume (0-maxVolume)
@@ -23,8 +24,7 @@ int16_t playbackApplyVolumeEnvelope(PlaybackModState* mod, int maxVolume, int* s
     volume = scaledVolume;
   }
   // Clamp volume to valid range for safety
-  if (volume > maxVolume) volume = maxVolume;
-  if (volume < 0) volume = 0;
+  volume = clampInt(volume, 0, maxVolume);
 
   // Check if ADSR/AHD just completed release phase
   if (mod->step == 0xff) {
@@ -38,7 +38,7 @@ int16_t playbackApplyVolumeEnvelope(PlaybackModState* mod, int maxVolume, int* s
 // For LFO: adds to volumeOffset
 // For ADSR/AHD: rewrites the volume directly
 // Returns 1 if note should be stopped (ADSR release complete), 0 otherwise
-int playbackApplyVolumeModulation(PlaybackModState* mod, int16_t* volumeOffset, uint8_t* volume, int maxVolume) {
+int playbackApplyVolumeModulation(PlaybackModState* mod, int8_t* volumeOffset, uint8_t* volume, int maxVolume) {
   int stopNote = 0;
 
   if (mod->modulation->type == modLFO) {

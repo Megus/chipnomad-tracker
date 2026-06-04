@@ -50,8 +50,9 @@ static void drawStatic(void) {
   gfxPrint(0, 11, "Subtype");
   gfxPrint(0, 12, "Stereo");
   gfxPrint(0, 13, "Stereo width");
-  gfxPrint(0, 14, "Chip clock");
-  gfxPrint(0, 15, "Pitch table");
+  gfxPrint(0, 14, "PWM range");
+  gfxPrint(0, 15, "Chip clock");
+  gfxPrint(0, 16, "Pitch table");
 }
 
 static void drawCursor(int col, int row) {
@@ -66,11 +67,14 @@ static void drawCursor(int col, int row) {
     // Stereo width
     gfxCursor(13, 13, 4);
   } else if (row == SCR_PROJECT_ROWS + 3) {
-    // Chip clock
-    gfxCursor(13, 14, chipClockLength);
+    // PWM range
+    gfxCursor(13, 14, 3);
   } else if (row == SCR_PROJECT_ROWS + 4) {
+    // Chip clock
+    gfxCursor(13, 15, chipClockLength);
+  } else if (row == SCR_PROJECT_ROWS + 5) {
     // Pitch table
-    gfxCursor(13, 15, strlen(chipnomadState->project.pitchTable.name));
+    gfxCursor(13, 16, strlen(chipnomadState->project.pitchTable.name));
   }
 }
 
@@ -90,6 +94,10 @@ static void drawField(int col, int row, int state) {
     // Stereo width
     gfxPrintf(13, 13, "%03d%%", chipnomadState->project.chipSetup.ay.stereoSeparation);
   } else if (row == SCR_PROJECT_ROWS + 3) {
+    // PWM range
+    gfxClearRect(13, 14, 3, 1);
+    gfxPrint(13, 14, chipnomadState->project.chipSetup.ay.pwmFullRange ? "256" : "16");
+  } else if (row == SCR_PROJECT_ROWS + 4) {
     int presetIndex = getClockPresetIndex(chipnomadState->project.chipSetup.ay.clock);
     char clockText[20];
 
@@ -100,11 +108,11 @@ static void drawField(int col, int row, int state) {
     }
 
     chipClockLength = strlen(clockText);
-    gfxClearRect(13, 14, 20, 1);
-    gfxPrint(13, 14, clockText);
-  } else if (row == SCR_PROJECT_ROWS + 4) {
-    gfxClearRect(13, 15, PROJECT_PITCH_TABLE_TITLE_LENGTH, 1);
-    gfxPrint(13, 15, chipnomadState->project.pitchTable.name);
+    gfxClearRect(13, 15, 20, 1);
+    gfxPrint(13, 15, clockText);
+  } else if (row == SCR_PROJECT_ROWS + 5) {
+    gfxClearRect(13, 16, PROJECT_PITCH_TABLE_TITLE_LENGTH, 1);
+    gfxPrint(13, 16, chipnomadState->project.pitchTable.name);
   }
 }
 
@@ -138,6 +146,9 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       }
     }
   } else if (row == SCR_PROJECT_ROWS + 3) {
+    // PWM range (16 / 256)
+    handled = edit8noLast(action, &chipnomadState->project.chipSetup.ay.pwmFullRange, 1, 0, 1);
+  } else if (row == SCR_PROJECT_ROWS + 4) {
     // Chip clock presets
     int presetIndex = getClockPresetIndex(chipnomadState->project.chipSetup.ay.clock);
     if (presetIndex < 0) presetIndex = 0; // Default to first preset if not found
@@ -149,7 +160,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
         updateChipAYClock(&chipnomadState->chips[i], chipnomadState->project.chipSetup.ay.clock, appSettings.audioSampleRate);
       }
     }
-  } else if (row == SCR_PROJECT_ROWS + 4) {
+  } else if (row == SCR_PROJECT_ROWS + 5) {
     // Pitch table - enter pitch table screen
     screenSetup(&screenPitchTable, 0);
     handled = 0;
@@ -161,7 +172,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 }
 
 ScreenData screenProjectAY = {
-  .rows = 13,
+  .rows = 14,
   .cursorRow = 0,
   .cursorCol = 0,
   .selectMode = -1,

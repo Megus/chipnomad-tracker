@@ -5,6 +5,11 @@
 #include "project_instruments.h"
 #include "playback_modulation.h"
 
+extern uint8_t cnDACTableAY[16];
+extern uint8_t cnDACTableYM[16];
+extern uint8_t cnSampleLookupAY[256];
+extern uint8_t cnSampleLookupYM[256];
+
 typedef struct PlaybackAYNoteState {
   uint8_t mixer; // Bit 0 - tone, Bit 1 - noise
 
@@ -15,7 +20,7 @@ typedef struct PlaybackAYNoteState {
 
   // Tone oscillator
   uint8_t toneFixedPitch; // If not EMPTY_VALUE_8, use this fixed pitch instead of note pitch
-  int8_t tonePitchOffset;
+  int16_t tonePitchOffset;
   int16_t toneFineOffset;
 
   // Noise oscillator
@@ -29,7 +34,7 @@ typedef struct PlaybackAYNoteState {
   uint16_t envPeriodBase;
   int16_t envPeriodOffset;
   uint8_t envFixedPitch; // If not EMPTY_VALUE_8, use this fixed pitch instead of note pitch
-  int8_t envPitchOffset;
+  int16_t envPitchOffset;
   int16_t envFineOffset;
 
   // Software oscillator
@@ -37,14 +42,18 @@ typedef struct PlaybackAYNoteState {
   uint16_t softPeriodCounter; // Counter for software oscillator timing
 
   uint8_t softFixedPitch; // If not EMPTY_VALUE_8, use this fixed pitch instead of note pitch
-  int8_t softPitchOffset;
+  int16_t softPitchOffset;
   int16_t softFineOffset;
-  uint8_t softP1Offset; // Meaning depends on software osc type
-  uint8_t softP2Offset; // Meaning depends on software osc type
+  int16_t pulseWidthOffset;
+  int16_t pulseLowOffset;
+  int16_t pulseWidthCurrent; // "Cached" current pulse width
 
-  // Sample and wavetable positions
+  // Sample and wavetable variables
   uint32_t samplePosition;
+  int8_t sampleDitherError;
+  uint32_t sampleIncrement;
   uint32_t wavetablePosition;
+  int16_t wavetableIndexOffset;
 
   // Calculated values for the current tick. Used for timer function and visualization
   // Channel outputs

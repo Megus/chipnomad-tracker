@@ -18,6 +18,7 @@ ChipNomadState* chipnomadCreate(void) {
   projectInit(&state->project);
   playbackInit(&state->playbackState, &state->project);
   state->mixVolume = 0.6f;
+  state->aySampleDithering = 1; // Default: ON
 
   // Initialize mix buffer
   state->mixBufferSize = 8192;

@@ -75,35 +75,45 @@ static int inputPlayback(int keys, int tapCount) {
   if (!chipnomadState) return 0;
 
   int isPlaying = playbackIsPlaying(&chipnomadState->playbackState);
+  enum ScreenPlaybackLevel playbackLevel = screenGetPlaybackLevel(currentScreen);
 
-  // Play song/chain/phrase depending on the current screen
+  // Play song/chain/phrase depending on the screen's playback level
   if (!isPlaying && keys == keyPlay) {
+    if (playbackLevel == screenPlaybackNone) {
+      return 0; // This screen doesn't support playback
+    }
+
     playbackStop(&chipnomadState->playbackState);
     LoopRange range = screenGetLoopRange(currentScreen);
-    if (currentScreen == &screenSong || currentScreen == &screenProject || currentScreen == &screenSettings) {
+
+    if (playbackLevel == screenPlaybackSong) {
       int startRow = range.enabled ? range.startSongRow : *pSongRow;
       playbackStartSong(&chipnomadState->playbackState, startRow, 0, 1);
       applyLoopRange();
-    } else if (currentScreen == &screenChain) {
+    } else if (playbackLevel == screenPlaybackChain) {
       int startRow = range.enabled ? range.startChainRow : *pChainRow;
       playbackStartChain(&chipnomadState->playbackState, *pSongTrack, *pSongRow, startRow, 1);
       applyLoopRange();
-    } else if (currentScreen == &screenPhrase || currentScreen == &screenTable || currentScreen == &screenInstrument) {
+    } else if (playbackLevel == screenPlaybackPhrase) {
       playbackStartPhrase(&chipnomadState->playbackState, *pSongTrack, *pSongRow, *pChainRow, 1);
       applyLoopRange();
     }
     return 1;
   }
-  // Play song from music screens
+  // Play song from music screens (Shift+Play)
   else if (!isPlaying && keys == (keyPlay | keyShift)) {
+    if (playbackLevel == screenPlaybackNone) {
+      return 0; // This screen doesn't support playback
+    }
+
     playbackStop(&chipnomadState->playbackState);
     LoopRange range = screenGetLoopRange(currentScreen);
-    if (currentScreen == &screenSong || currentScreen == &screenProject || currentScreen == &screenSettings) {
+
+    if (playbackLevel == screenPlaybackSong) {
       int startRow = range.enabled ? range.startSongRow : *pSongRow;
       playbackStartSong(&chipnomadState->playbackState, startRow, 0, 1);
       applyLoopRange();
-    } else if (currentScreen == &screenChain || currentScreen == &screenPhrase || currentScreen == &screenTable ||
-      currentScreen == &screenInstrument || currentScreen == &screenInstrumentPool) {
+    } else if (playbackLevel == screenPlaybackChain || playbackLevel == screenPlaybackPhrase) {
       int startChainRow = range.enabled ? range.startChainRow : *pChainRow;
       playbackStartSong(&chipnomadState->playbackState, *pSongRow, startChainRow, 1);
       applyLoopRange();
@@ -190,6 +200,7 @@ void appSetup(void) {
 
   // Set mix volume from settings
   chipnomadState->mixVolume = appSettings.mixVolume;
+  chipnomadState->aySampleDithering = appSettings.aySampleDithering;
 
   // Initialize audio system
   chipnomadInitChips(chipnomadState, appSettings.audioSampleRate, NULL);

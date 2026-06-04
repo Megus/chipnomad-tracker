@@ -13,6 +13,7 @@ AppSettings appSettings = {
   .screenHeight = 0, // 0 to auto-detect resolution
   .audioSampleRate = 44100,
   .audioBufferSize = 2048,
+  .aySampleDithering = 1, // Default: ON
   .doubleTapFrames = 20,
   .keyRepeatDelay = 16,
   .keyRepeatSpeed = 2,
@@ -56,6 +57,7 @@ int settingsSave(void) {
   fprintf(file, "screenHeight: %d\n", appSettings.screenHeight);
   fprintf(file, "audioSampleRate: %d\n", appSettings.audioSampleRate);
   fprintf(file, "audioBufferSize: %d\n", appSettings.audioBufferSize);
+  fprintf(file, "aySampleDithering: %d\n", appSettings.aySampleDithering);
   fprintf(file, "doubleTapFrames: %d\n", appSettings.doubleTapFrames);
   fprintf(file, "keyRepeatDelay: %d\n", appSettings.keyRepeatDelay);
   fprintf(file, "keyRepeatSpeed: %d\n", appSettings.keyRepeatSpeed);
@@ -132,6 +134,8 @@ int settingsLoad(void) {
       sscanf(line + 17, "%d", &appSettings.audioSampleRate);
     } else if (strncmp(line, "audioBufferSize: ", 17) == 0) {
       sscanf(line + 17, "%d", &appSettings.audioBufferSize);
+    } else if (strncmp(line, "aySampleDithering: ", 19) == 0) {
+      sscanf(line + 19, "%d", &appSettings.aySampleDithering);
     } else if (strncmp(line, "doubleTapFrames: ", 17) == 0) {
       sscanf(line + 17, "%d", &appSettings.doubleTapFrames);
     } else if (strncmp(line, "keyRepeatDelay: ", 16) == 0) {

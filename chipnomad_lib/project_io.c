@@ -606,8 +606,8 @@ static int projectLoadInternal(FILE* file, Project* project) {
   if (line == NULL) return 1;
   if (!strncmp(line, "- Title:", 8)) {
     if (sscanf(line, "- Title: %[^\n]", p.title) != 1) {
-      sprintf(projectFileError, "Invalid title");
-      return 1;
+      // Empty title is valid, just set it to empty string
+      p.title[0] = 0;
     }
   } else {
     sprintf(projectFileError, "Invalid title");
@@ -721,6 +721,16 @@ static int projectLoadInternal(FILE* file, Project* project) {
       if (line == NULL) return 1;
       if (sscanf(line, "- *AY8910* Stereo separation: %hhu", &p.chipSetup.ay.stereoSeparation) != 1) return 1;
       consumeLine(file);
+
+      // PWM range (optional field for backwards compatibility)
+      line = peekLine(file);
+      if (line != NULL && strncmp(line, "- *AY8910* PWM range: ", 22) == 0) {
+        if (sscanf(line, "- *AY8910* PWM range: %hhu", &p.chipSetup.ay.pwmFullRange) != 1) return 1;
+        consumeLine(file);
+      } else {
+        // Default to 16-step mode for old files
+        p.chipSetup.ay.pwmFullRange = 0;
+      }
     }
     break;
   default:
@@ -954,6 +964,7 @@ static int projectSaveInternal(FILE* file, Project* project) {
       break;
     }
     fprintf(file, "- *AY8910* Stereo separation: %d\n", project->chipSetup.ay.stereoSeparation);
+    fprintf(file, "- *AY8910* PWM range: %d\n", project->chipSetup.ay.pwmFullRange);
     break;
   default:
     break;

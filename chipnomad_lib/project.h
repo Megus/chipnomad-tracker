@@ -140,6 +140,7 @@ typedef struct ChipSetupAY {
   uint8_t isYM;
   enum StereoModeAY stereoMode;
   uint8_t stereoSeparation;
+  uint8_t pwmFullRange; // 0 = 16 steps (hardware accurate), 1 = 256 steps (extended precision)
 } ChipSetupAY;
 
 typedef union ChipSetup {

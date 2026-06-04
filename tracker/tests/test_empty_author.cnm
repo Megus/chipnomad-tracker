@@ -1,7 +1,7 @@
 # ChipNomad Tracker Module 2.0
 
-- Title: Octave Test
-- Author: Test
+- Title: Test Title
+- Author: 
 - Frame rate: 50.000000
 - Chips count: 1
 - Linear pitch: 0
@@ -14,33 +14,10 @@
 
 ## Pitch table
 
-- Title: 12TET Test
+- Title: Test
 
 ```
 C-4 1000
-C#4 1100
-D-4 1200
-D#4 1300
-E-4 1400
-F-4 1500
-F#4 1600
-G-4 1700
-G#4 1800
-A-4 1900
-A#4 2000
-B-4 2100
-C-5 2000
-C#5 2100
-D-5 2200
-D#5 2300
-E-5 2400
-F-5 2500
-F#5 2600
-G-5 2700
-G#5 2800
-A-5 2900
-A#5 3000
-B-5 3100
 ```
 
 ## Song

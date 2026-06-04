@@ -316,12 +316,17 @@ static LoopRange getLoopRange(void) {
   return range;
 }
 
+static enum ScreenPlaybackLevel getPlaybackLevel(void) {
+  return screenPlaybackChain;
+}
+
 const AppScreen screenChain = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
   .onInput = onInput,
-  .init = init
+  .init = init,
+  .getPlaybackLevel = getPlaybackLevel
 };
 
 LoopRange chainScreenGetLoopRange(void) {

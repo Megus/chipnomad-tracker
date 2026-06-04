@@ -41,11 +41,41 @@ int max(int a, int b) {
   return a > b ? a : b;
 }
 
+// Clamp value to a range [min, max]
+int8_t clampInt8(int value, int8_t min, int8_t max) {
+  if (value < min) return min;
+  if (value > max) return max;
+  return (int8_t)value;
+}
+
+uint8_t clampUInt8(int value, uint8_t min, uint8_t max) {
+  if (value < min) return min;
+  if (value > max) return max;
+  return (uint8_t)value;
+}
+
+int16_t clampInt16(int value, int16_t min, int16_t max) {
+  if (value < min) return min;
+  if (value > max) return max;
+  return (int16_t)value;
+}
+
+uint16_t clampUInt16(int value, uint16_t min, uint16_t max) {
+  if (value < (int)min) return min;
+  if (value > (int)max) return max;
+  return (uint16_t)value;
+}
+
+int clampInt(int value, int min, int max) {
+  if (value < min) return min;
+  if (value > max) return max;
+  return value;
+}
+
 // Convert cents value to frequency in Hz
 float centsToFrequency(int cents) {
   // Clamp to MIDI range
-  if (cents < 0) cents = 0;
-  if (cents > 12700) cents = 12700;
+  cents = clampInt(cents, 0, 12700);
 
   // A4 = 440 Hz = MIDI note 69
   // Formula: freq = 440 * 2^((cents - 6900) / 1200)

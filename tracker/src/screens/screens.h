@@ -12,6 +12,7 @@ typedef struct AppScreen {
   void (*fullRedraw)(void);
   void (*draw)(void);
   int (*onInput)(int isKeyDown, int keys, int tapCount); // Return 1 if handled, 0 if not
+  enum ScreenPlaybackLevel (*getPlaybackLevel)(void); // Return playback level for this screen
 } AppScreen;
 
 enum CellState {
@@ -39,6 +40,13 @@ enum CellEditAction {
   editMultiDecreaseBig
 };
 
+enum ScreenPlaybackLevel {
+  screenPlaybackNone = 0,
+  screenPlaybackSong = 1,
+  screenPlaybackChain = 2,
+  screenPlaybackPhrase = 3
+};
+
 typedef struct ScreenData {
   //int cols;
   int rows;
@@ -50,6 +58,7 @@ typedef struct ScreenData {
   int selectStartCol;
   int selectAnchorRow; // Original cell where selection mode was entered
   int selectAnchorCol; // Original cell where selection mode was entered
+  enum ScreenPlaybackLevel playbackLevel; // Playback level for this screen (None, Song, Chain, Phrase)
   int (*getColumnCount)(int row);
   void (*drawStatic)(void);
   void (*drawCursor)(int col, int row);
@@ -92,6 +101,7 @@ void screenDraw(void);
 void screenMessage(int time, const char* format, ...);
 void screensInitAll(void);
 void drawScreenMap(void);
+enum ScreenPlaybackLevel screenGetPlaybackLevel(const AppScreen* screen);
 
 // Spreadsheet functions
 void screenFullRedraw(ScreenData* screen);

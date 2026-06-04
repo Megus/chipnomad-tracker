@@ -13,6 +13,7 @@ void projectInitAY(Project* project) {
     .isYM = 0,
     .stereoMode = ayStereoABC,
     .stereoSeparation = 50,
+    .pwmFullRange = 0, // Default to hardware-accurate 16 steps
   };
 
   project->tracksCount = projectGetTotalTracks(project);

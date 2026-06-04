@@ -100,8 +100,9 @@ typedef struct InstrumentAYOscSoftware {
   uint8_t pitchFlag;
   int8_t pitchOffset;
   int8_t fineTune;
-  uint8_t p1;
-  uint8_t p2;
+  uint8_t pulseWidth;
+  uint8_t pulseLow;
+  uint8_t wavetableIndex;
 } InstrumentAYOscSoftware;
 
 typedef struct InstrumentAY2 {
@@ -120,7 +121,6 @@ typedef struct InstrumentAYSample {
   uint16_t sampleStart;
   uint16_t sampleLength;
   uint16_t sampleLoopStart;
-  uint16_t sampleLoopEnd;
   uint8_t *sampleData;  // 8-bit unsigned PCM data
   int8_t pitchOffset;
   int8_t fineTune;

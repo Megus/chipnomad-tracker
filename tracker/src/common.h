@@ -43,6 +43,7 @@ typedef struct AppSettings {
   int screenHeight;
   int audioSampleRate;
   int audioBufferSize;
+  int aySampleDithering;
   int doubleTapFrames;
   int keyRepeatDelay;
   int keyRepeatSpeed;

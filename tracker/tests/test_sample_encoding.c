@@ -117,7 +117,6 @@ void test_sample_large_save_load(void) {
   inst->chip.aySample.sampleStart = 10;
   inst->chip.aySample.sampleLength = 180;
   inst->chip.aySample.sampleLoopStart = 50;
-  inst->chip.aySample.sampleLoopEnd = 150;
 
   // Save to file
   const char* testFile = "test_large_sample.cnm";
@@ -138,7 +137,6 @@ void test_sample_large_save_load(void) {
   TEST_ASSERT_EQUAL(10, p2.instruments[0].chip.aySample.sampleStart);
   TEST_ASSERT_EQUAL(180, p2.instruments[0].chip.aySample.sampleLength);
   TEST_ASSERT_EQUAL(50, p2.instruments[0].chip.aySample.sampleLoopStart);
-  TEST_ASSERT_EQUAL(150, p2.instruments[0].chip.aySample.sampleLoopEnd);
   TEST_ASSERT_NOT_NULL(p2.instruments[0].chip.aySample.sampleData);
 
   // Verify data matches

@@ -213,10 +213,15 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   return screenInput(&screen, isKeyDown, keys, tapCount);
 }
 
+static enum ScreenPlaybackLevel getPlaybackLevel(void) {
+  return screenPlaybackPhrase;
+}
+
 const AppScreen screenGroove = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
   .onInput = onInput,
-  .init = init
+  .init = init,
+  .getPlaybackLevel = getPlaybackLevel
 };

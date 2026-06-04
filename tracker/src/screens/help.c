@@ -283,18 +283,6 @@ char* helpFXHint(uint8_t* fx, int isTable, uint8_t instrumentIdx) {
       sprintf(buffer, "Retrigger software osc phase");
       break;
     // AYSample-specific FX
-    case fxSMN: // Sample specific note
-      note = fx[1];
-      if (note >= chipnomadState->project.pitchTable.length)
-        note = chipnomadState->project.pitchTable.length - 1;
-      sprintf(buffer, "Sample playback note %s", noteName(&chipnomadState->project, note));
-      break;
-    case fxSMP: // Sample pitch offset
-      sprintf(buffer, "Sample pitch offset %+hhd steps", (int8_t)fx[1]);
-      break;
-    case fxSMF: // Sample fine offset
-      sprintf(buffer, "Sample fine offset %+hhd", (int8_t)fx[1]);
-      break;
     case fxSMS: // Sample start position
       sprintf(buffer, "Sample start position %hhu", fx[1]);
       break;
@@ -379,9 +367,6 @@ static const char* fxHelpText[] = {
   [fxSFF] = "Software Osc Fine\nOffsets software oscillator\nfine tune (period/cents)",
   [fxSRT] = "Software Osc Retrig\nRestarts software oscillator\nphase from zero",
   // AYSample-specific FX
-  [fxSMN] = "Sample Note\nSets sample playback\nto specific note",
-  [fxSMP] = "Sample Pitch\nOffsets sample playback\npitch (steps)",
-  [fxSMF] = "Sample Fine\nOffsets sample playback\nfine tune (period/cents)",
   [fxSMS] = "Sample Start\nSets sample playback\nstart position"
 };
 

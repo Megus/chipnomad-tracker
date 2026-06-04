@@ -42,6 +42,7 @@ typedef struct ChipNomadState {
   int trackWarnings[PROJECT_MAX_TRACKS];
   float* mixBuffer;
   int mixBufferSize;
+  int aySampleDithering;
 } ChipNomadState;
 
 /**
