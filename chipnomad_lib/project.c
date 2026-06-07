@@ -44,8 +44,8 @@ FXName fxNamesAY2[] = {
   // Envelope
   {fxEAU, "EAU"}, {fxENN, "ENN"}, {fxENP, "ENP"}, {fxENF, "ENF"}, {fxERT, "ERT"},
   // Software osc
-  {fxSFT, "SFT"}, {fxSFV, "SFV"}, {fxSFN, "SFN"}, {fxSFP, "SFP"}, {fxSFF, "SFF"},
-  {fxSRT, "SRT"},
+  {fxSFT, "SFT"}, {fxSFN, "SFN"}, {fxSFP, "SFP"}, {fxSFF, "SFF"}, {fxSRT, "SRT"},
+  {fxSFM, "SFM"}, {fxPWM, "PWM"}, {fxSPL, "SPL"}, {fxSWT, "SWT"},
 };
 int fxAY2Count = sizeof(fxNamesAY2) / sizeof(FXName);
 
@@ -58,7 +58,7 @@ FXName fxNamesAYSample[] = {
   // Software osc (unified with AY2)
   {fxSFN, "SFN"}, {fxSFP, "SFP"}, {fxSFF, "SFF"}, {fxSRT, "SRT"},
   // Sample-specific
-  {fxSMS, "SMS"},
+  {fxSMN, "SMN"}, {fxSMS, "SMS"},
 };
 int fxAYSampleCount = sizeof(fxNamesAYSample) / sizeof(FXName);
 
@@ -99,6 +99,8 @@ void fillFXNames() {
 
 // Initialize project
 void projectInit(Project* p) {
+  memset(p, 0, sizeof(Project));
+
   // Title
   strcpy(p->title, "");
   strcpy(p->author, "");
@@ -194,6 +196,14 @@ int8_t tableIsEmpty(Project* project, int table) {
 int8_t grooveIsEmpty(Project* project, int groove) {
   for (int c = 0; c < 16; c++) {
     if (project->grooves[groove].speed[c] != EMPTY_VALUE_8) return 0;
+  }
+  return 1;
+}
+
+// Is wavetable empty?
+int8_t wavetableIsEmpty(Project* project, int wavetable) {
+  for (int c = 0; c < 32; c++) {
+    if (project->ayWavetables[wavetable][c] != 0) return 0;
   }
   return 1;
 }

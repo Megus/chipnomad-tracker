@@ -277,6 +277,137 @@ void test_projectSaveLoad_empty_author(void) {
   TEST_ASSERT_EQUAL_STRING("", p2.author);
 }
 
+void test_projectSaveLoad_wavetables(void) {
+  Project p1, p2;
+  projectInit(&p1);
+  projectInit(&p2);
+
+  // Set up minimal project
+  strcpy(p1.title, "Wavetable Test");
+  strcpy(p1.author, "Test");
+  p1.tickRate = 50.0f;
+  p1.chipsCount = 1;
+  p1.chipType = chipAY;
+  p1.chipSetup.ay.clock = 1773400;
+  p1.chipSetup.ay.isYM = 0;
+  p1.chipSetup.ay.stereoMode = ayStereoABC;
+  p1.chipSetup.ay.stereoSeparation = 100;
+  p1.chipSetup.ay.pwmFullRange = 0;
+  p1.tracksCount = 3;
+
+  strcpy(p1.pitchTable.name, "Test");
+  p1.pitchTable.length = 1;
+  strcpy(p1.pitchTable.noteNames[0], "C-4");
+  p1.pitchTable.values[0] = 1000;
+
+  // Set up some wavetables with data
+  // Wavetable 0 - sawtooth pattern
+  for (int i = 0; i < 32; i++) {
+    p1.ayWavetables[0][i] = i / 2;  // 0,0,1,1,2,2...15,15
+  }
+
+  // Wavetable 1 - square wave pattern
+  for (int i = 0; i < 32; i++) {
+    p1.ayWavetables[1][i] = (i < 16) ? 0 : 15;
+  }
+
+  // Wavetable 5 - triangle pattern
+  for (int i = 0; i < 32; i++) {
+    p1.ayWavetables[5][i] = (i < 16) ? i : (31 - i);
+  }
+
+  // Wavetable 255 - edge case (last wavetable)
+  for (int i = 0; i < 32; i++) {
+    p1.ayWavetables[255][i] = 15 - (i / 2);  // Descending
+  }
+
+  // Leave wavetables 2, 3, 4, 6-254 empty (all zeros) - they should not be saved
+
+  // Save project
+  int result = projectSave(&p1, "tests/test_wavetables.cnm");
+  TEST_ASSERT_EQUAL_MESSAGE(0, result, "Should save project with wavetables");
+
+  // Load project
+  result = projectLoad(&p2, "tests/test_wavetables.cnm");
+  if (result != 0) {
+    printf("Failed to load project with wavetables: %s\n", projectFileError);
+  }
+  TEST_ASSERT_EQUAL_MESSAGE(0, result, "Should load project with wavetables");
+
+  // Verify wavetable 0
+  for (int i = 0; i < 32; i++) {
+    TEST_ASSERT_EQUAL_HEX8_MESSAGE(i / 2, p2.ayWavetables[0][i], "Wavetable 0 should match");
+  }
+
+  // Verify wavetable 1
+  for (int i = 0; i < 32; i++) {
+    uint8_t expected = (i < 16) ? 0 : 15;
+    TEST_ASSERT_EQUAL_HEX8_MESSAGE(expected, p2.ayWavetables[1][i], "Wavetable 1 should match");
+  }
+
+  // Verify wavetable 5
+  for (int i = 0; i < 32; i++) {
+    uint8_t expected = (i < 16) ? i : (31 - i);
+    TEST_ASSERT_EQUAL_HEX8_MESSAGE(expected, p2.ayWavetables[5][i], "Wavetable 5 should match");
+  }
+
+  // Verify wavetable 255
+  for (int i = 0; i < 32; i++) {
+    TEST_ASSERT_EQUAL_HEX8_MESSAGE(15 - (i / 2), p2.ayWavetables[255][i], "Wavetable 255 should match");
+  }
+
+  // Verify empty wavetables remain empty
+  for (int i = 0; i < 32; i++) {
+    TEST_ASSERT_EQUAL_HEX8(0, p2.ayWavetables[2][i]);
+    TEST_ASSERT_EQUAL_HEX8(0, p2.ayWavetables[10][i]);
+    TEST_ASSERT_EQUAL_HEX8(0, p2.ayWavetables[100][i]);
+  }
+}
+
+void test_projectSaveLoad_no_wavetables(void) {
+  Project p1, p2;
+  projectInit(&p1);
+  projectInit(&p2);
+
+  // Set up minimal project with NO wavetables
+  strcpy(p1.title, "No Wavetables");
+  strcpy(p1.author, "Test");
+  p1.tickRate = 50.0f;
+  p1.chipsCount = 1;
+  p1.chipType = chipAY;
+  p1.chipSetup.ay.clock = 1773400;
+  p1.chipSetup.ay.isYM = 0;
+  p1.chipSetup.ay.stereoMode = ayStereoABC;
+  p1.chipSetup.ay.stereoSeparation = 100;
+  p1.chipSetup.ay.pwmFullRange = 0;
+  p1.tracksCount = 3;
+
+  strcpy(p1.pitchTable.name, "Test");
+  p1.pitchTable.length = 1;
+  strcpy(p1.pitchTable.noteNames[0], "C-4");
+  p1.pitchTable.values[0] = 1000;
+
+  // All wavetables are empty (zeros) by default after projectInit
+
+  // Save project - should NOT create wavetable section
+  int result = projectSave(&p1, "tests/test_no_wavetables.cnm");
+  TEST_ASSERT_EQUAL_MESSAGE(0, result, "Should save project without wavetables");
+
+  // Load project - should still work (backwards compatibility)
+  result = projectLoad(&p2, "tests/test_no_wavetables.cnm");
+  if (result != 0) {
+    printf("Failed to load project without wavetables: %s\n", projectFileError);
+  }
+  TEST_ASSERT_EQUAL_MESSAGE(0, result, "Should load project without wavetable section");
+
+  // Verify all wavetables remain empty
+  for (int wt = 0; wt < 256; wt++) {
+    for (int i = 0; i < 32; i++) {
+      TEST_ASSERT_EQUAL_HEX8(0, p2.ayWavetables[wt][i]);
+    }
+  }
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_projectSaveLoad_song_data_preserved);
@@ -287,5 +418,7 @@ int main(void) {
   RUN_TEST(test_projectSaveLoad_octaveSize_preserved);
   RUN_TEST(test_projectSaveLoad_empty_title);
   RUN_TEST(test_projectSaveLoad_empty_author);
+  RUN_TEST(test_projectSaveLoad_wavetables);
+  RUN_TEST(test_projectSaveLoad_no_wavetables);
   return UNITY_END();
 }

@@ -264,9 +264,6 @@ char* helpFXHint(uint8_t* fx, int isTable, uint8_t instrumentIdx) {
     case fxSFT: // Software oscillator type
       sprintf(buffer, "Software osc type %hhu", fx[1]);
       break;
-    case fxSFV: // Software oscillator aux value
-      sprintf(buffer, "Software osc aux value %hhu", fx[1]);
-      break;
     case fxSFN: // Software oscillator specific note
       note = fx[1];
       if (note >= chipnomadState->project.pitchTable.length)
@@ -361,7 +358,6 @@ static const char* fxHelpText[] = {
   [fxENF] = "Envelope Fine\nOffsets envelope oscillator\nfine tune (period/cents)",
   // AY2-specific FX (software oscillator)
   [fxSFT] = "Software Osc Type\nSets software oscillator type",
-  [fxSFV] = "Software Osc Value\nSets auxiliary value\nfor software osc",
   [fxSFN] = "Software Osc Note\nSets software oscillator\nto specific note",
   [fxSFP] = "Software Osc Pitch\nOffsets software oscillator\npitch (steps)",
   [fxSFF] = "Software Osc Fine\nOffsets software oscillator\nfine tune (period/cents)",

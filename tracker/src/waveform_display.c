@@ -1,6 +1,7 @@
 #include "waveform_display.h"
 #include "corelib_gfx.h"
 #include "chipnomad_lib.h"
+#include "playback_chips.h"
 #include "common.h"
 #include <string.h>
 #include <stdlib.h>
@@ -199,4 +200,193 @@ Bitmap* waveformDisplayGetBitmap(int trackIdx) {
   }
 
   return bitmap;
+}
+
+// ============================================================================
+// Waveform Preview Rendering
+// ============================================================================
+
+// Helper: convert sample value (0-255) to Y coordinate
+static inline int sampleToY(uint8_t sample, int height) {
+  return ((255 - sample) * (height - 1)) / 255;
+}
+
+// Generic waveform preview renderer
+// Renders a waveform by drawing horizontal lines for each step, connected vertically
+// Supports both variable-length data (samples) and fixed-step data (wavetables)
+static void renderWaveformPreview(
+  Bitmap* bitmap,
+  uint8_t* data,
+  uint16_t dataLength,
+  uint8_t (*transformFunc)(uint8_t value, void* context),
+  void* transformContext
+) {
+  if (!bitmap || !data || dataLength == 0) {
+    if (bitmap) {
+      memset(bitmap->data, 0, bitmap->widthPixels * bitmap->heightPixels);
+    }
+    return;
+  }
+
+  // Clear bitmap
+  memset(bitmap->data, 0, bitmap->widthPixels * bitmap->heightPixels);
+
+  int width = bitmap->widthPixels;
+  int height = bitmap->heightPixels;
+
+  // Determine rendering mode based on data length vs width
+  if (dataLength <= width) {
+    // Stretched mode: each data point spans multiple pixels (like wavetables)
+    int pixelsPerStep = width / dataLength;
+    int prevY = -1;
+
+    for (int step = 0; step < dataLength; step++) {
+      // Transform value to 8-bit amplitude
+      uint8_t amplitude = transformFunc ? transformFunc(data[step], transformContext) : data[step];
+
+      // Convert amplitude to Y coordinate
+      int y = sampleToY(amplitude, height);
+
+      // Calculate x range for this step
+      int xStart = step * pixelsPerStep;
+      int xEnd = (step + 1) * pixelsPerStep;
+
+      // Draw horizontal line for this step
+      for (int x = xStart; x < xEnd && x < width; x++) {
+        if (y >= 0 && y < height) {
+          bitmap->data[y * width + x] = 255;
+        }
+      }
+
+      // Connect to previous step with vertical line
+      if (prevY >= 0 && step > 0) {
+        int x = xStart;  // Draw at the start of current step
+        int yStart = prevY < y ? prevY : y;
+        int yEnd = prevY > y ? prevY : y;
+
+        for (int vy = yStart; vy <= yEnd; vy++) {
+          if (vy >= 0 && vy < height && x >= 0 && x < width) {
+            bitmap->data[vy * width + x] = 255;
+          }
+        }
+      }
+
+      prevY = y;
+    }
+  } else {
+    // Compressed mode: multiple data points per pixel column (like samples)
+    int prevMinY = -1;
+    int prevMaxY = -1;
+
+    for (int x = 0; x < width; x++) {
+      // Calculate data range for this pixel column
+      uint16_t dataStart = (x * dataLength) / width;
+      uint16_t dataEnd = ((x + 1) * dataLength) / width;
+
+      // Handle edge case
+      if (dataStart == dataEnd && dataStart < dataLength) {
+        dataEnd = dataStart + 1;
+      }
+
+      // Find min and max in this range
+      uint8_t minVal = 255;
+      uint8_t maxVal = 0;
+
+      for (uint16_t i = dataStart; i < dataEnd && i < dataLength; i++) {
+        uint8_t val = transformFunc ? transformFunc(data[i], transformContext) : data[i];
+        if (val < minVal) minVal = val;
+        if (val > maxVal) maxVal = val;
+      }
+
+      // Convert to Y coordinates
+      int minY = sampleToY(maxVal, height);  // maxVal -> lower Y (inverted)
+      int maxY = sampleToY(minVal, height);  // minVal -> higher Y
+
+      // Draw vertical line for this column
+      for (int y = minY; y <= maxY; y++) {
+        if (y >= 0 && y < height) {
+          bitmap->data[y * width + x] = 255;
+        }
+      }
+
+      // Connect to previous column by filling the gap between ranges
+      if (prevMinY >= 0 && x > 0) {
+        int gapStart, gapEnd;
+
+        if (prevMaxY < minY) {
+          gapStart = prevMaxY;
+          gapEnd = minY;
+        } else if (maxY < prevMinY) {
+          gapStart = maxY;
+          gapEnd = prevMinY;
+        } else {
+          gapStart = 0;
+          gapEnd = -1;
+        }
+
+        // Fill the gap in the previous column (x-1)
+        for (int y = gapStart; y <= gapEnd; y++) {
+          if (y >= 0 && y < height) {
+            bitmap->data[y * width + (x - 1)] = 255;
+          }
+        }
+      }
+
+      prevMinY = minY;
+      prevMaxY = maxY;
+    }
+  }
+}
+
+// Transform function for wavetables: 4-bit to 8-bit via DAC table
+static uint8_t wavetableTransform(uint8_t value, void* context) {
+  uint8_t* dacTable = (uint8_t*)context;
+  return dacTable[value & 0x0F];
+}
+
+// Transform function for samples: identity (already 8-bit)
+static uint8_t sampleTransform(uint8_t value, void* context) {
+  (void)context;
+  return value;
+}
+
+void renderSamplePreview(Bitmap* bitmap, uint8_t* sampleData, uint16_t startSample, uint16_t endSample) {
+  if (!bitmap || !sampleData || startSample >= endSample) {
+    if (bitmap) {
+      memset(bitmap->data, 0, bitmap->widthPixels * bitmap->heightPixels);
+    }
+    return;
+  }
+
+  // Draw center line
+  int width = bitmap->widthPixels;
+  int height = bitmap->heightPixels;
+  int centerY = height / 2;
+
+  memset(bitmap->data, 0, width * height);
+  for (int x = 0; x < width; x++) {
+    bitmap->data[centerY * width + x] = 64;
+  }
+
+  uint16_t sampleCount = endSample - startSample;
+  if (sampleCount == 0) return;
+
+  // Use generic renderer with sample transform
+  renderWaveformPreview(bitmap, sampleData + startSample, sampleCount, sampleTransform, NULL);
+}
+
+void renderWavetablePreview(Bitmap* bitmap, uint8_t* wavetable, int isYM) {
+  if (!bitmap || !wavetable) {
+    if (bitmap) {
+      memset(bitmap->data, 0, bitmap->widthPixels * bitmap->heightPixels);
+    }
+    return;
+  }
+
+  // Select appropriate DAC table (AY or YM)
+  uint8_t* dacTable = isYM ? cnDACTableYM : cnDACTableAY;
+
+  // Use generic renderer with wavetable transform
+  // Wavetables always have exactly 32 steps
+  renderWaveformPreview(bitmap, wavetable, 32, wavetableTransform, dacTable);
 }

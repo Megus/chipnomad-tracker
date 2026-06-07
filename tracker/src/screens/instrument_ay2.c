@@ -1,7 +1,11 @@
 #include "screen_instrument.h"
 #include "corelib_gfx.h"
+#include "waveform_display.h"
 #include "utils.h"
 #include "misc.h"
+
+// Wavetable preview bitmap for P1 field (2 chars wide, 1 char high)
+static Bitmap* wavetablePreviewBitmap = NULL;
 
 // Screen layout:
 // y 6:  Tone   [On ]       Envelope [Off   ]
@@ -12,8 +16,9 @@
 // y 11: Noise  [Off]       Soft osc [Off  ]
 // y 12: Period [00 ]       Pitch    [+0  ]
 // y 13:                    Fine     [+0  ]
-// y 14:                    P1       [00  ]  (depends on type)
-// y 15:                    P2       [00  ]  (depends on type)
+// y 14:                    FM depth [00  ]
+// y 15:                    P1       [00  ]  (depends on type)
+// y 16:                    P2       [00  ]  (depends on type)
 //
 // Logical rows:
 // 0-2: common (type, name, transpose/tic)
@@ -24,15 +29,16 @@
 // 7: Noise on/off | Soft osc type   (y 11)
 // 8: Noise period | Soft osc pitch  (y 12)
 // 9: (dead left)  | Soft osc fine   (y 13)
-// 10: (dead left) | Soft osc P1     (y 14)
-// 11: (dead left) | Soft osc P2     (y 15)
+// 10: (dead left) | Soft osc FM depth (y 14)
+// 11: (dead left) | Soft osc P1     (y 15)
+// 12: (dead left) | Soft osc P2     (y 16)
 
 #define COL_LEFT_X    0
 #define COL_LEFT_VAL  8
 #define COL_RIGHT_X   17
 #define COL_RIGHT_VAL 26
 
-#define ROW_TOTAL 12
+#define ROW_TOTAL 13
 
 static int rowToY(int row) {
   switch (row) {
@@ -45,42 +51,42 @@ static int rowToY(int row) {
     case 9: return 13;
     case 10: return 14;
     case 11: return 15;
+    case 12: return 16;
     default: return 0;
   }
 }
 
 static const char* softwareOscTypeName(enum AYSoftwareOscType type) {
   switch (type) {
-    case aySoftwareOscNone:           return "Off  ";
-    case aySoftwareOscPulse:          return "Pulse";
-    case aySoftwareOscSyncTone:       return "SyncT";
-    case aySoftwareOscSyncEnvelope:   return "SyncE";
-    case aySoftwareOscWavetable:      return "WavTb";
-    case aySoftwareOscNoiseWavetable: return "NoiWT";
-    default:                          return "?    ";
+    case aySoftwareOscNone:           return "Off     ";
+    case aySoftwareOscPulse:          return "Pulse   ";
+    case aySoftwareOscSyncTone:       return "SyncTone";
+    case aySoftwareOscSyncEnvelope:   return "SyncEnv ";
+    case aySoftwareOscWavetable:      return "Wavetbl ";
+    case aySoftwareOscToneFM:         return "ToneFM  ";
+    case aySoftwareOscEnvFM:          return "EnvFM   ";
+    default:                          return "?       ";
   }
 }
 
 static const char* softwareOscP1Name(enum AYSoftwareOscType type) {
   switch (type) {
-    case aySoftwareOscPulse:          return "Width";
-    case aySoftwareOscWavetable:      return "Index";
-    case aySoftwareOscNoiseWavetable: return "Index";
-    default:                          return "P1   ";
+    case aySoftwareOscPulse:          return "Width  ";
+    case aySoftwareOscWavetable:      return "WaveIdx";
+    default:                          return "P1     ";
   }
 }
 
 static const char* softwareOscP2Name(enum AYSoftwareOscType type) {
   switch (type) {
-    case aySoftwareOscPulse:          return "LowLv";
-    default:                          return "P2   ";
+    case aySoftwareOscPulse:          return "PulseLow";
+    default:                          return "P2      ";
   }
 }
 
 static int softwareOscHasP1(enum AYSoftwareOscType type) {
   return type == aySoftwareOscPulse ||
-         type == aySoftwareOscWavetable ||
-         type == aySoftwareOscNoiseWavetable;
+         type == aySoftwareOscWavetable;
 }
 
 static int softwareOscHasP2(enum AYSoftwareOscType type) {
@@ -91,7 +97,6 @@ static uint8_t* softwareOscP1Ptr(InstrumentAYOscSoftware* osc) {
   switch (osc->type) {
     case aySoftwareOscPulse:          return &osc->pulseWidth;
     case aySoftwareOscWavetable:      return &osc->wavetableIndex;
-    case aySoftwareOscNoiseWavetable: return &osc->wavetableIndex;
     default:                          return NULL;
   }
 }
@@ -107,7 +112,6 @@ static uint8_t softwareOscP1Max(enum AYSoftwareOscType type) {
   switch (type) {
     case aySoftwareOscPulse:          return 255;  // Pulse width 0-255
     case aySoftwareOscWavetable:      return 255; // Wavetable index
-    case aySoftwareOscNoiseWavetable: return 255; // Wavetable index
     default:                          return 255;
   }
 }
@@ -121,12 +125,17 @@ static uint8_t softwareOscP2Max(enum AYSoftwareOscType type) {
 
 static int getColumnCount(int row) {
   if (row < 3) return instrumentCommonColumnCount(row);
-  if (row >= 3 && row <= 11) return 2;
+  if (row >= 3 && row <= 12) return 2;
   return 1;
 }
 
 static void drawStatic(void) {
   instrumentCommonDrawStatic();
+
+  // Create wavetable preview bitmap if needed
+  if (!wavetablePreviewBitmap) {
+    wavetablePreviewBitmap = gfxBitmapCreate(2, 1);
+  }
 
   const ColorScheme cs = appSettings.colorScheme;
   InstrumentAY2* ay2 = &chipnomadState->project.instruments[cInstrument].chip.ay2;
@@ -148,22 +157,23 @@ static void drawStatic(void) {
   gfxPrint(COL_LEFT_X, 11, "Noise");
   gfxPrint(COL_RIGHT_X, 11, "Soft osc");
 
-  // Bottom block labels (y 12-13)
+  // Bottom block labels (y 12-14)
   gfxSetFgColor(cs.textDefault);
   gfxPrint(COL_LEFT_X, 12, "Period");
   gfxPrint(COL_RIGHT_X, 12, "Pitch");
   gfxPrint(COL_RIGHT_X, 13, "Fine");
+  gfxPrint(COL_RIGHT_X, 14, "FM depth");
 
-  // P1/P2 labels (y 14-15) - conditional based on osc type
+  // P1/P2 labels (y 15-16) - conditional based on osc type
   // Clear the areas first to remove any stale labels
-  gfxClearRect(COL_RIGHT_X, 14, 14, 1);
   gfxClearRect(COL_RIGHT_X, 15, 14, 1);
+  gfxClearRect(COL_RIGHT_X, 16, 14, 1);
 
   if (softwareOscHasP1(ay2->oscSoftware.type)) {
-    gfxPrint(COL_RIGHT_X, 14, softwareOscP1Name(ay2->oscSoftware.type));
+    gfxPrint(COL_RIGHT_X, 15, softwareOscP1Name(ay2->oscSoftware.type));
   }
   if (softwareOscHasP2(ay2->oscSoftware.type)) {
-    gfxPrint(COL_RIGHT_X, 15, softwareOscP2Name(ay2->oscSoftware.type));
+    gfxPrint(COL_RIGHT_X, 16, softwareOscP2Name(ay2->oscSoftware.type));
   }
 }
 
@@ -190,11 +200,12 @@ static void drawCursor(int col, int row) {
       case 6: // Env fine/D
         gfxCursor(COL_RIGHT_VAL, y, 2);  // Always 2 chars for hex
         break;
-      case 7: gfxCursor(COL_RIGHT_VAL, y, 5); break;  // Soft osc type
+      case 7: gfxCursor(COL_RIGHT_VAL, y, 8); break;  // Soft osc type
       case 8: gfxCursor(COL_RIGHT_VAL, y, 2); break;  // Soft osc pitch (hex)
       case 9: gfxCursor(COL_RIGHT_VAL, y, 2); break;  // Soft osc fine (hex)
-      case 10: gfxCursor(COL_RIGHT_VAL, y, 2); break; // Soft osc P1 (hex)
-      case 11: gfxCursor(COL_RIGHT_VAL, y, 2); break; // Soft osc P2 (hex)
+      case 10: gfxCursor(COL_RIGHT_VAL, y, 2); break; // FM depth (hex)
+      case 11: gfxCursor(COL_RIGHT_VAL, y, 2); break; // Soft osc P1 (hex)
+      case 12: gfxCursor(COL_RIGHT_VAL, y, 2); break; // Soft osc P2 (hex)
     }
   }
 }
@@ -281,7 +292,12 @@ static void drawField(int col, int row, int state) {
         gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
         gfxPrint(COL_RIGHT_VAL, y, byteToHex((uint8_t)ay2->oscSoftware.fineTune));
         break;
-      case 10: // Software osc P1
+      case 10: // FM depth (visible for all soft osc types)
+        // Draw the value
+        gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+        gfxPrint(COL_RIGHT_VAL, y, byteToHex(ay2->oscSoftware.fmDepth));
+        break;
+      case 11: // Software osc P1
         if (softwareOscHasP1(ay2->oscSoftware.type)) {
           // Draw the label for this row
           gfxSetFgColor(appSettings.colorScheme.textDefault);
@@ -291,9 +307,29 @@ static void drawField(int col, int row, int state) {
           gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
           uint8_t* p1 = softwareOscP1Ptr(&ay2->oscSoftware);
           if (p1) gfxPrint(COL_RIGHT_VAL, y, byteToHex(*p1));
+
+          // Draw wavetable preview for WavTb type
+          if (ay2->oscSoftware.type == aySoftwareOscWavetable) {
+            if (p1 && wavetablePreviewBitmap) {
+              // Render preview
+              Project* p = &chipnomadState->project;
+              int isYM = p->chipSetup.ay.isYM;
+              renderWavetablePreview(wavetablePreviewBitmap, p->ayWavetables[*p1], isYM);
+
+              // Draw preview after the value (at x=29, 2 chars after value at x=26-27)
+              gfxSetFgColor(appSettings.colorScheme.textInfo);
+              gfxDrawBitmap(wavetablePreviewBitmap, 29, y);
+            }
+          } else {
+            // Clear preview area for non-wavetable types
+            gfxClearRect(29, y, 2, 1);
+          }
+        } else {
+          // Clear entire P1 area when not available
+          gfxClearRect(COL_RIGHT_X, y, 14, 1);
         }
         break;
-      case 11: // Software osc P2
+      case 12: // Software osc P2
         if (softwareOscHasP2(ay2->oscSoftware.type)) {
           // Draw the label for this row
           gfxSetFgColor(appSettings.colorScheme.textDefault);
@@ -303,6 +339,9 @@ static void drawField(int col, int row, int state) {
           gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
           uint8_t* p2 = softwareOscP2Ptr(&ay2->oscSoftware);
           if (p2) gfxPrint(COL_RIGHT_VAL, y, byteToHex(*p2));
+        } else {
+          // Clear entire P2 area when not available
+          gfxClearRect(COL_RIGHT_X, y, 14, 1);
         }
         break;
     }
@@ -401,17 +440,19 @@ static int onEdit(int col, int row, enum CellEditAction action) {
           handled = edit8noLast(action, &type, 1, 0, aySoftwareOscSample - 1);
           ay2->oscSoftware.type = (enum AYSoftwareOscType)type;
 
-          // If type changed, clear and redraw P1/P2 rows
+          // If type changed, clear and redraw rows that depend on type
           if (handled && oldType != type) {
-            // Clear the entire P1/P2 display areas
-            int y10 = rowToY(10);
+            // Clear P1 and P2 display areas (including labels, values, and wavetable preview)
             int y11 = rowToY(11);
-            gfxClearRect(COL_RIGHT_X, y10, 14, 1);  // Clear label + value area for P1
-            gfxClearRect(COL_RIGHT_X, y11, 14, 1);  // Clear label + value area for P2
+            int y12 = rowToY(12);
+            gfxClearRect(COL_RIGHT_X, y11, 14, 1);  // Clear label + value area for P1 (row 11)
+            gfxClearRect(29, y11, 2, 1);            // Clear wavetable preview area for P1
+            gfxClearRect(COL_RIGHT_X, y12, 14, 1);  // Clear label + value area for P2 (row 12)
 
-            // Redraw if the new type supports them
-            drawField(1, 10, 0);
-            drawField(1, 11, 0);
+            // Redraw all affected rows
+            drawField(1, 10, 0);  // FM depth (always visible, might need refresh)
+            drawField(1, 11, 0);  // P1 (conditional)
+            drawField(1, 12, 0);  // P2 (conditional)
           }
         }
         break;
@@ -427,19 +468,45 @@ static int onEdit(int col, int row, enum CellEditAction action) {
           screenMessage(0, "Software fine tune %hhd", ay2->oscSoftware.fineTune);
         }
         break;
-      case 10: // Software osc P1
+      case 10: // FM depth (available for all soft osc types)
+        handled = edit8noLast(action, &ay2->oscSoftware.fmDepth, 16, 0, 255);
+        if (handled) {
+          screenMessage(0, "FM depth %hhu", ay2->oscSoftware.fmDepth);
+        }
+        break;
+      case 11: // Software osc P1
         if (softwareOscHasP1(ay2->oscSoftware.type)) {
           uint8_t* p1 = softwareOscP1Ptr(&ay2->oscSoftware);
           if (p1) {
-            uint8_t maxVal = softwareOscP1Max(ay2->oscSoftware.type);
-            handled = edit8noLast(action, p1, 16, 0, maxVal);
-            if (handled) {
+            // Special handling for Clear action on pulse width - reset to 0x80 (50% duty cycle)
+            if (action == editClear && ay2->oscSoftware.type == aySoftwareOscPulse) {
+              *p1 = 0x80;
+              handled = 1;
               screenMessage(0, "Software osc P1 %hhu", *p1);
+            } else {
+              uint8_t maxVal = softwareOscP1Max(ay2->oscSoftware.type);
+              handled = edit8noLast(action, p1, 16, 0, maxVal);
+              if (handled) {
+                screenMessage(0, "Software osc P1 %hhu", *p1);
+
+                // Update wavetable preview immediately for WavTb type
+                if (ay2->oscSoftware.type == aySoftwareOscWavetable) {
+                  if (wavetablePreviewBitmap) {
+                    Project* p = &chipnomadState->project;
+                    int isYM = p->chipSetup.ay.isYM;
+                    renderWavetablePreview(wavetablePreviewBitmap, p->ayWavetables[*p1], isYM);
+
+                    int y = rowToY(11);
+                    gfxSetFgColor(appSettings.colorScheme.textInfo);
+                    gfxDrawBitmap(wavetablePreviewBitmap, 29, y);
+                  }
+                }
+              }
             }
           }
         }
         break;
-      case 11: // Software osc P2
+      case 12: // Software osc P2
         if (softwareOscHasP2(ay2->oscSoftware.type)) {
           uint8_t* p2 = softwareOscP2Ptr(&ay2->oscSoftware);
           if (p2) {
@@ -459,14 +526,15 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 }
 
 static int isCellValid(int col, int row) {
-  // Row 6, 9, 10, 11 col 0 are dead cells (tone/noise blocks have no corresponding rows)
-  if ((row == 6 || row == 9 || row == 10 || row == 11) && col == 0) return 0;
+  // Row 6, 9, 10, 11, 12 col 0 are dead cells (tone/noise blocks have no corresponding rows)
+  if ((row == 6 || row == 9 || row == 10 || row == 11 || row == 12) && col == 0) return 0;
 
-  // Row 10 (P1) and row 11 (P2) col 1 are only valid if the osc type supports them
+  // Row 10 (FM depth) is always valid for col 1
+  // Row 11 (P1) and row 12 (P2) col 1 are only valid if the osc type supports them
   if (col == 1) {
     InstrumentAY2* ay2 = &chipnomadState->project.instruments[cInstrument].chip.ay2;
-    if (row == 10 && !softwareOscHasP1(ay2->oscSoftware.type)) return 0;
-    if (row == 11 && !softwareOscHasP2(ay2->oscSoftware.type)) return 0;
+    if (row == 11 && !softwareOscHasP1(ay2->oscSoftware.type)) return 0;
+    if (row == 12 && !softwareOscHasP2(ay2->oscSoftware.type)) return 0;
   }
 
   return 1;

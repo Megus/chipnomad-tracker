@@ -1,5 +1,5 @@
 #include "screen_instrument.h"
-#include "sample_preview.h"
+#include "waveform_display.h"
 #include "sample_utils.h"
 #include "corelib_gfx.h"
 #include "corelib/corelib_file.h"

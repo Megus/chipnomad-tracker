@@ -22,7 +22,7 @@ void drawScreenMap() {
   const ColorScheme cs = appSettings.colorScheme;
   gfxSetBgColor(cs.background);
   gfxSetFgColor(cs.textInfo);
-  gfxClearRect(35, smY, 5, 4);
+  gfxClearRect(35, smY, 5, 5);
 
   // Core screens
   gfxPrint(35, smY + 1, "SCPIT");
@@ -37,6 +37,8 @@ void drawScreenMap() {
     gfxPrint(38, smY, "M");
   } else if (currentScreen == &screenModulation) {
     gfxPrint(38, smY + 2, "P");
+  } else if (currentScreen == &screenTable || currentScreen == &screenWavetable) {
+    gfxPrint(39, smY + 2, "W");
   }
 
   // Show Settings below Song
@@ -60,6 +62,8 @@ void drawScreenMap() {
     gfxPrint(38, smY, "M");
   } else if (currentScreen == &screenTable) {
     gfxPrint(39, smY + 1, "T");
+  } else if (currentScreen == &screenWavetable) {
+    gfxPrint(39, smY + 2, "W");
   } else if (currentScreen == &screenProject) {
     gfxPrint(35, smY, "P");
   } else if (currentScreen == &screenGroove) {
@@ -130,6 +134,7 @@ void screensInitAll(void) {
   screenChain.init();
   screenPhrase.init();
   screenTable.init();
+  screenWavetable.init();
   screenInstrument.init();
   screenGroove.init();
   resetCopyBuffers();

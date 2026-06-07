@@ -334,20 +334,24 @@ static int inputScreenNavigation(int keys, int tapCount) {
       screenSetup(&screenInstrument, -1);
     }
     return 1;
-  } if (keys == (keyLeft | keyOpt)) {
+  } else if (keys == (keyDown | keyShift)) {
+    // Go to Wavetable screen
+    screenSetup(&screenWavetable, 0);
+    return 1;
+  } else if (keys == (keyLeft | keyOpt)) {
     // Previous table
     if (tableIdx > 0) {
       setup(tableIdx - 1);
       fullRedraw();
     }
     return 1;
-  } if (keys == (keyRight | keyOpt)) {
+  } else if (keys == (keyRight | keyOpt)) {
     // Next table
     if (tableIdx < PROJECT_MAX_TABLES - 1) {
       setup(tableIdx + 1);
       fullRedraw();
     }
-  } if (keys == (keyUp | keyOpt)) {
+  } else if (keys == (keyUp | keyOpt)) {
     // +16 tables
     tableIdx += 16;
     if (tableIdx >= PROJECT_MAX_TABLES) tableIdx = PROJECT_MAX_TABLES - 1;

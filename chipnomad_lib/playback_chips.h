@@ -40,6 +40,9 @@ typedef struct PlaybackAYNoteState {
   // Software oscillator
   enum AYSoftwareOscType softType;
   uint16_t softPeriodCounter; // Counter for software oscillator timing
+  uint8_t softFMPhase; // Phase for FM modulation (0/1)
+  int16_t softFMPeriodOffset; // Period offset for FM modulation
+  int16_t softFMDepthOffset; // FM Depth offset (for modulation)
 
   uint8_t softFixedPitch; // If not EMPTY_VALUE_8, use this fixed pitch instead of note pitch
   int16_t softPitchOffset;
@@ -52,7 +55,6 @@ typedef struct PlaybackAYNoteState {
   uint32_t samplePosition;
   int8_t sampleDitherError;
   uint32_t sampleIncrement;
-  uint32_t wavetablePosition;
   int16_t wavetableIndexOffset;
 
   // Calculated values for the current tick. Used for timer function and visualization

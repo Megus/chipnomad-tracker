@@ -177,7 +177,7 @@ static void drawCursor(int col, int row) {
 
   switch (modRow) {
     case 0: gfxCursor(valX, y, 4); break; // Type
-    case 1: gfxCursor(valX, y, 7); break; // Dest
+    case 1: gfxCursor(valX, y, 8); break; // Dest
     case 2: gfxCursor(valX, y, 2); break; // Amt
     default:
       if (mod->type == modLFO && (modRow - 3) <= 1) {
@@ -206,7 +206,7 @@ static void drawField(int col, int row, int state) {
       gfxPrint(valX, y, modTypeName(mod->type));
       break;
     case 1: // Destination
-      gfxClearRect(valX, y, 7, 1);
+      gfxClearRect(valX, y, 8, 1);
       {
         Instrument* inst = &chipnomadState->project.instruments[cInstrument];
         InstrumentFunctions funcs = getInstrumentFunctions(inst->type);

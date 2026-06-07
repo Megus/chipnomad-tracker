@@ -44,7 +44,9 @@ static int initAY1Instrument(Instrument* instrument) {
   initCommon(instrument);
   instrument->type = instAY1;
   instrument->chip.ay.defaultMixer = 0x01; // Tone on, noise off, envelope shape 0
-  instrument->chip.ay.volumeEnvelope = (Modulation){.type = modADSR, .destination = 1, .amount = 127, .p1 = 0, .p2 = 0, .p3 = 15, .p4 = 0 };
+  instrument->chip.ay.volumeEnvelope = (Modulation){
+    .type = modADSR, .destination = 1, .amount = 127, .p1 = 0, .p2 = 0, .p3 = 15, .p4 = 0
+  };
   return 0;
 }
 
@@ -55,7 +57,9 @@ static int freeAY1Instrument(Instrument* instrument) {
 
 // Instrument type: AY2
 static char* modNameAY2(int modIndex) {
-  static char *names[] = {"Off", "Volume", "Pitch", "TonePit", "Noise", "EnvPit", "SoftPit", "PulseW", "PulseL", "WavIdx"};
+  static char *names[] = {
+    "Off", "Volume", "Pitch", "TonePit", "Noise", "EnvPit", "SoftPit", "FMDepth", "PulseW", "PulseL", "WavIdx"
+  };
   return names[modIndex];
 }
 
@@ -106,7 +110,7 @@ InstrumentFunctions getInstrumentFunctions(enum InstrumentType type) {
       };
     case instAY2:
       return (InstrumentFunctions){
-        .modDestinationsCount = 9,
+        .modDestinationsCount = 10,
         .modName = modNameAY2,
         .init = initAY2Instrument,
         .free = freeAY2Instrument

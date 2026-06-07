@@ -90,8 +90,9 @@ enum AYSoftwareOscType {
   aySoftwareOscSyncTone = 2,
   aySoftwareOscSyncEnvelope = 3,
   aySoftwareOscWavetable = 4,
-  aySoftwareOscNoiseWavetable = 5,
-  aySoftwareOscSample = 6, // Needs to be last for various conditions for AY2 instrument
+  aySoftwareOscToneFM = 5,
+  aySoftwareOscEnvFM = 6,
+  aySoftwareOscSample = 7, // Needs to be last for various conditions for AY2 instrument
   aySoftwareOscTotalCount,
 };
 
@@ -103,6 +104,7 @@ typedef struct InstrumentAYOscSoftware {
   uint8_t pulseWidth;
   uint8_t pulseLow;
   uint8_t wavetableIndex;
+  uint8_t fmDepth;
 } InstrumentAYOscSoftware;
 
 typedef struct InstrumentAY2 {

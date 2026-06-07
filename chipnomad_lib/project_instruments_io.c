@@ -105,6 +105,8 @@ static int loadInstrumentAY2(FILE* file, Instrument* instrument) {
       sscanf(line, "- Pulse Low: %hhu", &instrument->chip.ay2.oscSoftware.pulseLow);
     } else if (strncmp(line, "- Wavetable Index: ", 19) == 0) {
       sscanf(line, "- Wavetable Index: %hhu", &instrument->chip.ay2.oscSoftware.wavetableIndex);
+    } else if (strncmp(line, "- FM depth: ", 12) == 0) {
+      sscanf(line, "- FM depth: %hhu", &instrument->chip.ay2.oscSoftware.fmDepth);
     }
     consumeLine(file);
   }
@@ -321,6 +323,7 @@ static int saveInstrumentAY2(FILE* file, Instrument* instrument) {
   fprintf(file, "- Pulse Width: %hhu\n", instrument->chip.ay2.oscSoftware.pulseWidth);
   fprintf(file, "- Pulse Low: %hhu\n", instrument->chip.ay2.oscSoftware.pulseLow);
   fprintf(file, "- Wavetable Index: %hhu\n", instrument->chip.ay2.oscSoftware.wavetableIndex);
+  fprintf(file, "- FM depth: %hhu\n", instrument->chip.ay2.oscSoftware.fmDepth);
 
   return 0;
 }

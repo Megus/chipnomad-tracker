@@ -60,19 +60,14 @@ uint8_t cnSampleLookupYM[256];
 // =======================================
 
 // Pulse
-static void timerFunctionPulse(ChipNomadState *chipNomadState, struct SoundChip* chip, int channel, PlaybackTrackState* track) {
+static void timerFunctionPulse(ChipNomadState *chipNomadState, struct SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+
   PlaybackState* state = &chipNomadState->playbackState;
   Instrument *instrument = &state->p->instruments[track->note.instrument];
   if (instrument->type != instAY2) return;
 
-  // Period reset
-  if (track->note.chip.ay.softPeriodCounter >= track->note.chip.ay.outSoftPeriod * 2) {
-    track->note.chip.ay.softPeriodCounter = 0;
-
-  }
-
   // Avoid zero pulse width which can happen when there's no cached pulse width
-  if (track->note.chip.ay.pulseWidthCurrent == 0 || track->note.chip.ay.softPeriodCounter) {
+  if (track->note.chip.ay.pulseWidthCurrent == 0 || track->note.chip.ay.softPeriodCounter == 0) {
     track->note.chip.ay.pulseWidthCurrent = clampInt(instrument->chip.ay2.oscSoftware.pulseWidth + track->note.chip.ay.pulseWidthOffset, 1, 255);
   }
 
@@ -87,7 +82,7 @@ static void timerFunctionPulse(ChipNomadState *chipNomadState, struct SoundChip*
     pulseWidth = pulseWidth & 0xf0;
     if (pulseWidth == 0) pulseWidth = 16; // Avoid zero pulse width in 16-step mode
   }
-  int phase2 = track->note.chip.ay.outSoftPeriod * pulseWidth / 128;
+  int phase2 = period * pulseWidth / 256;
 
   if (track->note.chip.ay.softPeriodCounter >= phase2) {
     int lowVolume = clampInt(instrument->chip.ay2.oscSoftware.pulseLow + track->note.chip.ay.pulseLowOffset, 0, 15);
@@ -97,15 +92,10 @@ static void timerFunctionPulse(ChipNomadState *chipNomadState, struct SoundChip*
 }
 
 // Sync Tone
-static void timerFunctionSyncTone(ChipNomadState *chipNomadState, struct SoundChip* chip, int channel, PlaybackTrackState* track) {
+static void timerFunctionSyncTone(ChipNomadState *chipNomadState, struct SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
   PlaybackState* state = &chipNomadState->playbackState;
   Instrument *instrument = &state->p->instruments[track->note.instrument];
   if (instrument->type != instAY2) return;
-
-  // Period reset
-  if (track->note.chip.ay.softPeriodCounter >= track->note.chip.ay.outSoftPeriod * 2) {
-    track->note.chip.ay.softPeriodCounter = 0;
-  }
 
   // Reset tone phase
   uint16_t periodCounter = track->note.chip.ay.softPeriodCounter;
@@ -121,15 +111,10 @@ static void timerFunctionSyncTone(ChipNomadState *chipNomadState, struct SoundCh
 }
 
 // Sync Envelope
-static void timerFunctionSyncEnv(ChipNomadState *chipNomadState, struct SoundChip* chip, int channel, PlaybackTrackState* track) {
+static void timerFunctionSyncEnv(ChipNomadState *chipNomadState, struct SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
   PlaybackState* state = &chipNomadState->playbackState;
   Instrument *instrument = &state->p->instruments[track->note.instrument];
   if (instrument->type != instAY2) return;
-
-  // Period reset
-  if (track->note.chip.ay.softPeriodCounter >= track->note.chip.ay.outSoftPeriod * 2) {
-    track->note.chip.ay.softPeriodCounter = 0;
-  }
 
   // Reset envelope phase
   if (track->note.chip.ay.softPeriodCounter == 0) {
@@ -138,7 +123,7 @@ static void timerFunctionSyncEnv(ChipNomadState *chipNomadState, struct SoundChi
 }
 
 // Samples
-static void timerFunctionSample(ChipNomadState *chipNomadState, struct SoundChip* chip, int channel, PlaybackTrackState* track) {
+static void timerFunctionSample(ChipNomadState *chipNomadState, struct SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
   PlaybackState* state = &chipNomadState->playbackState;
   Instrument *instrument = &state->p->instruments[track->note.instrument];
   if (instrument->type != instAYSample) return;
@@ -146,11 +131,6 @@ static void timerFunctionSample(ChipNomadState *chipNomadState, struct SoundChip
 
   uint8_t* dacTable;
   uint8_t* dacLUT;
-
-  // Period reset. Not  needed for samples
-  if (track->note.chip.ay.softPeriodCounter >= track->note.chip.ay.outSoftPeriod) {
-    track->note.chip.ay.softPeriodCounter = 0;
-  }
 
   // Bounds check
   uint32_t sampleIndex = track->note.chip.ay.samplePosition >> 16;
@@ -221,11 +201,52 @@ static void timerFunctionSample(ChipNomadState *chipNomadState, struct SoundChip
     sampleValue = dacLUT[scaledSample];
   }
 
-
-
   chip->setRegister(chip, channel + 8, sampleValue);
 
   track->note.chip.ay.samplePosition += track->note.chip.ay.sampleIncrement;
+}
+
+
+void timerFunctionWavetable(ChipNomadState *chipNomadState, struct SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+  PlaybackState* state = &chipNomadState->playbackState;
+  Instrument *instrument = &state->p->instruments[track->note.instrument];
+  if (instrument->type != instAY2) return;
+
+  int counter = track->note.chip.ay.softPeriodCounter;
+
+  int position = (counter * 32 / period) & 0x1f; // 32 is wavetable size
+  int16_t wavetableIndex = clampInt16(instrument->chip.ay2.oscSoftware.wavetableIndex + track->note.chip.ay.wavetableIndexOffset, 0, 255);
+  uint8_t value = state->p->ayWavetables[wavetableIndex][position];
+  uint8_t volume = (value * track->note.chip.ay.outVolume) / 15;
+  chip->setRegister(chip, channel + 8, volume);
+}
+
+void timerFunctionToneFM(ChipNomadState *chipNomadState, struct SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+  PlaybackState* state = &chipNomadState->playbackState;
+  Instrument *instrument = &state->p->instruments[track->note.instrument];
+  if (instrument->type != instAY2) return;
+
+  int16_t tonePeriod = track->note.chip.ay.outTonePeriod;
+  int16_t fmDepth = clampInt16(instrument->chip.ay2.oscSoftware.fmDepth + track->note.chip.ay.softFMDepthOffset, 0, 255);
+  int16_t fmMaxOffset = tonePeriod / 3; // Gives max modulation depth of an octave
+  int16_t fmOffset = (fmDepth * fmMaxOffset) / 255;
+  tonePeriod = clampInt16(tonePeriod + (track->note.chip.ay.softFMPhase ? fmOffset : -fmOffset), 1, 4095);
+  chip->setRegister(chip, channel * 2, tonePeriod & 0xff);
+  chip->setRegister(chip, channel * 2 + 1, (tonePeriod >> 8) & 0xff);
+}
+
+void timerFunctionEnvFM(ChipNomadState *chipNomadState, struct SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+  PlaybackState* state = &chipNomadState->playbackState;
+  Instrument *instrument = &state->p->instruments[track->note.instrument];
+  if (instrument->type != instAY2) return;
+
+  int16_t envPeriod = track->note.chip.ay.outEnvPeriod;
+  int16_t fmDepth = clampInt16(instrument->chip.ay2.oscSoftware.fmDepth + track->note.chip.ay.softFMDepthOffset, 0, 255);
+  int16_t fmMaxOffset = envPeriod / 3; // Gives max modulation depth of an octave
+  int16_t fmOffset = (fmDepth * fmMaxOffset) / 255;
+  envPeriod = clampInt16(envPeriod + (track->note.chip.ay.softFMPhase ? fmOffset : -fmOffset), 1, 4095);
+  chip->setRegister(chip, 11, envPeriod & 0xff);
+  chip->setRegister(chip, 12, (envPeriod >> 8) & 0xff);
 }
 
 int timerFunctionAY(struct SoundChip* chip, void* userdata) {
@@ -238,22 +259,58 @@ int timerFunctionAY(struct SoundChip* chip, void* userdata) {
     PlaybackTrackState* track = &state->tracks[firstTrack + ch];
     if (track->note.instrument == EMPTY_VALUE_8) continue; // No instrument, skip
 
+    Instrument *instrument = &state->p->instruments[track->note.instrument];
+    uint16_t softOscPeriod = clampUInt16(track->note.chip.ay.outSoftPeriod, 1, 4095);
+
+    // Soft osc period is not modulated by FM for toneFM and envFM types
+    int isFMModulated = instrument->type == instAY2 && (track->note.chip.ay.softType != aySoftwareOscToneFM && track->note.chip.ay.softType != aySoftwareOscEnvFM);
+
+    if (isFMModulated) {
+      softOscPeriod = clampUInt16(track->note.chip.ay.outSoftPeriod + track->note.chip.ay.softFMPeriodOffset, 1, 4095);
+    }
+
+    // Period reset
+    if (track->note.chip.ay.softPeriodCounter >= softOscPeriod * 2) {
+      track->note.chip.ay.softPeriodCounter = 0;
+      track->note.chip.ay.softFMPhase ^= 1; // Toggle FM phase
+
+      // Calculate FM period offset based on phase and FM depth
+      if (isFMModulated) {
+        int16_t fmDepth = clampInt16(instrument->chip.ay2.oscSoftware.fmDepth + track->note.chip.ay.softFMDepthOffset, 0, 255);
+        int16_t fmMaxOffset = track->note.chip.ay.outSoftPeriod / 3; // Gives max modulation depth of an octave
+        int16_t fmOffset = (fmDepth * fmMaxOffset) / 255;
+
+        track->note.chip.ay.softFMPeriodOffset = track->note.chip.ay.softFMPhase ? fmOffset : -fmOffset;
+
+        softOscPeriod = clampUInt16(track->note.chip.ay.outSoftPeriod + track->note.chip.ay.softFMPeriodOffset, 1, 4095);
+      } else {
+        track->note.chip.ay.softFMPeriodOffset = 0; // No FM modulation
+      }
+    }
+
+    softOscPeriod *= 2; // Double the AY period value for the full wave duration
+
     switch (track->note.chip.ay.softType) {
       case aySoftwareOscPulse:
-        timerFunctionPulse(chipNomadState, chip, ch, track);
+        timerFunctionPulse(chipNomadState, chip, ch, softOscPeriod, track);
         break;
       case aySoftwareOscSyncTone:
-        timerFunctionSyncTone(chipNomadState, chip, ch, track);
+        timerFunctionSyncTone(chipNomadState, chip, ch, softOscPeriod, track);
         break;
       case aySoftwareOscSyncEnvelope:
-        timerFunctionSyncEnv(chipNomadState, chip, ch, track);
+        timerFunctionSyncEnv(chipNomadState, chip, ch, softOscPeriod, track);
         break;
       case aySoftwareOscWavetable:
+        timerFunctionWavetable(chipNomadState, chip, ch, softOscPeriod, track);
         break;
-      case aySoftwareOscNoiseWavetable:
+      case aySoftwareOscToneFM:
+        timerFunctionToneFM(chipNomadState, chip, ch, softOscPeriod, track);
+        break;
+      case aySoftwareOscEnvFM:
+        timerFunctionEnvFM(chipNomadState, chip, ch, softOscPeriod, track);
         break;
       case aySoftwareOscSample:
-        timerFunctionSample(chipNomadState, chip, ch, track);
+        timerFunctionSample(chipNomadState, chip, ch, softOscPeriod, track);
         break;
       default:
         break;
@@ -262,7 +319,6 @@ int timerFunctionAY(struct SoundChip* chip, void* userdata) {
     // Period counter
     track->note.chip.ay.softPeriodCounter++;
   }
-
 
   return 1;
 }
@@ -297,6 +353,7 @@ void resetOffsetsAY(PlaybackState* state, int trackIdx) {
   track->note.chip.ay.toneFineOffset = 0;
   track->note.chip.ay.envPitchOffset = 0;
   track->note.chip.ay.envFineOffset = 0;
+  track->note.chip.ay.softFMDepthOffset = 0;
   track->note.chip.ay.softPitchOffset = 0;
   track->note.chip.ay.softFineOffset = 0;
   track->note.chip.ay.pulseWidthOffset = 0;
@@ -519,16 +576,20 @@ void handleInstrumentAY2(PlaybackState* state, int trackIdx) {
         track->note.chip.ay.softFineOffset += playbackModScaleToRange(mod->outValue, p->linearPitch ? PITCH_MOD_RANGE_CENTS : PITCH_MOD_RANGE_PERIOD);
         break;
       }
-      case 7: { // Pulse Width
+      case 7: { // Software FM Depth
+        track->note.chip.ay.softFMDepthOffset += playbackModScaleToRange(mod->outValue, 255);
+        break;
+      }
+      case 8: { // Pulse Width
         track->note.chip.ay.pulseWidthOffset += playbackModScaleToRange(mod->outValue, 127);
         break;
       }
-      case 8: { // Pulse Low
+      case 9: { // Pulse Low
         track->note.chip.ay.pulseLowOffset += playbackModScaleToRange(mod->outValue, 127);
         break;
       }
-      case 9: { // Wavetable index
-        // TODO
+      case 10: { // Wavetable index
+        track->note.chip.ay.wavetableIndexOffset += playbackModScaleToRange(mod->outValue, 127);
         break;
       }
     }
@@ -631,8 +692,8 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
                                          track->note.periodOffset, 1);
       track->note.chip.ay.outTonePeriod = period;
 
-      // Shouldn't write only when soft osc type is SyncTone, timer function will handle it
-      if (track->note.chip.ay.softType != aySoftwareOscSyncTone) {
+      // Shouldn't write only when soft osc type is SyncTone ot ToneFM, timer function will handle it
+      if (!(track->note.chip.ay.softType == aySoftwareOscSyncTone || track->note.chip.ay.softType == aySoftwareOscToneFM)) {
         shouldWriteTonePeriod = 1;
       }
 
@@ -671,10 +732,9 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
       // ===============
 
       int volume = 0;
-      // Envelope is on only when envShape is non-zero and software oscillator type
-      // is none, SyncTone, or SyncEnvelope (other soft osc types are not compatible with envelope
-      // because they modulate the volume)
-      if (track->note.chip.ay.envShape != 0 && (track->note.chip.ay.softType == aySoftwareOscNone || track->note.chip.ay.softType == aySoftwareOscSyncTone || track->note.chip.ay.softType == aySoftwareOscSyncEnvelope)) {
+      // Envelope is on only when envShape is non-zero and software oscillator type is
+      // not Pulse, Wavetable, or Sample, because those types modulate the volume
+      if (track->note.chip.ay.envShape != 0 && (track->note.chip.ay.softType != aySoftwareOscPulse && track->note.chip.ay.softType != aySoftwareOscWavetable && track->note.chip.ay.softType != aySoftwareOscSample)) {
         // ===========
         // Envelope on
         // ===========
@@ -708,7 +768,7 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
 
         // Note: For AY2, clamping is done inside calculateAYPeriod
         // For AY1, clamping is done above after applying envPeriodOffset
-
+        track->note.chip.ay.outEnvPeriod = envPeriod;
         shouldWriteEnvPeriod = 1;
         volume = 16;
       } else {

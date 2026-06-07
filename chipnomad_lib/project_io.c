@@ -573,6 +573,73 @@ static int projectLoadTables(FILE* file, Project* p) {
   return 0;
 }
 
+static int projectLoadAYWavetables(FILE* file, Project* p) {
+  char* line = peekLine(file);
+  if (line == NULL) return 1;
+
+  // This section is optional for backwards compatibility
+  if (strcmp(line, "## AY Wavetables")) {
+    // Section not found, that's OK - just return success
+    return 0;
+  }
+  consumeLine(file);
+
+  // Read wavetable data lines until we hit EOF or another section
+  while (1) {
+    line = peekLine(file);
+    if (line == NULL) return 1;
+
+    // Check if we've reached EOF or another section marker
+    if (!strcmp(line, "EOF") || !strncmp(line, "##", 2)) {
+      break;
+    }
+
+    // Parse wavetable line: "XX 0123456789ABCDEF0123456789ABCDEF"
+    int wavetableIdx;
+    char data[33];  // 32 hex digits + null terminator
+
+    if (sscanf(line, "%X %32s", &wavetableIdx, data) != 2) {
+      sprintf(projectFileError, "Invalid wavetable format");
+      return 1;
+    }
+
+    // Validate wavetable index
+    if (wavetableIdx < 0 || wavetableIdx > 255) {
+      sprintf(projectFileError, "Invalid wavetable index");
+      return 1;
+    }
+
+    // Validate data length
+    if (strlen(data) != 32) {
+      sprintf(projectFileError, "Invalid wavetable data length");
+      return 1;
+    }
+
+    // Parse hex digits and store in wavetable
+    for (int i = 0; i < 32; i++) {
+      char c = data[i];
+      uint8_t value;
+
+      if (c >= '0' && c <= '9') {
+        value = c - '0';
+      } else if (c >= 'A' && c <= 'F') {
+        value = c - 'A' + 10;
+      } else if (c >= 'a' && c <= 'f') {
+        value = c - 'a' + 10;
+      } else {
+        sprintf(projectFileError, "Invalid hex digit in wavetable");
+        return 1;
+      }
+
+      p->ayWavetables[wavetableIdx][i] = value & 0x0F;
+    }
+
+    consumeLine(file);
+  }
+
+  return 0;
+}
+
 static int projectLoadInternal(FILE* file, Project* project) {
   char buf[128];
   Project p;
@@ -753,6 +820,8 @@ static int projectLoadInternal(FILE* file, Project* project) {
   if (projectLoadInstruments(file, &p)) return 1;
   sprintf(projectFileError, "Invalid table data");
   if (projectLoadTables(file, &p)) return 1;
+  sprintf(projectFileError, "Invalid wavetable data");
+  if (projectLoadAYWavetables(file, &p)) return 1;
 
   *project = p;
   return 0;
@@ -937,6 +1006,32 @@ static int projectSaveTables(FILE* file, Project* project) {
   return 0;
 }
 
+static int projectSaveAYWavetables(FILE* file, Project* project) {
+  // Count non-empty wavetables
+  int count = 0;
+  for (int i = 0; i < 256; i++) {
+    if (!wavetableIsEmpty(project, i)) count++;
+  }
+
+  // Only write section if there are non-empty wavetables
+  if (count == 0) return 0;
+
+  fprintf(file, "\n## AY Wavetables\n\n");
+
+  for (int i = 0; i < 256; i++) {
+    if (!wavetableIsEmpty(project, i)) {
+      // Write: "XX 0123456789ABCDEF0123456789ABCDEF"
+      fprintf(file, "%02X ", i);
+      for (int j = 0; j < 32; j++) {
+        fprintf(file, "%X", project->ayWavetables[i][j] & 0x0F);
+      }
+      fprintf(file, "\n");
+    }
+  }
+
+  return 0;
+}
+
 static int projectSaveInternal(FILE* file, Project* project) {
   fprintf(file, "# ChipNomad Tracker Module 2.0\n\n");
 
@@ -977,6 +1072,7 @@ static int projectSaveInternal(FILE* file, Project* project) {
   projectSavePhrases(file, project);
   projectSaveInstruments(file, project);
   projectSaveTables(file, project);
+  projectSaveAYWavetables(file, project);
   fprintf(file, "EOF\n");
   return 0;
 }

@@ -17,9 +17,9 @@ enum FX {
   fxPVB, // Pitch vibrato
   fxPBN, // Pitch bend
   fxPSL, // Pitch slide (portamento)
-  fxPIT, // Pitch offset (semitones)
-  fxFIN, // Fine pitch offset
-  fxPRD, // Period offset
+  fxPIT, // Pitch - steps/semitones (relative)
+  fxFIN, // Pitch fine (relative)
+  fxPRD, // Period (relative)
   fxVOL, // Volume (relative)
   fxRET, // Retrigger
   fxDEL, // Delay
@@ -36,26 +36,26 @@ enum FX {
   fxSNG, // Song hop
 
   // Modulation FX
-  fxM1A, // Modulation 1 amount
-  fxM11, // Modulation 1, parameter 1 offset
-  fxM12, // Modulation 1, parameter 2 offset
-  fxM13, // Modulation 1, parameter 3 offset
-  fxM14, // Modulation 1, parameter 4 offset
-  fxM2A, // Modulation 2 amount
-  fxM21, // Modulation 2, parameter 1 offset
-  fxM22, // Modulation 2, parameter 2 offset
-  fxM23, // Modulation 2, parameter 3 offset
-  fxM24, // Modulation 2, parameter 4 offset
-  fxM3A, // Modulation 3 amount
-  fxM31, // Modulation 3, parameter 1 offset
-  fxM32, // Modulation 3, parameter 2 offset
-  fxM33, // Modulation 3, parameter 3 offset
-  fxM34, // Modulation 3, parameter 4 offset
-  fxM4A, // Modulation 4 amount
-  fxM41, // Modulation 4, parameter 1 offset
-  fxM42, // Modulation 4, parameter 2 offset
-  fxM43, // Modulation 4, parameter 3 offset
-  fxM44, // Modulation 4, parameter 4 offset
+  fxM1A, // Modulation 1 amount (relative)
+  fxM11, // Modulation 1, parameter 1 (relative)
+  fxM12, // Modulation 1, parameter 2 (relative)
+  fxM13, // Modulation 1, parameter 3 (relative)
+  fxM14, // Modulation 1, parameter 4 (relative)
+  fxM2A, // Modulation 2 amount (relative)
+  fxM21, // Modulation 2, parameter 1 (relative)
+  fxM22, // Modulation 2, parameter 2 (relative)
+  fxM23, // Modulation 2, parameter 3 (relative)
+  fxM24, // Modulation 2, parameter 4 (relative)
+  fxM3A, // Modulation 3 amount (relative)
+  fxM31, // Modulation 3, parameter 1 (relative)
+  fxM32, // Modulation 3, parameter 2 (relative)
+  fxM33, // Modulation 3, parameter 3 (relative)
+  fxM34, // Modulation 3, parameter 4 (relative)
+  fxM4A, // Modulation 4 amount (relative)
+  fxM41, // Modulation 4, parameter 1 (relative)
+  fxM42, // Modulation 4, parameter 2 (relative)
+  fxM43, // Modulation 4, parameter 3 (relative)
+  fxM44, // Modulation 4, parameter 4 (relative)
 
   // AY FX
   // Common AY FX (used in 1+ AY instrument types):
@@ -65,38 +65,33 @@ enum FX {
   fxNOA, // Noise (absolute)
   fxEAU, // Auto-env setting
   fxTNN, // Tone specific note
-  fxTNP, // Tone pitch offset
-  fxTNF, // Tone fine offset
+  fxTNP, // Tone pitch (relative)
+  fxTNF, // Tone fine (relative)
   fxTRT, // Tone phase retrigger
   fxENN, // Envelope specific note
-  fxENP, // Envelope pitch offset
-  fxENF, // Envelope fine offset
+  fxENP, // Envelope pitch (relative)
+  fxENF, // Envelope fine (relative)
   // AY Classic instrument (AY1):
   fxEVB, // Envelope vibrato
   fxEBN, // Envelope bend
   fxESL, // Envelope slide (portamento)
   fxENT, // Envelope note
-  fxEPT, // Envelope period offset
+  fxEPT, // Envelope period (relative)
   fxEPL, // Envelope period L
   fxEPH, // Envelope period H
   // AY Plus instrument (AY2):
   fxSFT, // Software oscillator type
-  fxSFV, // Software oscillator aux value
   fxSFN, // Software oscillator specific note
-  fxSFP, // Software oscillator pitch offset
-  fxSFF, // Software oscillator fine offset
+  fxSFP, // Software oscillator pitch (relative)
+  fxSFF, // Software oscillator fine (relative)
   fxSRT, // Software oscillator phase retrigger
+  fxSFM, // Software oscillator FM depth (relative)
+  fxPWM, // Software oscillator pulse width (relative)
+  fxSPL, // Software oscillator pulse low
+  fxSWT, // Software oscillator wavetable index (relative)
   // AY Sample instrument (AYSample):
   fxSMN, // Sample specific note
-  fxSMP, // Sample pitch offset
-  fxSMF, // Sample fine offset
   fxSMS, // Sample start position
-  // AY Wavetable instrument (AYWavetable):
-  fxWTX, // Wavetable index offset
-  fxWTN, // Wavetable specific note
-  fxWTP, // Wavetable pitch offset
-  fxWTF, // Wavetable fine offset
-  fxWRT, // Wavetable phase retrigger
   // TODO: FM FX
 
   // TODO: SID FX
@@ -252,6 +247,8 @@ int8_t instrumentIsEmpty(Project* p, int instrument);
 int8_t tableIsEmpty(Project* p, int table);
 // Is groove empty?
 int8_t grooveIsEmpty(Project* p, int groove);
+// Is wavetable empty?
+int8_t wavetableIsEmpty(Project* p, int wavetable);
 // Note name in phrase
 char* noteName(Project* p, uint8_t note);
 // Get number of tracks for a chip at index

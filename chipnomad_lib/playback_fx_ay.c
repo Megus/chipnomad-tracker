@@ -313,14 +313,6 @@ static void handleFX_SFT(PlaybackState* state, PlaybackTrackState* track, int tr
   // TODO: Implement software oscillator type setting
 }
 
-// SFV - Software oscillator aux value
-static void handleFX_SFV(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
-  fx->isOn = 0; // Atomic effect
-  if (getInstrumentType(state, trackIdx) != instAY2) return;
-
-  // TODO: Implement software oscillator aux value setting
-}
-
 // SFN - Software oscillator specific note
 static void handleFX_SFN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   fx->isOn = 0; // Atomic effect
@@ -417,12 +409,13 @@ void registerFXHandlers_AY(void) {
   fxHandlers[fxENP] = (PlaybackFXHandler){initFX_ENP, handleFX_ENP, restartFX_ENP};
   fxHandlers[fxENF] = (PlaybackFXHandler){initFX_ENF, handleFX_ENF, restartFX_ENF};
   fxHandlers[fxSFT] = (PlaybackFXHandler){NULL, handleFX_SFT, NULL};
-  fxHandlers[fxSFV] = (PlaybackFXHandler){NULL, handleFX_SFV, NULL};
   fxHandlers[fxSFN] = (PlaybackFXHandler){NULL, handleFX_SFN, NULL};
   fxHandlers[fxSFP] = (PlaybackFXHandler){initFX_SFP, handleFX_SFP, restartFX_SFP};
   fxHandlers[fxSFF] = (PlaybackFXHandler){initFX_SFF, handleFX_SFF, restartFX_SFF};
   fxHandlers[fxSRT] = (PlaybackFXHandler){NULL, handleFX_SRT, NULL};
+  // TODO: fxSFM, fxPWM, fxSPL, fxSWT - implement handlers
 
   // AYSample-specific FX
+  // TODO: fxSMN - implement handler
   fxHandlers[fxSMS] = (PlaybackFXHandler){NULL, handleFX_SMS, NULL};
 }
