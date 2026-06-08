@@ -203,7 +203,7 @@ static void handleFX_ESL(PlaybackState* state, PlaybackTrackState* track, int tr
 
 
 // ============================================
-// AY2, AYSample and AYWavetable Common Effects
+// AY2 and AYSample Common Effects
 // ============================================
 
 // TNN - Tone specific note
@@ -310,7 +310,14 @@ static void handleFX_SFT(PlaybackState* state, PlaybackTrackState* track, int tr
   fx->isOn = 0; // Atomic effect
   if (getInstrumentType(state, trackIdx) != instAY2) return;
 
-  // TODO: Implement software oscillator type setting
+  if (fx->fxValue < aySoftwareOscSample) {
+    enum AYSoftwareOscType oldType = track->note.chip.ay.softType;
+    track->note.chip.ay.softType = fx->fxValue;
+    // Reset period counter if the oscillator type changed
+    if (oldType != fx->fxValue) {
+      track->note.chip.ay.softPeriodCounter = 0;
+    }
+  }
 }
 
 // SFN - Software oscillator specific note
@@ -362,8 +369,82 @@ static void handleFX_SFF(PlaybackState* state, PlaybackTrackState* track, int tr
 
 // SRT - Software oscillator phase retrigger
 static void handleFX_SRT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  int type = getInstrumentType(state, trackIdx);
   fx->isOn = 0; // Atomic effect
+  if (type != instAY2) return;
   track->note.chip.ay.softPeriodCounter = 0;
+}
+
+// SFM - FM depth
+static void initFX_SFM(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn) {
+  if (getInstrumentType(state, trackIdx) != instAY2) {
+    fx->isOn = 0;
+    return;
+  }
+
+  fx->acc += (int8_t)fx->fxValue;
+}
+
+static void restartFX_SFM(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
+  // Do nothing - SFM should keep the accumulated offset
+}
+
+static void handleFX_SFM(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  track->note.chip.ay.softFMDepthOffset += fx->acc;
+}
+
+// PWM - Pulse width
+static void initFX_PWM(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn) {
+  if (getInstrumentType(state, trackIdx) != instAY2) {
+    fx->isOn = 0;
+    return;
+  }
+
+  fx->acc += (int8_t)fx->fxValue;
+}
+
+static void restartFX_PWM(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
+  // Do nothing - PWM should keep the accumulated offset
+}
+
+static void handleFX_PWM(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  track->note.chip.ay.pulseWidthOffset += fx->acc;
+}
+
+// SPL - Pulse low level
+static void initFX_SPL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn) {
+  if (getInstrumentType(state, trackIdx) != instAY2) {
+    fx->isOn = 0;
+    return;
+  }
+
+  fx->acc += (int8_t)fx->fxValue;
+}
+
+static void restartFX_SPL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
+  // Do nothing - SPL should keep the accumulated offset
+}
+
+static void handleFX_SPL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  track->note.chip.ay.pulseLowOffset += fx->acc;
+}
+
+// SWT - Wavetable index
+static void initFX_SWT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState* tableState, int tableFXColumn) {
+  if (getInstrumentType(state, trackIdx) != instAY2) {
+    fx->isOn = 0;
+    return;
+  }
+
+  fx->acc += (int8_t)fx->fxValue;
+}
+
+static void restartFX_SWT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
+  // Do nothing - SWT should keep the accumulated offset
+}
+
+static void handleFX_SWT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  track->note.chip.ay.wavetableIndexOffset += fx->acc;
 }
 
 
@@ -413,9 +494,11 @@ void registerFXHandlers_AY(void) {
   fxHandlers[fxSFP] = (PlaybackFXHandler){initFX_SFP, handleFX_SFP, restartFX_SFP};
   fxHandlers[fxSFF] = (PlaybackFXHandler){initFX_SFF, handleFX_SFF, restartFX_SFF};
   fxHandlers[fxSRT] = (PlaybackFXHandler){NULL, handleFX_SRT, NULL};
-  // TODO: fxSFM, fxPWM, fxSPL, fxSWT - implement handlers
+  fxHandlers[fxSFM] = (PlaybackFXHandler){initFX_SFM, handleFX_SFM, restartFX_SFM};
+  fxHandlers[fxPWM] = (PlaybackFXHandler){initFX_PWM, handleFX_PWM, restartFX_PWM};
+  fxHandlers[fxSPL] = (PlaybackFXHandler){initFX_SPL, handleFX_SPL, restartFX_SPL};
+  fxHandlers[fxSWT] = (PlaybackFXHandler){initFX_SWT, handleFX_SWT, restartFX_SWT};
 
   // AYSample-specific FX
-  // TODO: fxSMN - implement handler
   fxHandlers[fxSMS] = (PlaybackFXHandler){NULL, handleFX_SMS, NULL};
 }

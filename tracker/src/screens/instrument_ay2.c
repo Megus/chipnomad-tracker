@@ -459,19 +459,19 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       case 8: // Software osc pitch
         handled = editSigned8(action, &ay2->oscSoftware.pitchOffset, chipnomadState->project.pitchTable.octaveSize, -128, 127);
         if (handled) {
-          screenMessage(0, "Software pitch offset %hhd", ay2->oscSoftware.pitchOffset);
+          screenMessage(0, "Soft osc pitch offset %hhd", ay2->oscSoftware.pitchOffset);
         }
         break;
       case 9: // Software osc fine
         handled = editSigned8(action, &ay2->oscSoftware.fineTune, 16, -128, 127);
         if (handled) {
-          screenMessage(0, "Software fine tune %hhd", ay2->oscSoftware.fineTune);
+          screenMessage(0, "Soft osc fine tune %hhd", ay2->oscSoftware.fineTune);
         }
         break;
       case 10: // FM depth (available for all soft osc types)
         handled = edit8noLast(action, &ay2->oscSoftware.fmDepth, 16, 0, 255);
         if (handled) {
-          screenMessage(0, "FM depth %hhu", ay2->oscSoftware.fmDepth);
+          screenMessage(0, "Soft osc FM depth %hhu", ay2->oscSoftware.fmDepth);
         }
         break;
       case 11: // Software osc P1
@@ -482,12 +482,19 @@ static int onEdit(int col, int row, enum CellEditAction action) {
             if (action == editClear && ay2->oscSoftware.type == aySoftwareOscPulse) {
               *p1 = 0x80;
               handled = 1;
-              screenMessage(0, "Software osc P1 %hhu", *p1);
+              screenMessage(0, "Pulse width %hhu", *p1);
             } else {
               uint8_t maxVal = softwareOscP1Max(ay2->oscSoftware.type);
               handled = edit8noLast(action, p1, 16, 0, maxVal);
               if (handled) {
-                screenMessage(0, "Software osc P1 %hhu", *p1);
+                // Type-specific messages
+                if (ay2->oscSoftware.type == aySoftwareOscPulse) {
+                  screenMessage(0, "Pulse width %hhu", *p1);
+                } else if (ay2->oscSoftware.type == aySoftwareOscWavetable) {
+                  screenMessage(0, "Wavetable index %hhu", *p1);
+                } else {
+                  screenMessage(0, "Soft osc P1 %hhu", *p1);
+                }
 
                 // Update wavetable preview immediately for WavTb type
                 if (ay2->oscSoftware.type == aySoftwareOscWavetable) {
@@ -513,7 +520,12 @@ static int onEdit(int col, int row, enum CellEditAction action) {
             uint8_t maxVal = softwareOscP2Max(ay2->oscSoftware.type);
             handled = edit8noLast(action, p2, 16, 0, maxVal);
             if (handled) {
-              screenMessage(0, "Software osc P2 %hhu", *p2);
+              // Type-specific messages
+              if (ay2->oscSoftware.type == aySoftwareOscPulse) {
+                screenMessage(0, "Pulse low level %hhu", *p2);
+              } else {
+                screenMessage(0, "Soft osc P2 %hhu", *p2);
+              }
             }
           }
         }

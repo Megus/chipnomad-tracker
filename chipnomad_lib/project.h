@@ -90,7 +90,6 @@ enum FX {
   fxSPL, // Software oscillator pulse low
   fxSWT, // Software oscillator wavetable index (relative)
   // AY Sample instrument (AYSample):
-  fxSMN, // Sample specific note
   fxSMS, // Sample start position
   // TODO: FM FX
 

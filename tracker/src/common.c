@@ -36,7 +36,12 @@ AppSettings appSettings = {
   .projectFilename = "",
   .projectPath = "",
   .pitchTablePath = "",
-  .instrumentPath = ""
+  .instrumentPath = "",
+  .themePath = "",
+  .fontPath = "",
+  .fontFolderPath = "",
+  .samplePath = "",
+  .wavetablePath = ""
 };
 
 int* pSongRow;
@@ -104,6 +109,7 @@ int settingsSave(void) {
   fprintf(file, "fontPath: %s\n", appSettings.fontPath);
   fprintf(file, "fontFolderPath: %s\n", appSettings.fontFolderPath);
   fprintf(file, "samplePath: %s\n", appSettings.samplePath);
+  fprintf(file, "wavetablePath: %s\n", appSettings.wavetablePath);
 
   fclose(file);
   return 0;
@@ -227,6 +233,9 @@ int settingsLoad(void) {
     } else if (strncmp(line, "samplePath: ", 12) == 0) {
       strncpy(appSettings.samplePath, line + 12, PATH_LENGTH);
       appSettings.samplePath[PATH_LENGTH] = 0;
+    } else if (strncmp(line, "wavetablePath: ", 15) == 0) {
+      strncpy(appSettings.wavetablePath, line + 15, PATH_LENGTH);
+      appSettings.wavetablePath[PATH_LENGTH] = 0;
     }
   }
 

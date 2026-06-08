@@ -80,6 +80,7 @@ extern const AppScreen screenConfirm;
 extern const AppScreen screenPitchTable;
 extern const AppScreen screenFileBrowser;
 extern const AppScreen screenCreateFolder;
+extern const AppScreen screenEnterName;
 extern const AppScreen screenSong;
 extern const AppScreen screenChain;
 extern const AppScreen screenPhrase;

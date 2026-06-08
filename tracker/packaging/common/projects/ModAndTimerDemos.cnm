@@ -7,7 +7,7 @@
 - Linear pitch: 1
 - Chip type: AY8910
 - *AY8910* Clock: 1750000
-- *AY8910* AY/YM: 0
+- *AY8910* AY/YM: 1
 - *AY8910* Stereo: ABC
 - *AY8910* Stereo separation: 50
 - *AY8910* PWM range: 1
@@ -130,7 +130,7 @@ B-8 11900
 ## Song
 
 ```
--- 00 --
+-- 09 --
 -- -- --
 -- 01 --
 -- -- --
@@ -145,6 +145,8 @@ B-8 11900
 -- 07 --
 -- -- --
 -- 08 --
+-- -- --
+-- 00 --
 ```
 
 ## Chains
@@ -321,6 +323,27 @@ B-8 11900
 
 ```
 008 00
+--- 00
+--- 00
+--- 00
+--- 00
+--- 00
+--- 00
+--- 00
+--- 00
+--- 00
+--- 00
+--- 00
+--- 00
+--- 00
+--- 00
+--- 00
+```
+
+### Chain 9
+
+```
+009 00
 --- 00
 --- 00
 --- 00
@@ -543,6 +566,26 @@ G-4 0F 0F --- 00 --- 00 --- 00
 --- -- -- --- 00 --- 00 --- 00
 --- -- -- --- 00 --- 00 --- 00
 ```
+### Phrase 9
+
+```
+A-3 10 0F --- 00 --- 00 --- 00
+--- -- -- --- 00 --- 00 --- 00
+E-4 10 0F --- 00 --- 00 --- 00
+--- -- -- --- 00 --- 00 --- 00
+A-4 10 0F --- 00 --- 00 --- 00
+--- -- -- --- 00 --- 00 --- 00
+C-4 10 0F --- 00 --- 00 --- 00
+--- -- -- --- 00 --- 00 --- 00
+B-3 10 0F --- 00 --- 00 --- 00
+--- -- -- --- 00 --- 00 --- 00
+C-4 10 0F --- 00 --- 00 --- 00
+--- -- -- --- 00 --- 00 --- 00
+A-3 10 0F --- 00 --- 00 --- 00
+--- -- -- --- 00 --- 00 --- 00
+E-3 10 0F --- 00 --- 00 --- 00
+--- -- -- --- 00 --- 00 --- 00
+```
 
 ## Instruments
 
@@ -593,6 +636,7 @@ G-4 0F 0F --- 00 --- 00 --- 00
 - Pulse Width: 0
 - Pulse Low: 0
 - Wavetable Index: 0
+- FM depth: 0
 
 ### Instrument 2
 
@@ -1314,6 +1358,7 @@ D1uS91W920y120yP7HKfBHyP7neP71Ob618Q5niN71uV7nSW31CG3Ga05G4X3Hqg4I0F8GWL5nGY4IiV
 - Pulse Width: 0
 - Pulse Low: 0
 - Wavetable Index: 0
+- FM depth: 0
 
 ### Instrument C
 
@@ -1346,6 +1391,7 @@ D1uS91W920y120yP7HKfBHyP7neP71Ob618Q5niN71uV7nSW31CG3Ga05G4X3Hqg4I0F8GWL5nGY4IiV
 - Pulse Width: 0
 - Pulse Low: 0
 - Wavetable Index: 0
+- FM depth: 0
 
 ### Instrument D
 
@@ -1378,6 +1424,7 @@ D1uS91W920y120yP7HKfBHyP7neP71Ob618Q5niN71uV7nSW31CG3Ga05G4X3Hqg4I0F8GWL5nGY4IiV
 - Pulse Width: 0
 - Pulse Low: 0
 - Wavetable Index: 0
+- FM depth: 0
 
 ### Instrument E
 
@@ -1410,6 +1457,7 @@ D1uS91W920y120yP7HKfBHyP7neP71Ob618Q5niN71uV7nSW31CG3Ga05G4X3Hqg4I0F8GWL5nGY4IiV
 - Pulse Width: 128
 - Pulse Low: 0
 - Wavetable Index: 0
+- FM depth: 0
 
 ### Instrument F
 
@@ -1420,7 +1468,7 @@ D1uS91W920y120yP7HKfBHyP7neP71Ob618Q5niN71uV7nSW31CG3Ga05G4X3Hqg4I0F8GWL5nGY4IiV
 - Modulation:
 - Mod1: 0,1,15,0,32,143,0
 - Mod2: 1,0,0,0,0,0,0
-- Mod3: 2,7,116,0,0,80,0
+- Mod3: 2,0,116,0,0,80,0
 - Mod4: 2,0,0,0,0,0,0
 - Chip data:
 - Tone on: 0
@@ -1438,10 +1486,44 @@ D1uS91W920y120yP7HKfBHyP7neP71Ob618Q5niN71uV7nSW31CG3Ga05G4X3Hqg4I0F8GWL5nGY4IiV
 - Software type: 1
 - Software pitch flag: 0
 - Software pitch offset: 0
+- Software fine tune: 17
+- Pulse Width: 128
+- Pulse Low: 0
+- Wavetable Index: 0
+- FM depth: 128
+
+### Instrument 10
+
+- Name: Waves
+- Type: 2
+- Table speed: 1
+- Transpose: 1
+- Modulation:
+- Mod1: 0,1,15,0,16,176,0
+- Mod2: 1,0,0,0,0,0,0
+- Mod3: 2,0,1,6,1,4,0
+- Mod4: 2,0,0,0,0,0,0
+- Chip data:
+- Tone on: 0
+- Tone pitch flag: 0
+- Tone pitch offset: 0
+- Tone fine tune: 0
+- Noise on: 0
+- Noise period: 0
+- Envelope shape: 14
+- Envelope auto N: 0
+- Envelope auto D: 0
+- Envelope pitch flag: 0
+- Envelope pitch offset: 36
+- Envelope fine tune: 0
+- Software type: 6
+- Software pitch flag: 0
+- Software pitch offset: 7
 - Software fine tune: 0
 - Pulse Width: 128
 - Pulse Low: 0
 - Wavetable Index: 0
+- FM depth: 0
 
 ## Tables
 
@@ -1471,6 +1553,27 @@ D1uS91W920y120yP7HKfBHyP7neP71Ob618Q5niN71uV7nSW31CG3Ga05G4X3Hqg4I0F8GWL5nGY4IiV
 ```
 ~ 00 -- SRT 00 --- 00 --- 00 --- 00
 ~ 00 -- --- 00 --- 00 --- 00 --- 00
+~ 00 -- --- 00 --- 00 --- 00 --- 00
+~ 00 -- --- 00 --- 00 --- 00 --- 00
+~ 00 -- --- 00 --- 00 --- 00 --- 00
+~ 00 -- --- 00 --- 00 --- 00 --- 00
+~ 00 -- --- 00 --- 00 --- 00 --- 00
+~ 00 -- --- 00 --- 00 --- 00 --- 00
+~ 00 -- --- 00 --- 00 --- 00 --- 00
+~ 00 -- --- 00 --- 00 --- 00 --- 00
+~ 00 -- --- 00 --- 00 --- 00 --- 00
+~ 00 -- --- 00 --- 00 --- 00 --- 00
+~ 00 -- --- 00 --- 00 --- 00 --- 00
+~ 00 -- --- 00 --- 00 --- 00 --- 00
+~ 00 -- --- 00 --- 00 --- 00 --- 00
+~ 00 -- --- 00 --- 00 --- 00 --- 00
+```
+
+### Table F
+
+```
+~ 00 -- SPL F6 --- 00 --- 00 --- 00
+~ 00 -- THO 00 --- 00 --- 00 --- 00
 ~ 00 -- --- 00 --- 00 --- 00 --- 00
 ~ 00 -- --- 00 --- 00 --- 00 --- 00
 ~ 00 -- --- 00 --- 00 --- 00 --- 00
@@ -1528,4 +1631,9 @@ D1uS91W920y120yP7HKfBHyP7neP71Ob618Q5niN71uV7nSW31CG3Ga05G4X3Hqg4I0F8GWL5nGY4IiV
 ~ 00 -- SMS 0E --- 00 --- 00 --- 00
 ~ 00 -- TIC 02 --- 00 --- 00 --- 00
 ```
+
+## AY Wavetables
+
+00 DFABDFDADFCAEFFFDFFFDFDFFFFFFFDC
+01 FEDDFFEEEDDCDEFFFFEDCBA987654321
 EOF

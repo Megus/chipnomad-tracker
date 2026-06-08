@@ -425,6 +425,11 @@ void setupInstrumentAY2(PlaybackState* state, int trackIdx) {
   track->note.chip.ay.envPeriodBase = 0;
 
   // Software oscillator
+  if (track->note.chip.ay.softType != ay2->oscSoftware.type) {
+    // If changing softType, reset soft osc state to avoid glitches
+    track->note.chip.ay.softPeriodCounter = 0;
+    track->note.chip.ay.softFMPhase = 0;
+  }
   track->note.chip.ay.softType = ay2->oscSoftware.type;
 }
 
@@ -455,6 +460,7 @@ void setupInstrumentAYSample(PlaybackState* state, int trackIdx) {
 
   // Software oscillator (always sample type)
   track->note.chip.ay.softType = aySoftwareOscSample;
+  track->note.chip.ay.softPeriodCounter = 0;
   track->note.chip.ay.samplePosition = aySample->sampleStart << 16; // Sample position is 16.16 fixed point
   track->note.chip.ay.sampleDitherError = 0;
 }
@@ -679,6 +685,7 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
     if (track->note.pitchFinal == EMPTY_VALUE_8 || p->instruments[track->note.instrument].type == instNone) {
       // Silence channel
       chip->setRegister(chip, 8 + ayChannel, 0);
+      track->note.chip.ay.softType = aySoftwareOscNone; // Ensure soft osc is also silenced
     } else {
       enum InstrumentType instType = p->instruments[track->note.instrument].type;
 

@@ -279,6 +279,18 @@ char* helpFXHint(uint8_t* fx, int isTable, uint8_t instrumentIdx) {
     case fxSRT: // Software oscillator phase retrigger
       sprintf(buffer, "Retrigger software osc phase");
       break;
+    case fxSFM: // FM depth
+      sprintf(buffer, "FM depth %hhu", fx[1]);
+      break;
+    case fxPWM: // Pulse width
+      sprintf(buffer, "Pulse width %hhu", fx[1]);
+      break;
+    case fxSPL: // Pulse low level
+      sprintf(buffer, "Pulse low level %hhu", fx[1]);
+      break;
+    case fxSWT: // Wavetable index
+      sprintf(buffer, "Wavetable index %hhu", fx[1]);
+      break;
     // AYSample-specific FX
     case fxSMS: // Sample start position
       sprintf(buffer, "Sample start position %hhu", fx[1]);
@@ -362,6 +374,10 @@ static const char* fxHelpText[] = {
   [fxSFP] = "Software Osc Pitch\nOffsets software oscillator\npitch (steps)",
   [fxSFF] = "Software Osc Fine\nOffsets software oscillator\nfine tune (period/cents)",
   [fxSRT] = "Software Osc Retrig\nRestarts software oscillator\nphase from zero",
+  [fxSFM] = "FM Depth\nSets FM modulation depth\nfor software oscillator",
+  [fxPWM] = "Pulse Width\nSets pulse width\nfor Pulse oscillator",
+  [fxSPL] = "Pulse Low Level\nSets low period level\nfor Pulse oscillator",
+  [fxSWT] = "Wavetable Index\nSets wavetable index\nfor Wavetable oscillator",
   // AYSample-specific FX
   [fxSMS] = "Sample Start\nSets sample playback\nstart position"
 };

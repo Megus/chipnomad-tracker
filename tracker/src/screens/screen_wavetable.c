@@ -1,9 +1,13 @@
 #include "screens.h"
 #include "common.h"
 #include "corelib_gfx.h"
+#include "corelib/corelib_file.h"
 #include "utils.h"
 #include "chipnomad_lib.h"
 #include "waveform_display.h"
+#include "wavetable_io.h"
+#include "file_browser.h"
+#include "screen_enter_name.h"
 #include <string.h>
 
 // Wavetable preview dimensions (in characters)
@@ -13,7 +17,7 @@
 // Screen layout:
 // y 0:  WAVETABLES
 // y 1:  (empty)
-// y 2:  Load Save          <- Row 0 (buttons)
+// y 2:  Load   Save XXX wavetables          <- Row 0 (buttons + count)
 // y 3:  (empty)
 // y 4:     wavetable -2 (preview)
 // y 5:  LL wavetable -2 (preview)
@@ -31,10 +35,11 @@
 // y 17: QQ wavetable +3 (preview)
 //
 // Logical rows:
-// Row 0: Buttons (Load, Save) - 2 columns
+// Row 0: Buttons (Load, Save, Count) - 3 columns
 // Row 1: Wavetable editor - 32 columns (starts at x=2, directly after the 2-char index)
 
 static int wavetableIdx = 0;
+static uint16_t wavetableSaveCount = 1;  // Number of wavetables to save (1-256), default 1
 static Bitmap* previewBitmap = NULL;  // Bitmap for current wavetable preview
 static Bitmap* previewBitmapPrev1 = NULL;  // Preview for wavetable -1
 static Bitmap* previewBitmapPrev2 = NULL;  // Preview for wavetable -2
@@ -52,6 +57,16 @@ static void drawSelection(int col1, int row1, int col2, int row2);
 static int onEdit(int col, int row, enum CellEditAction action);
 static int inputScreenNavigation(int keys, int tapCount);
 static enum ScreenPlaybackLevel getPlaybackLevel(void);
+
+// Callbacks for file operations
+static void onLoadFileSelected(const char* path);
+static void onLoadCancelled(void);
+static void onSaveFolderSelected(const char* folderPath);
+static void onSaveNameEntered(const char* filename);
+static void onSaveCancelled(void);
+
+// Store selected folder path for save operation
+static char selectedSaveFolder[2048] = "";
 
 static ScreenData screen = {
   .rows = 2,  // Row 0: buttons, Row 1: wavetable editor
@@ -81,11 +96,11 @@ static void init(void) {
 
   // Create preview bitmaps
   if (!previewBitmap) previewBitmap = gfxBitmapCreate(PREVIEW_WIDTH_CHARS, PREVIEW_HEIGHT_CHARS);
-  if (!previewBitmapPrev1) previewBitmapPrev1 = gfxBitmapCreate(PREVIEW_WIDTH_CHARS, 1);
-  if (!previewBitmapPrev2) previewBitmapPrev2 = gfxBitmapCreate(PREVIEW_WIDTH_CHARS, 1);
-  if (!previewBitmapNext1) previewBitmapNext1 = gfxBitmapCreate(PREVIEW_WIDTH_CHARS, 1);
-  if (!previewBitmapNext2) previewBitmapNext2 = gfxBitmapCreate(PREVIEW_WIDTH_CHARS, 1);
-  if (!previewBitmapNext3) previewBitmapNext3 = gfxBitmapCreate(PREVIEW_WIDTH_CHARS, 1);
+  if (!previewBitmapPrev1) previewBitmapPrev1 = gfxBitmapCreate(PREVIEW_WIDTH_CHARS, 2);  // 2 lines tall
+  if (!previewBitmapPrev2) previewBitmapPrev2 = gfxBitmapCreate(PREVIEW_WIDTH_CHARS, 2);  // 2 lines tall
+  if (!previewBitmapNext1) previewBitmapNext1 = gfxBitmapCreate(PREVIEW_WIDTH_CHARS, 2);  // 2 lines tall
+  if (!previewBitmapNext2) previewBitmapNext2 = gfxBitmapCreate(PREVIEW_WIDTH_CHARS, 2);  // 2 lines tall
+  if (!previewBitmapNext3) previewBitmapNext3 = gfxBitmapCreate(PREVIEW_WIDTH_CHARS, 2);  // 2 lines tall
 }
 
 static void updatePreviews(void) {
@@ -131,7 +146,7 @@ static void draw(void) {
 }
 
 static int getColumnCount(int row) {
-  if (row == 0) return 2;   // Buttons: Load, Save
+  if (row == 0) return 3;   // Buttons: Load, Save, Count
   if (row == 1) return 32;  // Wavetable editor: 32 steps
   return 1;
 }
@@ -143,25 +158,26 @@ static void drawStatic(void) {
   gfxSetFgColor(cs.textTitles);
   gfxPrint(0, 0, "WAVETABLES");
 
-  // Button labels (row 0 is at y=2)
+  // Button labels and text (row 0 is at y=2)
   gfxSetFgColor(cs.textDefault);
   gfxPrint(0, 2, "Load");
-  gfxPrint(5, 2, "Save");
+  gfxPrint(7, 2, "Save");
+  gfxPrint(16, 2, "wavetables");  // Static text after the count (moved 1 char right)
 
   // Update all previews
   updatePreviews();
 
   // Clear all preview areas first (35 chars wide: 2 for index + 32 for data + 1 for safety)
   gfxSetBgColor(cs.background);
-  gfxClearRect(0, 4, 35, 2);  // wavetable -2
-  gfxClearRect(0, 6, 35, 2);  // wavetable -1
-  gfxClearRect(0, 8, 35, 3);  // current wavetable preview (3 lines)
-  gfxClearRect(0, 12, 35, 2); // wavetable +1
-  gfxClearRect(0, 14, 35, 2); // wavetable +2
-  gfxClearRect(0, 16, 35, 2); // wavetable +3
+  gfxClearRect(0, 4, 35, 2);  // wavetable -2 (2 lines: y 4-5)
+  gfxClearRect(0, 6, 35, 2);  // wavetable -1 (2 lines: y 6-7)
+  gfxClearRect(0, 8, 35, 3);  // current wavetable preview (3 lines: y 8-10)
+  gfxClearRect(0, 12, 35, 2); // wavetable +1 (2 lines: y 12-13)
+  gfxClearRect(0, 14, 35, 2); // wavetable +2 (2 lines: y 14-15)
+  gfxClearRect(0, 16, 35, 2); // wavetable +3 (2 lines: y 16-17)
 
-  // Wavetable numbers on the left (2 characters wide) - using textInfo color
-  gfxSetFgColor(cs.textInfo);
+  // Wavetable numbers on the left (2 characters wide)
+  // Position at the bottom of each preview (aligned with preview bottom line)
 
   // Calculate wavetable indices (no wrapping - stop at boundaries)
   int prevIdx2 = wavetableIdx - 2;
@@ -171,46 +187,54 @@ static void drawStatic(void) {
   int nextIdx3 = wavetableIdx + 3;
 
   // Draw wavetable indices only if they're valid (within 0-255)
+  // Non-current wavetables use textInfo color
+  gfxSetFgColor(cs.textInfo);
+
   if (prevIdx2 >= 0) {
-    gfxPrintf(0, 5, "%02X", prevIdx2);
+    gfxPrintf(0, 5, "%02X", prevIdx2);  // Bottom line of -2 preview
   }
   if (prevIdx1 >= 0) {
-    gfxPrintf(0, 7, "%02X", prevIdx1);
+    gfxPrintf(0, 7, "%02X", prevIdx1);  // Bottom line of -1 preview
   }
-  // Current wavetable index is always shown
-  gfxPrintf(0, 11, "%02X", wavetableIdx);
+
+  // Current wavetable index is highlighted with textTitles color (same as screen header)
+  gfxSetFgColor(cs.textTitles);
+  gfxPrintf(0, 11, "%02X", wavetableIdx);  // Current wavetable (at y=11)
+
+  // Back to textInfo for remaining wavetables
+  gfxSetFgColor(cs.textInfo);
 
   if (nextIdx1 <= 255) {
-    gfxPrintf(0, 13, "%02X", nextIdx1);
+    gfxPrintf(0, 13, "%02X", nextIdx1);  // Bottom line of +1 preview
   }
   if (nextIdx2 <= 255) {
-    gfxPrintf(0, 15, "%02X", nextIdx2);
+    gfxPrintf(0, 15, "%02X", nextIdx2);  // Bottom line of +2 preview
   }
   if (nextIdx3 <= 255) {
-    gfxPrintf(0, 17, "%02X", nextIdx3);
+    gfxPrintf(0, 17, "%02X", nextIdx3);  // Bottom line of +3 preview
   }
 
   // Draw wavetable previews
   gfxSetFgColor(cs.textInfo);
 
   if (prevIdx2 >= 0 && previewBitmapPrev2) {
-    gfxDrawBitmap(previewBitmapPrev2, 2, 4);
+    gfxDrawBitmap(previewBitmapPrev2, 2, 4);  // 2 lines: y 4-5
   }
   if (prevIdx1 >= 0 && previewBitmapPrev1) {
-    gfxDrawBitmap(previewBitmapPrev1, 2, 6);
+    gfxDrawBitmap(previewBitmapPrev1, 2, 6);  // 2 lines: y 6-7
   }
   // Current wavetable preview (3 lines tall)
   if (previewBitmap) {
-    gfxDrawBitmap(previewBitmap, 2, 8);
+    gfxDrawBitmap(previewBitmap, 2, 8);  // 3 lines: y 8-10
   }
   if (nextIdx1 <= 255 && previewBitmapNext1) {
-    gfxDrawBitmap(previewBitmapNext1, 2, 12);
+    gfxDrawBitmap(previewBitmapNext1, 2, 12);  // 2 lines: y 12-13
   }
   if (nextIdx2 <= 255 && previewBitmapNext2) {
-    gfxDrawBitmap(previewBitmapNext2, 2, 14);
+    gfxDrawBitmap(previewBitmapNext2, 2, 14);  // 2 lines: y 14-15
   }
   if (nextIdx3 <= 255 && previewBitmapNext3) {
-    gfxDrawBitmap(previewBitmapNext3, 2, 16);
+    gfxDrawBitmap(previewBitmapNext3, 2, 16);  // 2 lines: y 16-17
   }
 }
 
@@ -237,8 +261,13 @@ static void drawSelection(int col1, int row1, int col2, int row2) {
 static void drawCursor(int col, int row) {
   if (row == 0) {
     // Buttons row at y=2
-    int x = (col == 0) ? 0 : 5;
-    gfxCursor(x, 2, 4);
+    if (col == 0) {
+      gfxCursor(0, 2, 4);  // Load
+    } else if (col == 1) {
+      gfxCursor(7, 2, 4);  // Save
+    } else if (col == 2) {
+      gfxCursor(12, 2, 3); // Count (3 hex digits)
+    }
   } else if (row == 1) {
     // Wavetable editor row at y=11, starts at x=2 (directly after 2-char index)
     gfxCursor(2 + col, 11, 1);
@@ -255,8 +284,12 @@ static void drawField(int col, int row, int state) {
       gfxClearRect(0, 2, 4, 1);  // Clear area for "Load" button
       gfxPrint(0, 2, "Load");
     } else if (col == 1) {
-      gfxClearRect(5, 2, 4, 1);  // Clear area for "Save" button
-      gfxPrint(5, 2, "Save");
+      gfxClearRect(7, 2, 4, 1);  // Clear area for "Save" button
+      gfxPrint(7, 2, "Save");
+    } else if (col == 2) {
+      // Wavetable count (3 hex digits for 1-256 range, displayed as 001-100 in hex)
+      gfxClearRect(12, 2, 3, 1);  // Clear area for count
+      gfxPrintf(12, 2, "%03X", wavetableSaveCount);
     }
   } else if (row == 1) {
     // Wavetable editor row at y=11, starts at x=2
@@ -273,19 +306,111 @@ static void drawField(int col, int row, int state) {
   }
 }
 
+// Callbacks for file operations
+static void onLoadFileSelected(const char* path) {
+  int loaded = wavetableLoad(path, chipnomadState->project.ayWavetables, wavetableIdx);
+  if (loaded > 0) {
+    screenMessage(MESSAGE_TIME, "Loaded %d wavetable%s from %02X", loaded, loaded == 1 ? "" : "s", wavetableIdx);
+    projectModified = 1;
+
+    // Save the directory path to settings
+    char* lastSeparator = strrchr(path, PATH_SEPARATOR);
+    if (lastSeparator) {
+      int pathLen = lastSeparator - path;
+      if (pathLen < PATH_LENGTH) {
+        strncpy(appSettings.wavetablePath, path, pathLen);
+        appSettings.wavetablePath[pathLen] = 0;
+      }
+    }
+  } else {
+    screenMessage(MESSAGE_TIME, "Failed to load wavetables");
+  }
+  screenSetup(&screenWavetable, wavetableIdx);
+}
+
+static void onLoadCancelled(void) {
+  screenSetup(&screenWavetable, wavetableIdx);
+}
+
+static void onSaveFolderSelected(const char* folderPath) {
+  // Store the selected folder and show the filename entry screen
+  strncpy(selectedSaveFolder, folderPath, sizeof(selectedSaveFolder) - 1);
+  selectedSaveFolder[sizeof(selectedSaveFolder) - 1] = 0;
+
+  enterNameSetup("SAVE WAVETABLES", "File name:", "", onSaveNameEntered, onSaveCancelled);
+  screenSetup(&screenEnterName, 0);
+}
+
+static void onSaveNameEntered(const char* filename) {
+  // Construct full path with .aywave extension using the stored folder
+  char fullPath[2048];
+  snprintf(fullPath, sizeof(fullPath), "%s%s%s.aywave", selectedSaveFolder, PATH_SEPARATOR_STR, filename);
+
+  int success = wavetableSave(fullPath, chipnomadState->project.ayWavetables, wavetableIdx, wavetableSaveCount);
+  if (success) {
+    screenMessage(MESSAGE_TIME, "Saved %d wavetable%s from %02X", wavetableSaveCount, wavetableSaveCount == 1 ? "" : "s", wavetableIdx);
+
+    // Save the folder path to settings
+    strncpy(appSettings.wavetablePath, selectedSaveFolder, PATH_LENGTH);
+    appSettings.wavetablePath[PATH_LENGTH - 1] = 0;
+  } else {
+    screenMessage(MESSAGE_TIME, "Failed to save wavetables");
+  }
+  screenSetup(&screenWavetable, wavetableIdx);
+}
+
+static void onSaveCancelled(void) {
+  screenSetup(&screenWavetable, wavetableIdx);
+}
+
 static int onEdit(int col, int row, enum CellEditAction action) {
   if (row == 0) {
     // Buttons row
-    if (action == editTap) {
-      if (col == 0) {
-        // Load button - TODO: implement load functionality
-        screenMessage(MESSAGE_TIME, "Load not implemented yet");
+    if (col == 0 || col == 1) {
+      // Load/Save buttons
+      if (action == editTap) {
+        if (col == 0) {
+          // Load button - open file browser to select .aywave file
+          fileBrowserSetup("LOAD WAVETABLES", ".aywave", appSettings.wavetablePath, onLoadFileSelected, onLoadCancelled);
+          screenSetup(&screenFileBrowser, 0);
+          return 1;
+        } else if (col == 1) {
+          // Save button - open folder selector first, then filename entry
+          fileBrowserSetupFolderMode("SAVE WAVETABLES", appSettings.wavetablePath, "", ".aywave", onSaveFolderSelected, onSaveCancelled);
+          screenSetup(&screenFileBrowser, 0);
+          return 1;
+        }
+      }
+      return 0;
+    } else if (col == 2) {
+      // Wavetable count (1-256, stored as 1-256 but displayed as 001-100 hex)
+
+      // Use edit function for 16-bit value with range 1-256
+      // editIncrease/editDecrease with wraparound
+      if (action == editIncrease) {
+        wavetableSaveCount++;
+        if (wavetableSaveCount > 256) wavetableSaveCount = 1;
         return 1;
-      } else if (col == 1) {
-        // Save button - TODO: implement save functionality
-        screenMessage(MESSAGE_TIME, "Save not implemented yet");
+      } else if (action == editDecrease) {
+        wavetableSaveCount--;
+        if (wavetableSaveCount < 1) wavetableSaveCount = 256;
+        return 1;
+      } else if (action == editIncreaseBig) {
+        wavetableSaveCount += 16;
+        if (wavetableSaveCount > 256) wavetableSaveCount = 256;
+        return 1;
+      } else if (action == editDecreaseBig) {
+        if (wavetableSaveCount > 16) {
+          wavetableSaveCount -= 16;
+        } else {
+          wavetableSaveCount = 1;
+        }
+        return 1;
+      } else if (action == editClear) {
+        wavetableSaveCount = 1;  // Reset to 1 (default)
         return 1;
       }
+      return 0;
     }
     return 0;
   } else if (row == 1) {

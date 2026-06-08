@@ -63,8 +63,8 @@ int editFXValue(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX, int is
   action = convertMultiAction(action);
 
   uint8_t bigStep = 16;
-  if (fx[0] == fxENT) {
-    // AY Envelope note
+  if (fx[0] == fxENT || fx[0] == fxTNN || fx[0] == fxENN || fx[0] == fxSFN) {
+    // Note-setting FX: use octave size for big step
     bigStep = chipnomadState->project.pitchTable.octaveSize;
   }
 
