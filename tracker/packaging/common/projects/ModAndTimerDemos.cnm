@@ -130,23 +130,17 @@ B-8 11900
 ## Song
 
 ```
--- 09 --
--- -- --
--- 01 --
--- -- --
--- 02 --
--- -- --
--- 03 --
--- -- --
--- 06 --
--- -- --
--- 04 --
--- -- --
--- 07 --
--- -- --
--- 08 --
--- -- --
 -- 00 --
+-- 01 --
+-- 02 --
+-- 03 --
+-- 04 --
+-- 05 --
+-- 06 --
+-- 07 --
+-- 08 --
+-- 09 --
+-- 0A --
 ```
 
 ## Chains
@@ -361,6 +355,27 @@ B-8 11900
 --- 00
 ```
 
+### Chain A
+
+```
+00A 00
+--- 00
+--- 00
+--- 00
+--- 00
+--- 00
+--- 00
+--- 00
+--- 00
+--- 00
+--- 00
+--- 00
+--- 00
+--- 00
+--- 00
+--- 00
+```
+
 ## Grooves
 
 ### Groove 0
@@ -509,22 +524,22 @@ D-4 0D 0F --- 00 --- 00 --- 00
 ### Phrase 6
 
 ```
-A-1 00 0F --- 00 --- 00 --- 00
+C-4 10 0F --- 00 --- 00 --- 00
 --- -- -- --- 00 --- 00 --- 00
+C-4 10 0F --- 00 --- 00 --- 00
+D-4 10 0E --- 00 --- 00 --- 00
+E-4 10 0F --- 00 --- 00 --- 00
+--- -- -- PVB CA --- 00 --- 00
+E-4 10 0F --- 00 --- 00 --- 00
+D-4 10 0E --- 00 --- 00 --- 00
+E-4 10 0F --- 00 --- 00 --- 00
 --- -- -- --- 00 --- 00 --- 00
+E-4 10 0E --- 00 --- 00 --- 00
 --- -- -- --- 00 --- 00 --- 00
+D-4 10 0F --- 00 --- 00 --- 00
 --- -- -- --- 00 --- 00 --- 00
---- -- -- --- 00 --- 00 --- 00
---- -- -- --- 00 --- 00 --- 00
---- -- -- --- 00 --- 00 --- 00
---- -- -- --- 00 --- 00 --- 00
---- -- -- --- 00 --- 00 --- 00
---- -- -- --- 00 --- 00 --- 00
---- -- -- --- 00 --- 00 --- 00
---- -- -- --- 00 --- 00 --- 00
---- -- -- --- 00 --- 00 --- 00
---- -- -- --- 00 --- 00 --- 00
---- -- -- --- 00 --- 00 --- 00
+E-4 10 0F --- 00 --- 00 --- 00
+D-4 10 0E --- 00 --- 00 --- 00
 ```
 ### Phrase 7
 
@@ -569,21 +584,41 @@ G-4 0F 0F --- 00 --- 00 --- 00
 ### Phrase 9
 
 ```
-A-3 10 0F --- 00 --- 00 --- 00
+A-3 11 0F --- 00 --- 00 --- 00
 --- -- -- --- 00 --- 00 --- 00
-E-4 10 0F --- 00 --- 00 --- 00
+E-4 11 0F --- 00 --- 00 --- 00
 --- -- -- --- 00 --- 00 --- 00
-A-4 10 0F --- 00 --- 00 --- 00
+A-4 11 0F --- 00 --- 00 --- 00
 --- -- -- --- 00 --- 00 --- 00
-C-4 10 0F --- 00 --- 00 --- 00
+C-4 11 0F --- 00 --- 00 --- 00
 --- -- -- --- 00 --- 00 --- 00
-B-3 10 0F --- 00 --- 00 --- 00
+B-3 11 0F --- 00 --- 00 --- 00
 --- -- -- --- 00 --- 00 --- 00
-C-4 10 0F --- 00 --- 00 --- 00
+C-4 11 0F --- 00 --- 00 --- 00
 --- -- -- --- 00 --- 00 --- 00
-A-3 10 0F --- 00 --- 00 --- 00
+A-3 11 0F --- 00 --- 00 --- 00
 --- -- -- --- 00 --- 00 --- 00
-E-3 10 0F --- 00 --- 00 --- 00
+E-3 11 0F --- 00 --- 00 --- 00
+--- -- -- --- 00 --- 00 --- 00
+```
+### Phrase A
+
+```
+C-4 12 0E --- 00 --- 00 --- 00
+--- -- -- --- 00 --- 00 --- 00
+C-3 12 0E --- 00 --- 00 --- 00
+--- -- -- --- 00 --- 00 --- 00
+D#4 12 0E --- 00 --- 00 --- 00
+--- -- -- --- 00 --- 00 --- 00
+C-3 12 0E --- 00 --- 00 --- 00
+--- -- -- --- 00 --- 00 --- 00
+D-4 12 0E --- 00 --- 00 --- 00
+--- -- -- --- 00 --- 00 --- 00
+C-3 12 0E --- 00 --- 00 --- 00
+A#3 12 0E --- 00 --- 00 --- 00
+--- -- -- --- 00 --- 00 --- 00
+C-3 12 0E --- 00 --- 00 --- 00
+A#3 12 0E --- 00 --- 00 --- 00
 --- -- -- --- 00 --- 00 --- 00
 ```
 
@@ -637,6 +672,7 @@ E-3 10 0F --- 00 --- 00 --- 00
 - Pulse Low: 0
 - Wavetable Index: 0
 - FM depth: 0
+- Env Shape Pair: 0
 
 ### Instrument 2
 
@@ -666,7 +702,7 @@ E-3 10 0F --- 00 --- 00 --- 00
 - Mod3: 1,0,32,0,0,6,0
 - Mod4: 2,0,0,0,0,0,0
 - Chip data:
-- Tone on: 1
+- Tone on: 0
 - Tone pitch flag: 0
 - Tone pitch offset: -12
 - Tone fine tune: 16
@@ -1329,7 +1365,7 @@ D1uS91W920y120yP7HKfBHyP7neP71Ob618Q5niN71uV7nSW31CG3Ga05G4X3Hqg4I0F8GWL5nGY4IiV
 
 ### Instrument B
 
-- Name: Soft1
+- Name: SyncEnv
 - Type: 2
 - Table speed: 1
 - Transpose: 1
@@ -1359,6 +1395,7 @@ D1uS91W920y120yP7HKfBHyP7neP71Ob618Q5niN71uV7nSW31CG3Ga05G4X3Hqg4I0F8GWL5nGY4IiV
 - Pulse Low: 0
 - Wavetable Index: 0
 - FM depth: 0
+- Env Shape Pair: 0
 
 ### Instrument C
 
@@ -1392,6 +1429,7 @@ D1uS91W920y120yP7HKfBHyP7neP71Ob618Q5niN71uV7nSW31CG3Ga05G4X3Hqg4I0F8GWL5nGY4IiV
 - Pulse Low: 0
 - Wavetable Index: 0
 - FM depth: 0
+- Env Shape Pair: 0
 
 ### Instrument D
 
@@ -1425,6 +1463,7 @@ D1uS91W920y120yP7HKfBHyP7neP71Ob618Q5niN71uV7nSW31CG3Ga05G4X3Hqg4I0F8GWL5nGY4IiV
 - Pulse Low: 0
 - Wavetable Index: 0
 - FM depth: 0
+- Env Shape Pair: 0
 
 ### Instrument E
 
@@ -1458,6 +1497,7 @@ D1uS91W920y120yP7HKfBHyP7neP71Ob618Q5niN71uV7nSW31CG3Ga05G4X3Hqg4I0F8GWL5nGY4IiV
 - Pulse Low: 0
 - Wavetable Index: 0
 - FM depth: 0
+- Env Shape Pair: 0
 
 ### Instrument F
 
@@ -1468,7 +1508,7 @@ D1uS91W920y120yP7HKfBHyP7neP71Ob618Q5niN71uV7nSW31CG3Ga05G4X3Hqg4I0F8GWL5nGY4IiV
 - Modulation:
 - Mod1: 0,1,15,0,32,143,0
 - Mod2: 1,0,0,0,0,0,0
-- Mod3: 2,0,116,0,0,80,0
+- Mod3: 2,8,116,0,0,80,0
 - Mod4: 2,0,0,0,0,0,0
 - Chip data:
 - Tone on: 0
@@ -1486,11 +1526,12 @@ D1uS91W920y120yP7HKfBHyP7neP71Ob618Q5niN71uV7nSW31CG3Ga05G4X3Hqg4I0F8GWL5nGY4IiV
 - Software type: 1
 - Software pitch flag: 0
 - Software pitch offset: 0
-- Software fine tune: 17
+- Software fine tune: 0
 - Pulse Width: 128
 - Pulse Low: 0
 - Wavetable Index: 0
-- FM depth: 128
+- FM depth: 0
+- Env Shape Pair: 0
 
 ### Instrument 10
 
@@ -1501,7 +1542,7 @@ D1uS91W920y120yP7HKfBHyP7neP71Ob618Q5niN71uV7nSW31CG3Ga05G4X3Hqg4I0F8GWL5nGY4IiV
 - Modulation:
 - Mod1: 0,1,15,0,16,176,0
 - Mod2: 1,0,0,0,0,0,0
-- Mod3: 2,0,1,6,1,4,0
+- Mod3: 2,10,1,6,1,4,0
 - Mod4: 2,0,0,0,0,0,0
 - Chip data:
 - Tone on: 0
@@ -1516,14 +1557,83 @@ D1uS91W920y120yP7HKfBHyP7neP71Ob618Q5niN71uV7nSW31CG3Ga05G4X3Hqg4I0F8GWL5nGY4IiV
 - Envelope pitch flag: 0
 - Envelope pitch offset: 36
 - Envelope fine tune: 0
-- Software type: 6
+- Software type: 4
 - Software pitch flag: 0
-- Software pitch offset: 7
+- Software pitch offset: 0
 - Software fine tune: 0
 - Pulse Width: 128
 - Pulse Low: 0
 - Wavetable Index: 0
 - FM depth: 0
+- Env Shape Pair: 0
+
+### Instrument 11
+
+- Name: FM1
+- Type: 2
+- Table speed: 1
+- Transpose: 1
+- Modulation:
+- Mod1: 0,1,15,0,16,223,0
+- Mod2: 1,0,0,0,0,0,0
+- Mod3: 2,7,48,0,0,57,0
+- Mod4: 2,0,0,0,0,0,0
+- Chip data:
+- Tone on: 1
+- Tone pitch flag: 0
+- Tone pitch offset: 0
+- Tone fine tune: 0
+- Noise on: 0
+- Noise period: 0
+- Envelope shape: 0
+- Envelope auto N: 0
+- Envelope auto D: 0
+- Envelope pitch flag: 0
+- Envelope pitch offset: 48
+- Envelope fine tune: 0
+- Software type: 5
+- Software pitch flag: 0
+- Software pitch offset: 5
+- Software fine tune: 0
+- Pulse Width: 128
+- Pulse Low: 0
+- Wavetable Index: 0
+- FM depth: 80
+- Env Shape Pair: 0
+
+### Instrument 12
+
+- Name: EnvPW
+- Type: 2
+- Table speed: 1
+- Transpose: 1
+- Modulation:
+- Mod1: 0,0,0,0,0,0,0
+- Mod2: 1,0,0,0,0,0,0
+- Mod3: 2,8,-80,2,3,11,0
+- Mod4: 2,8,32,0,0,64,0
+- Chip data:
+- Tone on: 0
+- Tone pitch flag: 0
+- Tone pitch offset: 0
+- Tone fine tune: 0
+- Noise on: 0
+- Noise period: 0
+- Envelope shape: 14
+- Envelope auto N: 1
+- Envelope auto D: 4
+- Envelope pitch flag: 0
+- Envelope pitch offset: 59
+- Envelope fine tune: 0
+- Software type: 3
+- Software pitch flag: 0
+- Software pitch offset: 12
+- Software fine tune: 0
+- Pulse Width: 144
+- Pulse Low: 0
+- Wavetable Index: 0
+- FM depth: 64
+- Env Shape Pair: 217
 
 ## Tables
 
@@ -1634,6 +1744,14 @@ D1uS91W920y120yP7HKfBHyP7neP71Ob618Q5niN71uV7nSW31CG3Ga05G4X3Hqg4I0F8GWL5nGY4IiV
 
 ## AY Wavetables
 
-00 DFABDFDADFCAEFFFDFFFDFDFFFFFFFDC
+00 FFEFFDCEBBAA999FDFFFDFDFFFFFFFDC
 01 FEDDFFEEEDDCDEFFFFEDCBA987654321
+02 FFEEDDCCBBAA99887766554433221100
+03 00112233445566778899AABBCCDDEEFF
+04 FEDCBA98765432100123456789ABCDEF
+05 0123456789ABCDEFFEDCBA9876543210
+06 FFEEDDCCBBAA99887766554433221100
+07 00112233445566778899AABBCCDDEEFF
+08 FEDCBA98765432100123456789ABCDEF
+09 0123456789ABCDEFFEDCBA9876543210
 EOF

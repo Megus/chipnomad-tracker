@@ -105,6 +105,7 @@ typedef struct InstrumentAYOscSoftware {
   uint8_t pulseLow;
   uint8_t wavetableIndex;
   uint8_t fmDepth;
+  uint8_t envShapePair; // For SyncEnv: high nibble = shape 1, low nibble = shape 2, default 0x00
 } InstrumentAYOscSoftware;
 
 typedef struct InstrumentAY2 {

@@ -72,6 +72,7 @@ static const char* softwareOscTypeName(enum AYSoftwareOscType type) {
 static const char* softwareOscP1Name(enum AYSoftwareOscType type) {
   switch (type) {
     case aySoftwareOscPulse:          return "Width  ";
+    case aySoftwareOscSyncEnvelope:   return "Width  ";
     case aySoftwareOscWavetable:      return "WaveIdx";
     default:                          return "P1     ";
   }
@@ -80,22 +81,26 @@ static const char* softwareOscP1Name(enum AYSoftwareOscType type) {
 static const char* softwareOscP2Name(enum AYSoftwareOscType type) {
   switch (type) {
     case aySoftwareOscPulse:          return "PulseLow";
+    case aySoftwareOscSyncEnvelope:   return "EnvPair ";
     default:                          return "P2      ";
   }
 }
 
 static int softwareOscHasP1(enum AYSoftwareOscType type) {
   return type == aySoftwareOscPulse ||
+         type == aySoftwareOscSyncEnvelope ||
          type == aySoftwareOscWavetable;
 }
 
 static int softwareOscHasP2(enum AYSoftwareOscType type) {
-  return type == aySoftwareOscPulse;
+  return type == aySoftwareOscPulse ||
+         type == aySoftwareOscSyncEnvelope;
 }
 
 static uint8_t* softwareOscP1Ptr(InstrumentAYOscSoftware* osc) {
   switch (osc->type) {
     case aySoftwareOscPulse:          return &osc->pulseWidth;
+    case aySoftwareOscSyncEnvelope:   return &osc->pulseWidth;
     case aySoftwareOscWavetable:      return &osc->wavetableIndex;
     default:                          return NULL;
   }
@@ -104,6 +109,7 @@ static uint8_t* softwareOscP1Ptr(InstrumentAYOscSoftware* osc) {
 static uint8_t* softwareOscP2Ptr(InstrumentAYOscSoftware* osc) {
   switch (osc->type) {
     case aySoftwareOscPulse:          return &osc->pulseLow;
+    case aySoftwareOscSyncEnvelope:   return &osc->envShapePair;
     default:                          return NULL;
   }
 }
@@ -111,14 +117,16 @@ static uint8_t* softwareOscP2Ptr(InstrumentAYOscSoftware* osc) {
 static uint8_t softwareOscP1Max(enum AYSoftwareOscType type) {
   switch (type) {
     case aySoftwareOscPulse:          return 255;  // Pulse width 0-255
-    case aySoftwareOscWavetable:      return 255; // Wavetable index
+    case aySoftwareOscSyncEnvelope:   return 255;  // Pulse width 0-255
+    case aySoftwareOscWavetable:      return 255;  // Wavetable index
     default:                          return 255;
   }
 }
 
 static uint8_t softwareOscP2Max(enum AYSoftwareOscType type) {
   switch (type) {
-    case aySoftwareOscPulse:          return 15;  // Low level 0-15
+    case aySoftwareOscPulse:          return 15;   // Low level 0-15
+    case aySoftwareOscSyncEnvelope:   return 255;  // Envelope shape pair 0-255
     default:                          return 255;
   }
 }
@@ -479,7 +487,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
           uint8_t* p1 = softwareOscP1Ptr(&ay2->oscSoftware);
           if (p1) {
             // Special handling for Clear action on pulse width - reset to 0x80 (50% duty cycle)
-            if (action == editClear && ay2->oscSoftware.type == aySoftwareOscPulse) {
+            if (action == editClear && (ay2->oscSoftware.type == aySoftwareOscPulse || ay2->oscSoftware.type == aySoftwareOscSyncEnvelope)) {
               *p1 = 0x80;
               handled = 1;
               screenMessage(0, "Pulse width %hhu", *p1);
@@ -488,7 +496,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
               handled = edit8noLast(action, p1, 16, 0, maxVal);
               if (handled) {
                 // Type-specific messages
-                if (ay2->oscSoftware.type == aySoftwareOscPulse) {
+                if (ay2->oscSoftware.type == aySoftwareOscPulse || ay2->oscSoftware.type == aySoftwareOscSyncEnvelope) {
                   screenMessage(0, "Pulse width %hhu", *p1);
                 } else if (ay2->oscSoftware.type == aySoftwareOscWavetable) {
                   screenMessage(0, "Wavetable index %hhu", *p1);
@@ -523,6 +531,13 @@ static int onEdit(int col, int row, enum CellEditAction action) {
               // Type-specific messages
               if (ay2->oscSoftware.type == aySoftwareOscPulse) {
                 screenMessage(0, "Pulse low level %hhu", *p2);
+              } else if (ay2->oscSoftware.type == aySoftwareOscSyncEnvelope) {
+                // Show both envelope shapes in the pair (high nibble first, low nibble second)
+                uint8_t shape1 = (*p2 >> 4) & 0x0F;  // High nibble
+                uint8_t shape2 = *p2 & 0x0F;         // Low nibble
+                screenMessage(0, "%X %s | %X %s",
+                  shape1, getEnvelopeShapeASCII(shape1),
+                  shape2, getEnvelopeShapeASCII(shape2));
               } else {
                 screenMessage(0, "Soft osc P2 %hhu", *p2);
               }
