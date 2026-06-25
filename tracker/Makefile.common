@@ -11,15 +11,23 @@ BUILD = $(BUILD_BASE)/$(PLATFORM)
 
 # Common includes and sources
 INCLUDES = $(addprefix -I, $(LIBS)) -I../chipnomad_lib
-SOURCES = $(foreach dir, $(LIBS), $(wildcard $(dir)/*.c))
-SRC_FILES = $(foreach dir, $(LIBS), $(wildcard $(dir)/*.c)) $(foreach dir, $(LIBS), $(wildcard $(dir)/*.h))
+C_SOURCES = $(foreach dir, $(LIBS), $(wildcard $(dir)/*.c))
+CPP_SOURCES = $(foreach dir, $(LIBS), $(wildcard $(dir)/*.cpp))
+SOURCES = $(C_SOURCES) $(CPP_SOURCES)
+SRC_FILES = $(foreach dir, $(LIBS), $(wildcard $(dir)/*.c)) $(foreach dir, $(LIBS), $(wildcard $(dir)/*.cpp)) $(foreach dir, $(LIBS), $(wildcard $(dir)/*.h))
+
+# Always use C++ compiler for better compatibility with future C++ modules
+# C files are compiled as C++ (C is mostly compatible with C++)
+COMPILER = $(CXX)
+STD_FLAG = -std=c++17
+CPP_LIBS = -lstdc++
 
 # Common compiler flags
-COMMON_CFLAGS = -std=c99 -Wall -g -Os -flto
+COMMON_CFLAGS = $(STD_FLAG) -Wall -g -Os -flto
 
 # Build target helper
 define build_target
 	mkdir -p $(BUILD)
-	$(CC) $(CFLAGS) $(XTRA_LIBS) $(OUTPUT)
+	$(COMPILER) $(CFLAGS) $(CPP_LIBS) $(XTRA_LIBS) $(OUTPUT)
 	chmod +x $(BUILD)/chipnomad$(OUTPUT_EXT)
 endef

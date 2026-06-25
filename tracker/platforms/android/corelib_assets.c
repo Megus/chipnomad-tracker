@@ -1,5 +1,5 @@
 #include "../src/corelib/corelib_assets.h"
-#include "../../chipnomad_lib/corelib/corelib_file.h"
+#include "../src/corelib/corelib_file.h"
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 #include <SDL2/SDL.h>
@@ -37,7 +37,9 @@ static const char* assetDirs[] = {
     "chipnomad_data/instruments",
     "chipnomad_data/pitch-tables",
     "chipnomad_data/projects",
+    "chipnomad_data/samples",
     "chipnomad_data/themes",
+    "chipnomad_data/wavetables",
     NULL
 };
 

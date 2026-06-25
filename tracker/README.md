@@ -25,6 +25,12 @@ make desktop
 make macOS-deploy
 ```
 
+**macOS Requirements:**
+- Xcode Command Line Tools: `xcode-select --install`
+- SDL2.framework: Download from https://github.com/libsdl-org/SDL/releases
+  - Place `SDL2.framework` in `platforms/macos/Frameworks/`
+  - See `platforms/macos/Frameworks/README.md` for details
+
 #### Linux (x86_64 and ARM)
 ```bash
 # Native build (works on x86_64, ARM, Raspberry Pi)

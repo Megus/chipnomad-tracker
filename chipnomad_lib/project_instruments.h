@@ -146,7 +146,7 @@ typedef struct Instrument {
 
 typedef struct InstrumentFunctions {
   int modDestinationsCount;
-  char* (*modName)(int modIndex);
+  const char* (*modName)(int modIndex);
   int (*init)(Instrument* instrument);
   int (*free)(Instrument* instrument);
 } InstrumentFunctions;

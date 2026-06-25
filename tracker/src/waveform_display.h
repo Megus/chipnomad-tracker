@@ -34,6 +34,6 @@ void renderSamplePreview(Bitmap* bitmap, uint8_t* sampleData, uint16_t startSamp
  * @param wavetable 32 4-bit wavetable values (0-15)
  * @param isYM 1 for YM chip, 0 for AY chip (affects amplitude scaling)
  */
-void renderWavetablePreview(Bitmap* bitmap, uint8_t* wavetable, int isYM);
+void renderAYWavetablePreview(Bitmap* bitmap, uint8_t* wavetable, int isYM);
 
 #endif

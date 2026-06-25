@@ -3,8 +3,8 @@
 #include "screens.h"
 #include <string.h>
 
-// Provide the global chipnomadState
-ChipNomadState* chipnomadState;
+// Reference the global chipnomadState from app.c
+extern ChipNomadState* chipnomadState;
 static ChipNomadState testState;
 
 #define S(r, c) chipnomadState->project.song[r][c]

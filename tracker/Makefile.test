@@ -16,8 +16,9 @@ include Makefile.common
 
 # Test-specific compiler settings
 CC = cc
-CFLAGS = -std=c99 -Wall -g -O0 $(INCLUDES) -Iexternal/unity -Isrc/corelib
-LDFLAGS = -lm
+CXX = c++
+CFLAGS = -std=c++17 -Wall -g -O0 $(INCLUDES) -Iexternal/unity -Isrc/corelib
+LDFLAGS = -lm -lstdc++
 
 # Unity test framework
 UNITY_SRC = external/unity/unity.c
@@ -26,30 +27,16 @@ UNITY_SRC = external/unity/unity.c
 UNITY_TEST_FILES = $(wildcard tests/test_*.c)
 UNITY_TEST_NAMES = $(basename $(notdir $(UNITY_TEST_FILES)))
 
-# Standalone test files (temporary tests, not part of main test suite)
-# These are excluded from the main test run
-STANDALONE_TESTS = test_sample_lift
-
 # Pattern rule to build and run a Unity test
 # Usage: make run-test_project_io
 run-%: tests/%.c $(SOURCES) $(EXTRA_SOURCES) $(UNITY_SRC)
 	@mkdir -p $(BUILD_DIR)
 	@echo "Building and running $*..."
-	@$(CC) $(CFLAGS) $< $(UNITY_SRC) $(SOURCES) $(EXTRA_SOURCES) $(LDFLAGS) -o $(BUILD_DIR)/$*
+	@$(CXX) $(CFLAGS) $< $(UNITY_SRC) $(SOURCES) $(EXTRA_SOURCES) $(LDFLAGS) -o $(BUILD_DIR)/$*
 	@$(BUILD_DIR)/$*
 
-# Build standalone tests
-$(BUILD_DIR)/test_sample_lift: test_sample_lift.c src/sample_utils.c src/import/import_wav.c src/import/import_common.c src/corelib/corelib_file.c
-	@mkdir -p $(BUILD_DIR)
-	@$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
-
-# Run standalone test (for manual testing)
-run-standalone: $(BUILD_DIR)/test_sample_lift
-	@echo "Running standalone test..."
-	@$(BUILD_DIR)/test_sample_lift
-
-# Run all Unity tests (excluding standalone tests)
-run: $(addprefix run-,$(filter-out $(STANDALONE_TESTS),$(UNITY_TEST_NAMES)))
+# Run all Unity tests
+run: $(addprefix run-,$(UNITY_TEST_NAMES))
 	@echo ""
 	@echo "=========================================="
 	@echo "All tests passed!"
@@ -59,4 +46,4 @@ run: $(addprefix run-,$(filter-out $(STANDALONE_TESTS),$(UNITY_TEST_NAMES)))
 clean:
 	@rm -rf $(BUILD_DIR)
 
-.PHONY: run run-standalone clean
+.PHONY: run clean

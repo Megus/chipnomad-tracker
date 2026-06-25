@@ -5,19 +5,33 @@ PLATFORM = macos
 
 include Makefile.common
 
+# Set compilers
+CC = clang
+CXX = clang++
+
 # macOS-specific settings
 LIBS = $(COMMON_LIBS) platforms/sdl2
 OUTPUT_EXT =
 
-# macOS-specific flags (ARM64 for Apple Silicon)
-# Note: Minimum version set to 14.0 (Sonoma) to match SDL2 library requirements
-XTRA_CFLAGS = -arch arm64 -mmacosx-version-min=14.0 -I/opt/homebrew/include -DDESKTOP_BUILD -DMACOS_BUILD
-XTRA_LIBS = -arch arm64 -mmacosx-version-min=14.0 -L/opt/homebrew/lib -lSDL2 -lm -rpath @executable_path/../Frameworks
+# SDL2 Framework path
+SDL2_FRAMEWORK = platforms/macos/Frameworks/SDL2.framework
+
+# macOS-specific flags (Universal Binary: ARM64 + x86_64)
+# Using SDL2.framework for better portability
+XTRA_CFLAGS = -arch arm64 -arch x86_64 -mmacosx-version-min=11.0 -F$(SDL2_FRAMEWORK)/.. -DDESKTOP_BUILD -DMACOS_BUILD
+XTRA_LIBS = -arch arm64 -arch x86_64 -mmacosx-version-min=11.0 -F$(SDL2_FRAMEWORK)/.. -framework SDL2 -framework Cocoa -lm -rpath @executable_path/../Frameworks
 CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(XTRA_CFLAGS)
 OUTPUT = -o $(BUILD)/chipnomad$(OUTPUT_EXT)
 
 .PHONY: macOS
 macOS:
+	@if [ ! -d "$(SDL2_FRAMEWORK)" ]; then \
+		echo "❌ SDL2.framework not found!"; \
+		echo ""; \
+		echo "Please run: ./platforms/macos/check-sdl2.sh"; \
+		echo "Or see: platforms/macos/Frameworks/README.md"; \
+		exit 1; \
+	fi
 	$(call build_target)
 
 # macOS deployment
@@ -32,8 +46,8 @@ macOS-app-bundle: macOS
 	@cp $(BUILD)/chipnomad $(BUILD)/$(APP_BUNDLE)/Contents/MacOS/
 	@cp -r packaging/common/* $(BUILD)/
 	@iconutil -c icns packaging/macos/ChipNomad.iconset -o $(BUILD)/$(APP_BUNDLE)/Contents/Resources/ChipNomad.icns 2>/dev/null || echo "Warning: Icon generation failed"
-	@cp /opt/homebrew/lib/libSDL2-2.0.0.dylib $(BUILD)/$(APP_BUNDLE)/Contents/Frameworks/ || echo "Warning: SDL2 library not found"
-	@install_name_tool -change /opt/homebrew/opt/sdl2/lib/libSDL2-2.0.0.dylib @executable_path/../Frameworks/libSDL2-2.0.0.dylib $(BUILD)/$(APP_BUNDLE)/Contents/MacOS/chipnomad 2>/dev/null || true
+	@echo "Copying SDL2.framework to bundle..."
+	@cp -R $(SDL2_FRAMEWORK) $(BUILD)/$(APP_BUNDLE)/Contents/Frameworks/
 	@cp packaging/macos/Info.plist $(BUILD)/$(APP_BUNDLE)/Contents/
 	@sed -i '' "s/VERSION_PLACEHOLDER/$$(grep 'appVersion.*=' src/version.c | cut -d'"' -f2)/g" $(BUILD)/$(APP_BUNDLE)/Contents/Info.plist
 	@echo ".app bundle created at $(BUILD)/$(APP_BUNDLE)"

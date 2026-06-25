@@ -1,0 +1,6 @@
+# Ignore SDL2.framework (too large for git)
+SDL2.framework/
+
+# Keep this directory and README
+!.gitignore
+!README.md

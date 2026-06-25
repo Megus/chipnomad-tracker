@@ -3,8 +3,20 @@
 
 #include <stdint.h>
 
+extern "C" {
+
+// Bitmap structure for multi-character grayscale images
+typedef struct Bitmap {
+  int widthChars;      // Width in characters
+  int heightChars;     // Height in characters
+  int widthPixels;     // Actual pixel width (widthChars * charWidth)
+  int heightPixels;    // Actual pixel height (heightChars * charHeight)
+  uint8_t* data;       // Grayscale data (0=background, 255=foreground), row-major order
+  void* userdata;      // Platform-specific data (e.g., SDL_Texture*)
+} Bitmap;
+
 /**
- * @brief Initialize graphics system. If screenWidth and screenHeight are not NULL or don't contain zeros,
+ * @brief Initialize graphics system. If screenWidth and screenHeight are not NULL and don't contain zeros,
  * function should read the screen resolution from these pointers. Otherwise, the function would detect screen resolution
  * and store it in these pointers (when they're not NULL). These arguments can be ignored on systems where
  * it is not required.
@@ -60,18 +72,6 @@ void gfxPrint(int x, int y, const char* text);
 void gfxPrintf(int x, int y, const char* format, ...);
 
 /**
- * @brief Bitmap structure for multi-character grayscale images
- */
-typedef struct Bitmap {
-  int widthChars;      // Width in characters
-  int heightChars;     // Height in characters
-  int widthPixels;     // Actual pixel width (widthChars * charWidth)
-  int heightPixels;    // Actual pixel height (heightChars * charHeight)
-  uint8_t* data;       // Grayscale data (0=background, 255=foreground), row-major order
-  void* userdata;      // Platform-specific data (e.g., SDL_Texture*)
-} Bitmap;
-
-/**
  * @brief Create a bitmap with specified size in characters
  *
  * @param widthChars Width in characters
@@ -79,6 +79,13 @@ typedef struct Bitmap {
  * @return Bitmap* Allocated bitmap (caller must free with gfxBitmapFree)
  */
 Bitmap* gfxBitmapCreate(int widthChars, int heightChars);
+
+/**
+ * @brief Clear bitmap (set all pixels to 0)
+ *
+ * @param bitmap Bitmap to clear
+ */
+void gfxBitmapClear(Bitmap* bitmap);
 
 /**
  * @brief Free a bitmap and its resources
@@ -129,5 +136,7 @@ void gfxReloadFont(void);
  */
 void gfxDrawHUD(void);
 void gfxSetButtonPressed(int buttonIndex, int pressed);
+
+}
 
 #endif

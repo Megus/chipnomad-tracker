@@ -1,0 +1,564 @@
+#include <SDL2/SDL.h>
+#include <stdint.h>
+#include "version.h"
+#include "corelib_gfx.h"
+#include "corelib_font.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdarg.h>
+
+#ifdef TOUCH_INPUT
+#include "button_icons.h"
+#endif
+
+#define PRINT_BUFFER_SIZE (256)
+#define TEXT_COLS (40)
+#define TEXT_ROWS (20)
+
+#define CHAR_X(x) ((x) * charW + offsetX)
+#define CHAR_Y(y) ((y) * charH + offsetY)
+
+#ifdef TOUCH_INPUT
+#define VPAD_BUTTON_SIZE 110
+#define VPAD_MARGIN 30
+#endif
+
+extern const uint8_t font12x16[];
+extern const uint8_t font16x24[];
+extern const uint8_t font24x36[];
+extern const uint8_t font32x48[];
+extern const uint8_t font48x54[];
+
+SDL_Window* window = NULL;
+SDL_Renderer * renderer = NULL;
+
+static uint32_t fgColor = 0;
+static uint32_t bgColor = 0;
+static uint32_t cursorColor = 0;
+static char printBuffer[PRINT_BUFFER_SIZE];
+static int screenW;
+static int screenH;
+static int charW;
+static int charH;
+static int offsetX;
+static int offsetY;
+static int isDirty;
+static const FontResolution* currentResolution = NULL;
+
+#ifdef TOUCH_INPUT
+static int buttonPressed[8] = {0};
+#endif
+
+// Font texture optimization
+static SDL_Texture* fontTexture = NULL;
+static SDL_Rect charRects[95]; // ASCII 32-126
+
+static void createFontTexture(void) {
+  if (!currentResolution || !currentResolution->data) return;
+
+  int fontW = (currentResolution->charWidth + 7) / 8;  // Bytes per row
+  const uint8_t* fontData = currentResolution->data;
+
+  fontTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, charW * 95, charH);
+  SDL_SetTextureBlendMode(fontTexture, SDL_BLENDMODE_BLEND);
+
+  SDL_SetRenderTarget(renderer, fontTexture);
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+  SDL_RenderClear(renderer);
+
+  for (int ch = 0; ch < 95; ch++) {
+    int charX = ch * charW;
+    charRects[ch] = (SDL_Rect){charX, 0, charW, charH};
+
+    for (int l = 0; l < charH; l++) {
+      for (int c = 0; c < fontW; c++) {
+        uint8_t fontByte = fontData[ch * fontW * charH + l * fontW + c];
+        int bitsToDraw = (c == fontW - 1 && charW % 8 != 0) ? charW % 8 : 8;
+        uint8_t mask = 0x80;
+
+        for (int b = 0; b < bitsToDraw; b++) {
+          if (fontByte & mask) {
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+            SDL_RenderDrawPoint(renderer, charX + c * 8 + b, l);
+          }
+          mask >>= 1;
+        }
+      }
+    }
+  }
+
+  SDL_SetRenderTarget(renderer, NULL);
+}
+
+// FIXME: On RG35XX+, the SDL2 seems to be built without haptic
+// support enabled, so SDL_INIT_EVERYTHING will fail.
+#ifdef PORTMASTER_BUILD
+#define SDL_INIT_FLAGS (SDL_INIT_EVERYTHING & ~SDL_INIT_HAPTIC)
+#else
+#define SDL_INIT_FLAGS (SDL_INIT_EVERYTHING)
+#endif
+
+int gfxSetup(int *screenWidth, int *screenHeight) {
+  if (SDL_Init(SDL_INIT_FLAGS) != 0) {
+    fprintf(stderr, "SDL2 Initialization Error: %s\n", SDL_GetError());
+    return 1;
+  }
+
+  snprintf(printBuffer, PRINT_BUFFER_SIZE, "%s v%s (%s)", appTitle, appVersion, appBuild);
+
+  // Detect screen resolution if not provided or zero
+  if (screenWidth == NULL || screenHeight == NULL || *screenWidth == 0 || *screenHeight == 0) {
+    #ifdef DESKTOP_BUILD
+      // Default to 640x480 on desktop platforms
+      screenW = 640;
+      screenH = 480;
+    #else
+      // For other platforms, try to get display mode
+      SDL_DisplayMode dm;
+      if (SDL_GetDesktopDisplayMode(0, &dm) == 0) {
+        screenW = dm.w;
+        screenH = dm.h;
+      } else {
+        // Fallback to 640x480 if detection fails
+        screenW = 640;
+        screenH = 480;
+      }
+    #endif
+    // Update the pointers if they're not NULL
+    if (screenWidth != NULL) *screenWidth = screenW;
+    if (screenHeight != NULL) *screenHeight = screenH;
+  } else {
+    screenW = *screenWidth;
+    screenH = *screenHeight;
+  }
+
+  window = SDL_CreateWindow(printBuffer,
+    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+    screenW, screenH,
+    SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI);
+
+  if (!window) {
+    fprintf(stderr, "SDL2 Create Window Error: %s\n", SDL_GetError());
+    SDL_Quit();
+    return 1;
+  }
+
+  renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+
+  // Check for high-DPI display and get actual drawable size
+  int drawableW, drawableH;
+  SDL_GL_GetDrawableSize(window, &drawableW, &drawableH);
+  if (drawableW != screenW || drawableH != screenH) {
+    screenW = drawableW;
+    screenH = drawableH;
+  }
+
+  currentResolution = fontSelectResolution(fontGetCurrent(), screenW, screenH);
+  if (currentResolution) {
+    charW = currentResolution->charWidth;
+    charH = currentResolution->charHeight;
+  } else {
+    // Fallback
+    charW = 12;
+    charH = 16;
+  }
+
+  // Center the text window
+  int textWindowW = TEXT_COLS * charW;
+  int textWindowH = TEXT_ROWS * charH;
+  offsetX = (screenW - textWindowW) / 2;
+#ifdef MOBILE_BUILD
+  offsetY = 0;
+#else
+  offsetY = (screenH - textWindowH) / 2;
+#endif
+
+  createFontTexture();
+  isDirty = 1;
+
+#ifdef TOUCH_INPUT
+  // Setup virtual gamepad layout using window coordinates
+  extern int vpadEnabled;
+  extern SDL_Rect dpadUpRect, dpadDownRect, dpadLeftRect, dpadRightRect;
+  extern SDL_Rect aButtonRect, bButtonRect, startButtonRect, selectButtonRect;
+  extern SDL_Rect dpadRect;
+
+  int winW, winH;
+  SDL_GetWindowSize(window, &winW, &winH);
+  float dpiScale = (float)screenW / winW;
+  int btnSize = (int)(VPAD_BUTTON_SIZE * dpiScale);
+  int margin = (int)(VPAD_MARGIN * dpiScale);
+  int buttonGap = (int)(15 * dpiScale);
+
+  // D-pad: cross layout (UP top-center, LEFT/RIGHT middle, DOWN bottom-center)
+  int dpadX = margin;
+  int dpadY = screenH - (btnSize + buttonGap) * 3 - margin;
+
+  dpadUpRect = (SDL_Rect){dpadX + btnSize + buttonGap, dpadY, btnSize, btnSize};
+  dpadLeftRect = (SDL_Rect){dpadX, dpadY + btnSize + buttonGap, btnSize, btnSize};
+  dpadRightRect = (SDL_Rect){dpadX + (btnSize + buttonGap) * 2, dpadY + btnSize + buttonGap, btnSize, btnSize};
+  dpadDownRect = (SDL_Rect){dpadX + btnSize + buttonGap, dpadY + (btnSize + buttonGap) * 2, btnSize, btnSize};
+
+  // EDIT and OPT on same level as UP
+  int rightX = screenW - margin - btnSize;
+  int rightY = dpadY;
+
+  aButtonRect = (SDL_Rect){rightX, rightY, btnSize, btnSize};
+  bButtonRect = (SDL_Rect){rightX - btnSize - buttonGap, rightY, btnSize, btnSize};
+
+  // START and SELECT at bottom center
+  int centerX = screenW / 2;
+  int bottomY = screenH - btnSize - margin;
+
+  selectButtonRect = (SDL_Rect){centerX - btnSize - buttonGap, bottomY, btnSize, btnSize};
+  startButtonRect = (SDL_Rect){centerX + buttonGap, bottomY, btnSize, btnSize};
+
+  dpadRect = (SDL_Rect){dpadX, dpadY, btnSize * 3 + buttonGap * 2, (btnSize + buttonGap) * 3 - buttonGap};
+#endif
+
+  return 0;
+}
+
+void gfxCleanup(void) {
+  if (fontTexture) SDL_DestroyTexture(fontTexture);
+  SDL_DestroyRenderer(renderer);
+  SDL_DestroyWindow(window);
+}
+
+void gfxSetFgColor(int rgb) {
+  fgColor = rgb;
+}
+
+void gfxSetBgColor(int rgb) {
+  bgColor = rgb;
+}
+
+void gfxSetCursorColor(int rgb) {
+  cursorColor = rgb;
+}
+
+static void setColor(int rgb) {
+  SDL_SetRenderDrawColor(renderer, (rgb & 0xff0000) >> 16, (rgb & 0xff00) >> 8, rgb & 0xff, 255);
+}
+
+void gfxClear(void) {
+  setColor(bgColor);
+  SDL_RenderClear(renderer);
+  isDirty = 1;
+}
+
+void gfxPoint(int x, int y, uint32_t color) {
+  setColor(color);
+  SDL_RenderDrawPoint(renderer, x, y);
+  isDirty = 1;
+}
+
+void gfxClearRect(int x, int y, int w, int h) {
+  SDL_Rect rect = { CHAR_X(x), CHAR_Y(y), w * charW, h * charH };
+  setColor(bgColor);
+  SDL_RenderFillRect(renderer, &rect);
+  isDirty = 1;
+}
+
+void gfxPrint(int x, int y, const char* text) {
+  if (text == NULL) return;
+
+  int cx = CHAR_X(x);
+  int cy = CHAR_Y(y);
+  int len = (int)strlen(text);
+
+  // Draw background rectangles first
+  setColor(bgColor);
+  for (int i = 0; i < len; i++) {
+    if (text[i] == '\r' && text[i + 1] == '\n') {
+      i++;
+      cx = CHAR_X(x);
+      cy += charH;
+      continue;
+    }
+    SDL_Rect bgRect = {cx, cy, charW, charH};
+    SDL_RenderFillRect(renderer, &bgRect);
+    cx += charW;
+    if (cx >= offsetX + TEXT_COLS * charW) {
+      cx = CHAR_X(x);
+      cy += charH;
+    }
+  }
+
+  // Draw characters
+  cx = CHAR_X(x);
+  cy = CHAR_Y(y);
+  SDL_SetTextureColorMod(fontTexture, (fgColor >> 16) & 0xFF, (fgColor >> 8) & 0xFF, fgColor & 0xFF);
+
+  for (int i = 0; i < len; i++) {
+    uint8_t C = text[i];
+    if (C == '\r' && text[i + 1] == '\n') {
+      i++;
+      cx = CHAR_X(x);
+      cy += charH;
+      if (cy >= offsetY + TEXT_ROWS * charH) {
+        cy = CHAR_Y(y);
+      }
+      continue;
+    }
+
+    if (C >= 32 && C <= 126) {
+      SDL_Rect dstRect = {cx, cy, charW, charH};
+      SDL_RenderCopy(renderer, fontTexture, &charRects[C - 32], &dstRect);
+    }
+
+    cx += charW;
+    if (cx >= offsetX + TEXT_COLS * charW) {
+      cx = CHAR_X(x);
+      cy += charH;
+    }
+  }
+  isDirty = 1;
+}
+
+void gfxPrintf(int x, int y, const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  vsnprintf(printBuffer, PRINT_BUFFER_SIZE, format, args);
+  va_end(args);
+  gfxPrint(x, y, printBuffer);
+}
+
+void gfxCursor(int x, int y, int w) {
+  SDL_Rect rect = { CHAR_X(x), CHAR_Y(y) + charH - 1, w * charW, 1 };
+  setColor(cursorColor);
+  SDL_RenderFillRect(renderer, &rect);
+  isDirty = 1;
+}
+
+void gfxRect(int x, int y, int w, int h) {
+  int cx = CHAR_X(x);
+  int cy = CHAR_Y(y);
+  int cw = w * charW;
+  int ch = h * charH;
+  setColor(fgColor);
+
+  SDL_Rect rects[4] = {
+    {cx, cy, cw, 1},           // top
+    {cx, cy + ch - 1, cw, 1}, // bottom
+    {cx, cy, 1, ch},          // left
+    {cx + cw - 1, cy, 1, ch}  // right
+  };
+  SDL_RenderFillRects(renderer, rects, 4);
+  isDirty = 1;
+}
+
+void gfxUpdateScreen(void) {
+  if (isDirty) {
+    gfxDrawHUD();
+    SDL_RenderPresent(renderer);
+  }
+  isDirty = 0;
+}
+
+void gfxDrawCharBitmap(uint8_t* bitmap, int col, int row) {
+  int cx = CHAR_X(col);
+  int cy = CHAR_Y(row);
+
+  uint8_t fgR = (fgColor >> 16) & 0xFF;
+  uint8_t fgG = (fgColor >> 8) & 0xFF;
+  uint8_t fgB = fgColor & 0xFF;
+  uint8_t bgR = (bgColor >> 16) & 0xFF;
+  uint8_t bgG = (bgColor >> 8) & 0xFF;
+  uint8_t bgB = bgColor & 0xFF;
+
+  for (int y = 0; y < charH; y++) {
+    for (int x = 0; x < charW; x++) {
+      uint8_t alpha = bitmap[y * charW + x];
+      uint8_t r = bgR + ((fgR - bgR) * alpha) / 255;
+      uint8_t g = bgG + ((fgG - bgG) * alpha) / 255;
+      uint8_t b = bgB + ((fgB - bgB) * alpha) / 255;
+      SDL_SetRenderDrawColor(renderer, r, g, b, 255);
+      SDL_RenderDrawPoint(renderer, cx + x, cy + y);
+    }
+  }
+  isDirty = 1;
+}
+
+Bitmap* gfxBitmapCreate(int widthChars, int heightChars) {
+  Bitmap* bitmap = (Bitmap*)malloc(sizeof(Bitmap));
+  if (!bitmap) return NULL;
+
+  bitmap->widthChars = widthChars;
+  bitmap->heightChars = heightChars;
+  bitmap->widthPixels = widthChars * charW;
+  bitmap->heightPixels = heightChars * charH;
+
+  // Allocate and zero the pixel data
+  int dataSize = bitmap->widthPixels * bitmap->heightPixels;
+  bitmap->data = (uint8_t*)malloc(dataSize);
+  if (!bitmap->data) {
+    free(bitmap);
+    return NULL;
+  }
+  memset(bitmap->data, 0, dataSize);
+
+  // Create SDL texture for hardware-accelerated rendering
+  SDL_Texture* texture = SDL_CreateTexture(
+    renderer,
+    SDL_PIXELFORMAT_RGBA8888,
+    SDL_TEXTUREACCESS_STREAMING,
+    bitmap->widthPixels,
+    bitmap->heightPixels
+  );
+  if (texture) {
+    SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+  }
+  bitmap->userdata = texture;
+
+  return bitmap;
+}
+
+void gfxBitmapClear(Bitmap* bitmap) {
+  memset(bitmap->data, 0, bitmap->widthPixels * bitmap->heightPixels);
+}
+
+void gfxBitmapFree(Bitmap* bitmap) {
+  if (!bitmap) return;
+
+  if (bitmap->userdata) {
+    SDL_DestroyTexture((SDL_Texture*)bitmap->userdata);
+  }
+  if (bitmap->data) {
+    free(bitmap->data);
+  }
+  free(bitmap);
+}
+
+void gfxDrawBitmap(Bitmap* bitmap, int col, int row) {
+  if (!bitmap || !bitmap->data) return;
+
+  SDL_Texture* texture = (SDL_Texture*)bitmap->userdata;
+  if (!texture) return;
+
+  // Extract color components
+  uint8_t fgR = (fgColor >> 16) & 0xFF;
+  uint8_t fgG = (fgColor >> 8) & 0xFF;
+  uint8_t fgB = fgColor & 0xFF;
+  uint8_t bgR = (bgColor >> 16) & 0xFF;
+  uint8_t bgG = (bgColor >> 8) & 0xFF;
+  uint8_t bgB = bgColor & 0xFF;
+
+  // Lock texture and update pixels
+  void* pixels;
+  int pitch;
+  if (SDL_LockTexture(texture, NULL, &pixels, &pitch) == 0) {
+    uint32_t* pixelData = (uint32_t*)pixels;
+
+    for (int y = 0; y < bitmap->heightPixels; y++) {
+      for (int x = 0; x < bitmap->widthPixels; x++) {
+        uint8_t alpha = bitmap->data[y * bitmap->widthPixels + x];
+        uint8_t r = bgR + ((fgR - bgR) * alpha) / 255;
+        uint8_t g = bgG + ((fgG - bgG) * alpha) / 255;
+        uint8_t b = bgB + ((fgB - bgB) * alpha) / 255;
+
+        // RGBA8888 format
+        pixelData[y * (pitch / 4) + x] = (r << 24) | (g << 16) | (b << 8) | 0xFF;
+      }
+    }
+
+    SDL_UnlockTexture(texture);
+  }
+
+  // Draw the texture at the specified character position
+  SDL_Rect destRect = {
+    CHAR_X(col),
+    CHAR_Y(row),
+    bitmap->widthPixels,
+    bitmap->heightPixels
+  };
+
+  SDL_RenderCopy(renderer, texture, NULL, &destRect);
+  isDirty = 1;
+}
+
+int gfxGetCharWidth(void) {
+  return charW;
+}
+
+int gfxGetCharHeight(void) {
+  return charH;
+}
+
+void gfxReloadFont(void) {
+  if (fontTexture) {
+    SDL_DestroyTexture(fontTexture);
+    fontTexture = NULL;
+  }
+
+  currentResolution = fontSelectResolution(fontGetCurrent(), screenW, screenH);
+  if (currentResolution) {
+    charW = currentResolution->charWidth;
+    charH = currentResolution->charHeight;
+  }
+
+  int textWindowW = TEXT_COLS * charW;
+  int textWindowH = TEXT_ROWS * charH;
+  offsetX = (screenW - textWindowW) / 2;
+#ifdef MOBILE_BUILD
+  offsetY = 0;
+#else
+  offsetY = (screenH - textWindowH) / 2;
+#endif
+
+  createFontTexture();
+  isDirty = 1;
+}
+
+#ifdef TOUCH_INPUT
+static void drawButton(SDL_Rect* rect, const uint8_t* iconData, int btnIndex) {
+  int bg = buttonPressed[btnIndex] ? 120 : 80;
+  SDL_SetRenderDrawColor(renderer, bg, bg, bg, 255);
+  SDL_RenderFillRect(renderer, rect);
+  SDL_SetRenderDrawColor(renderer, 120, 120, 120, 255);
+  SDL_RenderDrawRect(renderer, rect);
+
+  if (iconData) {
+    int iconX = rect->x + (rect->w - ICON_WIDTH) / 2;
+    int iconY = rect->y + (rect->h - ICON_HEIGHT) / 2;
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    for (int y = 0; y < ICON_HEIGHT; y++) {
+      for (int x = 0; x < ICON_WIDTH; x++) {
+        int byteIndex = y * ICON_BYTES_PER_ROW + x / 8;
+        int bitIndex = 7 - (x % 8);
+        if (iconData[byteIndex] & (1 << bitIndex)) {
+          SDL_RenderDrawPoint(renderer, iconX + x, iconY + y);
+        }
+      }
+    }
+  }
+}
+#endif
+
+void gfxDrawHUD(void) {
+#ifdef TOUCH_INPUT
+  extern int vpadEnabled;
+  extern SDL_Rect dpadUpRect, dpadDownRect, dpadLeftRect, dpadRightRect;
+  extern SDL_Rect aButtonRect, bButtonRect, startButtonRect, selectButtonRect;
+
+  if (!vpadEnabled) return;
+
+  drawButton(&dpadUpRect, icon_arrow_up, 0);
+  drawButton(&dpadDownRect, icon_arrow_down, 1);
+  drawButton(&dpadLeftRect, icon_arrow_left, 2);
+  drawButton(&dpadRightRect, icon_arrow_right, 3);
+  drawButton(&aButtonRect, icon_edit, 4);
+  drawButton(&bButtonRect, icon_opt, 5);
+  drawButton(&startButtonRect, icon_play, 6);
+  drawButton(&selectButtonRect, icon_shift, 7);
+#endif
+}
+
+void gfxSetButtonPressed(int buttonIndex, int pressed) {
+#ifdef TOUCH_INPUT
+  if (buttonIndex >= 0 && buttonIndex < 8) {
+    buttonPressed[buttonIndex] = pressed;
+    isDirty = 1;
+  }
+#endif
+}

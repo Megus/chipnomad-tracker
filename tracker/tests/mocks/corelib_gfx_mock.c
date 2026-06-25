@@ -16,6 +16,7 @@ void gfxPrint(int x, int y, const char* text) {}
 void gfxPrintf(int x, int y, const char* format, ...) {}
 void gfxDrawCharBitmap(uint8_t* bitmap, int col, int row) {}
 Bitmap* gfxBitmapCreate(int widthChars, int heightChars) { return NULL; }
+void gfxBitmapClear(Bitmap* bitmap) {}
 void gfxBitmapFree(Bitmap* bitmap) {}
 void gfxDrawBitmap(Bitmap* bitmap, int col, int row) {}
 int gfxGetCharWidth(void) { return 8; }

@@ -12,7 +12,7 @@ typedef struct AppScreen {
   void (*fullRedraw)(void);
   void (*draw)(void);
   int (*onInput)(int isKeyDown, int keys, int tapCount); // Return 1 if handled, 0 if not
-  enum ScreenPlaybackLevel (*getPlaybackLevel)(void); // Return playback level for this screen
+  int (*getPlaybackLevel)(void); // Return playback level for this screen (cast to ScreenPlaybackLevel)
 } AppScreen;
 
 enum CellState {
