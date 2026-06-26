@@ -1,6 +1,10 @@
 #ifndef __PROJECT_CONSTANTS_H__
 #define __PROJECT_CONSTANTS_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define PROJECT_MAX_TRACKS (10)
 #define PROJECT_MAX_LENGTH (256)
 #define PROJECT_MAX_CHAINS (255)
@@ -18,5 +22,10 @@
 #define NOTE_OFF (254)
 #define EMPTY_VALUE_8 (255)
 #define EMPTY_VALUE_16 (32767)
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -1,5 +1,9 @@
 #ifndef COPY_PASTE_H
 #define COPY_PASTE_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "screens/screens.h"
 
 // Groove copy/paste
@@ -46,4 +50,9 @@ int switchSongSelectionMode(ScreenData* screen);
 
 // Copy buffer management
 void resetCopyBuffers(void);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif // COPY_PASTE_H

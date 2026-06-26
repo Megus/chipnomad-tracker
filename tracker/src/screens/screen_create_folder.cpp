@@ -1,4 +1,5 @@
 #include "screens.h"
+#include "screen_create_folder.h"
 #include "corelib/corelib_file.h"
 #include "corelib_gfx.h"
 #include <string.h>

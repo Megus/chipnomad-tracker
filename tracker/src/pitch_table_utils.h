@@ -1,6 +1,10 @@
 #ifndef __PITCH_TABLE_UTILS_H__
 #define __PITCH_TABLE_UTILS_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "chipnomad_lib.h"
 
 // Load pitch table from CSV file
@@ -19,5 +23,10 @@ void calculateLinearPitchTable12TET(Project* p);
 
 // Reinitialize pitch table based on linear pitch setting
 void reinitializePitchTable(Project* p);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

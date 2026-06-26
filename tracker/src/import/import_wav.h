@@ -1,6 +1,10 @@
 #ifndef IMPORT_WAV_H
 #define IMPORT_WAV_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 
 // Result codes for WAV loading
@@ -29,5 +33,10 @@ uint8_t* loadWavFile(const char* path, uint16_t maxLength,
 
 // Get human-readable error message for result code
 const char* getWavLoadErrorMessage(WavLoadResult result);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

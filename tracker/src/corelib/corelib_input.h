@@ -1,6 +1,10 @@
 #ifndef __CORELIB_INPUT_H__
 #define __CORELIB_INPUT_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 
 enum InputDeviceType {
@@ -32,5 +36,10 @@ void inputInitDefaultKeyMapping(void);
 
 // Convert input code to human-readable name
 const char* inputGetKeyName(InputCode input);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

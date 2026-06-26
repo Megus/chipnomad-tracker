@@ -1,6 +1,10 @@
 #ifndef IMPORT_COMMON_H
 #define IMPORT_COMMON_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <chipnomad_lib.h>
 #include <stdint.h>
 
@@ -20,5 +24,10 @@ void initEmptyTable(Table* table);
 #define NOTES_PER_OCTAVE 12
 #define PT3_TABLE_NOTES 96
 #define PT3_TABLE_OCTAVES 8
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -1,6 +1,10 @@
 #ifndef CORELIB_FILE_H
 #define CORELIB_FILE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Platform-specific file and directory utilities
 // For general file I/O, use standard stdio.h functions
 
@@ -38,5 +42,9 @@ int fileDelete(const char* path);
 // Returns array of FileEntry (caller must free), or NULL on error
 // entryCount is set to number of entries
 FileEntry* fileListDirectory(const char* path, const char* extension, int* entryCount);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // CORELIB_FILE_H

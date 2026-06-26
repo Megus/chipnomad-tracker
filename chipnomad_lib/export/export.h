@@ -1,6 +1,10 @@
 #ifndef __EXPORT_H__
 #define __EXPORT_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include "project.h"
 #include "chipnomad_lib.h"
@@ -18,5 +22,10 @@ typedef struct Exporter {
 Exporter* createWAVExporter(const char* filename, Project* project, int startRow, int sampleRate, int bitDepth);
 Exporter* createWAVStemsExporter(const char* basePath, Project* project, int startRow, int sampleRate, int bitDepth);
 Exporter* createPSGExporter(const char* filename, Project* project, int startRow);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

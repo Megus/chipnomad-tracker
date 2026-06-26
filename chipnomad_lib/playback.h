@@ -1,6 +1,10 @@
 #ifndef __PLAYBACK_H__
 #define __PLAYBACK_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "project.h"
 #include "chips/chips.h"
 #include "playback_fx.h"
@@ -254,5 +258,9 @@ void playbackClearLoopRange(PlaybackState* state);
  * @return 1 if all tracks have finished playing, 0 if any track is still active
  */
 int playbackNextFrame(struct ChipNomadState* state);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

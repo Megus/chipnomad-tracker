@@ -1,6 +1,10 @@
 #ifndef __PLAYBACK_FX_H__
 #define __PLAYBACK_FX_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum PlaybackArpType {
   arpTypeUp,
   arpTypeDown,
@@ -52,5 +56,10 @@ typedef struct PlaybackFXState {
     PlaybackFXData_Retrigger retrigger;
   } d;
 } PlaybackFXState;
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

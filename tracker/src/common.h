@@ -1,6 +1,10 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -86,5 +90,9 @@ void resetKeyMappingToDefaults(void);
 void extractFilenameWithoutExtension(const char* path, char* output, int maxLength);
 const char* getAutosavePath(void);
 void clearNotePreview(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

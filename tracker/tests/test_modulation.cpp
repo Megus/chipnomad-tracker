@@ -1,10 +1,12 @@
-#include "../external/unity/unity.h"
+#include "doctest.h"
+extern "C" {
 #include "../../chipnomad_lib/playback_modulation.h"
+}
 #include <string.h>
 #include <stdio.h>
 
-void setUp(void) {}
-void tearDown(void) {}
+TEST_SUITE("modulation") {
+
 
 // ============================================================================
 // TEST STAND: Helper function for visualizing modulation output
@@ -52,7 +54,7 @@ void printModulationOutput(Modulation *mod, int frames, int noteOffFrame, int16_
 // ============================================================================
 
 // Test playbackModInit
-void test_modInit_ADSR_initializes_correctly(void) {
+TEST_CASE("test_modInit_ADSR_initializes_correctly") {
   Modulation mod = {
     .type = modADSR,
     .destination = 1,
@@ -66,22 +68,22 @@ void test_modInit_ADSR_initializes_correctly(void) {
   PlaybackModState state;
   playbackModInit(&state, &mod);
 
-  TEST_ASSERT_EQUAL_PTR(&mod, state.modulation);
-  TEST_ASSERT_EQUAL(0, state.p1Offset);
-  TEST_ASSERT_EQUAL(0, state.p2Offset);
-  TEST_ASSERT_EQUAL(0, state.p3Offset);
-  TEST_ASSERT_EQUAL(0, state.p4Offset);
-  TEST_ASSERT_EQUAL(0, state.step);
-  TEST_ASSERT_EQUAL(0, state.counter);
-  TEST_ASSERT_EQUAL(0, state.data1);
-  TEST_ASSERT_EQUAL(32385, state.data2);
-  TEST_ASSERT_EQUAL(0, state.outValue);
-  TEST_ASSERT_EQUAL(modADSR, state.cachedType);
-  TEST_ASSERT_EQUAL(20, state.cachedP2);
+  CHECK(&mod == state.modulation);
+  CHECK(state.p1Offset == 0);
+  CHECK(state.p2Offset == 0);
+  CHECK(state.p3Offset == 0);
+  CHECK(state.p4Offset == 0);
+  CHECK(state.step == 0);
+  CHECK(state.counter == 0);
+  CHECK(state.data1 == 0);
+  CHECK(state.data2 == 32385);
+  CHECK(state.outValue == 0);
+  CHECK(state.cachedType == modADSR);
+  CHECK(state.cachedP2 == 20);
 }
 
 // Test ADSR attack phase
-void test_ADSR_attack_phase_ramps_up(void) {
+TEST_CASE("test_ADSR_attack_phase_ramps_up") {
   Modulation mod = {
     .type = modADSR,
     .destination = 0,
@@ -97,25 +99,25 @@ void test_ADSR_attack_phase_ramps_up(void) {
 
   // First tick should be in attack phase
   playbackModNext(&state);
-  TEST_ASSERT_EQUAL(0, state.step); // Still in attack
-  TEST_ASSERT_GREATER_THAN(0, state.outValue);
+  CHECK(state.step == 0); // Still in attack
+  CHECK(state.outValue > 0);
 
   int16_t prevValue = state.outValue;
 
   // Continue through attack phase
   for (int i = 1; i < 10; i++) {
     playbackModNext(&state);
-    TEST_ASSERT_GREATER_THAN(prevValue, state.outValue);
+    CHECK(state.outValue > prevValue);
     prevValue = state.outValue;
   }
 
   // After attack duration, should move to decay/sustain
   playbackModNext(&state);
-  TEST_ASSERT_NOT_EQUAL(0, state.step);
+  CHECK(state.step != 0);
 }
 
 // Test ADSR with zero attack goes straight to sustain
-void test_ADSR_zero_attack_goes_to_sustain(void) {
+TEST_CASE("test_ADSR_zero_attack_goes_to_sustain") {
   Modulation mod = {
     .type = modADSR,
     .destination = 0,
@@ -132,15 +134,15 @@ void test_ADSR_zero_attack_goes_to_sustain(void) {
   playbackModNext(&state);
 
   // Should be in sustain phase (step 2)
-  TEST_ASSERT_EQUAL(2, state.step);
+  CHECK(state.step == 2);
 
   // Sustain value should be scaled: 128 * 128 = 16384
   // Then scaled by amount: 16384 * 127 / 128 = 16256
-  TEST_ASSERT_INT16_WITHIN(100, 16256, state.outValue);
+  CHECK(state.outValue >= 16256 - 100); CHECK(state.outValue <= 16256 + 100);
 }
 
 // Test ADSR sustain phase holds value
-void test_ADSR_sustain_phase_holds_value(void) {
+TEST_CASE("test_ADSR_sustain_phase_holds_value") {
   Modulation mod = {
     .type = modADSR,
     .destination = 0,
@@ -160,13 +162,13 @@ void test_ADSR_sustain_phase_holds_value(void) {
   // Call multiple times, value should remain constant
   for (int i = 0; i < 10; i++) {
     playbackModNext(&state);
-    TEST_ASSERT_EQUAL(sustainValue, state.outValue);
-    TEST_ASSERT_EQUAL(2, state.step); // Still in sustain
+    CHECK(state.outValue == sustainValue);
+    CHECK(state.step == 2); // Still in sustain
   }
 }
 
 // Test ADSR note off triggers release
-void test_ADSR_noteOff_triggers_release(void) {
+TEST_CASE("test_ADSR_noteOff_triggers_release") {
   Modulation mod = {
     .type = modADSR,
     .destination = 0,
@@ -182,23 +184,23 @@ void test_ADSR_noteOff_triggers_release(void) {
 
   // Get to sustain
   playbackModNext(&state);
-  TEST_ASSERT_EQUAL(2, state.step);
+  CHECK(state.step == 2);
   int16_t sustainValue = state.outValue;
 
   // Trigger note off
   playbackModNoteOff(&state);
 
   // Should be in release phase (step 3)
-  TEST_ASSERT_EQUAL(3, state.step);
-  TEST_ASSERT_EQUAL(0, state.counter);
+  CHECK(state.step == 3);
+  CHECK(state.counter == 0);
 
   // Release should ramp down from sustain value
   playbackModNext(&state);
-  TEST_ASSERT_LESS_THAN(sustainValue, state.outValue);
+  CHECK(state.outValue < sustainValue);
 }
 
 // Test ADSR release phase ramps to zero
-void test_ADSR_release_ramps_to_zero(void) {
+TEST_CASE("test_ADSR_release_ramps_to_zero") {
   Modulation mod = {
     .type = modADSR,
     .destination = 0,
@@ -221,19 +223,19 @@ void test_ADSR_release_ramps_to_zero(void) {
   for (int i = 0; i < 5; i++) {
     playbackModNext(&state);
     if (state.step != 0xff) { // Not stopped yet
-      TEST_ASSERT_LESS_THAN(prevValue, state.outValue);
+      CHECK(state.outValue < prevValue);
       prevValue = state.outValue;
     }
   }
 
   // After release duration, should be stopped
   playbackModNext(&state);
-  TEST_ASSERT_EQUAL(0xff, state.step);
-  TEST_ASSERT_EQUAL(0, state.outValue);
+  CHECK(state.step == 0xff);
+  CHECK(state.outValue == 0);
 }
 
 // Test ADSR decay phase
-void test_ADSR_decay_phase_ramps_to_sustain(void) {
+TEST_CASE("test_ADSR_decay_phase_ramps_to_sustain") {
   Modulation mod = {
     .type = modADSR,
     .destination = 0,
@@ -252,7 +254,7 @@ void test_ADSR_decay_phase_ramps_to_sustain(void) {
   playbackModNext(&state);
 
   // Should be in decay phase (step 1)
-  TEST_ASSERT_EQUAL(1, state.step);
+  CHECK(state.step == 1);
 
   int16_t prevValue = state.outValue;
 
@@ -260,17 +262,17 @@ void test_ADSR_decay_phase_ramps_to_sustain(void) {
   for (int i = 0; i < 10; i++) {
     playbackModNext(&state);
     if (state.step == 1) { // Still in decay
-      TEST_ASSERT_LESS_THAN(prevValue, state.outValue);
+      CHECK(state.outValue < prevValue);
       prevValue = state.outValue;
     }
   }
 
   // Should reach sustain phase
-  TEST_ASSERT_EQUAL(2, state.step);
+  CHECK(state.step == 2);
 }
 
 // Test amount scaling - positive amount
-void test_ADSR_amount_positive_scales_correctly(void) {
+TEST_CASE("test_ADSR_amount_positive_scales_correctly") {
   Modulation mod = {
     .type = modADSR,
     .destination = 0,
@@ -288,11 +290,11 @@ void test_ADSR_amount_positive_scales_correctly(void) {
 
   // Sustain at 255 -> 32640 envelope (255 * 128)
   // Scaled by amount 64: 32640 * 64 / 128 = 16320
-  TEST_ASSERT_INT16_WITHIN(100, 16320, state.outValue);
+  CHECK(state.outValue >= 16320 - 100); CHECK(state.outValue <= 16320 + 100);
 }
 
 // Test amount scaling - negative amount
-void test_ADSR_amount_negative_inverts_output(void) {
+TEST_CASE("test_ADSR_amount_negative_inverts_output") {
   Modulation mod = {
     .type = modADSR,
     .destination = 0,
@@ -309,13 +311,13 @@ void test_ADSR_amount_negative_inverts_output(void) {
   playbackModNext(&state);
 
   // Should be negative
-  TEST_ASSERT_LESS_THAN(0, state.outValue);
+  CHECK(state.outValue < 0);
   // Approximately -32640 * 127 / 128 = -32385
-  TEST_ASSERT_INT16_WITHIN(100, -32385, state.outValue);
+  CHECK(state.outValue >= -32385 - 100); CHECK(state.outValue <= -32385 + 100);
 }
 
 // Test amount scaling - zero amount
-void test_ADSR_amount_zero_outputs_zero(void) {
+TEST_CASE("test_ADSR_amount_zero_outputs_zero") {
   Modulation mod = {
     .type = modADSR,
     .destination = 0,
@@ -331,57 +333,57 @@ void test_ADSR_amount_zero_outputs_zero(void) {
 
   playbackModNext(&state);
 
-  TEST_ASSERT_EQUAL(0, state.outValue);
+  CHECK(state.outValue == 0);
 }
 
 // Test playbackModScaleToRange - positive value
-void test_scaleToRange_positive_value(void) {
+TEST_CASE("test_scaleToRange_positive_value") {
   // Max positive value (32640) should scale to maxAmplitude
   int16_t result = playbackModScaleToRange(32640, 15);
-  TEST_ASSERT_EQUAL(15, result);
+  CHECK(result == 15);
 
   // Zero should stay zero
   result = playbackModScaleToRange(0, 15);
-  TEST_ASSERT_EQUAL(0, result);
+  CHECK(result == 0);
 
   // Mid-positive value (half of 32640 should give half of 15)
   result = playbackModScaleToRange(16384, 15);
-  TEST_ASSERT_INT16_WITHIN(1, 7, result);
+  CHECK(result >= 7 - 1); CHECK(result <= 7 + 1);
 }
 
 // Test playbackModScaleToRange - negative value
-void test_scaleToRange_negative_value(void) {
+TEST_CASE("test_scaleToRange_negative_value") {
   // Max negative value (-32768) should scale to -maxAmplitude
   int16_t result = playbackModScaleToRange(-32768, 15);
-  TEST_ASSERT_EQUAL(-15, result);
+  CHECK(result == -15);
 
   // Mid-negative value (half of -32768 should give half of -15)
   result = playbackModScaleToRange(-16384, 15);
-  TEST_ASSERT_INT16_WITHIN(1, -7, result);
+  CHECK(result >= -7 - 1); CHECK(result <= -7 + 1);
 }
 
 // Test playbackModScaleToRange - different ranges
-void test_scaleToRange_different_maxAmplitudes(void) {
+TEST_CASE("test_scaleToRange_different_maxAmplitudes") {
   // Scale to 255 (8-bit)
   int16_t result = playbackModScaleToRange(32385, 255);
-  TEST_ASSERT_EQUAL(255, result);
+  CHECK(result == 255);
 
   result = playbackModScaleToRange(-32385, 255);
-  TEST_ASSERT_INT16_WITHIN(1, -255, result);
+  CHECK(result >= -255 - 1); CHECK(result <= -255 + 1);
 
   result = playbackModScaleToRange(0, 255);
-  TEST_ASSERT_EQUAL(0, result);
+  CHECK(result == 0);
 
   // Scale to 1 (binary)
   result = playbackModScaleToRange(32385, 1);
-  TEST_ASSERT_EQUAL(1, result);
+  CHECK(result == 1);
 
   result = playbackModScaleToRange(-32385, 1);
-  TEST_ASSERT_INT16_WITHIN(1, -1, result);
+  CHECK(result >= -1 - 1); CHECK(result <= -1 + 1);
 }
 
 // Test ADSR full cycle
-void test_ADSR_full_cycle(void) {
+TEST_CASE("test_ADSR_full_cycle") {
   Modulation mod = {
     .type = modADSR,
     .destination = 0,
@@ -396,14 +398,14 @@ void test_ADSR_full_cycle(void) {
   playbackModInit(&state, &mod);
 
   // Attack phase
-  TEST_ASSERT_EQUAL(0, state.step);
+  CHECK(state.step == 0);
   for (int i = 0; i < 3; i++) {
     playbackModNext(&state);
   }
 
   // Should move to decay
   playbackModNext(&state);
-  TEST_ASSERT_EQUAL(1, state.step);
+  CHECK(state.step == 1);
 
   // Decay phase
   for (int i = 0; i < 2; i++) {
@@ -412,16 +414,16 @@ void test_ADSR_full_cycle(void) {
 
   // Should move to sustain
   playbackModNext(&state);
-  TEST_ASSERT_EQUAL(2, state.step);
+  CHECK(state.step == 2);
 
   // Sustain holds
   int16_t sustainValue = state.outValue;
   playbackModNext(&state);
-  TEST_ASSERT_EQUAL(sustainValue, state.outValue);
+  CHECK(state.outValue == sustainValue);
 
   // Note off -> release
   playbackModNoteOff(&state);
-  TEST_ASSERT_EQUAL(3, state.step);
+  CHECK(state.step == 3);
 
   // Release phase
   for (int i = 0; i < 2; i++) {
@@ -430,12 +432,12 @@ void test_ADSR_full_cycle(void) {
 
   // Should be stopped
   playbackModNext(&state);
-  TEST_ASSERT_EQUAL(0xff, state.step);
-  TEST_ASSERT_EQUAL(0, state.outValue);
+  CHECK(state.step == 0xff);
+  CHECK(state.outValue == 0);
 }
 
 // Test AHD initialization
-void test_modInit_AHD_initializes_correctly(void) {
+TEST_CASE("test_modInit_AHD_initializes_correctly") {
   Modulation mod = {
     .type = modAHD,
     .destination = 1,
@@ -449,22 +451,22 @@ void test_modInit_AHD_initializes_correctly(void) {
   PlaybackModState state;
   playbackModInit(&state, &mod);
 
-  TEST_ASSERT_EQUAL_PTR(&mod, state.modulation);
-  TEST_ASSERT_EQUAL(0, state.p1Offset);
-  TEST_ASSERT_EQUAL(0, state.p2Offset);
-  TEST_ASSERT_EQUAL(0, state.p3Offset);
-  TEST_ASSERT_EQUAL(0, state.p4Offset);
-  TEST_ASSERT_EQUAL(0, state.step);
-  TEST_ASSERT_EQUAL(0, state.counter);
-  TEST_ASSERT_EQUAL(0, state.data1);
-  TEST_ASSERT_EQUAL(32385, state.data2);
-  TEST_ASSERT_EQUAL(0, state.outValue);
-  TEST_ASSERT_EQUAL(modAHD, state.cachedType);
-  TEST_ASSERT_EQUAL(20, state.cachedP2);
+  CHECK(&mod == state.modulation);
+  CHECK(state.p1Offset == 0);
+  CHECK(state.p2Offset == 0);
+  CHECK(state.p3Offset == 0);
+  CHECK(state.p4Offset == 0);
+  CHECK(state.step == 0);
+  CHECK(state.counter == 0);
+  CHECK(state.data1 == 0);
+  CHECK(state.data2 == 32385);
+  CHECK(state.outValue == 0);
+  CHECK(state.cachedType == modAHD);
+  CHECK(state.cachedP2 == 20);
 }
 
 // Test AHD attack phase
-void test_AHD_attack_phase_ramps_up(void) {
+TEST_CASE("test_AHD_attack_phase_ramps_up") {
   Modulation mod = {
     .type = modAHD,
     .destination = 0,
@@ -480,25 +482,25 @@ void test_AHD_attack_phase_ramps_up(void) {
 
   // First tick should be in attack phase
   playbackModNext(&state);
-  TEST_ASSERT_EQUAL(0, state.step); // Still in attack
-  TEST_ASSERT_GREATER_THAN(0, state.outValue);
+  CHECK(state.step == 0); // Still in attack
+  CHECK(state.outValue > 0);
 
   int16_t prevValue = state.outValue;
 
   // Continue through attack phase
   for (int i = 1; i < 10; i++) {
     playbackModNext(&state);
-    TEST_ASSERT_GREATER_THAN(prevValue, state.outValue);
+    CHECK(state.outValue > prevValue);
     prevValue = state.outValue;
   }
 
   // After attack duration, should move to hold
   playbackModNext(&state);
-  TEST_ASSERT_EQUAL(1, state.step);
+  CHECK(state.step == 1);
 }
 
 // Test AHD hold phase
-void test_AHD_hold_phase_stays_at_peak(void) {
+TEST_CASE("test_AHD_hold_phase_stays_at_peak") {
   Modulation mod = {
     .type = modAHD,
     .destination = 0,
@@ -517,10 +519,10 @@ void test_AHD_hold_phase_stays_at_peak(void) {
   playbackModNext(&state);
 
   // Should be in hold phase
-  TEST_ASSERT_EQUAL(1, state.step);
+  CHECK(state.step == 1);
 
   // Value should be at peak (32640 * 127 / 128 = 32385)
-  TEST_ASSERT_INT16_WITHIN(100, 32385, state.outValue);
+  CHECK(state.outValue >= 32385 - 100); CHECK(state.outValue <= 32385 + 100);
 
   int16_t holdValue = state.outValue;
 
@@ -528,16 +530,16 @@ void test_AHD_hold_phase_stays_at_peak(void) {
   for (int i = 0; i < 10; i++) {
     playbackModNext(&state);
     if (state.step == 1) { // Still in hold
-      TEST_ASSERT_EQUAL(holdValue, state.outValue);
+      CHECK(state.outValue == holdValue);
     }
   }
 
   // Should eventually move to decay
-  TEST_ASSERT_EQUAL(2, state.step);
+  CHECK(state.step == 2);
 }
 
 // Test AHD decay phase
-void test_AHD_decay_phase_ramps_to_zero(void) {
+TEST_CASE("test_AHD_decay_phase_ramps_to_zero") {
   Modulation mod = {
     .type = modAHD,
     .destination = 0,
@@ -557,7 +559,7 @@ void test_AHD_decay_phase_ramps_to_zero(void) {
   playbackModNext(&state);
 
   // Should be in decay phase
-  TEST_ASSERT_EQUAL(2, state.step);
+  CHECK(state.step == 2);
 
   int16_t prevValue = state.outValue;
 
@@ -565,19 +567,19 @@ void test_AHD_decay_phase_ramps_to_zero(void) {
   for (int i = 0; i < 10; i++) {
     playbackModNext(&state);
     if (state.step == 2) { // Still in decay
-      TEST_ASSERT_LESS_THAN(prevValue, state.outValue);
+      CHECK(state.outValue < prevValue);
       prevValue = state.outValue;
     }
   }
 
   // After decay, should be stopped
   playbackModNext(&state);
-  TEST_ASSERT_EQUAL(0xff, state.step);
-  TEST_ASSERT_EQUAL(0, state.outValue);
+  CHECK(state.step == 0xff);
+  CHECK(state.outValue == 0);
 }
 
 // Test AHD with zero attack
-void test_AHD_zero_attack_goes_to_hold(void) {
+TEST_CASE("test_AHD_zero_attack_goes_to_hold") {
   Modulation mod = {
     .type = modAHD,
     .destination = 0,
@@ -594,14 +596,14 @@ void test_AHD_zero_attack_goes_to_hold(void) {
   playbackModNext(&state);
 
   // Should be in hold phase (step 1)
-  TEST_ASSERT_EQUAL(1, state.step);
+  CHECK(state.step == 1);
 
   // Should be at peak (32640 * 127 / 128 = 32385)
-  TEST_ASSERT_INT16_WITHIN(100, 32385, state.outValue);
+  CHECK(state.outValue >= 32385 - 100); CHECK(state.outValue <= 32385 + 100);
 }
 
 // Test AHD with zero hold
-void test_AHD_zero_hold_goes_to_decay(void) {
+TEST_CASE("test_AHD_zero_hold_goes_to_decay") {
   Modulation mod = {
     .type = modAHD,
     .destination = 0,
@@ -620,11 +622,11 @@ void test_AHD_zero_hold_goes_to_decay(void) {
   playbackModNext(&state);
 
   // Should skip hold and go to decay (step 2)
-  TEST_ASSERT_EQUAL(2, state.step);
+  CHECK(state.step == 2);
 }
 
 // Test AHD note off does nothing
-void test_AHD_noteOff_does_nothing(void) {
+TEST_CASE("test_AHD_noteOff_does_nothing") {
   Modulation mod = {
     .type = modAHD,
     .destination = 0,
@@ -640,7 +642,7 @@ void test_AHD_noteOff_does_nothing(void) {
 
   // Get to hold phase
   playbackModNext(&state);
-  TEST_ASSERT_EQUAL(1, state.step);
+  CHECK(state.step == 1);
 
   int16_t valueBeforeNoteOff = state.outValue;
   uint8_t stepBeforeNoteOff = state.step;
@@ -649,15 +651,15 @@ void test_AHD_noteOff_does_nothing(void) {
   playbackModNoteOff(&state);
 
   // Should not change anything
-  TEST_ASSERT_EQUAL(stepBeforeNoteOff, state.step);
+  CHECK(state.step == stepBeforeNoteOff);
 
   // Continue playing
   playbackModNext(&state);
-  TEST_ASSERT_EQUAL(valueBeforeNoteOff, state.outValue);
+  CHECK(state.outValue == valueBeforeNoteOff);
 }
 
 // Test AHD full cycle
-void test_AHD_full_cycle(void) {
+TEST_CASE("test_AHD_full_cycle") {
   Modulation mod = {
     .type = modAHD,
     .destination = 0,
@@ -672,27 +674,27 @@ void test_AHD_full_cycle(void) {
   playbackModInit(&state, &mod);
 
   // Attack phase
-  TEST_ASSERT_EQUAL(0, state.step);
+  CHECK(state.step == 0);
   for (int i = 0; i < 3; i++) {
     playbackModNext(&state);
   }
 
   // Should move to hold
   playbackModNext(&state);
-  TEST_ASSERT_EQUAL(1, state.step);
+  CHECK(state.step == 1);
 
   // Hold phase
   int16_t holdValue = state.outValue;
   for (int i = 0; i < 2; i++) {
     playbackModNext(&state);
     if (state.step == 1) {
-      TEST_ASSERT_EQUAL(holdValue, state.outValue);
+      CHECK(state.outValue == holdValue);
     }
   }
 
   // Should move to decay
   playbackModNext(&state);
-  TEST_ASSERT_EQUAL(2, state.step);
+  CHECK(state.step == 2);
 
   // Decay phase
   for (int i = 0; i < 3; i++) {
@@ -701,12 +703,12 @@ void test_AHD_full_cycle(void) {
 
   // Should be stopped
   playbackModNext(&state);
-  TEST_ASSERT_EQUAL(0xff, state.step);
-  TEST_ASSERT_EQUAL(0, state.outValue);
+  CHECK(state.step == 0xff);
+  CHECK(state.outValue == 0);
 }
 
 // Test AHD with negative amount
-void test_AHD_negative_amount_inverts_output(void) {
+TEST_CASE("test_AHD_negative_amount_inverts_output") {
   Modulation mod = {
     .type = modAHD,
     .destination = 0,
@@ -723,12 +725,12 @@ void test_AHD_negative_amount_inverts_output(void) {
   playbackModNext(&state);
 
   // Should be negative (inverted peak)
-  TEST_ASSERT_LESS_THAN(0, state.outValue);
-  TEST_ASSERT_INT16_WITHIN(100, -32385, state.outValue);
+  CHECK(state.outValue < 0);
+  CHECK(state.outValue >= -32385 - 100); CHECK(state.outValue <= -32385 + 100);
 }
 
 // Test LFO initialization
-void test_modInit_LFO_initializes_correctly(void) {
+TEST_CASE("test_modInit_LFO_initializes_correctly") {
   Modulation mod = {
     .type = modLFO,
     .destination = 1,
@@ -742,19 +744,19 @@ void test_modInit_LFO_initializes_correctly(void) {
   PlaybackModState state;
   playbackModInit(&state, &mod);
 
-  TEST_ASSERT_EQUAL_PTR(&mod, state.modulation);
-  TEST_ASSERT_EQUAL(0, state.p1Offset);
-  TEST_ASSERT_EQUAL(0, state.p2Offset);
-  TEST_ASSERT_EQUAL(0, state.p3Offset);
-  TEST_ASSERT_EQUAL(0, state.p4Offset);
-  TEST_ASSERT_EQUAL(0, state.step);
-  TEST_ASSERT_EQUAL(0, state.counter);
-  TEST_ASSERT_EQUAL(modLFO, state.cachedType);
-  TEST_ASSERT_EQUAL(lfoTrigFree, state.cachedP2);
+  CHECK(&mod == state.modulation);
+  CHECK(state.p1Offset == 0);
+  CHECK(state.p2Offset == 0);
+  CHECK(state.p3Offset == 0);
+  CHECK(state.p4Offset == 0);
+  CHECK(state.step == 0);
+  CHECK(state.counter == 0);
+  CHECK(state.cachedType == modLFO);
+  CHECK(state.cachedP2 == lfoTrigFree);
 }
 
 // Test LFO triangle shape oscillates
-void test_LFO_triangle_oscillates(void) {
+TEST_CASE("test_LFO_triangle_oscillates") {
   Modulation mod = {
     .type = modLFO,
     .destination = 0,
@@ -771,30 +773,30 @@ void test_LFO_triangle_oscillates(void) {
   // Triangle should start at 0, go positive, back to 0, negative, back to 0
   playbackModNext(&state);
   int16_t firstValue = state.outValue;
-  TEST_ASSERT_INT16_WITHIN(2000, 0, firstValue); // Should start near zero
+  CHECK(firstValue >= 0 - 2000); CHECK(firstValue <= 0 + 2000); // Should start near zero
 
   // Continue - should increase
   playbackModNext(&state);
-  TEST_ASSERT_GREATER_THAN(firstValue, state.outValue);
+  CHECK(state.outValue > firstValue);
 
   // Continue to peak
   for (int i = 0; i < 3; i++) {
     int16_t prev = state.outValue;
     playbackModNext(&state);
-    TEST_ASSERT_GREATER_THAN(prev, state.outValue);
+    CHECK(state.outValue > prev);
   }
 
   // Should reach peak around quarter period (counter=4, phase=0.25)
   int16_t peakValue = state.outValue;
-  TEST_ASSERT_INT16_WITHIN(2000, 32640, peakValue);
+  CHECK(peakValue >= 32640 - 2000); CHECK(peakValue <= 32640 + 2000);
 
   // Continue past peak, should decrease
   playbackModNext(&state);
-  TEST_ASSERT_LESS_THAN(peakValue, state.outValue);
+  CHECK(state.outValue < peakValue);
 }
 
 // Test LFO square wave
-void test_LFO_square_toggles(void) {
+TEST_CASE("test_LFO_square_toggles") {
   Modulation mod = {
     .type = modLFO,
     .destination = 0,
@@ -811,22 +813,22 @@ void test_LFO_square_toggles(void) {
   // First half should be positive (32640 * 127 / 128 = 32385)
   playbackModNext(&state);
   int16_t firstHalf = state.outValue;
-  TEST_ASSERT_INT16_WITHIN(100, 32385, firstHalf);
+  CHECK(firstHalf >= 32385 - 100); CHECK(firstHalf <= 32385 + 100);
 
   // Should stay at same value for first half
   for (int i = 0; i < 4; i++) {
     playbackModNext(&state);
-    TEST_ASSERT_EQUAL(firstHalf, state.outValue);
+    CHECK(state.outValue == firstHalf);
   }
 
   // Second half should be negative (-32640 * 127 / 128 = -32385)
   playbackModNext(&state);
   int16_t secondHalf = state.outValue;
-  TEST_ASSERT_INT16_WITHIN(100, -32385, secondHalf);
+  CHECK(secondHalf >= -32385 - 100); CHECK(secondHalf <= -32385 + 100);
 }
 
 // Test LFO ramp up
-void test_LFO_rampUp_increases(void) {
+TEST_CASE("test_LFO_rampUp_increases") {
   Modulation mod = {
     .type = modLFO,
     .destination = 0,
@@ -842,21 +844,21 @@ void test_LFO_rampUp_increases(void) {
 
   // Should start near zero and increase
   playbackModNext(&state);
-  TEST_ASSERT_INT16_WITHIN(5000, 0, state.outValue);
+  CHECK(state.outValue >= 0 - 5000); CHECK(state.outValue <= 0 + 5000);
 
   int16_t prevValue = state.outValue;
   for (int i = 0; i < 9; i++) {
     playbackModNext(&state);
-    TEST_ASSERT_GREATER_THAN(prevValue, state.outValue);
+    CHECK(state.outValue > prevValue);
     prevValue = state.outValue;
   }
 
   // Should end near peak
-  TEST_ASSERT_INT16_WITHIN(5000, 32640, state.outValue);
+  CHECK(state.outValue >= 32640 - 5000); CHECK(state.outValue <= 32640 + 5000);
 }
 
 // Test LFO ramp down
-void test_LFO_rampDown_decreases(void) {
+TEST_CASE("test_LFO_rampDown_decreases") {
   Modulation mod = {
     .type = modLFO,
     .destination = 0,
@@ -872,21 +874,21 @@ void test_LFO_rampDown_decreases(void) {
 
   // Should start near peak and decrease
   playbackModNext(&state);
-  TEST_ASSERT_INT16_WITHIN(5000, 32640, state.outValue);
+  CHECK(state.outValue >= 32640 - 5000); CHECK(state.outValue <= 32640 + 5000);
 
   int16_t prevValue = state.outValue;
   for (int i = 0; i < 9; i++) {
     playbackModNext(&state);
-    TEST_ASSERT_LESS_THAN(prevValue, state.outValue);
+    CHECK(state.outValue < prevValue);
     prevValue = state.outValue;
   }
 
   // Should end near zero
-  TEST_ASSERT_INT16_WITHIN(5000, 0, state.outValue);
+  CHECK(state.outValue >= 0 - 5000); CHECK(state.outValue <= 0 + 5000);
 }
 
 // Test LFO wraps around with lfoFree
-void test_LFO_free_wraps_around(void) {
+TEST_CASE("test_LFO_free_wraps_around") {
   Modulation mod = {
     .type = modLFO,
     .destination = 0,
@@ -907,12 +909,12 @@ void test_LFO_free_wraps_around(void) {
 
   // Should wrap around and continue
   playbackModNext(&state);
-  TEST_ASSERT_NOT_EQUAL(0xff, state.step); // Not stopped
-  TEST_ASSERT_EQUAL(1, state.counter); // Wrapped to 1
+  CHECK(state.step != 0xff); // Not stopped
+  CHECK(state.counter == 1); // Wrapped to 1
 }
 
 // Test LFO stops with lfoOnce
-void test_LFO_once_stops_after_cycle(void) {
+TEST_CASE("test_LFO_once_stops_after_cycle") {
   Modulation mod = {
     .type = modLFO,
     .destination = 0,
@@ -933,17 +935,17 @@ void test_LFO_once_stops_after_cycle(void) {
 
   // Next tick should stop and hold at zero
   playbackModNext(&state);
-  TEST_ASSERT_EQUAL(0xff, state.step); // Stopped
-  TEST_ASSERT_EQUAL(0, state.outValue); // Held at zero
+  CHECK(state.step == 0xff); // Stopped
+  CHECK(state.outValue == 0); // Held at zero
 
   // Should stay stopped
   playbackModNext(&state);
-  TEST_ASSERT_EQUAL(0xff, state.step);
-  TEST_ASSERT_EQUAL(0, state.outValue);
+  CHECK(state.step == 0xff);
+  CHECK(state.outValue == 0);
 }
 
 // Test LFO holds last value with lfoHold
-void test_LFO_hold_stops_at_last_value(void) {
+TEST_CASE("test_LFO_hold_stops_at_last_value") {
   Modulation mod = {
     .type = modLFO,
     .destination = 0,
@@ -966,16 +968,16 @@ void test_LFO_hold_stops_at_last_value(void) {
 
   // Next tick should stop and hold last value
   playbackModNext(&state);
-  TEST_ASSERT_EQUAL(0xff, state.step); // Stopped
-  TEST_ASSERT_EQUAL(lastValue, state.outValue); // Held at last value
+  CHECK(state.step == 0xff); // Stopped
+  CHECK(state.outValue == lastValue); // Held at last value
 
   // Should stay at that value
   playbackModNext(&state);
-  TEST_ASSERT_EQUAL(lastValue, state.outValue);
+  CHECK(state.outValue == lastValue);
 }
 
 // Test LFO with negative amount inverts
-void test_LFO_negative_amount_inverts(void) {
+TEST_CASE("test_LFO_negative_amount_inverts") {
   Modulation mod = {
     .type = modLFO,
     .destination = 0,
@@ -991,17 +993,17 @@ void test_LFO_negative_amount_inverts(void) {
 
   // First half should be negative (inverted) (32640 * -127 / 128 = -32385)
   playbackModNext(&state);
-  TEST_ASSERT_INT16_WITHIN(100, -32385, state.outValue);
+  CHECK(state.outValue >= -32385 - 100); CHECK(state.outValue <= -32385 + 100);
 
   // Second half should be positive (inverted) (-32640 * -127 / 128 = 32385)
   for (int i = 0; i < 5; i++) {
     playbackModNext(&state);
   }
-  TEST_ASSERT_INT16_WITHIN(100, 32385, state.outValue);
+  CHECK(state.outValue >= 32385 - 100); CHECK(state.outValue <= 32385 + 100);
 }
 
 // Test LFO with zero period outputs zero
-void test_LFO_zero_period_outputs_zero(void) {
+TEST_CASE("test_LFO_zero_period_outputs_zero") {
   Modulation mod = {
     .type = modLFO,
     .destination = 0,
@@ -1016,11 +1018,11 @@ void test_LFO_zero_period_outputs_zero(void) {
   playbackModInit(&state, &mod);
 
   playbackModNext(&state);
-  TEST_ASSERT_EQUAL(0, state.outValue);
+  CHECK(state.outValue == 0);
 }
 
 // Test type change detection and reinitialization
-void test_type_change_reinitializes(void) {
+TEST_CASE("test_type_change_reinitializes") {
   Modulation mod = {
     .type = modADSR,
     .destination = 1,
@@ -1040,9 +1042,9 @@ void test_type_change_reinitializes(void) {
   }
 
   // Should be in attack phase (step 0)
-  TEST_ASSERT_EQUAL(0, state.step);
-  TEST_ASSERT_EQUAL(5, state.counter);
-  TEST_ASSERT_GREATER_THAN(0, state.outValue);
+  CHECK(state.step == 0);
+  CHECK(state.counter == 5);
+  CHECK(state.outValue > 0);
   int16_t adsrValue = state.outValue;
 
   // Change type to AHD
@@ -1052,14 +1054,14 @@ void test_type_change_reinitializes(void) {
   playbackModNext(&state);
 
   // Should be reinitialized: step 0, counter 0 (or 1 after first next)
-  TEST_ASSERT_EQUAL(modAHD, state.cachedType);
-  TEST_ASSERT_EQUAL(0, state.step);
-  TEST_ASSERT_EQUAL(1, state.counter); // Counter increments in first call
+  CHECK(state.cachedType == modAHD);
+  CHECK(state.step == 0);
+  CHECK(state.counter == 1); // Counter increments in first call
   // Value should be different (restarted from beginning)
-  TEST_ASSERT_NOT_EQUAL(adsrValue, state.outValue);
+  CHECK(state.outValue != adsrValue);
 }
 
-void test_LFO_trigger_mode_change_reinitializes(void) {
+TEST_CASE("test_LFO_trigger_mode_change_reinitializes") {
   Modulation mod = {
     .type = modLFO,
     .destination = 1,
@@ -1078,8 +1080,8 @@ void test_LFO_trigger_mode_change_reinitializes(void) {
     playbackModNext(&state);
   }
 
-  TEST_ASSERT_EQUAL(8, state.counter);
-  TEST_ASSERT_EQUAL(lfoTrigFree, state.cachedP2);
+  CHECK(state.counter == 8);
+  CHECK(state.cachedP2 == lfoTrigFree);
 
   // Change trigger mode to lfoOnce
   mod.p2 = lfoTrigOnce;
@@ -1088,11 +1090,11 @@ void test_LFO_trigger_mode_change_reinitializes(void) {
   playbackModNext(&state);
 
   // Should be reinitialized
-  TEST_ASSERT_EQUAL(lfoTrigOnce, state.cachedP2);
-  TEST_ASSERT_EQUAL(1, state.counter); // Restarted and advanced one step
+  CHECK(state.cachedP2 == lfoTrigOnce);
+  CHECK(state.counter == 1); // Restarted and advanced one step
 }
 
-void test_parameter_change_without_type_change_continues(void) {
+TEST_CASE("test_parameter_change_without_type_change_continues") {
   Modulation mod = {
     .type = modADSR,
     .destination = 1,
@@ -1111,8 +1113,8 @@ void test_parameter_change_without_type_change_continues(void) {
     playbackModNext(&state);
   }
 
-  TEST_ASSERT_EQUAL(0, state.step);
-  TEST_ASSERT_EQUAL(5, state.counter);
+  CHECK(state.step == 0);
+  CHECK(state.counter == 5);
 
   // Change attack duration (p1) - should NOT reinitialize
   mod.p1 = 20;
@@ -1120,12 +1122,12 @@ void test_parameter_change_without_type_change_continues(void) {
   playbackModNext(&state);
 
   // Should continue from where it was (counter should increment)
-  TEST_ASSERT_EQUAL(0, state.step);
-  TEST_ASSERT_EQUAL(6, state.counter);
-  TEST_ASSERT_EQUAL(modADSR, state.cachedType);
+  CHECK(state.step == 0);
+  CHECK(state.counter == 6);
+  CHECK(state.cachedType == modADSR);
 }
 
-void test_LFO_shape_change_without_trigger_change_continues(void) {
+TEST_CASE("test_LFO_shape_change_without_trigger_change_continues") {
   Modulation mod = {
     .type = modLFO,
     .destination = 1,
@@ -1144,7 +1146,7 @@ void test_LFO_shape_change_without_trigger_change_continues(void) {
     playbackModNext(&state);
   }
 
-  TEST_ASSERT_EQUAL(4, state.counter);
+  CHECK(state.counter == 4);
   int16_t triValue = state.outValue;
 
   // Change shape to square (p1) - should NOT reinitialize
@@ -1153,14 +1155,14 @@ void test_LFO_shape_change_without_trigger_change_continues(void) {
   playbackModNext(&state);
 
   // Should continue from same position (counter increments)
-  TEST_ASSERT_EQUAL(5, state.counter);
-  TEST_ASSERT_EQUAL(modLFO, state.cachedType);
-  TEST_ASSERT_EQUAL(lfoTrigFree, state.cachedP2);
+  CHECK(state.counter == 5);
+  CHECK(state.cachedType == modLFO);
+  CHECK(state.cachedP2 == lfoTrigFree);
   // Value will be different due to shape change, but counter continues
-  TEST_ASSERT_NOT_EQUAL(triValue, state.outValue);
+  CHECK(state.outValue != triValue);
 }
 
-void test_LFO_random_changes_each_period(void) {
+TEST_CASE("test_LFO_random_changes_each_period") {
   Modulation mod = {
     .type = modLFO,
     .destination = 1,
@@ -1181,7 +1183,7 @@ void test_LFO_random_changes_each_period(void) {
   // Value should stay the same for the entire period
   for (int i = 1; i < 8; i++) {
     playbackModNext(&state);
-    TEST_ASSERT_EQUAL(firstValue, state.outValue);
+    CHECK(state.outValue == firstValue);
   }
 
   // After period wraps, should get a new random value
@@ -1189,18 +1191,18 @@ void test_LFO_random_changes_each_period(void) {
   int16_t secondValue = state.outValue;
 
   // New value should be different (extremely unlikely to be the same)
-  TEST_ASSERT_NOT_EQUAL(firstValue, secondValue);
+  CHECK(secondValue != firstValue);
 
   // Second value should also hold for the entire period
   for (int i = 1; i < 8; i++) {
     playbackModNext(&state);
-    TEST_ASSERT_EQUAL(secondValue, state.outValue);
+    CHECK(state.outValue == secondValue);
   }
 
   // Third period should get yet another value
   playbackModNext(&state);
   int16_t thirdValue = state.outValue;
-  TEST_ASSERT_NOT_EQUAL(secondValue, thirdValue);
+  CHECK(thirdValue != secondValue);
 }
 
 // ============================================================================
@@ -1221,7 +1223,7 @@ void testStand(void) {
   printModulationOutput(&mod, 30, 100, 15, "LFO1");
 }
 
-void test_legacy_AY1_volume_sustain_scaling(void) {
+TEST_CASE("test_legacy_AY1_volume_sustain_scaling") {
   // Test that legacy AY1 volume envelope sustain values (0-15) are correctly
   // scaled to produce exact 0-15 volume output values in the new modulation system.
   // The clever trick: use p3Offset to scale sustain from 0-15 to 0-255 range.
@@ -1265,66 +1267,11 @@ void test_legacy_AY1_volume_sustain_scaling(void) {
     if (volume > 15) volume = 15;
 
     // Verify that the scaled volume matches the original sustain value
-    TEST_ASSERT_EQUAL_MESSAGE(sustainValue, volume,
+    CHECK_MESSAGE(volume == sustainValue,
       "Legacy AY1 sustain scaling failed for value");
   }
 }
 
-int main(void) {
-  UNITY_BEGIN();
+// Tests are run automatically by doctest
 
-  //testStand();
-
-  // ADSR tests
-  RUN_TEST(test_modInit_ADSR_initializes_correctly);
-  RUN_TEST(test_ADSR_attack_phase_ramps_up);
-  RUN_TEST(test_ADSR_zero_attack_goes_to_sustain);
-  RUN_TEST(test_ADSR_sustain_phase_holds_value);
-  RUN_TEST(test_ADSR_noteOff_triggers_release);
-  RUN_TEST(test_ADSR_release_ramps_to_zero);
-  RUN_TEST(test_ADSR_decay_phase_ramps_to_sustain);
-  RUN_TEST(test_ADSR_amount_positive_scales_correctly);
-  RUN_TEST(test_ADSR_amount_negative_inverts_output);
-  RUN_TEST(test_ADSR_amount_zero_outputs_zero);
-  RUN_TEST(test_ADSR_full_cycle);
-
-  // AHD tests
-  RUN_TEST(test_modInit_AHD_initializes_correctly);
-  RUN_TEST(test_AHD_attack_phase_ramps_up);
-  RUN_TEST(test_AHD_hold_phase_stays_at_peak);
-  RUN_TEST(test_AHD_decay_phase_ramps_to_zero);
-  RUN_TEST(test_AHD_zero_attack_goes_to_hold);
-  RUN_TEST(test_AHD_zero_hold_goes_to_decay);
-  RUN_TEST(test_AHD_noteOff_does_nothing);
-  RUN_TEST(test_AHD_full_cycle);
-  RUN_TEST(test_AHD_negative_amount_inverts_output);
-
-  // LFO tests
-  RUN_TEST(test_modInit_LFO_initializes_correctly);
-  RUN_TEST(test_LFO_triangle_oscillates);
-  RUN_TEST(test_LFO_square_toggles);
-  RUN_TEST(test_LFO_rampUp_increases);
-  RUN_TEST(test_LFO_rampDown_decreases);
-  RUN_TEST(test_LFO_free_wraps_around);
-  RUN_TEST(test_LFO_once_stops_after_cycle);
-  RUN_TEST(test_LFO_hold_stops_at_last_value);
-  RUN_TEST(test_LFO_negative_amount_inverts);
-  RUN_TEST(test_LFO_zero_period_outputs_zero);
-  RUN_TEST(test_LFO_random_changes_each_period);
-
-  // Range scaling tests
-  RUN_TEST(test_scaleToRange_positive_value);
-  RUN_TEST(test_scaleToRange_negative_value);
-  RUN_TEST(test_scaleToRange_different_maxAmplitudes);
-
-  // Live parameter change tests
-  RUN_TEST(test_type_change_reinitializes);
-  RUN_TEST(test_LFO_trigger_mode_change_reinitializes);
-  RUN_TEST(test_parameter_change_without_type_change_continues);
-  RUN_TEST(test_LFO_shape_change_without_trigger_change_continues);
-
-  // Legacy AY1 volume scaling test
-  RUN_TEST(test_legacy_AY1_volume_sustain_scaling);
-
-  return UNITY_END();
-}
+} // TEST_SUITE("modulation")

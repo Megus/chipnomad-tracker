@@ -1,44 +1,52 @@
-#include "../external/unity/unity.h"
+#include "doctest.h"
+
+extern "C" {
 #include "../src/wavetable_io.h"
-#include <string.h>
+}
+
+#include <cstring>
 #include <unistd.h>
 
-static uint8_t testWavetables[256][32];
+TEST_SUITE("wavetable_io") {
 
-void setUp(void) {
-  // Clear all wavetables
-  memset(testWavetables, 0, sizeof(testWavetables));
-}
+struct TestFixture {
+  uint8_t testWavetables[256][32];
 
-void tearDown(void) {
-  // Clean up test files
-  unlink("test_wavetable_save.txt");
-  unlink("test_wavetable_load.txt");
-}
+  TestFixture() {
+    // Clear all wavetables
+    std::memset(testWavetables, 0, sizeof(testWavetables));
+  }
+
+  ~TestFixture() {
+    // Clean up test files
+    unlink("test_wavetable_save.txt");
+    unlink("test_wavetable_load.txt");
+  }
+};
 
 // Test saving a single wavetable
-void test_wavetableSave_single(void) {
+TEST_CASE_FIXTURE(TestFixture, "wavetableSave_single") {
   // Create a test wavetable
   for (int i = 0; i < 32; i++) {
     testWavetables[0][i] = i % 16;  // 0123456789ABCDEF0123456789ABCDEF
   }
 
   int result = wavetableSave("test_wavetable_save.txt", testWavetables, 0, 1);
-  TEST_ASSERT_EQUAL(1, result);
+  CHECK(result == 1);
 
   // Verify file contents
   FILE* file = fopen("test_wavetable_save.txt", "r");
-  TEST_ASSERT_NOT_NULL(file);
+  CHECK(file != nullptr);
 
   char line[256];
-  TEST_ASSERT_NOT_NULL(fgets(line, sizeof(line), file));
-  TEST_ASSERT_EQUAL_STRING("0123456789ABCDEF0123456789ABCDEF\n", line);
+  CHECK(fgets(line, sizeof(line), file) != nullptr);
+  CHECK(std::strcmp(line, "0123456789ABCDEF0123456789ABCDEF\n") == 0);
 
   fclose(file);
 }
 
 // Test saving multiple wavetables
-void test_wavetableSave_multiple(void) {
+TEST_CASE_FIXTURE(TestFixture, "wavetableSave_multiple") {
   // Create test wavetables
   for (int w = 0; w < 3; w++) {
     for (int i = 0; i < 32; i++) {
@@ -47,45 +55,45 @@ void test_wavetableSave_multiple(void) {
   }
 
   int result = wavetableSave("test_wavetable_save.txt", testWavetables, 0, 3);
-  TEST_ASSERT_EQUAL(1, result);
+  CHECK(result == 1);
 
   // Verify file has 3 lines
   FILE* file = fopen("test_wavetable_save.txt", "r");
-  TEST_ASSERT_NOT_NULL(file);
+  CHECK(file != nullptr);
 
   char line[256];
   int lineCount = 0;
   while (fgets(line, sizeof(line), file)) {
     lineCount++;
   }
-  TEST_ASSERT_EQUAL(3, lineCount);
+  CHECK(lineCount == 3);
 
   fclose(file);
 }
 
 // Test saving from a non-zero starting index
-void test_wavetableSave_from_middle(void) {
+TEST_CASE_FIXTURE(TestFixture, "wavetableSave_from_middle") {
   // Create test wavetable at index 10
   for (int i = 0; i < 32; i++) {
     testWavetables[10][i] = 0xF;  // All F's
   }
 
   int result = wavetableSave("test_wavetable_save.txt", testWavetables, 10, 1);
-  TEST_ASSERT_EQUAL(1, result);
+  CHECK(result == 1);
 
   // Verify file contents
   FILE* file = fopen("test_wavetable_save.txt", "r");
-  TEST_ASSERT_NOT_NULL(file);
+  CHECK(file != nullptr);
 
   char line[256];
-  TEST_ASSERT_NOT_NULL(fgets(line, sizeof(line), file));
-  TEST_ASSERT_EQUAL_STRING("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\n", line);
+  CHECK(fgets(line, sizeof(line), file) != nullptr);
+  CHECK(std::strcmp(line, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\n") == 0);
 
   fclose(file);
 }
 
 // Test saving at array boundary (don't save past 255)
-void test_wavetableSave_boundary(void) {
+TEST_CASE_FIXTURE(TestFixture, "wavetableSave_boundary") {
   // Try to save 10 wavetables starting at index 250
   // Should only save 6 (250-255)
   for (int i = 250; i < 256; i++) {
@@ -95,40 +103,40 @@ void test_wavetableSave_boundary(void) {
   }
 
   int result = wavetableSave("test_wavetable_save.txt", testWavetables, 250, 10);
-  TEST_ASSERT_EQUAL(1, result);
+  CHECK(result == 1);
 
   // Verify file has exactly 6 lines
   FILE* file = fopen("test_wavetable_save.txt", "r");
-  TEST_ASSERT_NOT_NULL(file);
+  CHECK(file != nullptr);
 
   char line[256];
   int lineCount = 0;
   while (fgets(line, sizeof(line), file)) {
     lineCount++;
   }
-  TEST_ASSERT_EQUAL(6, lineCount);
+  CHECK(lineCount == 6);
 
   fclose(file);
 }
 
 // Test loading a single wavetable
-void test_wavetableLoad_single(void) {
+TEST_CASE_FIXTURE(TestFixture, "wavetableLoad_single") {
   // Create a test file
   FILE* file = fopen("test_wavetable_load.txt", "w");
   fprintf(file, "0123456789ABCDEF0123456789ABCDEF\n");
   fclose(file);
 
   int result = wavetableLoad("test_wavetable_load.txt", testWavetables, 0);
-  TEST_ASSERT_EQUAL(1, result);
+  CHECK(result == 1);
 
   // Verify loaded data
   for (int i = 0; i < 32; i++) {
-    TEST_ASSERT_EQUAL(i % 16, testWavetables[0][i]);
+    CHECK(testWavetables[0][i] == i % 16);
   }
 }
 
 // Test loading multiple wavetables
-void test_wavetableLoad_multiple(void) {
+TEST_CASE_FIXTURE(TestFixture, "wavetableLoad_multiple") {
   // Create a test file with 3 wavetables
   FILE* file = fopen("test_wavetable_load.txt", "w");
   fprintf(file, "00000000000000000000000000000000\n");
@@ -137,40 +145,40 @@ void test_wavetableLoad_multiple(void) {
   fclose(file);
 
   int result = wavetableLoad("test_wavetable_load.txt", testWavetables, 0);
-  TEST_ASSERT_EQUAL(3, result);
+  CHECK(result == 3);
 
   // Verify loaded data
   for (int i = 0; i < 32; i++) {
-    TEST_ASSERT_EQUAL(0, testWavetables[0][i]);
-    TEST_ASSERT_EQUAL(1, testWavetables[1][i]);
-    TEST_ASSERT_EQUAL(2, testWavetables[2][i]);
+    CHECK(testWavetables[0][i] == 0);
+    CHECK(testWavetables[1][i] == 1);
+    CHECK(testWavetables[2][i] == 2);
   }
 }
 
 // Test loading to a non-zero starting index
-void test_wavetableLoad_to_middle(void) {
+TEST_CASE_FIXTURE(TestFixture, "wavetableLoad_to_middle") {
   // Create a test file
   FILE* file = fopen("test_wavetable_load.txt", "w");
   fprintf(file, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\n");
   fclose(file);
 
   int result = wavetableLoad("test_wavetable_load.txt", testWavetables, 10);
-  TEST_ASSERT_EQUAL(1, result);
+  CHECK(result == 1);
 
   // Verify loaded data at index 10
   for (int i = 0; i < 32; i++) {
-    TEST_ASSERT_EQUAL(0xF, testWavetables[10][i]);
+    CHECK(testWavetables[10][i] == 0xF);
   }
 
   // Verify other indices are still 0
   for (int i = 0; i < 32; i++) {
-    TEST_ASSERT_EQUAL(0, testWavetables[0][i]);
-    TEST_ASSERT_EQUAL(0, testWavetables[9][i]);
+    CHECK(testWavetables[0][i] == 0);
+    CHECK(testWavetables[9][i] == 0);
   }
 }
 
 // Test loading with empty lines (should skip)
-void test_wavetableLoad_skip_empty_lines(void) {
+TEST_CASE_FIXTURE(TestFixture, "wavetableLoad_skip_empty_lines") {
   // Create a test file with empty lines
   FILE* file = fopen("test_wavetable_load.txt", "w");
   fprintf(file, "00000000000000000000000000000000\n");
@@ -179,17 +187,17 @@ void test_wavetableLoad_skip_empty_lines(void) {
   fclose(file);
 
   int result = wavetableLoad("test_wavetable_load.txt", testWavetables, 0);
-  TEST_ASSERT_EQUAL(2, result);
+  CHECK(result == 2);
 
   // Verify loaded data
   for (int i = 0; i < 32; i++) {
-    TEST_ASSERT_EQUAL(0, testWavetables[0][i]);
-    TEST_ASSERT_EQUAL(1, testWavetables[1][i]);
+    CHECK(testWavetables[0][i] == 0);
+    CHECK(testWavetables[1][i] == 1);
   }
 }
 
 // Test loading with comments (should skip)
-void test_wavetableLoad_skip_comments(void) {
+TEST_CASE_FIXTURE(TestFixture, "wavetableLoad_skip_comments") {
   // Create a test file with comment lines
   FILE* file = fopen("test_wavetable_load.txt", "w");
   fprintf(file, "# This is a comment\n");
@@ -199,55 +207,55 @@ void test_wavetableLoad_skip_comments(void) {
   fclose(file);
 
   int result = wavetableLoad("test_wavetable_load.txt", testWavetables, 0);
-  TEST_ASSERT_EQUAL(2, result);
+  CHECK(result == 2);
 
   // Verify loaded data
   for (int i = 0; i < 32; i++) {
-    TEST_ASSERT_EQUAL(0, testWavetables[0][i]);
-    TEST_ASSERT_EQUAL(1, testWavetables[1][i]);
+    CHECK(testWavetables[0][i] == 0);
+    CHECK(testWavetables[1][i] == 1);
   }
 }
 
 // Test loading invalid format (wrong length)
-void test_wavetableLoad_invalid_length(void) {
+TEST_CASE_FIXTURE(TestFixture, "wavetableLoad_invalid_length") {
   // Create a test file with wrong line length
   FILE* file = fopen("test_wavetable_load.txt", "w");
   fprintf(file, "0123456789ABCDEF\n");  // Only 16 digits, should be 32
   fclose(file);
 
   int result = wavetableLoad("test_wavetable_load.txt", testWavetables, 0);
-  TEST_ASSERT_EQUAL(0, result);  // Should fail
+  CHECK(result == 0);  // Should fail
 }
 
 // Test loading invalid format (invalid hex)
-void test_wavetableLoad_invalid_hex(void) {
+TEST_CASE_FIXTURE(TestFixture, "wavetableLoad_invalid_hex") {
   // Create a test file with invalid hex character
   FILE* file = fopen("test_wavetable_load.txt", "w");
   fprintf(file, "0123456789ABCDEFG123456789ABCDEF\n");  // 'G' is invalid
   fclose(file);
 
   int result = wavetableLoad("test_wavetable_load.txt", testWavetables, 0);
-  TEST_ASSERT_EQUAL(0, result);  // Should fail
+  CHECK(result == 0);  // Should fail
 }
 
 // Test loading lowercase hex
-void test_wavetableLoad_lowercase_hex(void) {
+TEST_CASE_FIXTURE(TestFixture, "wavetableLoad_lowercase_hex") {
   // Create a test file with lowercase hex
   FILE* file = fopen("test_wavetable_load.txt", "w");
   fprintf(file, "0123456789abcdef0123456789abcdef\n");
   fclose(file);
 
   int result = wavetableLoad("test_wavetable_load.txt", testWavetables, 0);
-  TEST_ASSERT_EQUAL(1, result);
+  CHECK(result == 1);
 
   // Verify loaded data
   for (int i = 0; i < 32; i++) {
-    TEST_ASSERT_EQUAL(i % 16, testWavetables[0][i]);
+    CHECK(testWavetables[0][i] == i % 16);
   }
 }
 
 // Test loading at boundary (don't load past 255)
-void test_wavetableLoad_boundary(void) {
+TEST_CASE_FIXTURE(TestFixture, "wavetableLoad_boundary") {
   // Create a test file with 10 wavetables
   FILE* file = fopen("test_wavetable_load.txt", "w");
   for (int i = 0; i < 10; i++) {
@@ -258,18 +266,18 @@ void test_wavetableLoad_boundary(void) {
   // Try to load starting at index 250
   // Should only load 6 (250-255)
   int result = wavetableLoad("test_wavetable_load.txt", testWavetables, 250);
-  TEST_ASSERT_EQUAL(6, result);
+  CHECK(result == 6);
 
   // Verify loaded data
   for (int i = 250; i < 256; i++) {
     for (int j = 0; j < 32; j++) {
-      TEST_ASSERT_EQUAL(0xA, testWavetables[i][j]);
+      CHECK(testWavetables[i][j] == 0xA);
     }
   }
 }
 
 // Test save and load round-trip
-void test_wavetable_roundtrip(void) {
+TEST_CASE_FIXTURE(TestFixture, "wavetable_roundtrip") {
   // Create test wavetables
   for (int w = 0; w < 5; w++) {
     for (int i = 0; i < 32; i++) {
@@ -279,42 +287,21 @@ void test_wavetable_roundtrip(void) {
 
   // Save
   int saveResult = wavetableSave("test_wavetable_save.txt", testWavetables, 0, 5);
-  TEST_ASSERT_EQUAL(1, saveResult);
+  CHECK(saveResult == 1);
 
   // Clear wavetables
-  memset(testWavetables, 0, sizeof(testWavetables));
+  std::memset(testWavetables, 0, sizeof(testWavetables));
 
   // Load
   int loadResult = wavetableLoad("test_wavetable_save.txt", testWavetables, 0);
-  TEST_ASSERT_EQUAL(5, loadResult);
+  CHECK(loadResult == 5);
 
   // Verify data matches original
   for (int w = 0; w < 5; w++) {
     for (int i = 0; i < 32; i++) {
-      TEST_ASSERT_EQUAL((w + i) % 16, testWavetables[w][i]);
+      CHECK(testWavetables[w][i] == (w + i) % 16);
     }
   }
 }
 
-int main(void) {
-  UNITY_BEGIN();
-
-  RUN_TEST(test_wavetableSave_single);
-  RUN_TEST(test_wavetableSave_multiple);
-  RUN_TEST(test_wavetableSave_from_middle);
-  RUN_TEST(test_wavetableSave_boundary);
-
-  RUN_TEST(test_wavetableLoad_single);
-  RUN_TEST(test_wavetableLoad_multiple);
-  RUN_TEST(test_wavetableLoad_to_middle);
-  RUN_TEST(test_wavetableLoad_skip_empty_lines);
-  RUN_TEST(test_wavetableLoad_skip_comments);
-  RUN_TEST(test_wavetableLoad_invalid_length);
-  RUN_TEST(test_wavetableLoad_invalid_hex);
-  RUN_TEST(test_wavetableLoad_lowercase_hex);
-  RUN_TEST(test_wavetableLoad_boundary);
-
-  RUN_TEST(test_wavetable_roundtrip);
-
-  return UNITY_END();
-}
+} // TEST_SUITE("wavetable_io")

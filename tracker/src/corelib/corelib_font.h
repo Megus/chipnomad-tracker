@@ -1,6 +1,10 @@
 #ifndef __CORELIB_FONT_H__
 #define __CORELIB_FONT_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 
 // Font resolution entry
@@ -62,5 +66,10 @@ Font* fontLoad(const char* path);
  * @param font Font to free (does nothing if NULL or default font)
  */
 void fontFree(Font* font);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

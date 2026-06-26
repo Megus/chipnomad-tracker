@@ -1,6 +1,10 @@
 #ifndef __SAMPLE_UTILS_H__
 #define __SAMPLE_UTILS_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 
 /**
@@ -23,5 +27,10 @@
  * Note: Modifies sampleData in-place.
  */
 void sampleLiftToZero(uint8_t* sampleData, uint16_t sampleLength, uint16_t sampleRate);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

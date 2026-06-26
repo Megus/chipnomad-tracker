@@ -1,6 +1,10 @@
 #ifndef __PLAYBACK_CHIPS_H__
 #define __PLAYBACK_CHIPS_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include "project_instruments.h"
 #include "playback_modulation.h"
@@ -71,5 +75,10 @@ typedef struct PlaybackAYNoteState {
 typedef union PlaybackChipNoteState {
   PlaybackAYNoteState ay;
 } PlaybackChipNoteState;
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

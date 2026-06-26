@@ -1,6 +1,10 @@
 #ifndef __AUDIOMANAGER_H__
 #define __AUDIOMANAGER_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "common.h"
 #include "chipnomad_lib.h"
 
@@ -25,5 +29,10 @@ extern int pendingReinitChips;
 #define TRACK_NORMAL 0
 #define TRACK_SOLO 1
 #define TRACK_MUTED 2
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

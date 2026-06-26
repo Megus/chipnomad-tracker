@@ -1,3 +1,10 @@
+#ifndef __PROJECT_UTILS_H__
+#define __PROJECT_UTILS_H__
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "chipnomad_lib.h"
 
 void projectInitAY(Project* p);
@@ -39,3 +46,9 @@ int isPhraseUsedElsewhere(Project* p, int phraseIdx, int excludeChain, int exclu
 // Parameters: project, song row, chain row, phrase row, track index
 // Returns: instrument number (0-255) or EMPTY_VALUE_8 if not found
 uint8_t lookupInstrument(Project* p, int songRow, int chainRow, int phraseRow, int track);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

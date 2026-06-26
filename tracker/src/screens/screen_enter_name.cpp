@@ -1,4 +1,5 @@
 #include "screens.h"
+#include "screen_enter_name.h"
 #include "corelib_gfx.h"
 #include <string.h>
 

@@ -1,6 +1,10 @@
 #ifndef __SCREENS_H__
 #define __SCREENS_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "common.h"
 #include "../chipnomad_lib/playback.h"
 
@@ -151,5 +155,9 @@ void manageDrawStatic(void);
 void manageDrawCursor(int col, int row);
 void manageDrawField(int col, int row, int state);
 int manageOnEdit(int col, int row, enum CellEditAction action);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -1,6 +1,10 @@
 #ifndef __CHIPS_H__
 #define __CHIPS_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include "../project.h"
 
@@ -23,5 +27,9 @@ SoundChip createChipAY(int sampleRate, ChipSetup setup);
 void updateChipAYType(SoundChip* chip, uint8_t isYM);
 void updateChipAYStereoMode(SoundChip* chip, enum StereoModeAY stereoMode, uint8_t separation);
 void updateChipAYClock(SoundChip* chip, int clockRate, int sampleRate);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

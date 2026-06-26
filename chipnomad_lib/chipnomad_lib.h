@@ -1,6 +1,10 @@
 #ifndef __CHIPNOMAD_LIB_H__
 #define __CHIPNOMAD_LIB_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Main ChipNomad library header
 // Include this file to access all ChipNomad library functionality
 
@@ -81,6 +85,8 @@ int chipnomadRender(ChipNomadState* state, float* buffer, int samples);
 */
 void chipnomadSetQuality(ChipNomadState* state, chipnomad_quality_t quality);
 
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif

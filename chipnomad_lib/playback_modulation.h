@@ -1,6 +1,10 @@
 #ifndef __PLAYBACK_MODULATION_H__
 #define __PLAYBACK_MODULATION_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include "project_instruments.h"
 
@@ -31,5 +35,10 @@ void playbackModNoteOff(PlaybackModState* state);
 // maxAmplitude: maximum value for the target parameter (e.g., 15 for AY volume)
 // Returns scaled value in range [-maxAmplitude, maxAmplitude] with rounding
 int16_t playbackModScaleToRange(int16_t modValue, int16_t maxAmplitude);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

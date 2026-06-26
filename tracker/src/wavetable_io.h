@@ -1,6 +1,10 @@
 #ifndef __WAVETABLE_IO_H__
 #define __WAVETABLE_IO_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 
 // Save wavetables to a file
@@ -30,5 +34,10 @@ int wavetableSave(const char* path, uint8_t wavetables[256][32], int startIndex,
 //   - Validates file format: each line must be exactly 32 hex digits (0-9, A-F, a-f)
 //   - Ignores empty lines and lines starting with '#' (comments)
 int wavetableLoad(const char* path, uint8_t wavetables[256][32], int startIndex);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // __WAVETABLE_IO_H__

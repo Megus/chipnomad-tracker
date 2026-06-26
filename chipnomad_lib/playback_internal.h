@@ -1,6 +1,10 @@
 #ifndef __PLAYBACK_INTERNAL_H__
 #define __PLAYBACK_INTERNAL_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "chipnomad_lib.h"
 
 void handleNoteOff(PlaybackState* state, int trackIdx);
@@ -52,5 +56,10 @@ int frequencyToAYPeriod(float frequency, int clockHz);
 // - useFineOffset: whether to apply the global fineOffset (true for tone, false for envelope in period mode)
 int16_t calculateAYPeriod(Project* p, uint8_t basePitch, int8_t pitchOffset, int16_t fineOffset,
                           int16_t specificFineOffset, int16_t periodOffset, int useFineOffset);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

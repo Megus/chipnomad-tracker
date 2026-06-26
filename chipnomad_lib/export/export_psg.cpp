@@ -49,6 +49,10 @@ static void psgChipSetRegister(SoundChip* self, uint16_t reg, uint8_t value) {
   }
 }
 
+static void psgSetTimerFunc(SoundChip* self, int (*timerFunc)(SoundChip* self, void* userdata), void* timerUserdata) {
+  // PSG export doesn't support timer effects
+}
+
 static void psgChipRender(SoundChip* self, float* buffer, int samples) {
   for (int i = 0; i < samples * 2; i++) {
     buffer[i] = 0.0f;
@@ -71,6 +75,7 @@ static SoundChip psgChipFactory(int chipIndex, int sampleRate, ChipSetup setup) 
     .userdata = data,
     .init = psgChipInit,
     .setRegister = psgChipSetRegister,
+    .setTimerFunc = psgSetTimerFunc,
     .render = psgChipRender,
     .cleanup = psgChipCleanup,
   };

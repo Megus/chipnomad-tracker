@@ -1,6 +1,10 @@
 #ifndef __FONT_H__
 #define __FONT_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 
 extern "C" {
@@ -12,5 +16,10 @@ extern const uint8_t font32x48[];
 extern const uint8_t font48x54[];
 
 }
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

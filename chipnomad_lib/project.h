@@ -1,6 +1,10 @@
 #ifndef __PROJECT_H__
 #define __PROJECT_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdio.h>
 #include <stdint.h>
 #include "project_instruments.h"
@@ -262,5 +266,9 @@ void chainClear(Chain* chain);
 void instrumentClear(Instrument* instrument);
 // Clear a single table with proper initialization
 void tableClear(Table* table);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

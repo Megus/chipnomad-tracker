@@ -1,6 +1,10 @@
 #ifndef __PROJECT_IO_COMMON_H__
 #define __PROJECT_IO_COMMON_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "project.h"
 #include <stdio.h>
 #include <stdint.h>
@@ -23,5 +27,10 @@ int loadBinaryData(FILE* file, uint8_t** outData, uint16_t* outLen, uint16_t max
 int instrumentSaveData(FILE* file, int idx, Instrument* instrument);
 int instrumentLoadData(FILE* file, Instrument* instrument, Project* p);
 int saveTable(FILE* file, int idx, Table* table);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

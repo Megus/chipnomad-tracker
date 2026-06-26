@@ -1,6 +1,10 @@
 #ifndef __SCREEN_EXPORT_H__
 #define __SCREEN_EXPORT_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "screens.h"
 
 // Forward declaration
@@ -22,5 +26,10 @@ void generateExportPath(char* outputPath, int maxLen, const char* extension);
 void generatePSGExportPath(char* outputPath, int maxLen);
 
 extern ScreenData screenExportAY;
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

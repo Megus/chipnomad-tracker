@@ -1,6 +1,10 @@
 #ifndef __PROJECT_INSTRUMENTS_H__
 #define __PROJECT_INSTRUMENTS_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdlib.h>
 #include <stdint.h>
 #include "project_constants.h"
@@ -152,5 +156,9 @@ typedef struct InstrumentFunctions {
 } InstrumentFunctions;
 
 InstrumentFunctions getInstrumentFunctions(enum InstrumentType type);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

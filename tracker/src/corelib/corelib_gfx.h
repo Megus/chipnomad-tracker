@@ -1,6 +1,10 @@
 #ifndef __CORELIB_GFX_H__
 #define __CORELIB_GFX_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 
 extern "C" {
@@ -138,5 +142,10 @@ void gfxDrawHUD(void);
 void gfxSetButtonPressed(int buttonIndex, int pressed);
 
 }
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

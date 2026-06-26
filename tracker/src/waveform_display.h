@@ -1,6 +1,10 @@
 #ifndef __WAVEFORM_DISPLAY_H__
 #define __WAVEFORM_DISPLAY_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include "corelib_gfx.h"
 
@@ -35,5 +39,10 @@ void renderSamplePreview(Bitmap* bitmap, uint8_t* sampleData, uint16_t startSamp
  * @param isYM 1 for YM chip, 0 for AY chip (affects amplitude scaling)
  */
 void renderAYWavetablePreview(Bitmap* bitmap, uint8_t* wavetable, int isYM);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
