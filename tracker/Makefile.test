@@ -1,4 +1,5 @@
 # Makefile for ChipNomad tests
+# Uses wildcards for automatic source discovery - add new test files and they're automatically included!
 
 # Compiler settings
 CXX = c++
@@ -15,46 +16,31 @@ INCLUDES = -I. -Isrc -Isrc/corelib -Isrc/screens -Isrc/import -Itests/mocks -Iex
 # Test executable
 TEST_EXECUTABLE = $(BUILD_DIR)/run_tests
 
-# Test source files
-# NOTE: test_project_io.cpp is excluded due to global state issues causing crashes
-# in unified executable. Will be fixed during C++ migration with proper DI.
-TEST_SOURCES = tests/test_main.cpp \
-               tests/test_edit_common.cpp \
-               tests/test_instrument_references.cpp \
-               tests/test_instrument_swap.cpp \
-               tests/test_playback.cpp \
-               tests/test_project.cpp \
-               tests/test_sample_encoding.cpp \
-               tests/test_import_wav.cpp \
-               tests/test_wavetable_io.cpp \
-               tests/test_modulation.cpp
+# Test source files - automatically discover all test_*.cpp except excluded ones
+TEST_SOURCES_ALL = $(wildcard tests/test_*.cpp)
+# Excluded tests (add more here if needed):
+# - test_project_io.cpp: Global state issues (will fix during C++ migration)
+# - test_screen_instrument.cpp: UI test, not yet integrated
+TEST_SOURCES_EXCLUDED = tests/test_project_io.cpp tests/test_screen_instrument.cpp
+TEST_SOURCES = $(filter-out $(TEST_SOURCES_EXCLUDED),$(TEST_SOURCES_ALL))
 
-# Common sources needed by tests
-COMMON_SOURCES = ../chipnomad_lib/project.cpp \
-                 ../chipnomad_lib/project_instruments.cpp \
-                 ../chipnomad_lib/project_io.cpp \
-                 ../chipnomad_lib/project_instruments_io.cpp \
-                 ../chipnomad_lib/chipnomad_lib.cpp \
-                 ../chipnomad_lib/playback.cpp \
-                 ../chipnomad_lib/playback_ay.cpp \
-                 ../chipnomad_lib/playback_instruments.cpp \
-                 ../chipnomad_lib/playback_modulation.cpp \
-                 ../chipnomad_lib/playback_fx_ay.cpp \
-                 ../chipnomad_lib/playback_fx_common.cpp \
-                 ../chipnomad_lib/playback_fx_modulation.cpp \
-                 ../chipnomad_lib/chips/chip_ay.cpp \
-                 ../chipnomad_lib/external/ayumi/ayumi.cpp \
-                 ../chipnomad_lib/external/ayumi/ayumi_filters.cpp \
-                 ../chipnomad_lib/utils.cpp \
-                 src/screens/edit_common.cpp \
-                 src/project_utils.cpp \
-                 src/pitch_table_utils.cpp \
-                 src/corelib/corelib_file.cpp \
-                 src/import/import_wav.cpp \
-                 src/wavetable_io.cpp
+# Common sources needed by tests - use wildcards for automatic discovery
+CHIPNOMAD_LIB_SOURCES = $(wildcard ../chipnomad_lib/*.cpp) \
+                        $(wildcard ../chipnomad_lib/chips/*.cpp) \
+                        $(wildcard ../chipnomad_lib/external/ayumi/*.cpp)
+
+TRACKER_SRC_SOURCES = src/project_utils.cpp \
+                      src/pitch_table_utils.cpp \
+                      src/wavetable_io.cpp \
+                      $(wildcard src/screens/edit_common.cpp) \
+                      $(wildcard src/corelib/corelib_file.cpp) \
+                      $(wildcard src/import/import_wav.cpp)
 
 # Mock sources
 MOCK_SOURCES = $(wildcard tests/mocks/*.cpp)
+
+# Combined common sources
+COMMON_SOURCES = $(CHIPNOMAD_LIB_SOURCES) $(TRACKER_SRC_SOURCES)
 
 # All sources
 ALL_SOURCES = $(TEST_SOURCES) $(COMMON_SOURCES) $(MOCK_SOURCES)
@@ -91,4 +77,4 @@ help:
 	@echo "  $(TEST_EXECUTABLE) --success              Show successful assertions"
 	@echo "  $(TEST_EXECUTABLE) --help                 See all doctest options"
 
-.PHONY: all clean help
+.PHONY: all clean help debug
