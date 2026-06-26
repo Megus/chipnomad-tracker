@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-PlaybackFXHandler fxHandlers[fxTotalCount] = {0};
+PlaybackFXHandler fxHandlers[fxTotalCount] = {};
 
 static int iabs(int v) {
   return (v < 0) ? -v : v;

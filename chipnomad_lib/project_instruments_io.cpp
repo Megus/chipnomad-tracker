@@ -201,7 +201,7 @@ static int loadModulation(FILE* file, Instrument* instrument) {
     if (line[0] == '#') return 0;
 
     char modPrefix[32];
-    sprintf(modPrefix, "- Mod%d: ", i + 1);
+    snprintf(modPrefix, 32, "- Mod%d: ", i + 1);
 
     if (strncmp(line, modPrefix, strlen(modPrefix)) == 0) {
       sscanf(line + strlen(modPrefix), "%hhu,%hhu,%hhd,%hhu,%hhu,%hhu,%hhu",

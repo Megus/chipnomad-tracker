@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-const uint8_t font16x24[] = {
+extern "C" const uint8_t font16x24[] = {
   // Character ' '
   0x00, 0x00,
   0x00, 0x00,

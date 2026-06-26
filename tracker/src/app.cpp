@@ -258,7 +258,7 @@ void appDraw(void) {
     }
 
     uint8_t note = chipnomadState->playbackState.tracks[c].note.pitchFinal;
-    char* noteStr = noteName(&chipnomadState->project, note);
+    const char* noteStr = noteName(&chipnomadState->project, note);
 
     // Use warning color if track warning is active
     int useWarningColor = (appSettings.pitchConflictWarning && chipnomadState->trackWarnings[c] > 0);

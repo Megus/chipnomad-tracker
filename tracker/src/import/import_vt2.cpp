@@ -966,7 +966,7 @@ static int cloneInstrumentsForEnvelopes(Project* project, const InstrumentEnvelo
       getInstrumentFunctions(instNone).init(&emptyInst);
       project->instruments[instIdx] = emptyInst;
 
-      Table emptyTable = {0};
+      Table emptyTable = {};
       for (int row = 0; row < 16; row++) {
         emptyTable.rows[row].pitchFlag = 0;
         emptyTable.rows[row].pitchOffset = 0;

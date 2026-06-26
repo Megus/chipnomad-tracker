@@ -49,6 +49,9 @@ typedef struct {
   uint32_t dataSize;
 } WAVHeader;
 
+// TODO: Stop using a global variable and instead have an allocated buffer in the exporter class
+static float* wavRenderBuffer = NULL;
+
 static void writeWAVHeader(FILE* file, int sampleRate, int channels, int bitDepth, int dataSize) {
   WAVHeader header;
 
@@ -101,11 +104,10 @@ static int wavNext(Exporter* self) {
   WAVExporterData* data = (WAVExporterData*)self->data;
   if (data->allTracksStopped) return -1;
 
-  float buffer[data->sampleRate * 2];
-  int samplesRendered = chipnomadRender(self->chipnomadState, buffer, data->sampleRate);
+  int samplesRendered = chipnomadRender(self->chipnomadState, wavRenderBuffer, data->sampleRate);
 
   if (samplesRendered > 0) {
-    wavExportWrite(data, buffer, samplesRendered);
+    wavExportWrite(data, wavRenderBuffer, samplesRendered);
   }
 
   if (samplesRendered < data->sampleRate) {
@@ -202,8 +204,7 @@ static int wavStemsNext(Exporter* self) {
   WAVStemsExporterData* data = (WAVStemsExporterData*)self->data;
   if (data->allTracksStopped) return -1;
 
-  float buffer[data->sampleRate * 2];
-  int samplesRendered = chipnomadRender(self->chipnomadState, buffer, data->sampleRate);
+  int samplesRendered = chipnomadRender(self->chipnomadState, wavRenderBuffer, data->sampleRate);
 
   if (samplesRendered > 0) {
     WAVExporterData tempData = {
@@ -213,7 +214,7 @@ static int wavStemsNext(Exporter* self) {
       .bitDepth = data->bitDepth,
       .totalSamples = 0
     };
-    wavExportWrite(&tempData, buffer, samplesRendered);
+    wavExportWrite(&tempData, wavRenderBuffer, samplesRendered);
     data->totalSamples += samplesRendered;
   }
 
@@ -245,6 +246,7 @@ static int wavStemsFinish(Exporter* self) {
   }
 
   chipnomadDestroy(self->chipnomadState);
+  free(wavRenderBuffer);
   free(data->files);
   free(data);
   free(self);
@@ -262,6 +264,7 @@ static void wavStemsCancel(Exporter* self) {
   }
 
   chipnomadDestroy(self->chipnomadState);
+  free(wavRenderBuffer);
   free(data->files);
   free(data);
   free(self);
@@ -322,6 +325,8 @@ Exporter* createWAVStemsExporter(const char* basePath, Project* project, int sta
     free(exporter);
     return NULL;
   }
+
+  wavRenderBuffer = (float*)malloc(sizeof(float) * sampleRate * 2);
 
   exporter->chipnomadState->project = *project;
   playbackInit(&exporter->chipnomadState->playbackState, &exporter->chipnomadState->project);

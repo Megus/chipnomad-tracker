@@ -138,9 +138,9 @@ SoundChip createChipAY(int sampleRate, ChipSetup setup) {
     .userdata = ay,
     .timerFunc = NULL,
     .init = init,
-    .render = render,
     .setRegister = setRegister,
     .setTimerFunc = setTimerFunc,
+    .render = render,
     .setQuality = setQuality,
     .cleanup = cleanup,
   };

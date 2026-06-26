@@ -249,7 +249,7 @@ int8_t grooveIsEmpty(Project* p, int groove);
 // Is wavetable empty?
 int8_t wavetableIsEmpty(Project* p, int wavetable);
 // Note name in phrase
-char* noteName(Project* p, uint8_t note);
+const char* noteName(Project* p, uint8_t note);
 // Get number of tracks for a chip at index
 int projectGetChipTracks(Project* p, int chipIndex);
 // Get total number of tracks for the project

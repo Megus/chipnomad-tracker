@@ -209,7 +209,7 @@ int8_t wavetableIsEmpty(Project* project, int wavetable) {
 }
 
 // Note name in phrase
-char* noteName(Project* project, uint8_t note) {
+const char* noteName(Project* project, uint8_t note) {
   if (note == NOTE_OFF) {
     return "OFF";
   } else if (note < project->pitchTable.length) {
