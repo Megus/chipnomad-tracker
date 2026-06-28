@@ -5,6 +5,7 @@
 #include "common.h"
 #include <string.h>
 #include <stdlib.h>
+#include <functional>
 
 #define ENVELOPE_DIM_BRIGHTNESS 160
 
@@ -14,6 +15,10 @@ static int charW = 0;
 static int charH = 0;
 static uint8_t noisePattern[512];
 static int noiseAnimIdx = 0;
+
+// ============================================================================
+// Playback wavevorm display
+// ============================================================================
 
 // Create bitmaps for track waveform display and initialize noise pattern
 void waveformDisplayInit(void) {
@@ -210,18 +215,12 @@ Bitmap* waveformDisplayGetBitmap(int trackIdx) {
 // Waveform Preview Rendering
 // ============================================================================
 
-// Helper: convert sample value (0-255) to Y coordinate
-static inline int sampleToY(uint8_t sample, int height) {
-  return ((255 - sample) * (height - 1)) / 255;
-}
-
 // Generic waveform preview renderer
 static void renderWaveformPreview(
   Bitmap* bitmap,
   uint8_t* data,
   uint16_t dataLength,
-  uint8_t (*transformFunc)(uint8_t value, void* context),
-  void* transformContext
+  std::function<uint8_t(uint8_t)> transformFunc
 ) {
   if (!bitmap || !data || dataLength == 0) {
     return;
@@ -230,130 +229,51 @@ static void renderWaveformPreview(
   int width = bitmap->widthPixels;
   int height = bitmap->heightPixels;
 
-  // Determine rendering mode based on data length vs width
-  if (dataLength <= width) {
-    // Stretched mode: each data point spans multiple pixels (like wavetables)
-    int pixelsPerStep = width / dataLength;
-    int prevY = -1;
+  // Convert to Y coordinates (inverted: higher value = lower Y)
+  auto sampleToY = [height](uint8_t sample) -> int {
+    return ((255 - sample) * (height - 1)) / 255;
+  };
 
-    for (int step = 0; step < dataLength; step++) {
-      // Transform value to 8-bit amplitude
-      uint8_t amplitude = transformFunc ? transformFunc(data[step], transformContext) : data[step];
+  // For each pixel, find the range of samples it represents and draw a vertical line
+  for (int x = 0; x < width; x++) {
+    // Calculate sample range for this pixel
+    uint16_t sampleStart = (x * dataLength) / width;
+    uint16_t sampleEnd = ((x + 1) * dataLength) / width;
 
-      // Convert amplitude to Y coordinate
-      int y = sampleToY(amplitude, height);
+    // Boundary safety checks
+    if (sampleStart >= dataLength) sampleStart = dataLength - 1;
+    if (sampleEnd >= dataLength) sampleEnd = dataLength - 1;
 
-      // Calculate x range for this step
-      int xStart = step * pixelsPerStep;
-      int xEnd = (step + 1) * pixelsPerStep;
+    // Find min and max sample values in this range
+    uint8_t minVal = 255;
+    uint8_t maxVal = 0;
 
-      // Draw horizontal line for this step
-      for (int x = xStart; x < xEnd && x < width; x++) {
-        if (y >= 0 && y < height) {
-          bitmap->data[y * width + x] = 255;
-        }
-      }
-
-      // Connect to previous step with vertical line
-      if (prevY >= 0 && step > 0) {
-        int x = xStart;  // Draw at the start of current step
-        int yStart = prevY < y ? prevY : y;
-        int yEnd = prevY > y ? prevY : y;
-
-        for (int vy = yStart; vy <= yEnd; vy++) {
-          if (vy >= 0 && vy < height && x >= 0 && x < width) {
-            bitmap->data[vy * width + x] = 255;
-          }
-        }
-      }
-
-      prevY = y;
-    }
-  } else {
-    // Compressed mode: multiple data points per pixel column (like samples)
-    int prevMinY = -1;
-    int prevMaxY = -1;
-
-    for (int x = 0; x < width; x++) {
-      // Calculate data range for this pixel column
-      uint16_t dataStart = (x * dataLength) / width;
-      uint16_t dataEnd = ((x + 1) * dataLength) / width;
-
-      // Handle edge case
-      if (dataStart == dataEnd && dataStart < dataLength) {
-        dataEnd = dataStart + 1;
-      }
-
-      // Find min and max in this range
-      uint8_t minVal = 255;
-      uint8_t maxVal = 0;
-
-      for (uint16_t i = dataStart; i < dataEnd && i < dataLength; i++) {
-        uint8_t val = transformFunc ? transformFunc(data[i], transformContext) : data[i];
+    if (sampleStart == sampleEnd) {
+      uint8_t val = transformFunc ? transformFunc(data[sampleStart]) : data[sampleStart];
+      minVal = maxVal = val;
+    } else {
+      for (uint16_t i = sampleStart; i <= sampleEnd; i++) {
+        uint8_t val = transformFunc ? transformFunc(data[i]) : data[i];
         if (val < minVal) minVal = val;
         if (val > maxVal) maxVal = val;
       }
+    }
 
-      // Convert to Y coordinates
-      int minY = sampleToY(maxVal, height);  // maxVal -> lower Y (inverted)
-      int maxY = sampleToY(minVal, height);  // minVal -> higher Y
+    int minY = sampleToY(maxVal);
+    int maxY = sampleToY(minVal);
 
-      // Draw vertical line for this column
-      for (int y = minY; y <= maxY; y++) {
-        if (y >= 0 && y < height) {
-          bitmap->data[y * width + x] = 255;
-        }
-      }
-
-      // Connect to previous column by filling the gap between ranges
-      if (prevMinY >= 0 && x > 0) {
-        int gapStart, gapEnd;
-
-        if (prevMaxY < minY) {
-          gapStart = prevMaxY;
-          gapEnd = minY;
-        } else if (maxY < prevMinY) {
-          gapStart = maxY;
-          gapEnd = prevMinY;
-        } else {
-          gapStart = 0;
-          gapEnd = -1;
-        }
-
-        // Fill the gap in the previous column (x-1)
-        for (int y = gapStart; y <= gapEnd; y++) {
-          if (y >= 0 && y < height) {
-            bitmap->data[y * width + (x - 1)] = 255;
-          }
-        }
-      }
-
-      prevMinY = minY;
-      prevMaxY = maxY;
+    // Draw vertical line from minY to maxY
+    for (int y = minY; y <= maxY; y++) {
+      bitmap->data[y * width + x] = 255;
     }
   }
-}
-
-// Transform function for 4-bit wavetables via DAC table
-static uint8_t wavetableTransform(uint8_t value, void* context) {
-  uint8_t* dacTable = (uint8_t*)context;
-  return dacTable[value & 0x0F];
-}
-
-// Transform function for samples - do nothing
-static uint8_t sampleTransform(uint8_t value, void* context) {
-  (void)context;
-  return value;
 }
 
 void renderSamplePreview(Bitmap* bitmap, uint8_t* sampleData, uint16_t startSample, uint16_t endSample) {
   if (bitmap) gfxBitmapClear(bitmap);
   if (!bitmap || !sampleData || startSample >= endSample) return;
 
-  uint16_t sampleCount = endSample - startSample;
-  if (sampleCount == 0) return;
-
-  renderWaveformPreview(bitmap, sampleData + startSample, sampleCount, sampleTransform, NULL);
+  renderWaveformPreview(bitmap, sampleData + startSample, endSample - startSample, nullptr);
 }
 
 void renderAYWavetablePreview(Bitmap* bitmap, uint8_t* wavetable, int isYM) {
@@ -361,5 +281,10 @@ void renderAYWavetablePreview(Bitmap* bitmap, uint8_t* wavetable, int isYM) {
   if (!bitmap || !wavetable) return;
 
   uint8_t* dacTable = isYM ? cnDACTableYM : cnDACTableAY;
-  renderWaveformPreview(bitmap, wavetable, 32, wavetableTransform, dacTable);
+
+  auto transformFunc = [dacTable](uint8_t value) -> uint8_t {
+    return dacTable[value & 0x0F];
+  };
+
+  renderWaveformPreview(bitmap, wavetable, 32, transformFunc);
 }

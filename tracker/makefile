@@ -72,7 +72,7 @@ clean-android:
 
 .PHONY: test
 test:
-	$(MAKE) -f Makefile.test run
+	$(MAKE) -f Makefile.test
 
 .PHONY: deploy-all
 deploy-all:

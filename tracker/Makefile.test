@@ -46,11 +46,12 @@ COMMON_SOURCES = $(CHIPNOMAD_LIB_SOURCES) $(TRACKER_SRC_SOURCES)
 ALL_SOURCES = $(TEST_SOURCES) $(COMMON_SOURCES) $(MOCK_SOURCES)
 
 # Default target: build and run all tests
-all: $(TEST_EXECUTABLE)
+all: build
 	@$(TEST_EXECUTABLE)
 
-# Build the test executable
-$(TEST_EXECUTABLE): $(ALL_SOURCES)
+# Build the test executable (always rebuild)
+.PHONY: build
+build:
 	@mkdir -p $(BUILD_DIR)
 	@echo "Building test executable..."
 	@$(CXX) $(CFLAGS) $(INCLUDES) $(ALL_SOURCES) $(LDFLAGS) -o $(TEST_EXECUTABLE)
@@ -66,9 +67,11 @@ help:
 	@echo "===================="
 	@echo ""
 	@echo "Makefile targets:"
-	@echo "  make -f Makefile.test           Build and run all tests"
+	@echo "  make -f Makefile.test           Build and run all tests (always rebuilds)"
+	@echo "  make -f Makefile.test build     Build test executable only (always rebuilds)"
 	@echo "  make -f Makefile.test clean     Remove build artifacts"
 	@echo "  make -f Makefile.test help      Show this help"
+	@echo "  make -f Makefile.test debug     Show discovered source files"
 	@echo ""
 	@echo "Direct usage (doctest native filtering):"
 	@echo "  $(TEST_EXECUTABLE)                        Run all tests"
@@ -77,4 +80,4 @@ help:
 	@echo "  $(TEST_EXECUTABLE) --success              Show successful assertions"
 	@echo "  $(TEST_EXECUTABLE) --help                 See all doctest options"
 
-.PHONY: all clean help debug
+.PHONY: all build clean help debug
