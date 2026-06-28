@@ -50,6 +50,8 @@ macOS-app-bundle: macOS
 	@cp -R $(SDL2_FRAMEWORK) $(BUILD)/$(APP_BUNDLE)/Contents/Frameworks/
 	@cp packaging/macos/Info.plist $(BUILD)/$(APP_BUNDLE)/Contents/
 	@sed -i '' "s/VERSION_PLACEHOLDER/$$(grep 'appVersion.*=' src/version.c | cut -d'"' -f2)/g" $(BUILD)/$(APP_BUNDLE)/Contents/Info.plist
+	@codesign --force --sign - $(BUILD)/$(APP_BUNDLE)/Contents/Frameworks/libSDL2-2.0.0.dylib
+	@codesign --force --sign - $(BUILD)/$(APP_BUNDLE)
 	@echo ".app bundle created at $(BUILD)/$(APP_BUNDLE)"
 
 .PHONY: macOS-deploy
@@ -57,6 +59,6 @@ macOS-deploy: macOS-app-bundle
 	@echo "Creating macOS deployment package..."
 	@mkdir -p ../../releases
 	$(eval VERSION := $(shell grep 'appVersion.*=' src/version.c | cut -d'"' -f2))
-	@cd $(BUILD) && zip -r $(APP)-$$(date +%Y-%m-%d)-$(VERSION)-macOS.zip $(APP_BUNDLE) pitch-tables projects instruments
+	@cd $(BUILD) && zip -ry $(APP)-$$(date +%Y-%m-%d)-$(VERSION)-macOS.zip $(APP_BUNDLE) pitch-tables projects instruments
 	@mv $(BUILD)/$(APP)-*-macOS.zip ../../releases/
 	@echo "macOS package created in ../../releases/"
