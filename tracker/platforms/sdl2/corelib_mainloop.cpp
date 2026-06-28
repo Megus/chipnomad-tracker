@@ -38,10 +38,10 @@ SDL_Rect dpadRect, aButtonRect, bButtonRect, startButtonRect, selectButtonRect;
 SDL_Rect dpadUpRect, dpadDownRect, dpadLeftRect, dpadRightRect;
 
 // Button definitions
-typedef struct {
+struct Button {
   SDL_Rect* rect;
   int key;
-} Button;
+};
 
 static Button buttons[] = {
   {&dpadUpRect, keyUp},
@@ -86,10 +86,10 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(MainLoopEventData eventData
   assetsInit();
 
 #ifdef TOUCH_INPUT
-  typedef struct {
+  struct FingerButton {
     SDL_FingerID fingerId;
     int buttonIndex;
-  } FingerButton;
+  };
 
   FingerButton activeFingers[10] = {0};
   int numActiveFingers = 0;

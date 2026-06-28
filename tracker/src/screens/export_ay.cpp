@@ -26,10 +26,10 @@ static void drawCursor(int col, int row) {
   }
 }
 
-static void drawField(int col, int row, int state) {
+static void drawField(int col, int row, CellState state) {
   if (row < SCR_EXPORT_ROWS) return exportCommonDrawField(col, row, state);
 
-  gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+  gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
 
   if (row == SCR_EXPORT_ROWS) {
     gfxPrint(13, 8, "Export");
@@ -67,8 +67,8 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   return handled;
 }
 
-static void drawRowHeader(int row, int state) {}
-static void drawColHeader(int col, int state) {}
+static void drawRowHeader(int row, CellState state) {}
+static void drawColHeader(int col, CellState state) {}
 static void drawSelection(int col1, int row1, int col2, int row2) {}
 
 ScreenData screenExportAY = {

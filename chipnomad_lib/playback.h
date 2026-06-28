@@ -23,15 +23,15 @@ enum PlaybackMode {
   playbackModeLoop,
 };
 
-typedef struct PlaybackTableState {
+struct PlaybackTableState {
   uint8_t tableIdx;
   uint8_t rows[4];
   uint8_t counters[4];
   uint8_t speed[4];
   uint8_t fxAuxState[16][4]; // Used for stateful effects like HOP
-} PlaybackTableState;
+};
 
-typedef struct PlaybackNoteState {
+struct PlaybackNoteState {
   uint8_t pitchBase;
   uint8_t instrument;
   uint8_t volume;
@@ -52,17 +52,17 @@ typedef struct PlaybackNoteState {
   PlaybackModState modulation[4]; // Modulation states
 
   PlaybackChipNoteState chip;
-} PlaybackNoteState;
+};
 
-typedef struct PlaybackTrackQueue {
+struct PlaybackTrackQueue {
   enum PlaybackMode mode;
   int songRow;
   int chainRow;
   int phraseRow;
   int loop;
-} PlaybackTrackQueue;
+};
 
-typedef struct PlaybackTrackState {
+struct PlaybackTrackState {
   PlaybackTrackQueue queue;
 
   enum PlaybackMode mode;
@@ -85,17 +85,17 @@ typedef struct PlaybackTrackState {
   PhraseRow currentPhraseRow;
   // FX auxillary state data for the phrase (used by HOP)
   uint8_t fxAuxState[16][3];
-} PlaybackTrackState;
+};
 
-typedef struct PlaybackAYChipState {
+struct PlaybackAYChipState {
   uint8_t envShape;
-} PlaybackAYChipState;
+};
 
-typedef union PlaybackChipState {
+union PlaybackChipState {
   PlaybackAYChipState ay;
-} PlaybackChipState;
+};
 
-typedef struct LoopRange {
+struct LoopRange {
   int enabled;
   int level; // 0 = song, 1 = chain, 2 = phrase
   int startSongRow;
@@ -104,15 +104,15 @@ typedef struct LoopRange {
   int endSongRow;
   int endChainRow;
   int endPhraseRow;
-} LoopRange;
+};
 
-typedef struct PlaybackState {
+struct PlaybackState {
   Project* p;
   PlaybackTrackState tracks[PROJECT_MAX_TRACKS];
   PlaybackChipState chips[PROJECT_MAX_CHIPS];
   uint8_t trackEnabled[PROJECT_MAX_TRACKS];
   LoopRange loopRange;
-} PlaybackState;
+};
 
 // FX typedefs
 typedef void (*PlaybackFXInitFunc)(
@@ -137,11 +137,11 @@ typedef void (*PlaybackFXHandleFunc)(
   PlaybackFXState* fx
 );
 
-typedef struct PlaybackFXHandler {
+struct PlaybackFXHandler {
   PlaybackFXInitFunc init;
   PlaybackFXHandleFunc handle;
   PlaybackFXRestartFunc restart;
-} PlaybackFXHandler;
+};
 
 /**
  * Initializes the playback state with the given project

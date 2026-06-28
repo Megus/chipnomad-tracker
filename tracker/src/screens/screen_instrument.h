@@ -8,8 +8,8 @@ extern int cInstrument;
 int instrumentCommonColumnCount(int row);
 void instrumentCommonDrawStatic(void);
 void instrumentCommonDrawCursor(int col, int row);
-void instrumentCommonDrawField(int col, int row, int state);
-int instrumentCommonOnEdit(int col, int row, enum CellEditAction action);
+void instrumentCommonDrawField(int col, int row, CellState state);
+int instrumentCommonOnEdit(int col, int row, CellEditAction action);
 
 extern ScreenData screenInstrumentAY;
 extern ScreenData screenInstrumentAY2;

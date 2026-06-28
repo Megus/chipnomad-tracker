@@ -46,10 +46,10 @@
 static int getColumnCount(int row);
 static void drawStatic(void);
 static void drawCursor(int col, int row);
-static void drawRowHeader(int row, int state);
-static void drawColHeader(int col, int state);
-static void drawField(int col, int row, int state);
-static int onEdit(int col, int row, enum CellEditAction action);
+static void drawRowHeader(int row, CellState state);
+static void drawColHeader(int col, CellState state);
+static void drawField(int col, int row, CellState state);
+static int onEdit(int col, int row, CellEditAction action);
 static int isCellValid(int col, int row);
 
 // ScreenData definition
@@ -213,7 +213,7 @@ static void drawCursor(int col, int row) {
   }
 }
 
-static void drawField(int col, int row, int state) {
+static void drawField(int col, int row, CellState state) {
   if (chipnomadState->project.instruments[cInstrument].type == instNone) return;
 
   int y = rowToY(row);
@@ -223,7 +223,7 @@ static void drawField(int col, int row, int state) {
   int modIdx = getModIndex(col, row);
   Modulation* mod = &chipnomadState->project.instruments[cInstrument].modulation[modIdx];
 
-  gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+  gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
 
   switch (modRow) {
     case 0: // Type (on header row)
@@ -254,7 +254,7 @@ static void drawField(int col, int row, int state) {
       if (label) gfxPrint(labelX, y, label);
 
       // Draw the value
-      gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+      gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
       gfxClearRect(valX, y, 6, 1);
 
       if (mod->type == modAHD || mod->type == modADSR) {
@@ -416,11 +416,11 @@ static void setup(int input) {
 static void draw(void) {
 }
 
-static void drawRowHeader(int row, int state) {}
-static void drawColHeader(int col, int state) {}
+static void drawRowHeader(int row, CellState state) {}
+static void drawColHeader(int col, CellState state) {}
 
-static int getPlaybackLevel(void) {
-  return screenPlaybackPhrase;
+static ScreenPlaybackLevel getPlaybackLevel(void) {
+  return ScreenPlaybackLevel::phrase;
 }
 
 const AppScreen screenModulation = {

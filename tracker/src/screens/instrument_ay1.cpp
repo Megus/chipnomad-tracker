@@ -80,10 +80,10 @@ static void drawCursor(int col, int row) {
   }
 }
 
-static void drawField(int col, int row, int state) {
+static void drawField(int col, int row, CellState state) {
   if (row < 3) return instrumentCommonDrawField(col, row, state);
 
-  gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+  gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
 
   uint8_t defaultMixer = chipnomadState->project.instruments[cInstrument].chip.ay.defaultMixer;
   int hasTone = (defaultMixer & 0x01) != 0;
@@ -161,8 +161,8 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       if (oldValue != value && value == 1) {
         chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvN = 1;
         chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvD = 1;
-        drawField(1, 5, 0);
-        drawField(2, 5, 0);
+        drawField(1, 5, CellState::normal);
+        drawField(2, 5, CellState::normal);
       } else if (oldValue != value && value == 0) {
         chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvN = 0;
         chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvD = 0;

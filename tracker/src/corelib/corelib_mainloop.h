@@ -17,13 +17,13 @@ enum MainLoopEvent {
   eventFullRedraw,
 };
 
-typedef struct {
+struct MainLoopEventData {
   enum MainLoopEvent type;
   union {
     int value;
     InputCode input;
   } data;
-} MainLoopEventData;
+};
 
 void mainLoopRun(void (*draw)(void), void (*onEvent)(MainLoopEventData eventData));
 void mainLoopDelay(int ms);

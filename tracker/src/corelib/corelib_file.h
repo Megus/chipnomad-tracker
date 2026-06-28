@@ -17,10 +17,10 @@ extern "C" {
 #endif
 
 // Directory entry structure
-typedef struct {
+struct FileEntry {
   char name[256];
   int isDirectory;
-} FileEntry;
+};
 
 // Get platform-specific default directory for ChipNomad files
 // Returns 0 on success, -1 on failure

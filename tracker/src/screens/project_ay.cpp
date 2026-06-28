@@ -78,10 +78,10 @@ static void drawCursor(int col, int row) {
   }
 }
 
-static void drawField(int col, int row, int state) {
+static void drawField(int col, int row, CellState state) {
   if (row < SCR_PROJECT_ROWS) return projectCommonDrawField(col, row, state);
 
-  gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+  gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
 
   if (row == SCR_PROJECT_ROWS) {
     gfxClearRect(13, 11, 9, 1);

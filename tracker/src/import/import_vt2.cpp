@@ -22,14 +22,14 @@ static char lineBuffer[1024];
 #define PHRASES_PER_PATTERN 16
 #define CHAIN_MAX_ROWS 16
 
-typedef struct InstrumentEnvelopeUsage {
+struct InstrumentEnvelopeUsage {
   uint8_t envelopeTypes[16];
   uint8_t usesEnvelope;
-} InstrumentEnvelopeUsage;
+};
 
-typedef struct InstrumentCloneMap {
+struct InstrumentCloneMap {
   int8_t clonedInstrumentIdx[VT2_MAX_SAMPLES][16];
-} InstrumentCloneMap;
+};
 
 static int importVT2Samples(const char* path, Project* project, int sampleCount);
 static void trimLineEndings(char* line);
@@ -41,7 +41,7 @@ static void setEnvelopePeriodCommands(PhraseRow* phraseRow, int* fxSlot, uint16_
 static void getPhraseIndicesForPattern(int phraseNum, const int* phraseIndices, int* phraseA, int* phraseB, int* phraseC);
 static void setupPitchTableFromVT2(Project* project, int noteTableIndex);
 
-typedef struct VT2ChannelData {
+struct VT2ChannelData {
   uint8_t hasNote;
   uint8_t note;
   uint8_t instrument;
@@ -50,26 +50,26 @@ typedef struct VT2ChannelData {
   uint8_t envelopeType;
   uint8_t commands[4][2];
   uint8_t commandCount;
-} VT2ChannelData;
+};
 
-typedef struct VT2PatternRow {
+struct VT2PatternRow {
   uint16_t envelopePeriod;
   uint8_t noiseMode;
   VT2ChannelData channels[VT2_CHANNELS];
-} VT2PatternRow;
+};
 
-typedef struct VT2Pattern {
+struct VT2Pattern {
   VT2PatternRow rows[VT2_PATTERN_LENGTH];
   int rowCount;
-} VT2Pattern;
+};
 
-typedef struct VT2Ornament {
+struct VT2Ornament {
   int8_t offsets[64];
   int length;
   int loopPoint;
-} VT2Ornament;
+};
 
-typedef struct VT2Module {
+struct VT2Module {
   char title[PROJECT_TITLE_LENGTH + 1];
   char author[PROJECT_TITLE_LENGTH + 1];
   int speed;
@@ -81,7 +81,7 @@ typedef struct VT2Module {
   int patternCount;
   int ornamentCount;
   int sampleCount;
-} VT2Module;
+};
 
 static int parseHex(char c) {
   return parseHexChar(c);

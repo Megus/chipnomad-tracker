@@ -5,8 +5,8 @@
 #include "chipnomad_lib.h"
 #include "project_utils.h"
 
-static void drawRowHeader(int row, int state) {}
-static void drawColHeader(int col, int state) {}
+static void drawRowHeader(int row, CellState state) {}
+static void drawColHeader(int col, CellState state) {}
 
 static ScreenData screenManageData = {
   .rows = 3,
@@ -57,8 +57,8 @@ void manageDrawCursor(int col, int row) {
   }
 }
 
-void manageDrawField(int col, int row, int state) {
-  gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+void manageDrawField(int col, int row, CellState state) {
+  gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
 
   if (row == 1) {
     gfxPrint(2, 3, "Phrases and Chains");
@@ -67,8 +67,8 @@ void manageDrawField(int col, int row, int state) {
   }
 }
 
-int manageOnEdit(int col, int row, enum CellEditAction action) {
-  if (action != editTap && action != editDoubleTap) return 0;
+int manageOnEdit(int col, int row, CellEditAction action) {
+  if (action != CellEditAction::tap && action != CellEditAction::doubleTap) return 0;
 
   if (row == 1) {
     // Cleanup phrases and chains

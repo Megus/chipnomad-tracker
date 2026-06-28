@@ -14,7 +14,7 @@ extern uint8_t cnDACTableYM[16];
 extern uint8_t cnSampleLookupAY[256];
 extern uint8_t cnSampleLookupYM[256];
 
-typedef struct PlaybackAYNoteState {
+struct PlaybackAYNoteState {
   uint8_t mixer; // Bit 0 - tone, Bit 1 - noise
 
   // Volume
@@ -70,11 +70,11 @@ typedef struct PlaybackAYNoteState {
   uint8_t outNoisePeriod;
   uint8_t outEnvShape;
   uint16_t outEnvPeriod;
-} PlaybackAYNoteState;
+};
 
-typedef union PlaybackChipNoteState {
+union PlaybackChipNoteState {
   PlaybackAYNoteState ay;
-} PlaybackChipNoteState;
+};
 
 
 #ifdef __cplusplus

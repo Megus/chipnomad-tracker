@@ -201,11 +201,11 @@ void screenFullRedraw(ScreenData* screen) {
 
   for (int row = screen->topRow; row < maxRow; row++) {
     for (int col = 0; col < screen->getColumnCount(row); col++) {
-      int state = 0;
+      CellState state = CellState::normal;
       if (screen->selectMode == 1 && col >= selCol1 && col <= selCol2 && row >= selRow1 && row <= selRow2) {
-        state = stateSelected;
+        state = CellState::selected;
       } else if (screen->cursorCol == col && screen->cursorRow == row) {
-        state = stateFocus;
+        state = CellState::focus;
       }
 
       screen->drawField(col, row, state);
@@ -214,12 +214,12 @@ void screenFullRedraw(ScreenData* screen) {
 
   // Row headers
   for (int row = screen->topRow; row < maxRow; row++) {
-    screen->drawRowHeader(row, (screen->cursorRow == row) ? stateFocus : 0);
+    screen->drawRowHeader(row, (screen->cursorRow == row) ? CellState::focus : CellState::normal);
   }
 
   // Column headers make sense only for spreadsheet-like screens, so we get the number of columns of the first row
   for (int col = 0; col < screen->getColumnCount(0); col++) {
-    screen->drawColHeader(col, (screen->cursorCol == col) ? stateFocus : 0);
+    screen->drawColHeader(col, (screen->cursorCol == col) ? CellState::focus : CellState::normal);
   }
 
   // Cursor/selection
@@ -346,28 +346,28 @@ static int inputNormalMode(ScreenData* screen, int keys, int tapCount) {
       }
     } else if (keys == keyEdit && tapCount == 1) {
       // Edit: insert/copy value
-      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editTap);
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, CellEditAction::tap);
     } else if (keys == keyEdit && tapCount == 2) {
       // Edit: double tap (usually increment to an empty value)
-      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editDoubleTap);
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, CellEditAction::doubleTap);
     } else if (keys == (keyRight | keyEdit)) {
       // Edit: value small increase (usually by 1)
-      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editIncrease);
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, CellEditAction::increase);
     } else if (keys == (keyLeft | keyEdit)) {
       // Edit: value small decrease (usually by 1)
-      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editDecrease);
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, CellEditAction::decrease);
     } else if (keys == (keyUp | keyEdit)) {
       // Edit: value big increase
-      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editIncreaseBig);
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, CellEditAction::increaseBig);
     } else if (keys == (keyDown | keyEdit)) {
       // Edit: value big decrease
-      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editDecreaseBig);
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, CellEditAction::decreaseBig);
     } else if (keys == (keyEdit | keyOpt)) {
       // Edit: clear value
-      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editClear);
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, CellEditAction::clear);
     } else if (keys == (keyShift | keyEdit)) {
       // Edit: paste
-      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editPaste);
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, CellEditAction::paste);
     }
   }
 
@@ -375,16 +375,16 @@ static int inputNormalMode(ScreenData* screen, int keys, int tapCount) {
     validateCursorBounds(screen);
     if (oldCursorCol != screen->cursorCol || oldCursorRow != screen->cursorRow) {
       // Erase old cursor and headers
-      screen->drawField(oldCursorCol, oldCursorRow, 0);
-      screen->drawRowHeader(oldCursorRow, 0);
-      screen->drawColHeader(oldCursorCol, 0);
+      screen->drawField(oldCursorCol, oldCursorRow, CellState::normal);
+      screen->drawRowHeader(oldCursorRow, CellState::normal);
+      screen->drawColHeader(oldCursorCol, CellState::normal);
       // Draw new headers
-      screen->drawRowHeader(screen->cursorRow, stateFocus);
-      screen->drawColHeader(screen->cursorCol, stateFocus);
+      screen->drawRowHeader(screen->cursorRow, CellState::focus);
+      screen->drawColHeader(screen->cursorCol, CellState::focus);
     }
 
     // Refresh field and cursor
-    screen->drawField(screen->cursorCol, screen->cursorRow, stateFocus);
+    screen->drawField(screen->cursorCol, screen->cursorRow, CellState::focus);
     screen->drawCursor(screen->cursorCol, screen->cursorRow);
   }
 
@@ -418,7 +418,7 @@ static void redrawSelection(ScreenData* screen) {
   getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
   for (int r = startRow; r <= endRow; r++) {
     for (int c = startCol; c <= endCol; c++) {
-      screen->drawField(c, r, stateSelected);
+      screen->drawField(c, r, CellState::selected);
     }
   }
 }
@@ -434,7 +434,7 @@ static int inputSelectMode(ScreenData* screen, int keys, int tapCount) {
   if (!handled) {
     if (keys == (keyShift | keyOpt)) {
       // Switch selection mode
-      int exitSelection = screen->onEdit(screen->cursorCol, screen->cursorRow, editSwitchSelection);
+      int exitSelection = screen->onEdit(screen->cursorCol, screen->cursorRow, CellEditAction::switchSelection);
       if (exitSelection) {
         screen->selectMode = 0;
         screen->cursorRow = screen->selectAnchorRow;
@@ -445,7 +445,7 @@ static int inputSelectMode(ScreenData* screen, int keys, int tapCount) {
       handled = 1;
     } else if (keys == 0 && optPressed) {
       // Copy and exit select mode on Opt release (no keys pressed)
-      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editCopy);
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, CellEditAction::copy);
       if (handled) {
         screenMessage(MESSAGE_TIME, "Copied selection");
         moveCursorBelowSelection(screen);
@@ -463,7 +463,7 @@ static int inputSelectMode(ScreenData* screen, int keys, int tapCount) {
       handled = 1;
     } else if (keys == (keyEdit | keyOpt)) {
       // Cut and exit select mode
-      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editCut);
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, CellEditAction::cut);
       if (handled) {
         screenMessage(MESSAGE_TIME, "Cut selection");
         moveCursorToSelectionStart(screen);
@@ -474,23 +474,23 @@ static int inputSelectMode(ScreenData* screen, int keys, int tapCount) {
       optPressed = 0;
     } else if (keys == (keyRight | keyEdit)) {
       // Multi-edit: increase values in selection
-      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editMultiIncrease);
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, CellEditAction::multiIncrease);
     } else if (keys == (keyLeft | keyEdit)) {
       // Multi-edit: decrease values in selection
-      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editMultiDecrease);
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, CellEditAction::multiDecrease);
     } else if (keys == (keyUp | keyEdit)) {
       // Multi-edit: big increase values in selection
-      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editMultiIncreaseBig);
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, CellEditAction::multiIncreaseBig);
     } else if (keys == (keyDown | keyEdit)) {
       // Multi-edit: big decrease values in selection
-      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editMultiDecreaseBig);
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, CellEditAction::multiDecreaseBig);
     } else if (keys == (keyShift | keyEdit) && !shallowClonePressed) {
       // Shallow clone
-      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editShallowClone);
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, CellEditAction::shallowClone);
       shallowClonePressed = 1;
     } else if (keys == (keyShift | keyEdit) && shallowClonePressed) {
       // Deep clone (second press while Shift still held)
-      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, editDeepClone);
+      handled = screen->onEdit(screen->cursorCol, screen->cursorRow, CellEditAction::deepClone);
       screen->selectMode = 0;
       shallowClonePressed = 0;
       screenFullRedraw(screen);
@@ -519,7 +519,7 @@ static int inputSelectMode(ScreenData* screen, int keys, int tapCount) {
       for (int row = oldSelRow1; row <= oldSelRow2; row++) {
         for (int col = oldSelCol1; col <= oldSelCol2; col++) {
           if (!(col >= newSelCol1 && col <= newSelCol2 && row >= newSelRow1 && row <= newSelRow2)) {
-            int state = (col == screen->cursorCol && row == screen->cursorRow) ? stateFocus : 0;
+            CellState state = (col == screen->cursorCol && row == screen->cursorRow) ? CellState::focus : CellState::normal;
             screen->drawField(col, row, state);
           }
         }
@@ -529,7 +529,7 @@ static int inputSelectMode(ScreenData* screen, int keys, int tapCount) {
       for (int row = newSelRow1; row <= newSelRow2; row++) {
         for (int col = newSelCol1; col <= newSelCol2; col++) {
           if (!(col >= oldSelCol1 && col <= oldSelCol2 && row >= oldSelRow1 && row <= oldSelRow2)) {
-            screen->drawField(col, row, stateSelected);
+            screen->drawField(col, row, CellState::selected);
           }
         }
       }
@@ -559,16 +559,16 @@ int screenInput(ScreenData* screen, int isKeyDown, int keys, int tapCount) {
 // Utility functions
 //
 
-void setCellColor(int state, int isEmpty, int hasContent) {
+void setCellColor(CellState state, int isEmpty, int hasContent) {
   const ColorScheme cs = appSettings.colorScheme;
 
-  if (state & stateSelected) {
+  if (state == CellState::selected) {
     if (isEmpty) {
       gfxSetFgColor(cs.textEmpty);
     } else {
       gfxSetFgColor(cs.selection);
     }
-  } else if (state & stateFocus) {
+  } else if (state == CellState::focus) {
     gfxSetFgColor(cs.textDefault);
   } else if (isEmpty) {
     gfxSetFgColor(cs.textEmpty);
@@ -609,9 +609,9 @@ LoopRange screenGetLoopRange(const AppScreen* screen) {
   return range;
 }
 
-enum ScreenPlaybackLevel screenGetPlaybackLevel(const AppScreen* screen) {
+ScreenPlaybackLevel screenGetPlaybackLevel(const AppScreen* screen) {
   if (screen && screen->getPlaybackLevel) {
     return (ScreenPlaybackLevel)screen->getPlaybackLevel();
   }
-  return screenPlaybackNone;
+  return ScreenPlaybackLevel::none;
 }

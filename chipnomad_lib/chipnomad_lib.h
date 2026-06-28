@@ -17,16 +17,6 @@ extern "C" {
 #define PITCH_CONFLICT_COOLDOWN_FRAMES 5
 
 /**
-* Chip emulation quality levels
-*/
-typedef enum {
-  CHIPNOMAD_QUALITY_LOW,
-  CHIPNOMAD_QUALITY_MEDIUM,
-  CHIPNOMAD_QUALITY_HIGH,
-  CHIPNOMAD_QUALITY_BEST
-} chipnomad_quality_t;
-
-/**
 * Chip factory function type
 * Returns a SoundChip struct for the given chip index
 */
@@ -35,7 +25,7 @@ typedef SoundChip (*ChipFactory)(int chipIndex, int sampleRate, ChipSetup setup)
 /**
 * ChipNomad state encapsulating all library state
 */
-typedef struct ChipNomadState {
+struct ChipNomadState {
   Project project;
   PlaybackState playbackState;
   SoundChip chips[PROJECT_MAX_CHIPS];
@@ -47,7 +37,7 @@ typedef struct ChipNomadState {
   float* mixBuffer;
   int mixBufferSize;
   int aySampleDithering;
-} ChipNomadState;
+};
 
 /**
 * Create and initialize ChipNomad state
@@ -81,9 +71,9 @@ int chipnomadRender(ChipNomadState* state, float* buffer, int samples);
 /**
 * Set emulation quality for all chips
 * @param state ChipNomad state
-* @param quality Quality level (CHIPNOMAD_QUALITY_LOW, MEDIUM, HIGH, BEST)
+* @param quality Quality level
 */
-void chipnomadSetQuality(ChipNomadState* state, chipnomad_quality_t quality);
+void chipnomadSetQuality(ChipNomadState* state, ChipNomadQuality quality);
 
 #ifdef __cplusplus
 }

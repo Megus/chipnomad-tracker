@@ -88,13 +88,13 @@ static void drawCursor(int col, int row) {
   }
 }
 
-static void drawField(int col, int row, int state) {
+static void drawField(int col, int row, CellState state) {
   if (row < 8) {
     gfxClearRect(11 + col * 8, row + 2, 7, 1);
     InputCode* slot = getKeySlot(row, col);
     if (slot) {
       int isEmpty = (slot->deviceType == inputNone);
-      if (state == stateFocus) {
+      if (state == CellState::focus) {
         gfxSetFgColor(appSettings.colorScheme.textValue);
       } else if (isEmpty) {
         gfxSetFgColor(appSettings.colorScheme.textEmpty);
@@ -108,27 +108,27 @@ static void drawField(int col, int row, int state) {
       gfxPrint(11 + col * 8, row + 2, trimmed);
     }
   } else if (row == 8) {
-    gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     gfxPrint(0, 11, "Done");
   }
 }
 
-static void drawRowHeader(int row, int state) {
+static void drawRowHeader(int row, CellState state) {
 }
 
-static void drawColHeader(int col, int state) {
+static void drawColHeader(int col, CellState state) {
 }
 
-static int onEdit(int col, int row, enum CellEditAction action) {
+static int onEdit(int col, int row, CellEditAction action) {
   if (row < 8) {
-    if (action == editTap) {
+    if (action == CellEditAction::tap) {
       captureRow = row;
       captureCol = col;
       captureState = STATE_CAPTURING;
       inputRawCallback = onRawInput;
       fullRedraw();
       return 1;
-    } else if (action == editClear && col > 0) {
+    } else if (action == CellEditAction::clear && col > 0) {
       InputCode* slot = getKeySlot(row, col);
       if (slot) {
         slot->deviceType = inputNone;
@@ -136,7 +136,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       }
       return 1;
     }
-  } else if (row == 8 && action == editTap) {
+  } else if (row == 8 && action == CellEditAction::tap) {
     settingsSave();
     screenSetup(&screenSettings, 0);
     return 1;

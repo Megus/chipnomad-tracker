@@ -8,13 +8,13 @@
 #include "chipnomad_lib.h"
 
 // PSG exporter state
-typedef struct {
+struct PSGExporterData {
   FILE* files[3];
   int numChips;
   int allTracksStopped;
   int renderedSeconds;
   char baseFilename[1024];
-} PSGExporterData;
+};
 
 static void writePSGHeader(FILE* file) {
   const char header[17] = "PSG\x1a\0\0\0\0\0\0\0\0\0\0\0\0";
@@ -22,10 +22,10 @@ static void writePSGHeader(FILE* file) {
 }
 
 // PSG recording chip implementation
-typedef struct {
+struct PSGChipData {
   FILE* file;
   uint8_t lastRegs[14];
-} PSGChipData;
+};
 
 static int psgChipInit(SoundChip* self) {
   PSGChipData* data = (PSGChipData*)self->userdata;

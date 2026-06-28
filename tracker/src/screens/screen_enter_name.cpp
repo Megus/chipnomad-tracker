@@ -64,13 +64,13 @@ static void drawCursor(int col, int row) {
   }
 }
 
-static void drawField(int col, int row, int state) {
+static void drawField(int col, int row, CellState state) {
   if (row == 0) {
     gfxSetFgColor(appSettings.colorScheme.textValue);
     gfxClearRect(0, 4, 24, 1);  // Text field on line below prompt, full 24 chars
     gfxPrint(0, 4, enteredName);
   } else if (row == 1) {
-    gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     if (col == 0) {
       gfxPrint(0, 6, "OK");  // Buttons moved down one line
     } else {
@@ -79,7 +79,7 @@ static void drawField(int col, int row, int state) {
   }
 }
 
-static int onEdit(int col, int row, enum CellEditAction action) {
+static int onEdit(int col, int row, CellEditAction action) {
   int handled = 0;
   if (row == 0) {
     int res = editCharacter(action, enteredName, col, 24);
@@ -102,8 +102,8 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   return 0;
 }
 
-static void drawRowHeader(int row, int state) {}
-static void drawColHeader(int col, int state) {}
+static void drawRowHeader(int row, CellState state) {}
+static void drawColHeader(int col, CellState state) {}
 static void drawSelection(int col1, int row1, int col2, int row2) {}
 
 static ScreenData screenData = {

@@ -103,18 +103,18 @@ enum FX {
   fxTotalCount
 };
 
-typedef struct FXName {
+struct FXName {
   enum FX fx;
   char name[4];
-} FXName;
+};
 
-typedef struct FXGroup {
+struct FXGroup {
   const char* name;              // Group name (e.g., "Sequencer FX")
   FXName* fxList;                // Array of FX in this group
   int count;                     // Number of FX in this group
   int columns;                   // Number of columns for grid layout (default 8)
   enum InstrumentType instType;  // instNone for non-instrument groups
-} FXGroup;
+};
 
 extern FXName fxNames[256]; // All names
 extern FXGroup fxGroups[]; // FX groups
@@ -133,72 +133,72 @@ enum StereoModeAY {
   ayStereoBAC,
 };
 
-typedef struct ChipSetupAY {
+struct ChipSetupAY {
   int clock;
   uint8_t isYM;
   enum StereoModeAY stereoMode;
   uint8_t stereoSeparation;
   uint8_t pwmFullRange; // 0 = 16 steps (hardware accurate), 1 = 256 steps (extended precision)
-} ChipSetupAY;
+};
 
-typedef union ChipSetup {
+union ChipSetup {
   ChipSetupAY ay;
-} ChipSetup;
+};
 
 // Tables
 
-typedef struct TableRow {
+struct TableRow {
   uint8_t pitchFlag;
   uint8_t pitchOffset;
   uint8_t volume;
   uint8_t fx[4][2];
-} TableRow;
+};
 
-typedef struct Table {
+struct Table {
   TableRow rows[16];
-} Table;
+};
 
 // Grooves
 
-typedef struct Groove {
+struct Groove {
   uint8_t speed[16];
-} Groove;
+};
 
 // Phrases
 
-typedef struct PhraseRow {
+struct PhraseRow {
   uint8_t note;
   uint8_t instrument;
   uint8_t volume;
   uint8_t fx[3][2];
-} PhraseRow;
+};
 
-typedef struct Phrase {
+struct Phrase {
   PhraseRow rows[16];
-} Phrase;
+};
 
 // Chains
 
-typedef struct ChainRow {
+struct ChainRow {
   uint16_t phrase;
   uint8_t transpose;
-} ChainRow;
+};
 
-typedef struct Chain {
+struct Chain {
   ChainRow rows[16];
-} Chain;
+};
 
 // Project
 
-typedef struct PitchTable {
+struct PitchTable {
   char name[PROJECT_PITCH_TABLE_TITLE_LENGTH + 1];
   uint16_t octaveSize;
   uint16_t length;
   uint16_t values[PROJECT_MAX_PITCHES];
   char noteNames[PROJECT_MAX_PITCHES][4];
-} PitchTable;
+};
 
-typedef struct Project {
+struct Project {
   char title[PROJECT_TITLE_LENGTH + 1];
   char author[PROJECT_TITLE_LENGTH + 1];
 
@@ -223,7 +223,7 @@ typedef struct Project {
 
   // Additional data for different chips
   uint8_t ayWavetables[256][32]; // 256 wavetables with 32 4-bit values each (AY chip)
-} Project;
+};
 
 extern char projectFileError[41];
 

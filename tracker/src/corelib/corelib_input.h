@@ -14,10 +14,10 @@ enum InputDeviceType {
   inputGamepad = 3,
 };
 
-typedef struct {
+struct InputCode {
   enum InputDeviceType deviceType;
   int32_t code;
-} InputCode;
+};
 
 enum Key {
   keyLeft = 0x1,

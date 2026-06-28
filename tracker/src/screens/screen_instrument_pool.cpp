@@ -261,8 +261,8 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   return 0;
 }
 
-static int getPlaybackLevel(void) {
-  return screenPlaybackPhrase;
+static ScreenPlaybackLevel getPlaybackLevel(void) {
+  return ScreenPlaybackLevel::phrase;
 }
 
 const AppScreen screenInstrumentPool = {

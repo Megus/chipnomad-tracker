@@ -10,14 +10,14 @@ extern "C" {
 extern "C" {
 
 // Bitmap structure for multi-character grayscale images
-typedef struct Bitmap {
+struct Bitmap {
   int widthChars;      // Width in characters
   int heightChars;     // Height in characters
   int widthPixels;     // Actual pixel width (widthChars * charWidth)
   int heightPixels;    // Actual pixel height (heightChars * charHeight)
   uint8_t* data;       // Grayscale data (0=background, 255=foreground), row-major order
   void* userdata;      // Platform-specific data (e.g., SDL_Texture*)
-} Bitmap;
+};
 
 /**
  * @brief Initialize graphics system. If screenWidth and screenHeight are not NULL and don't contain zeros,

@@ -13,12 +13,12 @@ static uint8_t lastTransposeValue = 0;
 
 static int getColumnCount(int row);
 static void drawStatic(void);
-static void drawField(int col, int row, int state);
-static void drawRowHeader(int row, int state);
-static void drawColHeader(int col, int state);
+static void drawField(int col, int row, CellState state);
+static void drawRowHeader(int row, CellState state);
+static void drawColHeader(int col, CellState state);
 static void drawCursor(int col, int row);
 static void drawSelection(int col1, int row1, int col2, int row2);
-static int onEdit(int col, int row, enum CellEditAction action);
+static int onEdit(int col, int row, CellEditAction action);
 static LoopRange getLoopRange(void);
 
 static ScreenData screen = {
@@ -75,7 +75,7 @@ static void drawStatic(void) {
   gfxPrintf(0, 0, "CHAIN %02X%c", chain, isChainUsedElsewhere(&chipnomadState->project, chain, *pSongTrack, *pSongRow) ? '*' : ' ');
 }
 
-static void drawField(int col, int row, int state) {
+static void drawField(int col, int row, CellState state) {
   uint16_t phrase = chipnomadState->project.chains[chain].rows[row].phrase;
   int hasContent = phrase != EMPTY_VALUE_16 && phraseHasNotes(&chipnomadState->project, phrase);
 
@@ -89,7 +89,7 @@ static void drawField(int col, int row, int state) {
     }
     // Also draw transpose to keep colors synchronized (only if not in selection mode)
     if (screen.selectMode == 0) {
-      setCellColor(0, 0, hasContent);
+      setCellColor(CellState::normal, 0, hasContent);
       gfxPrint(7, 3 + row, byteToHex(chipnomadState->project.chains[chain].rows[row].transpose));
     }
   } else {
@@ -99,15 +99,15 @@ static void drawField(int col, int row, int state) {
   }
 }
 
-static void drawRowHeader(int row, int state) {
+static void drawRowHeader(int row, CellState state) {
   const ColorScheme cs = appSettings.colorScheme;
-  gfxSetFgColor((state & stateFocus) ? cs.textDefault : cs.textInfo);
+  gfxSetFgColor((state == CellState::focus) ? cs.textDefault : cs.textInfo);
   gfxPrintf(1, 3 + row, "%X", row);
 }
 
-static void drawColHeader(int col, int state) {
+static void drawColHeader(int col, CellState state) {
   const ColorScheme cs = appSettings.colorScheme;
-  gfxSetFgColor((state & stateFocus) ? cs.textDefault : cs.textInfo);
+  gfxSetFgColor((state == CellState::focus) ? cs.textDefault : cs.textInfo);
 
   if (col == 0) {
     // Phrase
@@ -158,7 +158,7 @@ static void draw(void) {
 
 static int editCell(int col, int row, enum CellEditAction action) {
   if (col == 0) {
-    if (action == editDoubleTap) {
+    if (action == CellEditAction::doubleTap) {
       uint16_t current = chipnomadState->project.chains[chain].rows[row].phrase;
       if (current != EMPTY_VALUE_16) {
         int nextEmpty = findEmptyPhrase(&chipnomadState->project, current + 1);
@@ -170,7 +170,7 @@ static int editCell(int col, int row, enum CellEditAction action) {
         }
       }
       return 1;
-    } else if (action == editShallowClone || action == editDeepClone) {
+    } else if (action == CellEditAction::shallowClone || action == CellEditAction::deepClone) {
       uint16_t current = chipnomadState->project.chains[chain].rows[row].phrase;
       if (current != EMPTY_VALUE_16) {
         int cloned = clonePhraseToNext(current);
@@ -194,13 +194,13 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   int startCol, startRow, endCol, endRow;
   getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
 
-  if (action == editSwitchSelection) {
+  if (action == CellEditAction::switchSelection) {
     return switchChainSelectionMode(&screen);
-  } else if (action == editMultiIncrease || action == editMultiDecrease ||
-             action == editMultiIncreaseBig || action == editMultiDecreaseBig) {
+  } else if (action == CellEditAction::multiIncrease || action == CellEditAction::multiDecrease ||
+             action == CellEditAction::multiIncreaseBig || action == CellEditAction::multiDecreaseBig) {
     if (!isSingleColumnSelection(&screen)) return 0;
     handled = applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell);
-  } else if (action == editShallowClone || action == editDeepClone) {
+  } else if (action == CellEditAction::shallowClone || action == CellEditAction::deepClone) {
     int clonedCount = 0;
     for (int r = startRow; r <= endRow; r++) {
       for (int c = startCol; c <= endCol; c++) {
@@ -213,17 +213,17 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     } else {
       screenMessage(MESSAGE_TIME, "No phrases to clone");
     }
-  } else if (action == editCopy) {
+  } else if (action == CellEditAction::copy) {
     int startCol, startRow, endCol, endRow;
     getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
     copyChain(chain, startCol, startRow, endCol, endRow, 0);
     handled = 1;
-  } else if (action == editCut) {
+  } else if (action == CellEditAction::cut) {
     int startCol, startRow, endCol, endRow;
     getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
     copyChain(chain, startCol, startRow, endCol, endRow, 1);
     handled = 1;
-  } else if (action == editPaste) {
+  } else if (action == CellEditAction::paste) {
     const int rowsPasted = pasteChain(chain, col, row);
     if (rowsPasted > 0) {
       // Move cursor below pasted data, or to last row if paste extends to end
@@ -316,8 +316,8 @@ static LoopRange getLoopRange(void) {
   return range;
 }
 
-static int getPlaybackLevel(void) {
-  return screenPlaybackChain;
+static ScreenPlaybackLevel getPlaybackLevel(void) {
+  return ScreenPlaybackLevel::chain;
 }
 
 const AppScreen screenChain = {

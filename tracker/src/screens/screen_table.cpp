@@ -29,12 +29,12 @@ static uint8_t getTableInstrumentIdx() {
 
 static int getColumnCount(int row);
 static void drawStatic(void);
-static void drawField(int col, int row, int state);
-static void drawRowHeader(int row, int state);
-static void drawColHeader(int col, int state);
+static void drawField(int col, int row, CellState state);
+static void drawRowHeader(int row, CellState state);
+static void drawColHeader(int col, CellState state);
 static void drawCursor(int col, int row);
 static void drawSelection(int col1, int row1, int col2, int row2);
-static int onEdit(int col, int row, enum CellEditAction action);
+static int onEdit(int col, int row, CellEditAction action);
 
 static int columnX[] = {3, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34};
 
@@ -90,7 +90,7 @@ static void drawStatic(void) {
   gfxPrintf(0, 0, "TABLE %02X", tableIdx);
 }
 
-static void drawField(int col, int row, int state) {
+static void drawField(int col, int row, CellState state) {
   int x = columnX[col];
   int y = 3 + row;
 
@@ -123,15 +123,15 @@ static void drawField(int col, int row, int state) {
     gfxPrint(x, y, byteToHex(value));
   }
 }
-static void drawRowHeader(int row, int state) {
+static void drawRowHeader(int row, CellState state) {
   const ColorScheme cs = appSettings.colorScheme;
-  gfxSetFgColor((state & stateFocus) ? cs.textDefault : cs.textInfo);
+  gfxSetFgColor((state == CellState::focus) ? cs.textDefault : cs.textInfo);
   gfxPrintf(1, 3 + row, "%X", row);
 }
 
-static void drawColHeader(int col, int state) {
+static void drawColHeader(int col, CellState state) {
   const ColorScheme cs = appSettings.colorScheme;
-  gfxSetFgColor((state & stateFocus) ? cs.textDefault : cs.textInfo);
+  gfxSetFgColor((state == CellState::focus) ? cs.textDefault : cs.textInfo);
   switch (col) {
     case 0:
     case 1:
@@ -254,7 +254,7 @@ static int editCell(int col, int row, enum CellEditAction action) {
     uint8_t instrumentIdx = getTableInstrumentIdx();
     int result = editFX(action, tableRows[row].fx[fxIdx], lastFX, 1, instrumentIdx);
     if (result == 2) {
-      drawField(col + 1, row, 0);
+      drawField(col + 1, row, CellState::normal);
       handled = 1;
     } else if (result == 1) {
       isFxEdit = 1;
@@ -272,20 +272,20 @@ static int editCell(int col, int row, enum CellEditAction action) {
   return handled;
 }
 
-static int onEdit(int col, int row, enum CellEditAction action) {
+static int onEdit(int col, int row, CellEditAction action) {
   int startCol, startRow, endCol, endRow;
   getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
 
-  if (action == editSwitchSelection) {
+  if (action == CellEditAction::switchSelection) {
     return switchTableSelectionMode(&screen);
-  } else if (action == editMultiIncrease || action == editMultiDecrease) {
+  } else if (action == CellEditAction::multiIncrease || action == CellEditAction::multiDecrease) {
     if (!isSingleColumnSelection(&screen)) return 0;
     return applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell);
-  } else if (action == editMultiIncreaseBig || action == editMultiDecreaseBig) {
+  } else if (action == CellEditAction::multiIncreaseBig || action == CellEditAction::multiDecreaseBig) {
     // Check if full width selection (all columns)
     if (startCol == 0 && endCol == 10) {
       // Rotation mode
-      int direction = (action == editMultiIncreaseBig) ? -1 : 1;
+      int direction = (action == CellEditAction::multiIncreaseBig) ? -1 : 1;
       applyTableRotation(tableIdx, startRow, endRow, direction);
       fullRedraw();
       return 1;
@@ -304,13 +304,13 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       }
     }
     return 0;
-  } else if (action == editCopy) {
+  } else if (action == CellEditAction::copy) {
     copyTable(tableIdx, startCol, startRow, endCol, endRow, 0);
     return 1;
-  } else if (action == editCut) {
+  } else if (action == CellEditAction::cut) {
     copyTable(tableIdx, startCol, startRow, endCol, endRow, 1);
     return 1;
-  } else if (action == editPaste) {
+  } else if (action == CellEditAction::paste) {
     const int rowsPasted = pasteTable(tableIdx, col, row);
     if (rowsPasted > 0) {
       // Move cursor below pasted data, or to last row if paste extends to end
@@ -399,8 +399,8 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   return screenInput(&screen, isKeyDown, keys, tapCount);
 }
 
-static int getPlaybackLevel(void) {
-  return screenPlaybackPhrase;
+static ScreenPlaybackLevel getPlaybackLevel(void) {
+  return ScreenPlaybackLevel::phrase;
 }
 
 const AppScreen screenTable = {

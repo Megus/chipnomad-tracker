@@ -10,7 +10,7 @@ extern "C" {
 
 typedef void FrameCallback(void* userdata);
 
-typedef struct AudioManager {
+struct AudioManager {
   int (*start)(int sampleRate, int audioBufferSize);
   void (*pause)(void);
   void (*resume)(void);
@@ -18,7 +18,7 @@ typedef struct AudioManager {
   void (*toggleTrackMute)(int trackIdx);
   void (*toggleTrackSolo)(int trackIdx);
   uint8_t trackStates[PROJECT_MAX_TRACKS];
-} AudioManager;
+};
 
 // Singleton AudioManager struct
 extern AudioManager audioManager;

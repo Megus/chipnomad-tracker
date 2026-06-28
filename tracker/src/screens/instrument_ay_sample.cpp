@@ -243,13 +243,13 @@ static void drawCursor(int col, int row) {
   }
 }
 
-static void drawField(int col, int row, int state) {
+static void drawField(int col, int row, CellState state) {
   if (row < 3) return instrumentCommonDrawField(col, row, state);
 
   InstrumentAYSample* smp = &chipnomadState->project.instruments[cInstrument].chip.aySample;
   int y = rowToY(row);
 
-  gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+  gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
 
   if (row == 3) {
     if (col == 0) {
@@ -313,7 +313,7 @@ static void drawField(int col, int row, int state) {
   }
 }
 
-static int onEdit(int col, int row, enum CellEditAction action) {
+static int onEdit(int col, int row, CellEditAction action) {
   if (row < 3) return instrumentCommonOnEdit(col, row, action);
 
   int handled = 0;
@@ -347,7 +347,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   if (col == 0) {
     switch (row) {
       case 4: // Rate
-        if (action == editClear) {
+        if (action == CellEditAction::clear) {
           smp->sampleRate = 8000;  // Reasonable default rate
           handled = 1;
         } else {
@@ -356,7 +356,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
         break;
       case 5: // Start
         {
-          if (action == editClear) {
+          if (action == CellEditAction::clear) {
             smp->sampleStart = 0;  // Start from beginning
             handled = 1;
           } else {
@@ -372,7 +372,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 
               // Redraw loop start if it changed
               if (smp->sampleLoopStart != oldLoopStart) {
-                drawField(0, 7, 0);  // Loop Start
+                drawField(0, 7, CellState::normal);  // Loop Start
               }
             }
           }
@@ -380,7 +380,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
         break;
       case 6: // Length
         {
-          if (action == editClear) {
+          if (action == CellEditAction::clear) {
             smp->sampleLength = smp->fileLength;  // Use full sample
             handled = 1;
           } else {
@@ -402,10 +402,10 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 
               // Redraw affected fields
               if (smp->sampleStart != oldStart) {
-                drawField(0, 5, 0);  // Start
+                drawField(0, 5, CellState::normal);  // Start
               }
               if (smp->sampleLoopStart != oldLoopStart) {
-                drawField(0, 7, 0);  // Loop Start
+                drawField(0, 7, CellState::normal);  // Loop Start
               }
             }
           }
@@ -413,7 +413,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
         break;
       case 7: // Loop Start
         {
-          if (action == editClear) {
+          if (action == CellEditAction::clear) {
             // Set to end of sample (no loop)
             smp->sampleLoopStart = smp->sampleLength;
             handled = 1;

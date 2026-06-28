@@ -10,8 +10,8 @@
 // Export state
 Exporter* currentExporter = NULL;
 
-static void drawRowHeader(int row, int state) {}
-static void drawColHeader(int col, int state) {}
+static void drawRowHeader(int row, CellState state) {}
+static void drawColHeader(int col, CellState state) {}
 static void drawSelection(int col1, int row1, int col2, int row2) {}
 
 static int sampleRates[] = {44100, 48000, 88200, 96000};
@@ -146,8 +146,8 @@ void exportCommonDrawCursor(int col, int row) {
   }
 }
 
-void exportCommonDrawField(int col, int row, int state) {
-  gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+void exportCommonDrawField(int col, int row, CellState state) {
+  gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
 
   if (row == 0) {
     gfxClearRect(13, 2, 2, 1);
@@ -255,7 +255,7 @@ void generateExportPath(char* outputPath, int maxLen, const char* extension) {
   outputPath[maxLen - 1] = 0;
 }
 
-int exportCommonOnEdit(int col, int row, enum CellEditAction action) {
+int exportCommonOnEdit(int col, int row, CellEditAction action) {
   int handled = 0;
 
   if (row == 0) {
@@ -290,18 +290,18 @@ int exportCommonOnEdit(int col, int row, enum CellEditAction action) {
     }
     handled = 1;
   } else if (row == 2) {
-    if (action == editIncrease) {
+    if (action == CellEditAction::increase) {
       currentSampleRateIndex = (currentSampleRateIndex + 1) % 4;
       handled = 1;
-    } else if (action == editDecrease) {
+    } else if (action == CellEditAction::decrease) {
       currentSampleRateIndex = (currentSampleRateIndex + 3) % 4;
       handled = 1;
     }
   } else if (row == 3) {
-    if (action == editIncrease) {
+    if (action == CellEditAction::increase) {
       currentBitDepthIndex = (currentBitDepthIndex + 1) % 3;
       handled = 1;
-    } else if (action == editDecrease) {
+    } else if (action == CellEditAction::decrease) {
       currentBitDepthIndex = (currentBitDepthIndex + 2) % 3;
       handled = 1;
     }

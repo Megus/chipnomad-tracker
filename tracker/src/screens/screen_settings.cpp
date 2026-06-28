@@ -14,10 +14,10 @@
 static int settingsColumnCount(int row);
 static void settingsDrawStatic(void);
 static void settingsDrawCursor(int col, int row);
-static void settingsDrawRowHeader(int row, int state);
-static void settingsDrawColHeader(int col, int state);
-static void settingsDrawField(int col, int row, int state);
-static int settingsOnEdit(int col, int row, enum CellEditAction action);
+static void settingsDrawRowHeader(int row, CellState state);
+static void settingsDrawColHeader(int col, CellState state);
+static void settingsDrawField(int col, int row, CellState state);
+static int settingsOnEdit(int col, int row, CellEditAction action);
 
 static ScreenData screenSettingsData = {
   .rows = 8,
@@ -103,51 +103,51 @@ void settingsDrawCursor(int col, int row) {
   }
 }
 
-void settingsDrawRowHeader(int row, int state) {
+void settingsDrawRowHeader(int row, CellState state) {
 }
 
-void settingsDrawColHeader(int col, int state) {
+void settingsDrawColHeader(int col, CellState state) {
 }
 
-void settingsDrawField(int col, int row, int state) {
+void settingsDrawField(int col, int row, CellState state) {
   if (row == 0 && col == 0) {
     gfxSetFgColor(appSettings.colorScheme.textDefault);
     gfxPrint(0, 2, "Pitch conflict warning");
-    gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     gfxPrint(23, 2, appSettings.pitchConflictWarning ? "ON " : "OFF");
   } else if (row == 1 && col == 0) {
     gfxSetFgColor(appSettings.colorScheme.textDefault);
     gfxPrint(0, 3, "Mix volume");
-    gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     int mixVolumePercent = (int)(appSettings.mixVolume * 100.0f + 0.5f);
     gfxPrintf(23, 3, "%03d%%", mixVolumePercent);
   } else if (row == 2 && col == 0) {
     gfxSetFgColor(appSettings.colorScheme.textDefault);
     gfxPrint(0, 4, "Quality");
-    gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     const char* qualityNames[] = {"LOW   ", "MEDIUM", "HIGH  ", "BEST  "};
     gfxPrint(23, 4, qualityNames[appSettings.quality]);
   } else if (row == 3 && col == 0) {
     gfxSetFgColor(appSettings.colorScheme.textDefault);
     gfxPrint(0, 5, "Sample dithering");
-    gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     gfxPrint(23, 5, appSettings.aySampleDithering ? "ON " : "OFF");
   } else if (row == 4 && col == 0) {
-    gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     gfxPrint(0, 6, "Key mapping");
   } else if (row == 5 && col == 0) {
-    gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     gfxPrint(0, 7, "Load font");
   } else if (row == 6 && col == 0) {
-    gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     gfxPrint(0, 8, "Edit color theme");
   } else if (row == 7 && col == 0) {
-    gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     gfxPrint(0, 17, "Quit ChipNomad");
   }
 }
 
-int settingsOnEdit(int col, int row, enum CellEditAction action) {
+int settingsOnEdit(int col, int row, CellEditAction action) {
   if (row == 0 && col == 0) {
     // Pitch conflict warning (0/1)
     return edit8noLast(action, (uint8_t*)&appSettings.pitchConflictWarning, 1, 0, 1);
@@ -167,7 +167,7 @@ int settingsOnEdit(int col, int row, enum CellEditAction action) {
     // Quality (0-3)
     int handled = edit8noLast(action, (uint8_t*)&appSettings.quality, 1, 0, 3);
     if (handled) {
-      chipnomadSetQuality(chipnomadState, (chipnomad_quality_t)appSettings.quality);
+      chipnomadSetQuality(chipnomadState, (ChipNomadQuality)appSettings.quality);
     }
     return handled;
   } else if (row == 3 && col == 0) {
@@ -177,19 +177,19 @@ int settingsOnEdit(int col, int row, enum CellEditAction action) {
       chipnomadState->aySampleDithering = appSettings.aySampleDithering;
     }
     return handled;
-  } else if (row == 4 && col == 0 && action == editTap) {
+  } else if (row == 4 && col == 0 && action == CellEditAction::tap) {
     screenSetup(&screenKeyMapping, 0);
     return 0;
-  } else if (row == 5 && col == 0 && action == editTap) {
+  } else if (row == 5 && col == 0 && action == CellEditAction::tap) {
     fileBrowserSetup("LOAD FONT", ".cnfont", appSettings.fontFolderPath,
       (void (*)(const char*))fontLoadCallback,
       (void (*)(void))fontCancelCallback);
     screenSetup(&screenFileBrowser, 0);
     return 0;
-  } else if (row == 6 && col == 0 && action == editTap) {
+  } else if (row == 6 && col == 0 && action == CellEditAction::tap) {
     screenSetup(&screenColorTheme, 0);
     return 0;
-  } else if (row == 7 && col == 0 && action == editTap) {
+  } else if (row == 7 && col == 0 && action == CellEditAction::tap) {
     // Trigger exit event
     mainLoopTriggerQuit();
     return 1;
@@ -210,8 +210,8 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   return screenInput(&screenSettingsData, isKeyDown, keys, tapCount);
 }
 
-static int getPlaybackLevel(void) {
-  return screenPlaybackSong;
+static ScreenPlaybackLevel getPlaybackLevel(void) {
+  return ScreenPlaybackLevel::song;
 }
 
 const AppScreen screenSettings = {

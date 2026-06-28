@@ -48,7 +48,7 @@ enum LFOTrigger {
   lfoTrigTotalCount,
 };
 
-typedef struct Modulation {
+struct Modulation {
   enum ModulationType type;
   uint8_t destination;
   int8_t amount;
@@ -56,37 +56,37 @@ typedef struct Modulation {
   uint8_t p2; // ADSR: D, AHD: H, LFO: Trig
   uint8_t p3; // ADSR: S, AHD: D, LFO: Period
   uint8_t p4; // ADSR: R, AHD: -, LFO: -
-} Modulation;
+};
 
 // AY Instruments
 
-typedef struct InstrumentAY1 {
+struct InstrumentAY1 {
   Modulation volumeEnvelope;  // ADSR envelope as modulation
   uint8_t autoEnvN; // 0 - no auto-env
   uint8_t autoEnvD;
   uint8_t defaultMixer; // Low nibble: mixer, high nibble: envelope shape
-} InstrumentAY1;
+};
 
-typedef struct InstrumentAYOscTone {
+struct InstrumentAYOscTone {
   uint8_t isOn;
   uint8_t pitchFlag;
   int8_t pitchOffset;
   int8_t fineTune;
-} InstrumentAYOscTone;
+};
 
-typedef struct InstrumentAYOscNoise {
+struct InstrumentAYOscNoise {
   uint8_t isOn;
   uint8_t noisePeriod;
-} InstrumentAYOscNoise;
+};
 
-typedef struct InstrumentAYOscEnvelope {
+struct InstrumentAYOscEnvelope {
   uint8_t shape;
   uint8_t autoEnvN;
   uint8_t autoEnvD;
   uint8_t pitchFlag;
   int8_t pitchOffset;
   int8_t fineTune;
-} InstrumentAYOscEnvelope;
+};
 
 enum AYSoftwareOscType {
   aySoftwareOscNone = 0,
@@ -100,7 +100,7 @@ enum AYSoftwareOscType {
   aySoftwareOscTotalCount,
 };
 
-typedef struct InstrumentAYOscSoftware {
+struct InstrumentAYOscSoftware {
   enum AYSoftwareOscType type;
   uint8_t pitchFlag;
   int8_t pitchOffset;
@@ -110,16 +110,16 @@ typedef struct InstrumentAYOscSoftware {
   uint8_t wavetableIndex;
   uint8_t fmDepth;
   uint8_t envShapePair; // For SyncEnv: high nibble = shape 1, low nibble = shape 2, default 0x00
-} InstrumentAYOscSoftware;
+};
 
-typedef struct InstrumentAY2 {
+struct InstrumentAY2 {
   InstrumentAYOscTone oscTone;
   InstrumentAYOscNoise oscNoise;
   InstrumentAYOscEnvelope oscEnvelope;
   InstrumentAYOscSoftware oscSoftware;
-} InstrumentAY2;
+};
 
-typedef struct InstrumentAYSample {
+struct InstrumentAYSample {
   InstrumentAYOscTone oscTone;
   InstrumentAYOscNoise oscNoise;
   char sampleName[PROJECT_INSTRUMENT_NAME_LENGTH + 1];
@@ -131,29 +131,29 @@ typedef struct InstrumentAYSample {
   uint8_t *sampleData;  // 8-bit unsigned PCM data
   int8_t pitchOffset;
   int8_t fineTune;
-} InstrumentAYSample;
+};
 
-typedef union InstrumentChipData {
+union InstrumentChipData {
   InstrumentAY1 ay;
   InstrumentAY2 ay2;
   InstrumentAYSample aySample;
-} InstrumentChipData;
+};
 
-typedef struct Instrument {
+struct Instrument {
   uint8_t type;
   char name[PROJECT_INSTRUMENT_NAME_LENGTH + 1];
   uint8_t tableSpeed;
   uint8_t transposeEnabled;
   Modulation modulation[4];
   InstrumentChipData chip;
-} Instrument;
+};
 
-typedef struct InstrumentFunctions {
+struct InstrumentFunctions {
   int modDestinationsCount;
   const char* (*modName)(int modIndex);
   int (*init)(Instrument* instrument);
   int (*free)(Instrument* instrument);
-} InstrumentFunctions;
+};
 
 InstrumentFunctions getInstrumentFunctions(enum InstrumentType type);
 

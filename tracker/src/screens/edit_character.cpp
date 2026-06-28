@@ -42,12 +42,12 @@ void trimStr(char* str) {
   }
 }
 
-int editCharacter(enum CellEditAction action, char* str, int idx, int maxLen) {
-  if (action == editClear) {
+int editCharacter(CellEditAction action, char* str, int idx, int maxLen) {
+  if (action == CellEditAction::clear) {
     str[idx] = ' ';
     trimStr(str);
     return 2;
-  } else if (action == editTap) {
+  } else if (action == CellEditAction::tap) {
     char current = str[idx];
     if (idx  >= strlen(str)) current = -1;
     charEditFullDraw(current);

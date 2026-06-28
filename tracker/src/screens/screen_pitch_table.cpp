@@ -65,8 +65,8 @@ static void drawCursor(int col, int row) {
   }
 }
 
-static void drawField(int col, int row, int state) {
-  gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+static void drawField(int col, int row, CellState state) {
+  gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
 
   if (row == 0) {
     gfxClearRect(7, 2, PROJECT_PITCH_TABLE_TITLE_LENGTH, 1);
@@ -80,7 +80,7 @@ static void drawField(int col, int row, int state) {
   }
 }
 
-static int onEdit(int col, int row, enum CellEditAction action) {
+static int onEdit(int col, int row, CellEditAction action) {
   int handled = 0;
 
   if (row == 0) {
@@ -110,15 +110,15 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     }
 
     projectModified = 1;
-    drawField(0, 0, 0); // Still needed to redraw the pitch table name
+    drawField(0, 0, CellState::normal); // Still needed to redraw the pitch table name
     handled = 1;
   }
 
   return handled;
 }
 
-static void drawRowHeader(int row, int state) {}
-static void drawColHeader(int col, int state) {}
+static void drawRowHeader(int row, CellState state) {}
+static void drawColHeader(int col, CellState state) {}
 static void drawSelection(int col1, int row1, int col2, int row2) {}
 
 static ScreenData screenPitchTableData = {

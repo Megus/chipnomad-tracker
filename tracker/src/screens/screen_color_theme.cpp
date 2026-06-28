@@ -10,10 +10,10 @@
 static int colorThemeColumnCount(int row);
 static void colorThemeDrawStatic(void);
 static void colorThemeDrawCursor(int col, int row);
-static void colorThemeDrawRowHeader(int row, int state);
-static void colorThemeDrawColHeader(int col, int state);
-static void colorThemeDrawField(int col, int row, int state);
-static int colorThemeOnEdit(int col, int row, enum CellEditAction action);
+static void colorThemeDrawRowHeader(int row, CellState state);
+static void colorThemeDrawColHeader(int col, CellState state);
+static void colorThemeDrawField(int col, int row, CellState state);
+static int colorThemeOnEdit(int col, int row, CellEditAction action);
 static void fullRedraw(void);
 
 static ScreenData screenColorThemeData = {
@@ -156,7 +156,7 @@ void colorThemeDrawCursor(int col, int row) {
   }
 }
 
-void colorThemeDrawRowHeader(int row, int state) {
+void colorThemeDrawRowHeader(int row, CellState state) {
   if (row < 10) {
     gfxSetFgColor(appSettings.colorScheme.textDefault);
     gfxPrint(0, row + 2, colorNames[row]);
@@ -171,11 +171,11 @@ void colorThemeDrawRowHeader(int row, int state) {
   }
 }
 
-void colorThemeDrawColHeader(int col, int state) {
+void colorThemeDrawColHeader(int col, CellState state) {
 }
 
-void colorThemeDrawField(int col, int row, int state) {
-  gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+void colorThemeDrawField(int col, int row, CellState state) {
+  gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
 
   if (row < 10) {
     int* colorPtr = getColorPtr(row);
@@ -209,7 +209,7 @@ void colorThemeDrawField(int col, int row, int state) {
   }
 }
 
-int colorThemeOnEdit(int col, int row, enum CellEditAction action) {
+int colorThemeOnEdit(int col, int row, CellEditAction action) {
   if (row < 10) {
     int* colorPtr = getColorPtr(row);
     if (!colorPtr) return 0;
@@ -235,7 +235,7 @@ int colorThemeOnEdit(int col, int row, enum CellEditAction action) {
     if (handled) {
       *colorPtr = (r << 16) | (g << 8) | b;
       // Redraw the row header to update color preview
-      colorThemeDrawRowHeader(row, 0);
+      colorThemeDrawRowHeader(row, CellState::normal);
       // Redraw whole screen to preview color changes
       fullRedraw();
     }
@@ -249,7 +249,7 @@ int colorThemeOnEdit(int col, int row, enum CellEditAction action) {
     } else if (res > 1) {
       return 1;
     }
-  } else if (row == 11 && action == editTap) {
+  } else if (row == 11 && action == CellEditAction::tap) {
     // Buttons
     if (col == 0) {
       // Save

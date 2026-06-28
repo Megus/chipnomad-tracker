@@ -19,12 +19,12 @@ static uint8_t lastFX[2] = {0, 0};
 
 static int getColumnCount(int row);
 static void drawStatic(void);
-static void drawField(int col, int row, int state);
-static void drawRowHeader(int row, int state);
-static void drawColHeader(int col, int state);
+static void drawField(int col, int row, CellState state);
+static void drawRowHeader(int row, CellState state);
+static void drawColHeader(int col, CellState state);
 static void drawCursor(int col, int row);
 static void drawSelection(int col1, int row1, int col2, int row2);
-static int onEdit(int col, int row, enum CellEditAction action);
+static int onEdit(int col, int row, CellEditAction action);
 static LoopRange getLoopRange(void);
 
 static int columnX[] = {3, 7, 10, 13, 16, 19, 22, 25, 28, 31};
@@ -92,7 +92,7 @@ static void fullRedraw(void) {
   screenFullRedraw(&screen);
 }
 
-static void drawField(int col, int row, int state) {
+static void drawField(int col, int row, CellState state) {
   int x = columnX[col];
   int y = 3 + row;
   if (col == 0) {
@@ -118,15 +118,15 @@ static void drawField(int col, int row, int state) {
   }
 }
 
-static void drawRowHeader(int row, int state) {
+static void drawRowHeader(int row, CellState state) {
   const ColorScheme cs = appSettings.colorScheme;
-  gfxSetFgColor((state & stateFocus) ? cs.textDefault : ((row & 3) == 0 ? cs.textValue : cs.textInfo));
+  gfxSetFgColor((state == CellState::focus) ? cs.textDefault : ((row & 3) == 0 ? cs.textValue : cs.textInfo));
   gfxPrintf(1, 3 + row, "%X", row);
 }
 
-static void drawColHeader(int col, int state) {
+static void drawColHeader(int col, CellState state) {
   const ColorScheme cs = appSettings.colorScheme;
-  gfxSetFgColor((state & stateFocus) ? cs.textDefault : cs.textInfo);
+  gfxSetFgColor((state == CellState::focus) ? cs.textDefault : cs.textInfo);
 
   switch (col) {
     case 0:
@@ -203,24 +203,24 @@ static void draw(void) {
 // Input handling
 //
 
-static int editCell(int col, int row, enum CellEditAction action) {
+static int editCell(int col, int row, CellEditAction action) {
   int handled = 0;
   uint8_t maxVolume = 15;
 
   if (col == 0) {
     // Note
-    if (action == editClear && phraseRows[row].note == EMPTY_VALUE_8) {
+    if (action == CellEditAction::clear && phraseRows[row].note == EMPTY_VALUE_8) {
       // Insert OFF
       phraseRows[row].note = NOTE_OFF;
       phraseRows[row].instrument = EMPTY_VALUE_8;
       phraseRows[row].volume = EMPTY_VALUE_8;
       handled = 1;
-    } else if (action == editClear) {
+    } else if (action == CellEditAction::clear) {
       // Clear note
       handled = edit8withLimit(action, &phraseRows[row].note, &lastNote, chipnomadState->project.pitchTable.octaveSize, chipnomadState->project.pitchTable.length - 1);
       edit8withLimit(action, &phraseRows[row].instrument, &lastInstrument, 16, PROJECT_MAX_INSTRUMENTS - 1);
       edit8withLimit(action, &phraseRows[row].volume, &lastVolume, 16, maxVolume);
-    } else if (action == editTap && phraseRows[row].note == EMPTY_VALUE_8) {
+    } else if (action == CellEditAction::tap && phraseRows[row].note == EMPTY_VALUE_8) {
       phraseRows[row].note = lastNote;
       phraseRows[row].instrument = lastInstrument;
       phraseRows[row].volume = lastVolume;
@@ -233,12 +233,12 @@ static int editCell(int col, int row, enum CellEditAction action) {
       }
     }
     if (handled) {
-      drawField(1, row, 0);
-      drawField(2, row, 0);
+      drawField(1, row, CellState::normal);
+      drawField(2, row, CellState::normal);
     }
   } else if (col == 1) {
     // Instrument
-    if (action == editDoubleTap) {
+    if (action == CellEditAction::doubleTap) {
       uint8_t nextInstrument = findEmptyInstrument(&chipnomadState->project, 0);
       if (nextInstrument != EMPTY_VALUE_8) {
         phraseRows[row].instrument = nextInstrument;
@@ -261,7 +261,7 @@ static int editCell(int col, int row, enum CellEditAction action) {
     uint8_t instrumentNum = lookupInstrument(&chipnomadState->project, *pSongRow, *pChainRow, row, *pSongTrack);
     int result = editFX(action, phraseRows[row].fx[fxIdx], lastFX, 0, instrumentNum);
     if (result == 2) {
-      drawField(col + 1, row, 0);
+      drawField(col + 1, row, CellState::normal);
       handled = 1;
     } else if (result == 1) {
       isFxEdit = 1;
@@ -290,22 +290,22 @@ static int editCell(int col, int row, enum CellEditAction action) {
   return handled;
 }
 
-static int onEdit(int col, int row, enum CellEditAction action) {
+static int onEdit(int col, int row, CellEditAction action) {
   int handled = 0;
 
   int startCol, startRow, endCol, endRow;
   getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
 
-  if (action == editSwitchSelection) {
+  if (action == CellEditAction::switchSelection) {
     return switchPhraseSelectionMode(&screen);
-  } else if (action == editMultiIncrease || action == editMultiDecrease) {
+  } else if (action == CellEditAction::multiIncrease || action == CellEditAction::multiDecrease) {
     if (!isSingleColumnSelection(&screen)) return 0;
     handled = applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell);
-  } else if (action == editMultiIncreaseBig || action == editMultiDecreaseBig) {
+  } else if (action == CellEditAction::multiIncreaseBig || action == CellEditAction::multiDecreaseBig) {
     // Check if full width selection (all columns)
     if (startCol == 0 && endCol == 8) {
       // Rotation mode
-      int direction = (action == editMultiIncreaseBig) ? -1 : 1;
+      int direction = (action == CellEditAction::multiIncreaseBig) ? -1 : 1;
       applyPhraseRotation(phraseIdx, startRow, endRow, direction);
       fullRedraw();
       handled = 1;
@@ -327,13 +327,13 @@ static int onEdit(int col, int row, enum CellEditAction action) {
         handled = applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell);
       }
     }
-  } else if (action == editCopy) {
+  } else if (action == CellEditAction::copy) {
     copyPhrase(phraseIdx, startCol, startRow, endCol, endRow, 0);
     handled = 1;
-  } else if (action == editCut) {
+  } else if (action == CellEditAction::cut) {
     copyPhrase(phraseIdx, startCol, startRow, endCol, endRow, 1);
     handled = 1;
-  } else if (action == editPaste) {
+  } else if (action == CellEditAction::paste) {
     const int rowsPasted = pastePhrase(phraseIdx, col, row);
     if (rowsPasted > 0) {
       // Move cursor below pasted data, or to last row if paste extends to end
@@ -343,7 +343,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     }
     fullRedraw();
     handled = 1;
-  } else if (action == editShallowClone) {
+  } else if (action == CellEditAction::shallowClone) {
     // Handle instrument column cloning
     if (startCol == 1 && endCol == 1) {
       int distinctCount = cloneInstrumentsInPhrase(phraseIdx, startRow, endRow);
@@ -505,8 +505,8 @@ static LoopRange getLoopRange(void) {
   return range;
 }
 
-static int getPlaybackLevel(void) {
-  return screenPlaybackPhrase;
+static ScreenPlaybackLevel getPlaybackLevel(void) {
+  return ScreenPlaybackLevel::phrase;
 }
 
 const AppScreen screenPhrase = {

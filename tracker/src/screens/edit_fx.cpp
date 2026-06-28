@@ -18,11 +18,11 @@ static enum InstrumentType getCurrentInstrumentType() {
 
 void fxEditFullDraw(uint8_t currentFX, uint8_t instrumentIdx);
 
-int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastValue, int isTable, uint8_t instrumentIdx) {
+int editFX(CellEditAction action, uint8_t* fx, uint8_t* lastValue, int isTable, uint8_t instrumentIdx) {
   int result = 0;
   action = convertMultiAction(action);
 
-  if (action == editClear) {
+  if (action == CellEditAction::clear) {
     // Clear FX
     if (fx[0] != EMPTY_VALUE_8) {
       lastValue[0] = fx[0];
@@ -31,7 +31,7 @@ int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastValue, int isTa
     fx[0] = EMPTY_VALUE_8;
     fx[1] = 0;
     result = 2;
-  } else if (action == editTap) {
+  } else if (action == CellEditAction::tap) {
     // Insert last FX
     if (fx[0] == EMPTY_VALUE_8) {
       fx[0] = lastValue[0];
@@ -40,17 +40,17 @@ int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastValue, int isTa
     lastValue[0] = fx[0];
     lastValue[1] = fx[1];
     result = 2;
-  } else if (action == editIncrease && fx[0] != EMPTY_VALUE_8) {
+  } else if (action == CellEditAction::increase && fx[0] != EMPTY_VALUE_8) {
     // Next FX
     if (fx[0] < fxTotalCount - 1) fx[0]++;
     lastValue[0] = fx[0];
     result = 2;
-  } else if (action == editDecrease && fx[0] != EMPTY_VALUE_8) {
+  } else if (action == CellEditAction::decrease && fx[0] != EMPTY_VALUE_8) {
     // Previous FX
     if (fx[0] > 0) fx[0]--;
     lastValue[0] = fx[0];
     result = 2;
-  } else if (action == editIncreaseBig || action == editDecreaseBig) {
+  } else if (action == CellEditAction::increaseBig || action == CellEditAction::decreaseBig) {
     // Show FX select screen with instrument context
     fxEditFullDraw(fx[0], instrumentIdx);
     result = 1;
@@ -59,7 +59,7 @@ int editFX(enum CellEditAction action, uint8_t* fx, uint8_t* lastValue, int isTa
   return result;
 }
 
-int editFXValue(enum CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable, uint8_t instrumentIdx) {
+int editFXValue(CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable, uint8_t instrumentIdx) {
   action = convertMultiAction(action);
 
   uint8_t bigStep = 16;

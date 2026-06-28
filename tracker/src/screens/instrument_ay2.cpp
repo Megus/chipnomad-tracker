@@ -218,13 +218,13 @@ static void drawCursor(int col, int row) {
   }
 }
 
-static void drawField(int col, int row, int state) {
+static void drawField(int col, int row, CellState state) {
   if (row < 3) return instrumentCommonDrawField(col, row, state);
 
   InstrumentAY2* ay2 = &chipnomadState->project.instruments[cInstrument].chip.ay2;
   int y = rowToY(row);
 
-  gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+  gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
 
   if (col == 0) {
     switch (row) {
@@ -268,7 +268,7 @@ static void drawField(int col, int row, int state) {
         gfxSetFgColor(appSettings.colorScheme.textDefault);
         gfxPrint(COL_RIGHT_X, y, isAutoEnv ? "N    " : "Pitch");
         // Draw the value
-        gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+        gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
         gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
         if (isAutoEnv) {
           gfxPrint(COL_RIGHT_VAL, y, byteToHex(ay2->oscEnvelope.autoEnvN));
@@ -281,7 +281,7 @@ static void drawField(int col, int row, int state) {
         gfxSetFgColor(appSettings.colorScheme.textDefault);
         gfxPrint(COL_RIGHT_X, y, isAutoEnv ? "D    " : "Fine ");
         // Draw the value
-        gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+        gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
         gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
         if (isAutoEnv) {
           gfxPrint(COL_RIGHT_VAL, y, byteToHex(ay2->oscEnvelope.autoEnvD));
@@ -302,7 +302,7 @@ static void drawField(int col, int row, int state) {
         break;
       case 10: // FM depth (visible for all soft osc types)
         // Draw the value
-        gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+        gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
         gfxPrint(COL_RIGHT_VAL, y, byteToHex(ay2->oscSoftware.fmDepth));
         break;
       case 11: // Software osc P1
@@ -311,7 +311,7 @@ static void drawField(int col, int row, int state) {
           gfxSetFgColor(appSettings.colorScheme.textDefault);
           gfxPrint(COL_RIGHT_X, y, softwareOscP1Name(ay2->oscSoftware.type));
           // Draw the value
-          gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+          gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
           gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
           uint8_t* p1 = softwareOscP1Ptr(&ay2->oscSoftware);
           if (p1) gfxPrint(COL_RIGHT_VAL, y, byteToHex(*p1));
@@ -343,7 +343,7 @@ static void drawField(int col, int row, int state) {
           gfxSetFgColor(appSettings.colorScheme.textDefault);
           gfxPrint(COL_RIGHT_X, y, softwareOscP2Name(ay2->oscSoftware.type));
           // Draw the value
-          gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+          gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
           gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
           uint8_t* p2 = softwareOscP2Ptr(&ay2->oscSoftware);
           if (p2) gfxPrint(COL_RIGHT_VAL, y, byteToHex(*p2));
@@ -356,7 +356,7 @@ static void drawField(int col, int row, int state) {
   }
 }
 
-static int onEdit(int col, int row, enum CellEditAction action) {
+static int onEdit(int col, int row, CellEditAction action) {
   if (row < 3) return instrumentCommonOnEdit(col, row, action);
 
   int handled = 0;
@@ -410,8 +410,8 @@ static int onEdit(int col, int row, enum CellEditAction action) {
               ay2->oscEnvelope.autoEnvD = 0;
             }
             // Redraw the fields (which will also redraw labels)
-            drawField(1, 5, 0);
-            drawField(1, 6, 0);
+            drawField(1, 5, CellState::normal);
+            drawField(1, 6, CellState::normal);
           }
         }
         break;
@@ -458,9 +458,9 @@ static int onEdit(int col, int row, enum CellEditAction action) {
             gfxClearRect(COL_RIGHT_X, y12, 14, 1);  // Clear label + value area for P2 (row 12)
 
             // Redraw all affected rows
-            drawField(1, 10, 0);  // FM depth (always visible, might need refresh)
-            drawField(1, 11, 0);  // P1 (conditional)
-            drawField(1, 12, 0);  // P2 (conditional)
+            drawField(1, 10, CellState::normal);  // FM depth (always visible, might need refresh)
+            drawField(1, 11, CellState::normal);  // P1 (conditional)
+            drawField(1, 12, CellState::normal);  // P2 (conditional)
           }
         }
         break;
@@ -487,7 +487,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
           uint8_t* p1 = softwareOscP1Ptr(&ay2->oscSoftware);
           if (p1) {
             // Special handling for Clear action on pulse width - reset to 0x80 (50% duty cycle)
-            if (action == editClear && (ay2->oscSoftware.type == aySoftwareOscPulse || ay2->oscSoftware.type == aySoftwareOscSyncEnvelope)) {
+            if (action == CellEditAction::clear && (ay2->oscSoftware.type == aySoftwareOscPulse || ay2->oscSoftware.type == aySoftwareOscSyncEnvelope)) {
               *p1 = 0x80;
               handled = 1;
               screenMessage(0, "Pulse width %hhu", *p1);

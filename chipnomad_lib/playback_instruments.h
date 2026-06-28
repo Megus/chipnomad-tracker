@@ -8,11 +8,11 @@ extern "C" {
 #include "playback.h"
 #include "playback_modulation.h"
 
-typedef struct PlaybackInstrument {
+struct PlaybackInstrument {
   void (*init)(PlaybackState* state, int trackIdx);
   void (*handle)(PlaybackState* state, int trackIdx);
 
-} PlaybackInstrument;
+};
 
 // Apply ADSR/AHD volume modulation and return the resulting volume (0-maxVolume)
 // Returns -1 if the modulation is not ADSR/AHD (e.g., LFO)

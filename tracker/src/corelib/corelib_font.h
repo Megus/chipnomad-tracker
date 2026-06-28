@@ -8,18 +8,18 @@ extern "C" {
 #include <stdint.h>
 
 // Font resolution entry
-typedef struct {
+struct FontResolution {
   int charWidth;    // Character width in pixels
   int charHeight;   // Character height in pixels
   const uint8_t* data;    // Font bitmap data (95 chars, ASCII 32-126)
-} FontResolution;
+};
 
 // Font with multiple resolutions
-typedef struct {
+struct Font {
   char name[16];
   FontResolution resolutions[5];  // Up to 5 resolutions
   int resolutionCount;
-} Font;
+};
 
 /**
  * @brief Get the default built-in font

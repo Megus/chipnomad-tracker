@@ -9,8 +9,8 @@
 int projectCommonColumnCount(int row);
 void projectCommonDrawStatic(void);
 void projectCommonDrawCursor(int col, int row);
-void projectCommonDrawField(int col, int row, int state);
-int projectCommonOnEdit(int col, int row, enum CellEditAction action);
+void projectCommonDrawField(int col, int row, CellState state);
+int projectCommonOnEdit(int col, int row, CellEditAction action);
 
 extern ScreenData screenProjectAY;
 

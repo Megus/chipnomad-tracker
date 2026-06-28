@@ -20,8 +20,8 @@ extern int startRow;
 int exportCommonColumnCount(int row);
 void exportCommonDrawStatic(void);
 void exportCommonDrawCursor(int col, int row);
-void exportCommonDrawField(int col, int row, int state);
-int exportCommonOnEdit(int col, int row, enum CellEditAction action);
+void exportCommonDrawField(int col, int row, CellState state);
+int exportCommonOnEdit(int col, int row, CellEditAction action);
 void generateExportPath(char* outputPath, int maxLen, const char* extension);
 void generatePSGExportPath(char* outputPath, int maxLen);
 

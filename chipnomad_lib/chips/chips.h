@@ -8,7 +8,17 @@ extern "C" {
 #include <stdint.h>
 #include "../project.h"
 
-typedef struct SoundChip {
+/**
+* Chip emulation quality levels
+*/
+enum class ChipNomadQuality : int {
+  low,
+  medium,
+  high,
+  best
+};
+
+struct SoundChip {
   void* userdata;
   uint8_t regs[256];  // Space for 256 chip registers
 
@@ -19,9 +29,9 @@ typedef struct SoundChip {
   void (*setRegister)(struct SoundChip* self, uint16_t reg, uint8_t value);
   void (*setTimerFunc)(struct SoundChip* self, int (*timerFunc)(struct SoundChip* self, void* userdata), void* timerUserdata);
   void (*render)(struct SoundChip* self, float* buffer, int samples);
-  void (*setQuality)(struct SoundChip* self, int quality);
+  void (*setQuality)(struct SoundChip* self, ChipNomadQuality quality);
   int (*cleanup)(struct SoundChip* self);
-} SoundChip;
+};
 
 SoundChip createChipAY(int sampleRate, ChipSetup setup);
 void updateChipAYType(SoundChip* chip, uint8_t isYM);

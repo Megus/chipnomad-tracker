@@ -27,12 +27,12 @@ static void getInstrumentFilename(char* filename, int size) {
 
 typedef int (*ImportHandler)(const char* path, int instrumentIdx);
 
-typedef struct {
+struct InstrumentFormat {
   const char* extension;
   ImportHandler handler;
   const char* successMsg;
   const char* errorMsg;
-} InstrumentFormat;
+};
 
 static const InstrumentFormat importFormats[] = {
   { ".vts", instrumentLoadVTS, "VTS sample imported", "Failed to import VTS" },
@@ -100,8 +100,8 @@ static void onInstrumentCancelled(void) {
   screenSetup(&screenInstrument, cInstrument);
 }
 
-static void drawRowHeader(int row, int state);
-static void drawColHeader(int col, int state);
+static void drawRowHeader(int row, CellState state);
+static void drawColHeader(int col, CellState state);
 
 
 
@@ -158,8 +158,8 @@ static void draw(void) {
 // Common part of the form
 //
 
-static void drawRowHeader(int row, int state) {}
-static void drawColHeader(int col, int state) {}
+static void drawRowHeader(int row, CellState state) {}
+static void drawColHeader(int col, CellState state) {}
 
 int instrumentCommonColumnCount(int row) {
   if (row == 0) {
@@ -210,10 +210,10 @@ void instrumentCommonDrawCursor(int col, int row) {
   }
 }
 
-void instrumentCommonDrawField(int col, int row, int state) {
+void instrumentCommonDrawField(int col, int row, CellState state) {
   gfxSetFgColor(appSettings.colorScheme.textDefault);
 
-  gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+  gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
 
   if (row == 0 && col == 0) {
     // Instrument type
@@ -397,8 +397,8 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   return 0;
 }
 
-static int getPlaybackLevel(void) {
-  return screenPlaybackPhrase;
+static ScreenPlaybackLevel getPlaybackLevel(void) {
+  return ScreenPlaybackLevel::phrase;
 }
 
 const AppScreen screenInstrument = {

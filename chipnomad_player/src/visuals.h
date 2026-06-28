@@ -10,20 +10,20 @@
 
 #define MAX_HISTORY_SIZE 64
 
-typedef struct ScrollPosition {
+struct ScrollPosition {
   int songRow;
   int chainRow;
   int phraseRow;
   int valid;
-} ScrollPosition;
+};
 
-typedef struct TrackHistory {
+struct TrackHistory {
   ScrollPosition positions[MAX_HISTORY_SIZE];
   int count;
   int writeIndex;
-} TrackHistory;
+};
 
-typedef struct VisualState {
+struct VisualState {
   SDL_Renderer* renderer;
   Project* project;
   PlaybackState* playback;
@@ -32,7 +32,7 @@ typedef struct VisualState {
   FT_Face ftFace;
   VisualizerConfig* config;
   TrackHistory trackHistory[PROJECT_MAX_TRACKS];
-} VisualState;
+};
 
 int visualsInit(VisualState* visualState);
 void visualsRender(VisualState* visualState);

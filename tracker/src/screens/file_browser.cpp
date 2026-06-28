@@ -13,12 +13,12 @@
 #define MAX_DISPLAY_FILE 34
 #define BOUNDARY_WAIT_FRAMES (SCROLL_DELAY_FRAMES * 2)
 
-typedef struct {
+struct ScrollState {
   int lastSelectedIndex;
   int selectionFrameCount;
   int scrollOffset;
   int scrollDirection;
-} ScrollState;
+};
 
 static FileEntry* entries = NULL;
 static int entryCount = 0;

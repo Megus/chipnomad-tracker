@@ -49,14 +49,13 @@ static Bitmap* previewBitmapNext3 = NULL;  // Preview for wavetable +3
 
 static int getColumnCount(int row);
 static void drawStatic(void);
-static void drawField(int col, int row, int state);
-static void drawRowHeader(int row, int state);
-static void drawColHeader(int col, int state);
+static void drawField(int col, int row, CellState state);
+static void drawRowHeader(int row, CellState state);
+static void drawColHeader(int col, CellState state);
 static void drawCursor(int col, int row);
 static void drawSelection(int col1, int row1, int col2, int row2);
-static int onEdit(int col, int row, enum CellEditAction action);
+static int onEdit(int col, int row, CellEditAction action);
 static int inputScreenNavigation(int keys, int tapCount);
-static int getPlaybackLevel(void);
 
 // Callbacks for file operations
 static void onLoadFileSelected(const char* path);
@@ -238,13 +237,13 @@ static void drawStatic(void) {
   }
 }
 
-static void drawRowHeader(int row, int state) {
+static void drawRowHeader(int row, CellState state) {
   // No row headers needed for this screen
   (void)row;
   (void)state;
 }
 
-static void drawColHeader(int col, int state) {
+static void drawColHeader(int col, CellState state) {
   // No column headers needed for this screen
   (void)col;
   (void)state;
@@ -274,12 +273,12 @@ static void drawCursor(int col, int row) {
   }
 }
 
-static void drawField(int col, int row, int state) {
+static void drawField(int col, int row, CellState state) {
   const ColorScheme cs = appSettings.colorScheme;
 
   if (row == 0) {
     // Buttons row - need to redraw to clear cursor
-    gfxSetFgColor(state == stateFocus ? cs.textValue : cs.textDefault);
+    gfxSetFgColor(state == CellState::focus ? cs.textValue : cs.textDefault);
     if (col == 0) {
       gfxClearRect(0, 2, 4, 1);  // Clear area for "Load" button
       gfxPrint(0, 2, "Load");
@@ -296,7 +295,7 @@ static void drawField(int col, int row, int state) {
     uint8_t* wavetable = chipnomadState->project.ayWavetables[wavetableIdx];
     uint8_t value = wavetable[col];
 
-    gfxSetFgColor(state == stateFocus ? cs.textValue : cs.textDefault);
+    gfxSetFgColor(state == CellState::focus ? cs.textValue : cs.textDefault);
 
     // Each wavetable value is 4-bit (0-15), display as single hex digit
     char hex[2];
@@ -363,12 +362,12 @@ static void onSaveCancelled(void) {
   screenSetup(&screenWavetable, wavetableIdx);
 }
 
-static int onEdit(int col, int row, enum CellEditAction action) {
+static int onEdit(int col, int row, CellEditAction action) {
   if (row == 0) {
     // Buttons row
     if (col == 0 || col == 1) {
       // Load/Save buttons
-      if (action == editTap) {
+      if (action == CellEditAction::tap) {
         if (col == 0) {
           // Load button - open file browser to select .aywave file
           fileBrowserSetup("LOAD WAVETABLES", ".aywave", appSettings.wavetablePath, onLoadFileSelected, onLoadCancelled);
@@ -387,26 +386,26 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 
       // Use edit function for 16-bit value with range 1-256
       // editIncrease/editDecrease with wraparound
-      if (action == editIncrease) {
+      if (action == CellEditAction::increase) {
         wavetableSaveCount++;
         if (wavetableSaveCount > 256) wavetableSaveCount = 1;
         return 1;
-      } else if (action == editDecrease) {
+      } else if (action == CellEditAction::decrease) {
         wavetableSaveCount--;
         if (wavetableSaveCount < 1) wavetableSaveCount = 256;
         return 1;
-      } else if (action == editIncreaseBig) {
+      } else if (action == CellEditAction::increaseBig) {
         wavetableSaveCount += 16;
         if (wavetableSaveCount > 256) wavetableSaveCount = 256;
         return 1;
-      } else if (action == editDecreaseBig) {
+      } else if (action == CellEditAction::decreaseBig) {
         if (wavetableSaveCount > 16) {
           wavetableSaveCount -= 16;
         } else {
           wavetableSaveCount = 1;
         }
         return 1;
-      } else if (action == editClear) {
+      } else if (action == CellEditAction::clear) {
         wavetableSaveCount = 1;  // Reset to 1 (default)
         return 1;
       }
@@ -493,8 +492,8 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   return screenInput(&screen, isKeyDown, keys, tapCount);
 }
 
-static int getPlaybackLevel(void) {
-  return screenPlaybackPhrase;
+static ScreenPlaybackLevel getPlaybackLevel(void) {
+  return ScreenPlaybackLevel::phrase;
 }
 
 const AppScreen screenWavetable = {

@@ -27,12 +27,12 @@ static MuteSoloState muteSoloState = MUTE_SOLO_EMPTY;
 
 static int getColumnCount(int row);
 static void drawStatic(void);
-static void drawField(int col, int row, int state);
-static void drawRowHeader(int row, int state);
-static void drawColHeader(int col, int state);
+static void drawField(int col, int row, CellState state);
+static void drawRowHeader(int row, CellState state);
+static void drawColHeader(int col, CellState state);
 static void drawCursor(int col, int row);
 static void drawSelection(int col1, int row1, int col2, int row2);
-static int onEdit(int col, int row, enum CellEditAction action);
+static int onEdit(int col, int row, CellEditAction action);
 static LoopRange getLoopRange(void);
 
 static ScreenData screen = {
@@ -88,7 +88,7 @@ static void drawStatic(void) {
   gfxPrint(0, 0, "SONG");
 }
 
-static void drawField(int col, int row, int state) {
+static void drawField(int col, int row, CellState state) {
   if (row < screen.topRow || row >= (screen.topRow + 16)) return; // Don't draw outside of the viewing area
 
   int chain = chipnomadState->project.song[row][col];
@@ -102,18 +102,18 @@ static void drawField(int col, int row, int state) {
   gfxPrint(3 + col * 3, 3 + row - screen.topRow, chain == EMPTY_VALUE_16 ? "--" : byteToHex(chain));
 }
 
-static void drawRowHeader(int row, int state) {
+static void drawRowHeader(int row, CellState state) {
   const ColorScheme cs = appSettings.colorScheme;
 
-  gfxSetFgColor((state & stateFocus) ? cs.textDefault : cs.textInfo);
+  gfxSetFgColor((state == CellState::focus) ? cs.textDefault : cs.textInfo);
   gfxPrint(0, 3 + row - screen.topRow, byteToHex(row));
 }
 
-static void drawColHeader(int col, int state) {
+static void drawColHeader(int col, CellState state) {
   static char digit[2] = "0";
   const ColorScheme cs = appSettings.colorScheme;
 
-  gfxSetFgColor((state & stateFocus) ? cs.textDefault : cs.textInfo);
+  gfxSetFgColor((state == CellState::focus) ? cs.textDefault : cs.textInfo);
   digit[0] = col + 49;
   gfxPrint(3 + col * 3, 2, digit);
 }
@@ -199,8 +199,8 @@ static int inputScreenNavigation(int keys, int tapCount) {
   return 0;
 }
 
-static int editCell(int col, int row, enum CellEditAction action) {
-  if (action == editDoubleTap) {
+static int editCell(int col, int row, CellEditAction action) {
+  if (action == CellEditAction::doubleTap) {
     int current = chipnomadState->project.song[row][col];
     if (current != EMPTY_VALUE_16) {
       int nextEmpty = findEmptyChain(&chipnomadState->project, current + 1);
@@ -212,7 +212,7 @@ static int editCell(int col, int row, enum CellEditAction action) {
       }
     }
     return 1;
-  } else if (action == editClear) {
+  } else if (action == CellEditAction::clear) {
     if (chipnomadState->project.song[row][col] != EMPTY_VALUE_16) {
       // Clear the value
       chipnomadState->project.song[row][col] = EMPTY_VALUE_16;
@@ -223,7 +223,7 @@ static int editCell(int col, int row, enum CellEditAction action) {
       fullRedraw();
       return 1;
     }
-  } else if (action == editShallowClone) {
+  } else if (action == CellEditAction::shallowClone) {
     int current = chipnomadState->project.song[row][col];
     if (current != EMPTY_VALUE_16) {
       int cloned = cloneChainToNext(current);
@@ -234,7 +234,7 @@ static int editCell(int col, int row, enum CellEditAction action) {
       }
     }
     return 0;
-  } else if (action == editDeepClone) {
+  } else if (action == CellEditAction::deepClone) {
     int current = chipnomadState->project.song[row][col];
     if (current != EMPTY_VALUE_16) {
       // Deep clone the phrases in the existing chain (don't create a new chain)
@@ -247,17 +247,17 @@ static int editCell(int col, int row, enum CellEditAction action) {
   return edit16withLimit(action, &chipnomadState->project.song[row][col], &lastChainValue, 16, PROJECT_MAX_CHAINS - 1);
 }
 
-static int onEdit(int col, int row, enum CellEditAction action) {
+static int onEdit(int col, int row, CellEditAction action) {
   int handled = 0;
   int startCol, startRow, endCol, endRow;
   getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
 
-  if (action == editSwitchSelection) {
+  if (action == CellEditAction::switchSelection) {
     return switchSongSelectionMode(&screen);
-  } else if (action == editMultiIncreaseBig || action == editMultiDecreaseBig) {
+  } else if (action == CellEditAction::multiIncreaseBig || action == CellEditAction::multiDecreaseBig) {
     if (screen.selectMode != 1) return 0;
 
-    if (action == editMultiDecreaseBig) {
+    if (action == CellEditAction::multiDecreaseBig) {
       handled = applySongMoveDown(startCol, startRow, endCol, endRow);
       if (handled) {
         screen.selectStartRow++;
@@ -282,7 +282,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     if (handled) {
       fullRedraw();
     }
-  } else if (action == editShallowClone || action == editDeepClone) {
+  } else if (action == CellEditAction::shallowClone || action == CellEditAction::deepClone) {
     int clonedCount = 0;
     for (int r = startRow; r <= endRow; r++) {
       for (int c = startCol; c <= endCol; c++) {
@@ -290,7 +290,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       }
     }
     if (clonedCount > 0) {
-      const char* msg = (action == editShallowClone) ? "Shallow-cloned" : "Deep-cloned";
+      const char* msg = (action == CellEditAction::shallowClone) ? "Shallow-cloned" : "Deep-cloned";
       handled = 1;
       screenMessage(MESSAGE_TIME, "%s %d chain%s", msg, clonedCount, clonedCount == 1 ? "" : "s");
     } else {
@@ -298,13 +298,13 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     }
   } else if (applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell)) {
     handled = 1;
-  } else if (action == editCopy) {
+  } else if (action == CellEditAction::copy) {
     copySong(startCol, startRow, endCol, endRow, 0);
     handled = 1;
-  } else if (action == editCut) {
+  } else if (action == CellEditAction::cut) {
     copySong(startCol, startRow, endCol, endRow, 1);
     handled = 1;
-  } else if (action == editPaste) {
+  } else if (action == CellEditAction::paste) {
     const int rowsPasted = pasteSong(col, row);
     if (rowsPasted > 0) {
       // Move cursor below pasted data, or to last row if paste extends to end
@@ -335,7 +335,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
             // Toggle highlight on triple-tap Opt
             chipnomadState->project.songHighlight[screen.cursorRow][screen.cursorCol] ^= 1;
             projectModified = 1;
-            drawField(screen.cursorCol, screen.cursorRow, stateFocus);
+            drawField(screen.cursorCol, screen.cursorRow, CellState::focus);
             drawCursor(screen.cursorCol, screen.cursorRow);
           } else {
             muteSoloState = MUTE_SOLO_OPT_PRESSED;
@@ -460,8 +460,8 @@ static LoopRange getLoopRange(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static int getPlaybackLevel(void) {
-  return screenPlaybackSong;
+static ScreenPlaybackLevel getPlaybackLevel(void) {
+  return ScreenPlaybackLevel::song;
 }
 
 const AppScreen screenSong = {

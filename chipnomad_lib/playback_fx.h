@@ -25,26 +25,26 @@ enum PlaybackArpType {
   arpTypeMax,
 };
 
-typedef struct PlaybackFXData_Bend {
+struct PlaybackFXData_Bend {
   int speed;
-} PlaybackFXData_Bend;
+};
 
-typedef struct PlaybackFXData_Slide {
+struct PlaybackFXData_Slide {
   int16_t startPeriod;
   int16_t endPeriod;
-} PlaybackFXData_Slide;
+};
 
-typedef struct PlaybackFXData_Arpeggio {
+struct PlaybackFXData_Arpeggio {
   int speed;
   enum PlaybackArpType type;
-} PlaybackFXData_Arpeggio;
+};
 
-typedef struct PlaybackFXData_Retrigger {
+struct PlaybackFXData_Retrigger {
   PhraseRow row;
   int counter;
-} PlaybackFXData_Retrigger;
+};
 
-typedef struct PlaybackFXState {
+struct PlaybackFXState {
   uint8_t isOn;
   uint8_t fxValue;
   int counter;
@@ -55,7 +55,7 @@ typedef struct PlaybackFXState {
     PlaybackFXData_Arpeggio arpeggio;
     PlaybackFXData_Retrigger retrigger;
   } d;
-} PlaybackFXState;
+};
 
 
 #ifdef __cplusplus

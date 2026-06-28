@@ -109,8 +109,8 @@ static void cancelConfirm(void) {
   screenSetup(&screenProject, 0);
 }
 
-static void drawRowHeader(int row, int state);
-static void drawColHeader(int col, int state);
+static void drawRowHeader(int row, CellState state);
+static void drawColHeader(int col, CellState state);
 
 static ScreenData screenProjectCommon = {
   .rows = 8,
@@ -158,8 +158,8 @@ static void draw(void) {
 // Common part of the form
 //
 
-static void drawRowHeader(int row, int state) {}
-static void drawColHeader(int col, int state) {}
+static void drawRowHeader(int row, CellState state) {}
+static void drawColHeader(int col, CellState state) {}
 
 int projectCommonColumnCount(int row) {
   if (row == 0) {
@@ -231,8 +231,8 @@ void projectCommonDrawCursor(int col, int row) {
   }
 }
 
-void projectCommonDrawField(int col, int row, int state) {
-  gfxSetFgColor(state == stateFocus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+void projectCommonDrawField(int col, int row, CellState state) {
+  gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
 
   if (row == 0) {
     if (col == 0) {
@@ -358,7 +358,7 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
     // Tick rate
     if (col == 0) {
       // Integer part (1-200), clear sets to 50
-      if (action == editClear) {
+      if (action == CellEditAction::clear) {
         tickRateI = 50;
         handled = 1;
       } else {
@@ -425,8 +425,8 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   return 0;
 }
 
-static int getPlaybackLevel(void) {
-  return screenPlaybackSong;
+static ScreenPlaybackLevel getPlaybackLevel(void) {
+  return ScreenPlaybackLevel::song;
 }
 
 const AppScreen screenProject = {

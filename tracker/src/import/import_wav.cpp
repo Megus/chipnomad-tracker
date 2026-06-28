@@ -5,13 +5,13 @@
 #include <stdint.h>
 
 // WAV file structures (little-endian)
-typedef struct {
+struct WavHeader {
   char riffId[4];        // "RIFF"
   uint32_t fileSize;     // File size - 8
   char waveId[4];        // "WAVE"
-} WavHeader;
+};
 
-typedef struct {
+struct WavFmtChunk {
   char chunkId[4];       // "fmt "
   uint32_t chunkSize;    // Size of fmt chunk (16 for PCM)
   uint16_t audioFormat;  // 1 = PCM
@@ -20,12 +20,12 @@ typedef struct {
   uint32_t byteRate;     // sampleRate * numChannels * bitsPerSample/8
   uint16_t blockAlign;   // numChannels * bitsPerSample/8
   uint16_t bitsPerSample; // 8, 16, 24, or 32
-} WavFmtChunk;
+};
 
-typedef struct {
+struct WavDataChunkHeader {
   char chunkId[4];       // "data"
   uint32_t chunkSize;    // Size of data in bytes
-} WavDataChunkHeader;
+};
 
 // Error messages
 static const char* errorMessages[] = {

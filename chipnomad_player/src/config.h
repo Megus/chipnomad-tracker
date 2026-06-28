@@ -14,7 +14,7 @@ typedef enum {
   PLAYER_MODE_SCROLL
 } PlayerMode;
 
-typedef struct VisualizerConfig {
+struct VisualizerConfig {
   int windowWidth;
   int windowHeight;
   int fontSize;
@@ -29,7 +29,7 @@ typedef struct VisualizerConfig {
   PhraseRenderMode phraseRenderMode;
   PlayerMode playerMode;
   int scrollRows;
-} VisualizerConfig;
+};
 
 void configInit(VisualizerConfig* config);
 void configLoad(VisualizerConfig* config, const char* filename);

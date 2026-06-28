@@ -8,7 +8,7 @@
 #include "chipnomad_lib.h"
 
 // WAV implementation data
-typedef struct {
+struct WAVExporterData {
   FILE* file;
   int sampleRate;
   int channels;
@@ -17,10 +17,10 @@ typedef struct {
   int allTracksStopped;
   int renderedSeconds;
   char filename[1024];
-} WAVExporterData;
+};
 
 // WAV Stems implementation data
-typedef struct {
+struct WAVStemsExporterData {
   FILE** files;
   int trackCount;
   int currentTrack;
@@ -31,9 +31,9 @@ typedef struct {
   int allTracksStopped;
   int renderedSeconds;
   char basePath[512];
-} WAVStemsExporterData;
+};
 
-typedef struct {
+struct WAVHeader {
   char riff[4];
   uint32_t fileSize;
   char wave[4];
@@ -47,7 +47,7 @@ typedef struct {
   uint16_t bitsPerSample;
   char data[4];
   uint32_t dataSize;
-} WAVHeader;
+};
 
 // TODO: Stop using a global variable and instead have an allocated buffer in the exporter class
 static float* wavRenderBuffer = NULL;
@@ -187,7 +187,7 @@ Exporter* createWAVExporter(const char* filename, Project* project, int startRow
   chipnomadInitChips(exporter->chipnomadState, sampleRate, NULL);
 
   // Use best quality for export
-  chipnomadSetQuality(exporter->chipnomadState, CHIPNOMAD_QUALITY_BEST);
+  chipnomadSetQuality(exporter->chipnomadState, ChipNomadQuality::best);
 
   playbackStartSong(&exporter->chipnomadState->playbackState, startRow, 0, 0);
 
@@ -331,7 +331,7 @@ Exporter* createWAVStemsExporter(const char* basePath, Project* project, int sta
   exporter->chipnomadState->project = *project;
   playbackInit(&exporter->chipnomadState->playbackState, &exporter->chipnomadState->project);
   chipnomadInitChips(exporter->chipnomadState, sampleRate, NULL);
-  chipnomadSetQuality(exporter->chipnomadState, CHIPNOMAD_QUALITY_BEST);
+  chipnomadSetQuality(exporter->chipnomadState, ChipNomadQuality::best);
 
   playbackStartSong(&exporter->chipnomadState->playbackState, startRow, 0, 0);
   for (int t = 0; t < PROJECT_MAX_TRACKS; t++) {

@@ -8,7 +8,7 @@ extern "C" {
 #include <stdint.h>
 #include "project_instruments.h"
 
-typedef struct PlaybackModState {
+struct PlaybackModState {
   const Modulation* modulation; // Pointer to the source Modulation struct
   int16_t amountOffset;
   int16_t p1Offset;
@@ -24,7 +24,7 @@ typedef struct PlaybackModState {
   // Cached values to detect changes that require reinitialization
   enum ModulationType cachedType;
   uint8_t cachedP2; // For LFO trigger mode detection
-} PlaybackModState;
+};
 
 void playbackModInit(PlaybackModState* state, Modulation* mod);
 void playbackModNext(PlaybackModState* state);

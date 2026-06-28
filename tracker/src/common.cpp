@@ -3,6 +3,7 @@
 #include "corelib/corelib_gfx.h"
 #include <stdio.h>
 #include <string.h>
+#include <chipnomad_lib.h>
 
 static char settingsPath[PATH_LENGTH + 32];
 static char autosavePath[PATH_LENGTH + 32];
@@ -18,7 +19,7 @@ AppSettings appSettings = {
   .keyRepeatDelay = 16,
   .keyRepeatSpeed = 2,
   .mixVolume = 20000.0f / 32767.0f,
-  .quality = CHIPNOMAD_QUALITY_MEDIUM,
+  .quality = (int)ChipNomadQuality::medium,
   .pitchConflictWarning = 0,
   .colorScheme = {
     .background = 0x000f1a,

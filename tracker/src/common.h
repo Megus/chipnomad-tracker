@@ -17,7 +17,7 @@ extern "C" {
 #define PATH_LENGTH (4096)
 #define THEME_NAME_LENGTH (16)
 
-typedef struct ColorScheme {
+struct ColorScheme {
   int background;
   int textEmpty;
   int textInfo;
@@ -28,10 +28,10 @@ typedef struct ColorScheme {
   int cursor;
   int selection;
   int warning;
-} ColorScheme;
+};
 
 // Key mapping: 8 buttons × 3 keys each
-typedef struct KeyMapping {
+struct KeyMapping {
   InputCode keyUp[3];
   InputCode keyDown[3];
   InputCode keyLeft[3];
@@ -40,9 +40,9 @@ typedef struct KeyMapping {
   InputCode keyOpt[3];
   InputCode keyPlay[3];
   InputCode keyShift[3];
-} KeyMapping;
+};
 
-typedef struct AppSettings {
+struct AppSettings {
   int screenWidth;
   int screenHeight;
   int audioSampleRate;
@@ -66,7 +66,7 @@ typedef struct AppSettings {
   char fontFolderPath[PATH_LENGTH + 1];
   char samplePath[PATH_LENGTH + 1];
   char wavetablePath[PATH_LENGTH + 1];
-} AppSettings;
+};
 
 extern AppSettings appSettings;
 extern int* pSongRow;

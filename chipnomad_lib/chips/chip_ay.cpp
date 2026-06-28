@@ -97,22 +97,22 @@ void updateChipAYClock(SoundChip* self, int clockRate, int sampleRate) {
   ay->step = (float)clockRate / (sampleRate * 8 * 8); // 8 * DECIMATE_FACTOR
 }
 
-static void setQuality(SoundChip* self, int quality) {
+static void setQuality(SoundChip* self, ChipNomadQuality quality) {
   struct ayumi* ay = (struct ayumi*)self->userdata;
 
   // Map chip-agnostic quality to Ayumi filter functions
   ayumi_filter_func filter_func;
   switch (quality) {
-    case CHIPNOMAD_QUALITY_LOW:
+    case ChipNomadQuality::low:
       filter_func = ayumi_filter_low;
       break;
-    case CHIPNOMAD_QUALITY_MEDIUM:
+    case ChipNomadQuality::medium:
       filter_func = ayumi_filter_medium;
       break;
-    case CHIPNOMAD_QUALITY_HIGH:
+    case ChipNomadQuality::high:
       filter_func = ayumi_filter_high;
       break;
-    case CHIPNOMAD_QUALITY_BEST:
+    case ChipNomadQuality::best:
       filter_func = ayumi_filter_best;
       break;
     default:
