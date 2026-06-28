@@ -286,6 +286,9 @@ static void finalizeVTSInstrument(Table* table, int rowCount, int loopRow,
   }
 }
 
+// Export with C linkage for header compatibility
+extern "C" {
+
 int instrumentLoadVTS(const char* path, int instrumentIdx) {
   if (instrumentIdx < 0 || instrumentIdx >= PROJECT_MAX_INSTRUMENTS) {
     return 1;
@@ -360,3 +363,5 @@ int instrumentLoadVTSFromMemory(char** lines, int lineCount, int instrumentIdx, 
 
   return 0;
 }
+
+} // extern "C"
