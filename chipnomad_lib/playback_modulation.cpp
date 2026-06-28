@@ -210,6 +210,24 @@ static void handleLFO(PlaybackModState* state) {
       break;
     }
 
+    case lfoShapeUniTri: { // Unipolar Triangle: 0 to 32385 to 0
+      // Triangle wave that goes 0→max→0 over one period
+      float x = phase * 2.0f; // Scale to 0-2
+      if (x < 1.0f) {
+        envelopeValue = (int16_t)(x * MOD_MAX_RANGE_F); // 0 to 32385
+      } else {
+        envelopeValue = (int16_t)(MOD_MAX_RANGE_F * (2.0f - x)); // 32385 to 0
+      }
+      break;
+    }
+
+    case lfoShapeUniSin: { // Unipolar Sine: 0 to 32385 to 0
+      // Smooth sine wave: (1 - cos(phase * 2π)) / 2
+      // Starts slow from 0, accelerates to max, decelerates back to 0
+      envelopeValue = (int16_t)((1.0f - cosf(phase * 2.0f * 3.14159265f)) * 0.5f * MOD_MAX_RANGE_F);
+      break;
+    }
+
     case lfoShapeRampDown: { // Ramp down: unipolar 32385 to 0
       envelopeValue = (int16_t)(MOD_MAX_RANGE_F * (1.0f - phase));
       break;

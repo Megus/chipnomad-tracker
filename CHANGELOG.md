@@ -1,5 +1,25 @@
 # ChipNomad changelog
 
+## v1.0.4b (not yet published)
+- The all-new modulation system similar to M8 tracker. Use 4 sources to modulate different values.
+  - 3 modulation types:
+    - ADSR — attack-decay-sustain-release
+    - AHD — attack-hold-decay
+    - LFO with 10 types: Triangle, Sine, Unipolar Triangle, Unipolar Sign, Ramp Down, Ramp Up, Exp Down, Exp Up, Square, Random
+  - AY Plus Instrument. It uses synth-like approach to AY with using the oscillator concept.
+    - Tone, Noise, and Envelope oscillators
+    - Software oscillator with multiple types:
+      - Pulse — software square wave with pulse width control (16/256 steps)
+      - Sync Tone — hard sync'ish effect for Tone oscillator
+      - Sync Envelope — hard sync for Envelope oscillator
+      - Wavetable — 32-step wavetables (up to 256 waves per project)
+      - Tone FM — simple FM for the Tone oscillator
+      - Envelope FM — simple FM for the Envelope oscillator
+    - All software oscillators support simple FM
+  - AY Sample Instrument:
+    - Load 8/16/24/32 mono/stereo WAVs of any lenth. They will be converted to 8-bit mono and truncated up to 16kb.
+  - New phrase/table FX to control new instruments and the modulation system
+
 ## v1.0.0 (April 25, 2026)
 
 - *PLATFORM*: Android (phones, tablets, handhelds), Miyoo Mini (Miyoo Ports)

@@ -98,6 +98,8 @@ static const char* lfoShapeName(uint8_t shape) {
   switch (shape) {
     case lfoShapeTri:      return "Tri   ";
     case lfoShapeSin:      return "Sin   ";
+    case lfoShapeUniTri:   return "UniTri";
+    case lfoShapeUniSin:   return "UniSin";
     case lfoShapeRampDown: return "RampDn";
     case lfoShapeRampUp:   return "RampUp";
     case lfoShapeExpDown:  return "ExpDn ";

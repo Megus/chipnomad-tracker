@@ -31,12 +31,14 @@ enum ModulationType {
 enum LFOShape {
   lfoShapeTri = 0,
   lfoShapeSin = 1,
-  lfoShapeRampDown = 2,
-  lfoShapeRampUp = 3,
-  lfoShapeExpDown = 4,
-  lfoShapeExpUp = 5,
-  lfoShapeSquare = 6,
-  lfoShapeRandom = 7,
+  lfoShapeUniTri = 2,
+  lfoShapeUniSin = 3,
+  lfoShapeRampDown = 4,
+  lfoShapeRampUp = 5,
+  lfoShapeExpDown = 6,
+  lfoShapeExpUp = 7,
+  lfoShapeSquare = 8,
+  lfoShapeRandom = 9,
   lfoShapeTotalCount,
 };
 

@@ -1272,6 +1272,165 @@ TEST_CASE("test_legacy_AY1_volume_sustain_scaling") {
   }
 }
 
+// Test LFO UniTri (unipolar triangle) goes from 0 to max to 0
+TEST_CASE("test_LFO_UniTri_unipolar_range") {
+  Modulation mod = {
+    .type = modLFO,
+    .destination = 0,
+    .amount = 127,
+    .p1 = lfoShapeUniTri,
+    .p2 = lfoTrigFree,
+    .p3 = 16,  // 16 tick period
+    .p4 = 0
+  };
+
+  PlaybackModState state;
+  playbackModInit(&state, &mod);
+
+  // First value should be near zero (start of triangle)
+  playbackModNext(&state);
+  int16_t firstValue = state.outValue;
+  CHECK(firstValue >= 0 - 2000); CHECK(firstValue <= 0 + 2000);
+
+  // Should increase (going up the triangle)
+  playbackModNext(&state);
+  CHECK(state.outValue > firstValue);
+
+  // Continue to peak (phase approaches 0.5)
+  for (int i = 2; i < 9; i++) {
+    int16_t prev = state.outValue;
+    playbackModNext(&state);
+    if (i < 8) {
+      CHECK(state.outValue > prev); // Should keep increasing until peak
+    }
+  }
+
+  // At peak (phase=0.5, which is counter=8, call #9)
+  int16_t peakValue = state.outValue;
+  CHECK(peakValue >= 32385 - 200); CHECK(peakValue <= 32385 + 200);
+
+  // Past peak, should decrease
+  playbackModNext(&state);
+  CHECK(state.outValue < peakValue);
+
+  // Continue down to near zero
+  for (int i = 10; i < 16; i++) {
+    int16_t prev = state.outValue;
+    playbackModNext(&state);
+    CHECK(state.outValue < prev); // Should keep decreasing
+  }
+
+  // Should end near zero (at counter=15, phase=15/16, value should be ~4048)
+  CHECK(state.outValue >= 0); // Should still be non-negative
+  CHECK(state.outValue <= 5000); // Allow reasonable tolerance near end of ramp-down
+
+  // Value should never go negative
+  CHECK(state.outValue >= 0);
+}
+
+// Test LFO UniSine (unipolar sine) goes from 0 to max to 0 with smooth easing
+TEST_CASE("test_LFO_UniSine_unipolar_smooth") {
+  Modulation mod = {
+    .type = modLFO,
+    .destination = 0,
+    .amount = 127,
+    .p1 = lfoShapeUniSin,
+    .p2 = lfoTrigFree,
+    .p3 = 16,  // 16 tick period
+    .p4 = 0
+  };
+
+  PlaybackModState state;
+  playbackModInit(&state, &mod);
+
+  // First value should be zero (cos(0) = 1, so (1-1)/2 = 0)
+  playbackModNext(&state);
+  int16_t firstValue = state.outValue;
+  CHECK(firstValue >= 0 - 1000); CHECK(firstValue <= 0 + 1000);
+
+  // Should increase smoothly
+  playbackModNext(&state);
+  CHECK(state.outValue > firstValue);
+
+  // Should increase smoothly toward peak
+  for (int i = 2; i < 9; i++) {
+    playbackModNext(&state);
+  }
+
+  // At phase=0.5 (counter=8, call #9), should be at peak
+  int16_t peakValue = state.outValue;
+  CHECK(peakValue >= 32385 - 200); CHECK(peakValue <= 32385 + 200);
+
+  // Continue to end of period, should decrease back to zero
+  for (int i = 8; i < 16; i++) {
+    playbackModNext(&state);
+  }
+
+  // At end (phase=1, cos(2π) = 1, so (1-1)/2 = 0)
+  CHECK(state.outValue >= 0 - 1000); CHECK(state.outValue <= 0 + 1000);
+
+  // Value should never go negative throughout the cycle
+  CHECK(state.outValue >= 0);
+}
+
+// Test UniTri with negative amount (still unipolar, but subtracted)
+TEST_CASE("test_LFO_UniTri_negative_amount_stays_unipolar") {
+  Modulation mod = {
+    .type = modLFO,
+    .destination = 0,
+    .amount = -127,  // Negative amount
+    .p1 = lfoShapeUniTri,
+    .p2 = lfoTrigFree,
+    .p3 = 8,
+    .p4 = 0
+  };
+
+  PlaybackModState state;
+  playbackModInit(&state, &mod);
+
+  // Should start near zero (but negative due to amount)
+  playbackModNext(&state);
+  CHECK(state.outValue >= 0 - 2000); CHECK(state.outValue <= 0 + 2000);
+
+  // At peak (phase=0.5, after 5 calls total), should be negative (unipolar shape * negative amount)
+  for (int i = 1; i < 5; i++) {
+    playbackModNext(&state);
+  }
+
+  int16_t peakValue = state.outValue;
+  CHECK(peakValue >= -32385 - 200); CHECK(peakValue <= -32385 + 200);
+  CHECK(peakValue < 0); // Should be negative
+}
+
+// Test UniSine with negative amount
+TEST_CASE("test_LFO_UniSine_negative_amount_stays_unipolar") {
+  Modulation mod = {
+    .type = modLFO,
+    .destination = 0,
+    .amount = -127,  // Negative amount
+    .p1 = lfoShapeUniSin,
+    .p2 = lfoTrigFree,
+    .p3 = 8,
+    .p4 = 0
+  };
+
+  PlaybackModState state;
+  playbackModInit(&state, &mod);
+
+  // Should start near zero
+  playbackModNext(&state);
+  CHECK(state.outValue >= 0 - 1000); CHECK(state.outValue <= 0 + 1000);
+
+  // At peak (phase=0.5), should be negative
+  for (int i = 1; i < 5; i++) {
+    playbackModNext(&state);
+  }
+
+  int16_t peakValue = state.outValue;
+  CHECK(peakValue >= -32385 - 200); CHECK(peakValue <= -32385 + 200);
+  CHECK(peakValue < 0); // Should be negative
+}
+
 // Tests are run automatically by doctest
 
 } // TEST_SUITE("modulation")

@@ -779,6 +779,7 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
           if (d == 0) d = 1; // Just in case, to avoid division by zero
           int tempPeriod = period * n / d;
           envPeriod = ((tempPeriod & 0xf) >= 8) ? (tempPeriod >> 4) + 1 : (tempPeriod >> 4);
+          envPeriod -= track->note.chip.ay.envPeriodOffset;
         } else {
           // 2. Manual envelope (AY1 style or AY2 with pitch control)
           if (instType == instAY2) {
