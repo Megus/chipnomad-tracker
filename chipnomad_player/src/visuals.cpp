@@ -255,16 +255,16 @@ static void renderPhraseRow(VisualState* visualState, PhraseRow* phraseRow, int 
   if (showFxInNoteColumn && fxToShow >= 0) {
     // Show FX name in note column (dimmed by 50%)
     SDL_Color dimmedFxColor = {
-      visualState->config->fxColor.r / 2,
-      visualState->config->fxColor.g / 2,
-      visualState->config->fxColor.b / 2,
+      static_cast<Uint8>(visualState->config->fxColor.r / 2),
+      static_cast<Uint8>(visualState->config->fxColor.g / 2),
+      static_cast<Uint8>(visualState->config->fxColor.b / 2),
       255
     };
     char fxNameStr[5];
     snprintf(fxNameStr, sizeof(fxNameStr), "%s ", fxNames[phraseRow->fx[fxToShow][0]].name);
     renderText(visualState, fxNameStr, col, y, dimmedFxColor);
   } else {
-    char* noteStr = noteName(visualState->project, phraseRow->note);
+    const char* noteStr = noteName(visualState->project, phraseRow->note);
     if (strcmp(noteStr, "---") != 0) {
       renderText(visualState, noteStr, col, y, visualState->config->noteColor);
     } else {
@@ -277,9 +277,9 @@ static void renderPhraseRow(VisualState* visualState, PhraseRow* phraseRow, int 
   if (showFxInNoteColumn && fxToShow >= 0) {
     // Show FX value in instrument column (dimmed by 50%)
     SDL_Color dimmedFxColor = {
-      visualState->config->fxColor.r / 2,
-      visualState->config->fxColor.g / 2,
-      visualState->config->fxColor.b / 2,
+      static_cast<Uint8>(visualState->config->fxColor.r / 2),
+      static_cast<Uint8>(visualState->config->fxColor.g / 2),
+      static_cast<Uint8>(visualState->config->fxColor.b / 2),
       255
     };
     char fxValStr[3];

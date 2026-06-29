@@ -16,20 +16,12 @@ INSTALLATION:
    - Run ./chipnomad directly from terminal
 
 CONTROLS:
-- Keyboard: Arrow keys, X (A), Z (B), Space (Start), Shift (Select)
-- Gamepad: D-pad, A button, B button, Start/Menu, Shoulder buttons
+- Keyboard: Arrow keys, X (Edit), Z (Opt), Space (Play), Shift (Shift)
+- Gamepad: D-pad, A button (Edit), B button (Opt), Start (Play), Menu (Shift)
 - Steam Deck: Native controller support included
-- PS5/Xbox controllers: Use Settings > Gamepad swap A/B if needed
-
-CONTENTS:
-- chipnomad: Main executable
-- chipnomad.sh: Launcher script
-- instruments/: Sample instruments
-- pitch-tables/: Pitch table files
-- projects/: Demo projects
 
 For more information, visit: https://chipnomad.org
-Join our Discord: https://discord.gg/PJarAn2QCW
+Join ChipNomad Discord: https://discord.gg/PJarAn2QCW
 
 This build works on most Linux distributions including Ubuntu, Debian,
 Fedora, Arch Linux, and Steam Deck (Desktop Mode).

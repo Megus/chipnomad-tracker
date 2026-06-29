@@ -33,11 +33,8 @@ make macOS-deploy
 
 #### Linux (x86_64 and ARM)
 ```bash
-# Native build (works on x86_64, ARM, Raspberry Pi)
+# Native build (should work on x86_64, ARM, Raspberry Pi)
 make linux
-
-# Create portable package
-make linux-package
 
 # Full deployment
 make linux-package-deploy

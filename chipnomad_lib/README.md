@@ -2,18 +2,6 @@
 
 This is the core ChipNomad library containing all the platform-independent music playback logic. It can be used as a standalone library in other projects.
 
-## Contents
-
-- **project.h/c** - Project file format handling and data structures
-- **playback.h/c** - Main playback engine
-- **playback_*.c** - Playback implementation files (FX, chip-specific logic)
-- **chips/** - Sound chip emulation (AY-3-8910/YM2149F)
-- **external/ayumi/** - Ayumi AY chip emulator by Peter Sovietov
-- **export.h** - Export functionality interface
-- **export_*.c** - Export implementations (WAV, PSG)
-- **utils.h/c** - Utility functions
-- **corelib/** - Platform abstraction headers (implementations are platform-specific)
-
 ## Usage
 
 Include the main header in your project:
@@ -28,38 +16,86 @@ This will give you access to all the core functionality:
 - Sound chip emulation
 - Export functionality
 
-## Dependencies
-
-The library requires a platform-specific implementation of `corelib_file.h` for file operations. The main ChipNomad project provides implementations in `platforms/shared/corelib_file.c`.
-
 ## Example
+
+### Basic Playback
 
 ```c
 #include <chipnomad_lib.h>
 
-// Initialize library
-chipnomadInit();
+// Create ChipNomad state
+ChipNomadState* state = chipnomadCreate();
+if (!state) {
+    fprintf(stderr, "Failed to create ChipNomad state\n");
+    return -1;
+}
 
-// Load a project
-if (projectLoad("song.cnm") == 0) {
-    // Initialize playback
-    struct PlaybackState playback;
-    playbackInit(&playback, &project);
-    
-    // Create sound chip
-    struct SoundChip chip = createChipAY(44100, project.chipSetup);
-    chip.init(&chip);
-    
-    // Start playback
-    playbackStartSong(&playback, 0, 0, 1);
-    
-    // Render audio frames
-    float buffer[1024];
-    while (!playbackNextFrame(&playback, &chip)) {
-        chip.render(&chip, buffer, 512);
-        // Output buffer to audio system
+// Load project
+if (projectLoad(&state->project, "song.cnm") != 0) {
+    fprintf(stderr, "Failed to load project\n");
+    chipnomadDestroy(state);
+    return -1;
+}
+
+// Initialize playback with the loaded project
+playbackInit(&state->playbackState, &state->project);
+
+// Initialize chips (NULL uses default chip implementations)
+chipnomadInitChips(state, 44100, NULL);
+
+// Start playback from beginning
+playbackStartSong(&state->playbackState, 0, 0, 1);
+
+// Render audio in a loop
+float buffer[1024];  // 512 stereo sample pairs
+int isPlaying = 1;
+
+while (isPlaying) {
+    // Render audio with automatic tick handling
+    int samplesRendered = chipnomadRender(state, buffer, 512);
+
+    // If fewer samples rendered, playback has stopped
+    if (samplesRendered < 512) {
+        isPlaying = 0;
     }
-    
-    chip.cleanup(&chip);
+
+    // Output buffer to audio system (convert float to int16, etc.)
+    // ... your audio output code here ...
+}
+
+// Cleanup
+chipnomadDestroy(state);
+```
+
+### Audio Callback Integration
+
+For real-time audio (e.g., SDL2 audio callback):
+
+```c
+void audioCallback(void* userdata, Uint8* stream, int len) {
+    ChipNomadState* state = (ChipNomadState*)userdata;
+    static float floatBuffer[2048];  // Temp buffer for float samples
+
+    int stereoSamples = len / sizeof(int16_t) / 2;
+    int16_t* output = (int16_t*)stream;
+
+    // Render float samples
+    int samplesRendered = chipnomadRender(state, floatBuffer, stereoSamples);
+
+    // Convert float [-1.0, 1.0] to int16
+    for (int i = 0; i < stereoSamples * 2; i++) {
+        float sample = floatBuffer[i];
+        if (sample > 1.0f) sample = 1.0f;
+        if (sample < -1.0f) sample = -1.0f;
+        output[i] = (int16_t)(sample * 32767.0f);
+    }
+
+    // Fill remaining with silence if playback stopped
+    if (samplesRendered < stereoSamples) {
+        SDL_memset(&output[samplesRendered * 2], 0,
+                   (stereoSamples - samplesRendered) * 2 * sizeof(int16_t));
+    }
 }
 ```
+
+See `chipnomad_player/` for a complete working example.

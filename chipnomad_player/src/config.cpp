@@ -6,7 +6,12 @@
 static SDL_Color parseColor(const char* str) {
   if (str && str[0] == '0' && str[1] == 'x') {
     unsigned int hex = strtoul(str, NULL, 16);
-    return (SDL_Color){(hex >> 16) & 0xFF, (hex >> 8) & 0xFF, hex & 0xFF, 255};
+    return (SDL_Color){
+      static_cast<Uint8>((hex >> 16) & 0xFF),
+      static_cast<Uint8>((hex >> 8) & 0xFF),
+      static_cast<Uint8>(hex & 0xFF),
+      255
+    };
   }
   return (SDL_Color){255, 255, 255, 255};
 }

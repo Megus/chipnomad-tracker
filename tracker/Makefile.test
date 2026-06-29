@@ -4,7 +4,7 @@
 # Compiler settings
 CXX = c++
 CFLAGS = -std=c++17 -Wall -g -O0
-LDFLAGS = -lm -lstdc++
+LDFLAGS = -lm
 
 # Build directory
 BUILD_DIR = build/tests

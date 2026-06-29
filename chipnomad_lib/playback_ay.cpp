@@ -955,18 +955,16 @@ void initAYSampleTables(void) {
   for (int i = 0; i < 16; i++) {
     cnDACTableAY[i] = (uint8_t)(dacTableAYfloat[i * 2 + 1] * 255);
     cnDACTableYM[i] = (uint8_t)(dacTableYMfloat[i * 2 + 1] * 255);
-    //printf("AY volume %d -> DAC value %d, YM DAC value %d\n", i, cnDACTableAY[i], cnDACTableYM[i]);
   }
 
   // Create sample LUTs by mapping 8-bit sample values to 4-bit AY volume levels
   uint8_t volumeAY = 0;
   uint8_t volumeYM = 0;
   for (int i = 0; i < 256; i++) {
-    if (i > cnDACTableAY[volumeAY]) volumeAY++;
-    if (i > cnDACTableYM[volumeYM]) volumeYM++;
+    if (volumeAY < 15 && abs(i - cnDACTableAY[volumeAY + 1]) <= abs(i - cnDACTableAY[volumeAY])) volumeAY++;
+    if (volumeYM < 15 && abs(i - cnDACTableYM[volumeYM + 1]) <= abs(i - cnDACTableYM[volumeYM])) volumeYM++;
+
     cnSampleLookupAY[i] = volumeAY;
     cnSampleLookupYM[i] = volumeYM;
-    //printf("Sample value %d -> AY volume %d, YM volume %d\n", i, cnSampleLookupAY[i], cnSampleLookupYM[i]);
   }
 }
-
