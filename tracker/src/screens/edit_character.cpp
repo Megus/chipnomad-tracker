@@ -1,5 +1,6 @@
 #include "screens.h"
 #include "corelib_gfx.h"
+#include "string_utils.h"
 #include <string.h>
 
 // Character keyboard layout
@@ -34,18 +35,10 @@ static const char** getCurrentKeyboardRows() {
   return isUppercase ? keyboardRowsUpper : keyboardRowsLower;
 }
 
-// Trim empty characters from the end of the string
-void trimStr(char* str) {
-  int idx = strlen(str) - 1;
-  while (idx >= 0 && str[idx] == ' ') {
-    str[idx--] = 0;
-  }
-}
-
 int editCharacter(CellEditAction action, char* str, int idx, int maxLen) {
   if (action == CellEditAction::clear) {
     str[idx] = ' ';
-    trimStr(str);
+    trimString(str);
     return 2;
   } else if (action == CellEditAction::tap) {
     char current = str[idx];
@@ -96,6 +89,9 @@ char charEditInput(int keys, int tapCount, char* str, int idx, int maxLen) {
       }
     }
     str[idx] = selectedChar;
+
+    // Trim leading and trailing spaces before exiting
+    trimString(str);
 
     return selectedChar;
   }

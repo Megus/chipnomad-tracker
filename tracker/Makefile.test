@@ -29,7 +29,8 @@ CHIPNOMAD_LIB_SOURCES = $(wildcard ../chipnomad_lib/*.cpp) \
                         $(wildcard ../chipnomad_lib/chips/*.cpp) \
                         $(wildcard ../chipnomad_lib/external/ayumi/*.cpp)
 
-TRACKER_SRC_SOURCES = src/project_utils.cpp \
+TRACKER_SRC_SOURCES = src/string_utils.cpp \
+                      src/project_utils.cpp \
                       src/pitch_table_utils.cpp \
                       src/wavetable_io.cpp \
                       $(wildcard src/screens/edit_common.cpp) \

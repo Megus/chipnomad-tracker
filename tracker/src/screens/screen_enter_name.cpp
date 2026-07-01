@@ -15,29 +15,6 @@ static void (*onCancelled)(void);
 static void confirmName(void);
 static void fullRedraw(void);
 
-// Helper: Trim whitespace from both ends of a string
-static void trimWhitespace(char* str) {
-  if (!str) return;
-
-  // Trim leading whitespace
-  int start = 0;
-  while (str[start] == ' ' || str[start] == '\t') {
-    start++;
-  }
-
-  // Trim trailing whitespace
-  int end = strlen(str + start);
-  while (end > 0 && (str[start + end - 1] == ' ' || str[start + end - 1] == '\t')) {
-    end--;
-  }
-
-  // Move trimmed string to start
-  if (start > 0) {
-    memmove(str, str + start, end);
-  }
-  str[end] = '\0';
-}
-
 static int getColumnCount(int row) {
   if (row == 0) return 24; // Name field (24 chars to fit on screen with label)
   if (row == 1) return 2;  // OK, Cancel buttons
@@ -165,8 +142,7 @@ static void draw(void) {
 }
 
 static void confirmName(void) {
-  trimWhitespace(enteredName);
-
+  // No need to trim - character editing already does this
   if (strlen(enteredName) == 0) return;
 
   if (onConfirmed) {

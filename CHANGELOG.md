@@ -22,6 +22,7 @@
 - New phrase/table FX to control new instruments and the modulation system
 - New Wavetable screen (under the Table screen) to edit/load/save AY wavetables
 - VSL FX command — volume slide
+- *FIX*: Automatic trimming of text fields to prevent accidental leading and trailing spaces
 
 ## v1.0.0 (April 25, 2026)
 
