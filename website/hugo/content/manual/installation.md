@@ -12,6 +12,11 @@ layout: single
 
 ChipNomad doesn't require special installation, just unzip the distribution package to a convenient folder and run the exectuable file.
 
+The macOS buils is not signed so you will need to bypass macOS security checks:
+
+1. Open Terminal and in the folder with ChipNomad.app run: `xattr -dr com.apple.quarantine ChipNomad.app`
+2. Try opening ChipNomad, if macOS still doesn't open it, go to System Settings — Privacy & Security, and allow running ChipNomad.
+
 ## PortMaster
 
 This build works on a wide variety of Linux-based handheld consoles. Ths list of [supported devices](https://portmaster.games/supported-devices.html).

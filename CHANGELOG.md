@@ -21,6 +21,7 @@
   - Load 8/16/24/32 mono/stereo WAVs of any lenth. They will be converted to 8-bit mono and truncated up to 16kb.
 - New phrase/table FX to control new instruments and the modulation system
 - New Wavetable screen (under the Table screen) to edit/load/save AY wavetables
+- VSL FX command — volume slide
 
 ## v1.0.0 (April 25, 2026)
 

@@ -20,7 +20,7 @@ void initDefaultAppSettings(void) {
   appSettings.doubleTapFrames = 20;
   appSettings.keyRepeatDelay = 16;
   appSettings.keyRepeatSpeed = 2;
-  appSettings.mixVolume = 20000.0f / 32767.0f;
+  appSettings.mixVolume = 1.0f;
   appSettings.quality = (int)ChipNomadQuality::medium;
   appSettings.pitchConflictWarning = 0;
 

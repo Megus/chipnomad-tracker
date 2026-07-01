@@ -5,6 +5,8 @@
 #include "../external/ayumi/ayumi_filters.h"
 #include "../chipnomad_lib.h"
 
+static constexpr float ayVolumeScale = 0.6f; // Scale AY volume to avoid clipping when mixing multiple chips
+
 static int ayumiTimerFunction(struct ayumi* ay, void* userdata) {
   SoundChip* self = (SoundChip*)userdata;
   if (self->timerFunc) {
@@ -25,8 +27,8 @@ static void render(SoundChip* self, float* buffer, int samples) {
     ayumi_process(ay);
     //ayumi_remove_dc(ay);
 
-    *buffer++ = ay->left;
-    *buffer++ = ay->right;
+    *buffer++ = ay->left * ayVolumeScale;
+    *buffer++ = ay->right * ayVolumeScale;
   }
 }
 

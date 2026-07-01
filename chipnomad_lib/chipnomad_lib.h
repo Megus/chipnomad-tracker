@@ -13,7 +13,7 @@ extern "C" {
 #include "chips/chips.h"
 #include "utils.h"
 
-#define AUDIO_OVERLOAD_COOLDOWN_FRAMES 20
+#define AUDIO_OVERLOAD_COOLDOWN_FRAMES 5
 #define PITCH_CONFLICT_COOLDOWN_FRAMES 5
 
 /**

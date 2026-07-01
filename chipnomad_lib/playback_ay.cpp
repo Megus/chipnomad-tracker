@@ -342,6 +342,11 @@ int timerFunctionAY(struct SoundChip* chip, void* userdata) {
 
     // Period counter
     track->note.chip.ay.softPeriodCounter++;
+
+    // If track is disabled, force output to 0
+    if (state->trackEnabled[firstTrack + ch] == 0) {
+      chip->setRegister(chip, ch + 8, 0);
+    }
   }
 
   return 1;

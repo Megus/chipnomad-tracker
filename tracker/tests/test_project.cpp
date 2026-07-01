@@ -226,6 +226,7 @@ TEST_CASE("fillFXNames common") {
   CHECK(std::strcmp(fxNames[fxARP].name, "ARP") == 0);
   CHECK(std::strcmp(fxNames[fxHOP].name, "HOP") == 0);
   CHECK(std::strcmp(fxNames[fxVOL].name, "VOL") == 0);
+  CHECK(std::strcmp(fxNames[fxVSL].name, "VSL") == 0);
 }
 
 TEST_CASE("fillFXNames ay") {

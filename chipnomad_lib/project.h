@@ -25,6 +25,7 @@ enum FX {
   fxFIN, // Pitch fine (relative)
   fxPRD, // Period (relative)
   fxVOL, // Volume (relative)
+  fxVSL, // Volume slide
   fxRET, // Retrigger
   fxDEL, // Delay
   fxOFF, // Off

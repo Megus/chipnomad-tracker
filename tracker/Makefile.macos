@@ -45,6 +45,7 @@ macOS-app-bundle: macOS
 	@mkdir -p $(BUILD)/$(APP_BUNDLE)/Contents/{MacOS,Resources,Frameworks}
 	@cp $(BUILD)/chipnomad $(BUILD)/$(APP_BUNDLE)/Contents/MacOS/
 	@cp -r packaging/common/* $(BUILD)/
+	@cp packaging/macos/README.txt $(BUILD)/
 	@iconutil -c icns packaging/macos/ChipNomad.iconset -o $(BUILD)/$(APP_BUNDLE)/Contents/Resources/ChipNomad.icns 2>/dev/null || echo "Warning: Icon generation failed"
 	@echo "Copying SDL2.framework to bundle..."
 	@cp -R $(SDL2_FRAMEWORK) $(BUILD)/$(APP_BUNDLE)/Contents/Frameworks/
@@ -59,6 +60,6 @@ macOS-deploy: macOS-app-bundle
 	@echo "Creating macOS deployment package..."
 	@mkdir -p ../../releases
 	$(eval VERSION := $(shell grep 'appVersion.*=' src/version.cpp | cut -d'"' -f2))
-	@cd $(BUILD) && zip -ry $(APP)-$$(date +%Y-%m-%d)-$(VERSION)-macOS.zip $(APP_BUNDLE) fonts instruments pitch-tables projects samples themes wavetables
+	@cd $(BUILD) && zip -ry $(APP)-$$(date +%Y-%m-%d)-$(VERSION)-macOS.zip $(APP_BUNDLE) fonts instruments pitch-tables projects samples themes wavetables README.txt
 	@mv $(BUILD)/$(APP)-*-macOS.zip ../../releases/
 	@echo "macOS package created in ../../releases/"

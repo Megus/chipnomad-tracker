@@ -17,7 +17,7 @@ ChipNomadState* chipnomadCreate(void) {
   fillFXNames();
   projectInit(&state->project);
   playbackInit(&state->playbackState, &state->project);
-  state->mixVolume = 0.6f;
+  state->mixVolume = 1.0f;
   state->aySampleDithering = 1; // Default: ON
 
   // Initialize mix buffer

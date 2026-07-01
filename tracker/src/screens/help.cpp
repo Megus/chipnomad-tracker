@@ -99,6 +99,9 @@ const char* helpFXHint(uint8_t* fx, int isTable, uint8_t instrumentIdx) {
     case fxVOL: // Volume (relative)
       snprintf(buffer, bufferSize, "Volume offset by %hhd", fx[1]);
       break;
+    case fxVSL: // Volume slide
+      snprintf(buffer, bufferSize, "Volume slide by %hhd", (int8_t)fx[1]);
+      break;
     case fxRET: // Retrigger
       snprintf(buffer, bufferSize, "Retrigger note every %hhd tics", fx[1] & 0xf);
       break;
@@ -320,6 +323,7 @@ static void initFxHelpText() {
   fxHelpText[fxFIN] = "Fine Pitch Offset\nAdds fine offset\nto note pitch";
   fxHelpText[fxPRD] = "Period Offset\nAdds fixed offset\nto chip period";
   fxHelpText[fxVOL] = "Volume Offset\nAdds/subtracts from\ncurrent volume";
+  fxHelpText[fxVSL] = "Volume Slide\nGradually changes\nvolume over time";
   fxHelpText[fxRET] = "Retrigger\nRetriggers note every\nN tics";
   fxHelpText[fxDEL] = "Delay\nDelays note start\nby N tics";
   fxHelpText[fxOFF] = "Note Off\nSends note off\nafter N tics";
