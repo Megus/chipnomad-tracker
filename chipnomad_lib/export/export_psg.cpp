@@ -73,10 +73,14 @@ static SoundChip psgChipFactory(int chipIndex, int sampleRate, ChipSetup setup) 
 
   SoundChip chip = {
     .userdata = data,
+    .regs = {0},
+    .timerFunc = NULL,
+    .timerUserdata = NULL,
     .init = psgChipInit,
     .setRegister = psgChipSetRegister,
     .setTimerFunc = psgSetTimerFunc,
     .render = psgChipRender,
+    .setQuality = NULL,
     .cleanup = psgChipCleanup,
   };
 

@@ -19,15 +19,15 @@ static AAssetManager* getAssetManager(void) {
     jobject activity = (jobject)SDL_AndroidGetActivity();
     if (!activity) return NULL;
 
-    jclass activityClass = (*env)->GetObjectClass(env, activity);
-    jmethodID getAssets = (*env)->GetMethodID(env, activityClass, "getAssets", "()Landroid/content/res/AssetManager;");
-    jobject assetManagerObj = (*env)->CallObjectMethod(env, activity, getAssets);
+    jclass activityClass = env->GetObjectClass(activity);
+    jmethodID getAssets = env->GetMethodID(activityClass, "getAssets", "()Landroid/content/res/AssetManager;");
+    jobject assetManagerObj = env->CallObjectMethod(activity, getAssets);
 
     assetManager = AAssetManager_fromJava(env, assetManagerObj);
 
-    (*env)->DeleteLocalRef(env, activity);
-    (*env)->DeleteLocalRef(env, activityClass);
-    (*env)->DeleteLocalRef(env, assetManagerObj);
+    env->DeleteLocalRef(activity);
+    env->DeleteLocalRef(activityClass);
+    env->DeleteLocalRef(assetManagerObj);
 
     return assetManager;
 }

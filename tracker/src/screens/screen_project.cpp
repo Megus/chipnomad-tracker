@@ -116,14 +116,25 @@ static ScreenData screenProjectCommon = {
   .rows = 8,
   .cursorRow = 0,
   .cursorCol = 0,
+  .topRow = 0,
   .selectMode = -1,
+  .selectStartRow = 0,
+  .selectStartCol = 0,
+  .selectAnchorRow = 0,
+  .selectAnchorCol = 0,
+  .playbackLevel = ScreenPlaybackLevel::none,
   .getColumnCount = projectCommonColumnCount,
   .drawStatic = projectCommonDrawStatic,
   .drawCursor = projectCommonDrawCursor,
+  .drawSelection = NULL,
   .drawRowHeader = drawRowHeader,
   .drawColHeader = drawColHeader,
   .drawField = projectCommonDrawField,
   .onEdit = projectCommonOnEdit,
+  .onInput = NULL,
+  .onRawInput = NULL,
+  .isCellValid = NULL,
+  .getLoopRange = NULL,
 };
 
 static ScreenData* projectScreen(void) {
@@ -430,9 +441,10 @@ static ScreenPlaybackLevel getPlaybackLevel(void) {
 }
 
 const AppScreen screenProject = {
+  .init = NULL,
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
   .onInput = onInput,
-  .getPlaybackLevel = getPlaybackLevel
+  .getPlaybackLevel = getPlaybackLevel,
 };

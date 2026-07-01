@@ -24,7 +24,13 @@ static ScreenData screenExportCommon = {
   .rows = 4,
   .cursorRow = 0,
   .cursorCol = 0,
+  .topRow = 0,
   .selectMode = -1,
+  .selectStartRow = 0,
+  .selectStartCol = 0,
+  .selectAnchorRow = 0,
+  .selectAnchorCol = 0,
+  .playbackLevel = ScreenPlaybackLevel::none,
   .getColumnCount = exportCommonColumnCount,
   .drawStatic = exportCommonDrawStatic,
   .drawCursor = exportCommonDrawCursor,
@@ -33,6 +39,10 @@ static ScreenData screenExportCommon = {
   .drawColHeader = drawColHeader,
   .drawField = exportCommonDrawField,
   .onEdit = exportCommonOnEdit,
+  .onInput = NULL,
+  .onRawInput = NULL,
+  .isCellValid = NULL,
+  .getLoopRange = NULL,
 };
 
 static ScreenData* exportScreen(void) {
@@ -90,10 +100,12 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
 }
 
 const AppScreen screenExport = {
+  .init = NULL,
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
-  .onInput = onInput
+  .onInput = onInput,
+  .getPlaybackLevel = NULL,
 };
 
 ///////////////////////////////////////////////////////////////////////////////

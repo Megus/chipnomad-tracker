@@ -37,7 +37,7 @@ static char charBuffer[80];
 static void createCharSurfaces(void) {
   if (!currentResolution || !currentResolution->data) return;
 
-  font = currentResolution->data;
+  font = (uint8_t*)currentResolution->data;
   fontW = (currentResolution->charWidth + 7) / 8;
   fontH = currentResolution->charHeight;
 

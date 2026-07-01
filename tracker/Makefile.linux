@@ -20,6 +20,35 @@ VERSION = $(shell grep 'appVersion.*=' src/version.c | cut -d'"' -f2)
 linux:
 	$(call build_target)
 
+# Docker-based Linux build (internal target)
+.PHONY: .linux-docker
+.linux-docker:
+	mkdir -p $(BUILD)
+	g++ $(CFLAGS) $(XTRA_LIBS) $(OUTPUT)
+	chmod +x $(BUILD)/chipnomad
+
+# Linux deployment using Docker
+.PHONY: linux-deploy
+linux-deploy:
+	@echo "Creating Linux deployment package..."
+	@./check-docker.sh || exit 1
+	@echo "Building Linux Docker image..."
+	@docker build --platform linux/amd64 -f Dockerfile.linux -t chipnomad-linux-builder . || (echo "Error: Failed to build Docker image" && exit 1)
+	@docker run --platform linux/amd64 --rm -v "$$(pwd)/..:/workspace" -w /workspace/tracker chipnomad-linux-builder make -f Makefile.linux .linux-docker
+	@mkdir -p ../../releases
+	@mkdir -p $(BUILD)/$(APPNAME)-Linux
+	@cp $(BUILD)/chipnomad $(BUILD)/$(APPNAME)-Linux/
+	@cp -r packaging/common/* $(BUILD)/$(APPNAME)-Linux/
+	@cp packaging/linux/README.txt $(BUILD)/$(APPNAME)-Linux/
+	@echo '#!/bin/bash' > $(BUILD)/$(APPNAME)-Linux/chipnomad.sh
+	@echo 'cd "$$(dirname "$$0")"' >> $(BUILD)/$(APPNAME)-Linux/chipnomad.sh
+	@echo './chipnomad "$$@"' >> $(BUILD)/$(APPNAME)-Linux/chipnomad.sh
+	@chmod +x $(BUILD)/$(APPNAME)-Linux/chipnomad.sh
+	$(eval VERSION := $(shell grep 'appVersion.*=' src/version.c | cut -d'"' -f2))
+	@cd $(BUILD) && tar -czf $(APPNAME)-$$(date +%Y-%m-%d)-$(VERSION)-Linux-x86_64.tar.gz $(APPNAME)-Linux
+	@mv $(BUILD)/$(APPNAME)-*-Linux-x86_64.tar.gz ../../releases/
+	@echo "Linux package created in ../../releases/"
+
 # Linux package build (tar.gz)
 .PHONY: linux-package
 linux-package: linux

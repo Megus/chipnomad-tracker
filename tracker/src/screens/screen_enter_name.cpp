@@ -110,7 +110,13 @@ static ScreenData screenData = {
   .rows = 2,
   .cursorRow = 0,
   .cursorCol = 0,
+  .topRow = 0,
   .selectMode = -1,
+  .selectStartRow = 0,
+  .selectStartCol = 0,
+  .selectAnchorRow = 0,
+  .selectAnchorCol = 0,
+  .playbackLevel = ScreenPlaybackLevel::none,
   .getColumnCount = getColumnCount,
   .drawStatic = drawStatic,
   .drawCursor = drawCursor,
@@ -119,6 +125,10 @@ static ScreenData screenData = {
   .drawColHeader = drawColHeader,
   .drawField = drawField,
   .onEdit = onEdit,
+  .onInput = NULL,
+  .onRawInput = NULL,
+  .isCellValid = NULL,
+  .getLoopRange = NULL,
 };
 
 void enterNameSetup(const char* titleText, const char* promptText, const char* initialName, void (*confirmCallback)(const char* name), void (*cancelCallback)(void)) {
@@ -181,8 +191,10 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
 }
 
 const AppScreen screenEnterName = {
+  .init = NULL,
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
-  .onInput = onInput
+  .onInput = onInput,
+  .getPlaybackLevel = NULL,
 };

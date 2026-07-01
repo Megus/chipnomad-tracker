@@ -304,86 +304,96 @@ const char* helpFXHint(uint8_t* fx, int isTable, uint8_t instrumentIdx) {
 }
 
 
-static const char* fxHelpText[] = {
-  [fxARP] = "Arpeggio\nCycles through 0, high, low\nsemitone offsets",
-  [fxARC] = "Arpeggio Config\nSets arp direction, octave\nand timing",
-  [fxPVB] = "Pitch Vibrato\nOscillates pitch up/down\nwith speed and depth",
-  [fxPBN] = "Pitch Bend\nSlides pitch by amount\nper step continuously",
-  [fxPSL] = "Pitch Slide\nSlides to target pitch\nover specified tics",
-  [fxPIT] = "Pitch Offset\nAdds semitone offset\nto note pitch",
-  [fxFIN] = "Fine Pitch Offset\nAdds fine offset\nto note pitch",
-  [fxPRD] = "Period Offset\nAdds fixed offset\nto chip period",
-  [fxVOL] = "Volume Offset\nAdds/subtracts from\ncurrent volume",
-  [fxRET] = "Retrigger\nRetriggers note every\nN tics",
-  [fxDEL] = "Delay\nDelays note start\nby N tics",
-  [fxOFF] = "Note Off\nSends note off\nafter N tics",
-  [fxKIL] = "Kill Note\nStops note completely\nafter N tics",
-  [fxTIC] = "Table Speed\nSets instrument table\nplayback speed",
-  [fxTBL] = "Set Table\nSwitches to specified\ninstrument table",
-  [fxTBX] = "Aux Table\nSets auxiliary table\nfor this track",
-  [fxTHO] = "Table Hop\nJumps to specific\ninstrument table row",
-  [fxTXH] = "Aux Table Hop\nJumps to specific\naux table row",
-  [fxGRV] = "Track Groove\nSets groove for\nthis track only",
-  [fxGGR] = "Global Groove\nSets groove for\nall tracks",
-  [fxHOP] = "Hop\nHops to phrase/table row X times",
-  [fxSNG] = "Song Hop\nHops in song by\namount specified",
+// FX help text storage - initialized at first use
+static const char* fxHelpText[256] = {nullptr};
+static bool fxHelpTextInitialized = false;
+
+static void initFxHelpText() {
+  if (fxHelpTextInitialized) return;
+
+  fxHelpText[fxARP] = "Arpeggio\nCycles through 0, high, low\nsemitone offsets";
+  fxHelpText[fxARC] = "Arpeggio Config\nSets arp direction, octave\nand timing";
+  fxHelpText[fxPVB] = "Pitch Vibrato\nOscillates pitch up/down\nwith speed and depth";
+  fxHelpText[fxPBN] = "Pitch Bend\nSlides pitch by amount\nper step continuously";
+  fxHelpText[fxPSL] = "Pitch Slide\nSlides to target pitch\nover specified tics";
+  fxHelpText[fxPIT] = "Pitch Offset\nAdds semitone offset\nto note pitch";
+  fxHelpText[fxFIN] = "Fine Pitch Offset\nAdds fine offset\nto note pitch";
+  fxHelpText[fxPRD] = "Period Offset\nAdds fixed offset\nto chip period";
+  fxHelpText[fxVOL] = "Volume Offset\nAdds/subtracts from\ncurrent volume";
+  fxHelpText[fxRET] = "Retrigger\nRetriggers note every\nN tics";
+  fxHelpText[fxDEL] = "Delay\nDelays note start\nby N tics";
+  fxHelpText[fxOFF] = "Note Off\nSends note off\nafter N tics";
+  fxHelpText[fxKIL] = "Kill Note\nStops note completely\nafter N tics";
+  fxHelpText[fxTIC] = "Table Speed\nSets instrument table\nplayback speed";
+  fxHelpText[fxTBL] = "Set Table\nSwitches to specified\ninstrument table";
+  fxHelpText[fxTBX] = "Aux Table\nSets auxiliary table\nfor this track";
+  fxHelpText[fxTHO] = "Table Hop\nJumps to specific\ninstrument table row";
+  fxHelpText[fxTXH] = "Aux Table Hop\nJumps to specific\naux table row";
+  fxHelpText[fxGRV] = "Track Groove\nSets groove for\nthis track only";
+  fxHelpText[fxGGR] = "Global Groove\nSets groove for\nall tracks";
+  fxHelpText[fxHOP] = "Hop\nHops to phrase/table row X times";
+  fxHelpText[fxSNG] = "Song Hop\nHops in song by\namount specified";
   // Modulation FX
-  [fxM1A] = "Mod 1 Amount\nSets modulation 1\noutput amount",
-  [fxM11] = "Mod 1 Param 1\nOffsets modulation 1\nparameter 1",
-  [fxM12] = "Mod 1 Param 2\nOffsets modulation 1\nparameter 2",
-  [fxM13] = "Mod 1 Param 3\nOffsets modulation 1\nparameter 3",
-  [fxM14] = "Mod 1 Param 4\nOffsets modulation 1\nparameter 4",
-  [fxM2A] = "Mod 2 Amount\nSets modulation 2\noutput amount",
-  [fxM21] = "Mod 2 Param 1\nOffsets modulation 2\nparameter 1",
-  [fxM22] = "Mod 2 Param 2\nOffsets modulation 2\nparameter 2",
-  [fxM23] = "Mod 2 Param 3\nOffsets modulation 2\nparameter 3",
-  [fxM24] = "Mod 2 Param 4\nOffsets modulation 2\nparameter 4",
-  [fxM3A] = "Mod 3 Amount\nSets modulation 3\noutput amount",
-  [fxM31] = "Mod 3 Param 1\nOffsets modulation 3\nparameter 1",
-  [fxM32] = "Mod 3 Param 2\nOffsets modulation 3\nparameter 2",
-  [fxM33] = "Mod 3 Param 3\nOffsets modulation 3\nparameter 3",
-  [fxM34] = "Mod 3 Param 4\nOffsets modulation 3\nparameter 4",
-  [fxM4A] = "Mod 4 Amount\nSets modulation 4\noutput amount",
-  [fxM41] = "Mod 4 Param 1\nOffsets modulation 4\nparameter 1",
-  [fxM42] = "Mod 4 Param 2\nOffsets modulation 4\nparameter 2",
-  [fxM43] = "Mod 4 Param 3\nOffsets modulation 4\nparameter 3",
-  [fxM44] = "Mod 4 Param 4\nOffsets modulation 4\nparameter 4",
+  fxHelpText[fxM1A] = "Mod 1 Amount\nSets modulation 1\noutput amount";
+  fxHelpText[fxM11] = "Mod 1 Param 1\nOffsets modulation 1\nparameter 1";
+  fxHelpText[fxM12] = "Mod 1 Param 2\nOffsets modulation 1\nparameter 2";
+  fxHelpText[fxM13] = "Mod 1 Param 3\nOffsets modulation 1\nparameter 3";
+  fxHelpText[fxM14] = "Mod 1 Param 4\nOffsets modulation 1\nparameter 4";
+  fxHelpText[fxM2A] = "Mod 2 Amount\nSets modulation 2\noutput amount";
+  fxHelpText[fxM21] = "Mod 2 Param 1\nOffsets modulation 2\nparameter 1";
+  fxHelpText[fxM22] = "Mod 2 Param 2\nOffsets modulation 2\nparameter 2";
+  fxHelpText[fxM23] = "Mod 2 Param 3\nOffsets modulation 2\nparameter 3";
+  fxHelpText[fxM24] = "Mod 2 Param 4\nOffsets modulation 2\nparameter 4";
+  fxHelpText[fxM3A] = "Mod 3 Amount\nSets modulation 3\noutput amount";
+  fxHelpText[fxM31] = "Mod 3 Param 1\nOffsets modulation 3\nparameter 1";
+  fxHelpText[fxM32] = "Mod 3 Param 2\nOffsets modulation 3\nparameter 2";
+  fxHelpText[fxM33] = "Mod 3 Param 3\nOffsets modulation 3\nparameter 3";
+  fxHelpText[fxM34] = "Mod 3 Param 4\nOffsets modulation 3\nparameter 4";
+  fxHelpText[fxM4A] = "Mod 4 Amount\nSets modulation 4\noutput amount";
+  fxHelpText[fxM41] = "Mod 4 Param 1\nOffsets modulation 4\nparameter 1";
+  fxHelpText[fxM42] = "Mod 4 Param 2\nOffsets modulation 4\nparameter 2";
+  fxHelpText[fxM43] = "Mod 4 Param 3\nOffsets modulation 4\nparameter 3";
+  fxHelpText[fxM44] = "Mod 4 Param 4\nOffsets modulation 4\nparameter 4";
   // AY-specific FX
-  [fxAYM] = "AY Mixer\nControls tone/noise mix\nand envelope shape",
-  [fxERT] = "Envelope Retrigger\nRestarts AY envelope\nfrom beginning",
-  [fxNOI] = "Noise Offset\nAdds offset to\nnoise period",
-  [fxNOA] = "Noise Absolute\nSets noise period\nto exact value",
-  [fxEAU] = "Auto Envelope\nAutomatic envelope\nperiod from note",
-  [fxEVB] = "Envelope Vibrato\nOscillates envelope\nperiod up/down",
-  [fxEBN] = "Envelope Bend\nSlides envelope period\nby amount per step",
-  [fxESL] = "Envelope Slide\nSlides to envelope\nperiod over N tics",
-  [fxENT] = "Envelope Note\nSets envelope period\nfrom note value",
-  [fxEPT] = "Envelope Offset\nAdds offset to\nenvelope period",
-  [fxEPL] = "Envelope Low\nSets low byte of\nenvelope period",
-  [fxEPH] = "Envelope High\nSets high byte of\nenvelope period",
+  fxHelpText[fxAYM] = "AY Mixer\nControls tone/noise mix\nand envelope shape";
+  fxHelpText[fxERT] = "Envelope Retrigger\nRestarts AY envelope\nfrom beginning";
+  fxHelpText[fxNOI] = "Noise Offset\nAdds offset to\nnoise period";
+  fxHelpText[fxNOA] = "Noise Absolute\nSets noise period\nto exact value";
+  fxHelpText[fxEAU] = "Auto Envelope\nAutomatic envelope\nperiod from note";
+  fxHelpText[fxEVB] = "Envelope Vibrato\nOscillates envelope\nperiod up/down";
+  fxHelpText[fxEBN] = "Envelope Bend\nSlides envelope period\nby amount per step";
+  fxHelpText[fxESL] = "Envelope Slide\nSlides to envelope\nperiod over N tics";
+  fxHelpText[fxENT] = "Envelope Note\nSets envelope period\nfrom note value";
+  fxHelpText[fxEPT] = "Envelope Offset\nAdds offset to\nenvelope period";
+  fxHelpText[fxEPL] = "Envelope Low\nSets low byte of\nenvelope period";
+  fxHelpText[fxEPH] = "Envelope High\nSets high byte of\nenvelope period";
   // Common AY FX (all AY types)
-  [fxTNN] = "Tone Note\nSets tone oscillator\nto specific note",
-  [fxTNP] = "Tone Pitch\nOffsets tone oscillator\npitch (steps)",
-  [fxTNF] = "Tone Fine\nOffsets tone oscillator\nfine tune (period/cents)",
-  [fxTRT] = "Tone Retrigger\nResest tone oscillator phase",
-  [fxENN] = "Envelope Note\nSets envelope oscillator\nto specific note",
-  [fxENP] = "Envelope Pitch\nOffsets envelope oscillator\npitch (steps)",
-  [fxENF] = "Envelope Fine\nOffsets envelope oscillator\nfine tune (period/cents)",
+  fxHelpText[fxTNN] = "Tone Note\nSets tone oscillator\nto specific note";
+  fxHelpText[fxTNP] = "Tone Pitch\nOffsets tone oscillator\npitch (steps)";
+  fxHelpText[fxTNF] = "Tone Fine\nOffsets tone oscillator\nfine tune (period/cents)";
+  fxHelpText[fxTRT] = "Tone Retrigger\nResest tone oscillator phase";
+  fxHelpText[fxENN] = "Envelope Note\nSets envelope oscillator\nto specific note";
+  fxHelpText[fxENP] = "Envelope Pitch\nOffsets envelope oscillator\npitch (steps)";
+  fxHelpText[fxENF] = "Envelope Fine\nOffsets envelope oscillator\nfine tune (period/cents)";
   // AY2-specific FX (software oscillator)
-  [fxSFT] = "Software Osc Type\nSets software oscillator type",
-  [fxSFN] = "Software Osc Note\nSets software oscillator\nto specific note",
-  [fxSFP] = "Software Osc Pitch\nOffsets software oscillator\npitch (steps)",
-  [fxSFF] = "Software Osc Fine\nOffsets software oscillator\nfine tune (period/cents)",
-  [fxSRT] = "Software Osc Retrig\nRestarts software oscillator\nphase from zero",
-  [fxSFM] = "FM Depth\nSets FM modulation depth\nfor software oscillator",
-  [fxPWM] = "Pulse Width\nSets pulse width\nfor Pulse oscillator",
-  [fxSPL] = "Pulse Low Level\nSets low period level\nfor Pulse oscillator",
-  [fxSWT] = "Wavetable Index\nSets wavetable index\nfor Wavetable oscillator",
+  fxHelpText[fxSFT] = "Software Osc Type\nSets software oscillator type";
+  fxHelpText[fxSFN] = "Software Osc Note\nSets software oscillator\nto specific note";
+  fxHelpText[fxSFP] = "Software Osc Pitch\nOffsets software oscillator\npitch (steps)";
+  fxHelpText[fxSFF] = "Software Osc Fine\nOffsets software oscillator\nfine tune (period/cents)";
+  fxHelpText[fxSRT] = "Software Osc Retrig\nRestarts software oscillator\nphase from zero";
+  fxHelpText[fxSFM] = "FM Depth\nSets FM modulation depth\nfor software oscillator";
+  fxHelpText[fxPWM] = "Pulse Width\nSets pulse width\nfor Pulse oscillator";
+  fxHelpText[fxSPL] = "Pulse Low Level\nSets low period level\nfor Pulse oscillator";
+  fxHelpText[fxSWT] = "Wavetable Index\nSets wavetable index\nfor Wavetable oscillator";
   // AYSample-specific FX
-  [fxSMS] = "Sample Start\nSets sample playback\nstart position"
-};
+  fxHelpText[fxSMS] = "Sample Start\nSets sample playback\nstart position";
+
+  fxHelpTextInitialized = true;
+}
 
 const char* helpFXDescription(enum FX fxIdx, uint8_t instrumentIdx) {
+  initFxHelpText(); // Initialize on first use
+
   static const int bufferSize = 120;
   static char buffer[bufferSize]; // Buffer for dynamic description
 

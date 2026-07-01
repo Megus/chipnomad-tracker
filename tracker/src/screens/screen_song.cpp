@@ -45,6 +45,7 @@ static ScreenData screen = {
   .selectStartCol = 0,
   .selectAnchorRow = 0,
   .selectAnchorCol = 0,
+  .playbackLevel = ScreenPlaybackLevel::none,
   .getColumnCount = getColumnCount,
   .drawStatic = drawStatic,
   .drawCursor = drawCursor,
@@ -53,6 +54,9 @@ static ScreenData screen = {
   .drawColHeader = drawColHeader,
   .drawField = drawField,
   .onEdit = onEdit,
+  .onInput = NULL,
+  .onRawInput = NULL,
+  .isCellValid = NULL,
   .getLoopRange = getLoopRange,
 };
 

@@ -7,8 +7,8 @@ include Makefile.common
 
 # Android-specific settings - use common libs + sdl2 platform with mobile features
 LIBS = $(COMMON_LIBS) platforms/sdl2
-ANDROID_SOURCES = platforms/android/corelib_assets.c
-OUTPUT_EXT =  
+ANDROID_SOURCES = platforms/android/corelib_assets.cpp
+OUTPUT_EXT =
 
 # NDK settings
 NDK_PATH ?= $(ANDROID_NDK_ROOT)
@@ -30,7 +30,7 @@ BUILD_DIR = $(BUILD_BASE)/android-arm32
 endif
 
 # Compiler setup
-CC = $(TOOLCHAIN)/bin/$(TARGET)-clang
+CC = $(TOOLCHAIN)/bin/$(TARGET)-clang++
 AR = $(TOOLCHAIN)/bin/llvm-ar
 STRIP = $(TOOLCHAIN)/bin/llvm-strip
 

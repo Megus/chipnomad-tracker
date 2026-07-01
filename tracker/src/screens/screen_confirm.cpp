@@ -71,8 +71,10 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
 }
 
 const AppScreen screenConfirm = {
+  .init = NULL,
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
-  .onInput = onInput
+  .onInput = onInput,
+  .getPlaybackLevel = NULL,
 };

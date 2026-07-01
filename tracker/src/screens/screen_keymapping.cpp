@@ -149,14 +149,25 @@ static ScreenData screenKeyMappingData = {
   .rows = 9,
   .cursorRow = 0,
   .cursorCol = 0,
+  .topRow = 0,
   .selectMode = -1,
+  .selectStartRow = 0,
+  .selectStartCol = 0,
+  .selectAnchorRow = 0,
+  .selectAnchorCol = 0,
+  .playbackLevel = ScreenPlaybackLevel::none,
   .getColumnCount = getColumnCount,
   .drawStatic = drawStatic,
   .drawCursor = drawCursor,
+  .drawSelection = NULL,
   .drawRowHeader = drawRowHeader,
   .drawColHeader = drawColHeader,
   .drawField = drawField,
   .onEdit = onEdit,
+  .onInput = NULL,
+  .onRawInput = NULL,
+  .isCellValid = NULL,
+  .getLoopRange = NULL,
 };
 
 static void setup(int input) {
@@ -216,8 +227,10 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
 }
 
 const AppScreen screenKeyMapping = {
+  .init = NULL,
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
-  .onInput = onInput
+  .onInput = onInput,
+  .getPlaybackLevel = NULL,
 };

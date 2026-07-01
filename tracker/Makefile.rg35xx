@@ -22,7 +22,7 @@ CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(XTRA_CFLAGS)
 
 .PHONY: RG35xx
 RG35xx:
-	$(DOCKER) nfriedly/miyoo-toolchain:steward make -f Makefile.rg35xx .RG35xx CC=gcc
+	$(DOCKER) nfriedly/miyoo-toolchain:steward make -f Makefile.rg35xx .RG35xx CC=g++
 
 # RG35xx deployment
 APP := ChipNomad

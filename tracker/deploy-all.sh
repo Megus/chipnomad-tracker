@@ -21,7 +21,7 @@ make clean
 # Run tests
 echo ""
 echo "Running tests..."
-make -f Makefile.test run
+make -f Makefile.test
 echo "All tests passed."
 
 # Build all platforms
@@ -47,7 +47,7 @@ make RG35xx-deploy
 
 echo ""
 echo "Building Linux package..."
-make linux-package-deploy
+make linux-deploy
 
 echo ""
 echo "Building Android release..."

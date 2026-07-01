@@ -24,7 +24,7 @@ CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(XTRA_CFLAGS)
 .PHONY: MiyooPorts
 MiyooPorts:
 	@./check-docker.sh || exit 1
-	$(DOCKER32) monkeyx/retro_builder:arm32 make -f Makefile.miyooports .MiyooPorts CC=gcc CPU=armhf
+	$(DOCKER32) monkeyx/retro_builder:arm32 make -f Makefile.miyooports .MiyooPorts CC=g++ CPU=armhf
 
 .PHONY: MiyooPorts-deploy
 MiyooPorts-deploy: MiyooPorts

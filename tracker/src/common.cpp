@@ -9,41 +9,49 @@ static char settingsPath[PATH_LENGTH + 32];
 static char autosavePath[PATH_LENGTH + 32];
 static char lineBuffer[1024];
 
-AppSettings appSettings = {
-  .screenWidth = 0, // 0 to auto-detect resolution
-  .screenHeight = 0, // 0 to auto-detect resolution
-  .audioSampleRate = 44100,
-  .audioBufferSize = 2048,
-  .aySampleDithering = 1, // Default: ON
-  .doubleTapFrames = 20,
-  .keyRepeatDelay = 16,
-  .keyRepeatSpeed = 2,
-  .mixVolume = 20000.0f / 32767.0f,
-  .quality = (int)ChipNomadQuality::medium,
-  .pitchConflictWarning = 0,
-  .colorScheme = {
-    .background = 0x000f1a,
-    .textEmpty = 0x002638,
-    .textInfo = 0x4878b0,
-    .textDefault = 0xa0d0f0,
-    .textValue = 0xe2ebf8,
-    .textTitles = 0xbfdf50,
-    .playMarkers = 0xefe000,
-    .cursor = 0x7ddcff,
-    .selection = 0x00d090,
-    .warning = 0xff4040,
-  },
-  .themeName = "Default",
-  .projectFilename = "",
-  .projectPath = "",
-  .pitchTablePath = "",
-  .instrumentPath = "",
-  .themePath = "",
-  .fontPath = "",
-  .fontFolderPath = "",
-  .samplePath = "",
-  .wavetablePath = ""
-};
+AppSettings appSettings;
+
+void initDefaultAppSettings(void) {
+  appSettings.screenWidth = 0; // 0 to auto-detect resolution
+  appSettings.screenHeight = 0;
+  appSettings.audioSampleRate = 44100;
+  appSettings.audioBufferSize = 2048;
+  appSettings.aySampleDithering = 1; // Default: ON
+  appSettings.doubleTapFrames = 20;
+  appSettings.keyRepeatDelay = 16;
+  appSettings.keyRepeatSpeed = 2;
+  appSettings.mixVolume = 20000.0f / 32767.0f;
+  appSettings.quality = (int)ChipNomadQuality::medium;
+  appSettings.pitchConflictWarning = 0;
+
+  // Zero out key mapping (platform-specific defaults applied later)
+  memset(&appSettings.keyMapping, 0, sizeof(KeyMapping));
+
+  // Color scheme defaults
+  appSettings.colorScheme.background = 0x000f1a;
+  appSettings.colorScheme.textEmpty = 0x002638;
+  appSettings.colorScheme.textInfo = 0x4878b0;
+  appSettings.colorScheme.textDefault = 0xa0d0f0;
+  appSettings.colorScheme.textValue = 0xe2ebf8;
+  appSettings.colorScheme.textTitles = 0xbfdf50;
+  appSettings.colorScheme.playMarkers = 0xefe000;
+  appSettings.colorScheme.cursor = 0x7ddcff;
+  appSettings.colorScheme.selection = 0x00d090;
+  appSettings.colorScheme.warning = 0xff4040;
+
+  // String defaults
+  strncpy(appSettings.themeName, "Default", THEME_NAME_LENGTH);
+  appSettings.themeName[THEME_NAME_LENGTH] = '\0';
+  appSettings.projectFilename[0] = '\0';
+  appSettings.projectPath[0] = '\0';
+  appSettings.pitchTablePath[0] = '\0';
+  appSettings.instrumentPath[0] = '\0';
+  appSettings.themePath[0] = '\0';
+  appSettings.fontPath[0] = '\0';
+  appSettings.fontFolderPath[0] = '\0';
+  appSettings.samplePath[0] = '\0';
+  appSettings.wavetablePath[0] = '\0';
+}
 
 int* pSongRow;
 int* pSongTrack;
@@ -117,6 +125,9 @@ int settingsSave(void) {
 }
 
 int settingsLoad(void) {
+  // Always initialize defaults first
+  initDefaultAppSettings();
+
   char defaultDir[PATH_LENGTH];
   if (fileGetDefaultDirectory(defaultDir, PATH_LENGTH) != 0) return 1;
   snprintf(settingsPath, sizeof(settingsPath), "%s%ssettings.txt", defaultDir, PATH_SEPARATOR_STR);

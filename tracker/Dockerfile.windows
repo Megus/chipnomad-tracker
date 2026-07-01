@@ -3,6 +3,7 @@ FROM ubuntu:22.04
 # Install MinGW cross-compiler and build tools
 RUN apt-get update && apt-get install -y \
     gcc-mingw-w64-x86-64 \
+    g++-mingw-w64-x86-64 \
     make \
     wget \
     unzip \

@@ -20,14 +20,25 @@ static ScreenData screenColorThemeData = {
   .rows = 12,
   .cursorRow = 0,
   .cursorCol = 0,
+  .topRow = 0,
   .selectMode = -1,
+  .selectStartRow = 0,
+  .selectStartCol = 0,
+  .selectAnchorRow = 0,
+  .selectAnchorCol = 0,
+  .playbackLevel = ScreenPlaybackLevel::none,
   .getColumnCount = colorThemeColumnCount,
   .drawStatic = colorThemeDrawStatic,
   .drawCursor = colorThemeDrawCursor,
+  .drawSelection = NULL,
   .drawRowHeader = colorThemeDrawRowHeader,
   .drawColHeader = colorThemeDrawColHeader,
   .drawField = colorThemeDrawField,
   .onEdit = colorThemeOnEdit,
+  .onInput = NULL,
+  .onRawInput = NULL,
+  .isCellValid = NULL,
+  .getLoopRange = NULL,
 };
 
 static int isCharEdit = 0;
@@ -302,8 +313,10 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
 }
 
 const AppScreen screenColorTheme = {
+  .init = NULL,
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
-  .onInput = onInput
+  .onInput = onInput,
+  .getPlaybackLevel = NULL,
 };

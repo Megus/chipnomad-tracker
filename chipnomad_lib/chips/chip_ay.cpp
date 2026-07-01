@@ -136,7 +136,9 @@ SoundChip createChipAY(int sampleRate, ChipSetup setup) {
 
   SoundChip chip = {
     .userdata = ay,
+    .regs = {0},
     .timerFunc = NULL,
+    .timerUserdata = NULL,
     .init = init,
     .setRegister = setRegister,
     .setTimerFunc = setTimerFunc,

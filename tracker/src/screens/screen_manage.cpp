@@ -10,16 +10,27 @@ static void drawColHeader(int col, CellState state) {}
 
 static ScreenData screenManageData = {
   .rows = 3,
-  .cursorRow = 1,
+  .cursorRow = 0,
   .cursorCol = 0,
+  .topRow = 0,
   .selectMode = -1,
+  .selectStartRow = 0,
+  .selectStartCol = 0,
+  .selectAnchorRow = 0,
+  .selectAnchorCol = 0,
+  .playbackLevel = ScreenPlaybackLevel::none,
   .getColumnCount = manageColumnCount,
   .drawStatic = manageDrawStatic,
   .drawCursor = manageDrawCursor,
+  .drawSelection = NULL,
   .drawRowHeader = drawRowHeader,
   .drawColHeader = drawColHeader,
   .drawField = manageDrawField,
   .onEdit = manageOnEdit,
+  .onInput = NULL,
+  .onRawInput = NULL,
+  .isCellValid = NULL,
+  .getLoopRange = NULL,
 };
 
 static void init(void) {
@@ -109,5 +120,6 @@ const AppScreen screenManage = {
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
-  .onInput = onInput
+  .onInput = onInput,
+  .getPlaybackLevel = NULL,
 };

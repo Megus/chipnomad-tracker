@@ -2,7 +2,7 @@
 #include <SDL/SDL.h>
 
 static void sdlAudioCallback(void* userdata, uint8_t* buffer, int bufferBytes) {
-  AudioCallback* callback = userdata;
+  AudioCallback* callback = (AudioCallback*)userdata;
 
   callback((int16_t *)buffer, bufferBytes / sizeof(int16_t) / 2); // Divide by 2 to get number of stereo samples
 }
@@ -15,7 +15,7 @@ int audioSetup(AudioCallback* audioCallback, int sampleRate, int bufferSize) {
   spec.channels = 2;
   spec.samples = bufferSize;
   spec.callback = sdlAudioCallback;
-  spec.userdata = audioCallback;
+  spec.userdata = (void*)audioCallback;
 
   if (SDL_OpenAudio(&spec, NULL) < 0) {
     fprintf(stderr, "Failed to open audio: %s\n", SDL_GetError());

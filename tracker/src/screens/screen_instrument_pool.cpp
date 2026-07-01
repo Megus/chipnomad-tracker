@@ -266,9 +266,10 @@ static ScreenPlaybackLevel getPlaybackLevel(void) {
 }
 
 const AppScreen screenInstrumentPool = {
+  .init = NULL,
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
   .onInput = onInput,
-  .getPlaybackLevel = getPlaybackLevel
+  .getPlaybackLevel = getPlaybackLevel,
 };

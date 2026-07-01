@@ -521,8 +521,10 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
 }
 
 const AppScreen screenFileBrowser = {
+  .init = NULL,
   .setup = setup,
   .fullRedraw = fullRedraw,
   .draw = draw,
-  .onInput = onInput
+  .onInput = onInput,
+  .getPlaybackLevel = NULL,
 };
