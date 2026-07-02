@@ -6,7 +6,7 @@
   - 3 modulation types:
     - ADSR — attack-decay-sustain-release
     - AHD — attack-hold-decay
-    - LFO with 10 types: Triangle, Sine, Unipolar Triangle, Unipolar Sign, Ramp Down, Ramp Up, Exp Down, Exp Up, Square, Random
+    - LFO with 10 types: Triangle, Sine, Unipolar Triangle, Unipolar Sine, Ramp Down, Ramp Up, Exp Down, Exp Up, Square, Random
 - AY Plus Instrument. It uses synth-like approach to AY with using the oscillator concept.
   - Tone, Noise, and Envelope oscillators
   - Software oscillator with multiple types:
@@ -19,11 +19,15 @@
   - All software oscillators support simple FM
 - AY Sample Instrument:
   - Load 8/16/24/32 mono/stereo WAVs of any lenth. They will be converted to 8-bit mono and truncated up to 16kb.
-- New phrase/table FX to control new instruments and the modulation system
+- New phrase/table FX commands to control new instruments and the modulation system
 - New Wavetable screen (under the Table screen) to edit/load/save AY wavetables
+  - Copy/paste wavetables same way as Instruments: **SHIFT**+**OPT** — Copy, **SHIFT**+**EDIT** — Paste
 - VSL FX command — volume slide
+- Mix Volume scaling was adjusted to make 100% a usable value (values over 65% could previously cause audible distortion)
 - *FIX*: Automatic trimming of text fields to prevent accidental leading and trailing spaces
 - *FIX*: Screen Map could disappear after visiting modal screens (character edit, FX selection, etc)
+- *FIX*: Arpeggio settings (ARC FX) were not reset on loading a project
+- *FIX*: Pitch tables with more than 127 notes worked incorrectly
 
 ## v1.0.0 (April 25, 2026)
 

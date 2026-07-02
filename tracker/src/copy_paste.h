@@ -30,6 +30,11 @@ int pasteTable(int tableIdx, int startCol, int startRow);
 // Instrument copy/paste
 void copyInstrument(int instrumentIdx);
 void pasteInstrument(int instrumentIdx);
+
+// Wavetable copy/paste
+void copyWavetable(int wavetableIdx);
+void pasteWavetable(int wavetableIdx);
+
 // Clone functionality
 int cloneChain(int srcIdx, int dstIdx);
 int clonePhrase(int srcIdx, int dstIdx);

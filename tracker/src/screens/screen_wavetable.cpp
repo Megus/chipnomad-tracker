@@ -8,6 +8,7 @@
 #include "wavetable_io.h"
 #include "file_browser.h"
 #include "screen_enter_name.h"
+#include "copy_paste.h"
 #include <string.h>
 
 // Wavetable preview dimensions (in characters)
@@ -444,6 +445,21 @@ static int inputScreenNavigation(int keys, int tapCount) {
   if (keys == (keyUp | keyShift)) {
     // Go back to Table screen
     screenSetup(&screenTable, 0);
+    return 1;
+  } else if (keys == (keyShift | keyOpt)) {
+    // Copy wavetable (only when editing wavetable data, not on button row)
+    if (screen.cursorRow == 1) {
+      copyWavetable(wavetableIdx);
+      screenMessage(MESSAGE_TIME, "Copied wavetable");
+    }
+    return 1;
+  } else if (keys == (keyShift | keyEdit)) {
+    // Paste wavetable (only when editing wavetable data, not on button row)
+    if (screen.cursorRow == 1) {
+      pasteWavetable(wavetableIdx);
+      projectModified = 1;
+      fullRedraw();
+    }
     return 1;
   } else if (keys == (keyUp | keyOpt)) {
     // Previous wavetable (by 1) - stop at 0

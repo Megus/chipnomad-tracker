@@ -68,6 +68,11 @@ static void onProjectLoaded(const char* path) {
 
     // Reset all screen states (including song position)
     screensInitAll();
+    // Clear FX states for all tracks
+    // TODO: Make it a cleaner solution and have it somewhere in chipnomad_lib
+    for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
+      memset(&chipnomadState->playbackState.tracks[i].note.fx, 0, sizeof(chipnomadState->playbackState.tracks[i].note.fx));
+    }
   } else {
     screenMessage(MESSAGE_TIME, "%s", projectFileError);
   }

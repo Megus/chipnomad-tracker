@@ -617,7 +617,7 @@ static void nextFrame(PlaybackState* state, int trackIdx, int chipIdx) {
     pitch += track->note.pitchOffset;
 
     // Clamp pitch to valid range
-    pitch = clampInt8(pitch, 0, p->pitchTable.length - 1);
+    pitch = clampInt16(pitch, 0, p->pitchTable.length - 1);
 
     track->note.pitchFinal = pitch;
   }

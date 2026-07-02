@@ -11,12 +11,12 @@
 
 // Helper macros to read parameters with offsets and clamping
 // Intermediate calculation happens in 16-bit, then clamped to valid range
-#define GET_P1(state) clampUInt8((int16_t)(state)->modulation->p1 + (state)->p1Offset, 0, 255)
-#define GET_P2(state) clampUInt8((int16_t)(state)->modulation->p2 + (state)->p2Offset, 0, 255)
-#define GET_P3(state) clampUInt8((int16_t)(state)->modulation->p3 + (state)->p3Offset, 0, 255)
-#define GET_P4(state) clampUInt8((int16_t)(state)->modulation->p4 + (state)->p4Offset, 0, 255)
+#define GET_P1(state) clampInt16((int16_t)(state)->modulation->p1 + (state)->p1Offset, 0, 255)
+#define GET_P2(state) clampInt16((int16_t)(state)->modulation->p2 + (state)->p2Offset, 0, 255)
+#define GET_P3(state) clampInt16((int16_t)(state)->modulation->p3 + (state)->p3Offset, 0, 255)
+#define GET_P4(state) clampInt16((int16_t)(state)->modulation->p4 + (state)->p4Offset, 0, 255)
 #define GET_TYPE(state) ((state)->modulation->type)
-#define GET_AMOUNT(state) clampInt8((int16_t)(state)->modulation->amount + (state)->amountOffset, -128, 127)
+#define GET_AMOUNT(state) clampInt16((int16_t)(state)->modulation->amount + (state)->amountOffset, -128, 127)
 #define GET_DESTINATION(state) ((state)->modulation->destination)
 
 static void handleADSR(PlaybackModState* state) {

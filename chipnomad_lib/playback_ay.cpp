@@ -278,7 +278,7 @@ int timerFunctionAY(struct SoundChip* chip, void* userdata) {
     if (track->note.instrument == EMPTY_VALUE_8) continue; // No instrument, skip
 
     Instrument *instrument = &state->p->instruments[track->note.instrument];
-    uint16_t baseSoftOscPeriod = clampUInt16(track->note.chip.ay.outSoftPeriod, 1, 65535);
+    uint16_t baseSoftOscPeriod = clampInt16(track->note.chip.ay.outSoftPeriod, 1, 32767);
 
     if (track->note.chip.ay.softType == aySoftwareOscSyncEnvelope) {
       baseSoftOscPeriod *= 2; // SyncEnv needs to run at half speed
@@ -290,7 +290,7 @@ int timerFunctionAY(struct SoundChip* chip, void* userdata) {
     int isFMModulated = instrument->type == instAY2 && (track->note.chip.ay.softType != aySoftwareOscToneFM && track->note.chip.ay.softType != aySoftwareOscEnvFM);
 
     if (isFMModulated) {
-      softOscPeriod = clampUInt16(baseSoftOscPeriod + track->note.chip.ay.softFMPeriodOffset, 1, 65535);
+      softOscPeriod = clampInt16(baseSoftOscPeriod + track->note.chip.ay.softFMPeriodOffset, 1, 32767);
     }
 
     // Period reset
@@ -306,7 +306,7 @@ int timerFunctionAY(struct SoundChip* chip, void* userdata) {
 
         track->note.chip.ay.softFMPeriodOffset = track->note.chip.ay.softFMPhase ? fmOffset : -fmOffset;
 
-        softOscPeriod = clampUInt16(baseSoftOscPeriod + track->note.chip.ay.softFMPeriodOffset, 1, 65535);
+        softOscPeriod = clampInt16(baseSoftOscPeriod + track->note.chip.ay.softFMPeriodOffset, 1, 32767);
       } else {
         track->note.chip.ay.softFMPeriodOffset = 0; // No FM modulation
       }
@@ -922,7 +922,7 @@ int frequencyToAYPeriod(float frequency, int clockHz) {
 int16_t calculateAYPeriod(Project* p, uint8_t basePitch, int8_t pitchOffset, int16_t fineOffset,
                           int16_t specificFineOffset, int16_t periodOffset, int useFineOffset) {
   // Apply coarse pitch offset and clamp to pitch table range
-  int8_t pitch = clampInt8(basePitch + pitchOffset, 0, p->pitchTable.length - 1);
+  uint8_t pitch = (uint8_t)clampInt16((int16_t)(basePitch + pitchOffset), 0, p->pitchTable.length - 1);
 
   int16_t period;
 

@@ -9,6 +9,16 @@
 
 static char lineBuffer[1024];
 
+// Strip trailing whitespace (including newline) from a string
+static void stripTrailingWhitespace(char* str) {
+  if (!str) return;
+  int len = strlen(str);
+  while (len > 0 && (str[len - 1] == '\n' || str[len - 1] == '\r' || str[len - 1] == ' ' || str[len - 1] == '\t')) {
+    str[len - 1] = '\0';
+    len--;
+  }
+}
+
 int pitchTableLoadCSV(Project* project, const char* path) {
   FILE* file = fopen(path, "r");
   if (file == NULL) return 1;
@@ -27,6 +37,7 @@ int pitchTableLoadCSV(Project* project, const char* path) {
   char* token = strtok(lineBuffer, ",");
   int col = 0;
   while (token) {
+    stripTrailingWhitespace(token);
     if (strcmp(token, "Note") == 0) {
       noteCol = col;
     } else if (strcmp(token, expectedValueColumn) == 0) {
@@ -52,6 +63,7 @@ int pitchTableLoadCSV(Project* project, const char* path) {
     token = strtok(lineBuffer, ",");
     col = 0;
     while (token) {
+      stripTrailingWhitespace(token);
       if (col == noteCol) {
         strncpy(noteName, token, 3);
         noteName[3] = 0;

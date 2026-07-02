@@ -10,6 +10,7 @@ Table cpBufTable;
 Groove cpBufGroove;
 Instrument cpBufInstrument;
 Table cpBufInstrumentTable;
+uint8_t cpBufWavetable[32];  // 32 4-bit values
 
 static int cpBufGrooveLength = 0;
 static int cpBufSongRows = 0;
@@ -24,6 +25,7 @@ static int cpBufTableRows = 0;
 static int cpBufTableStartCol;
 static int cpBufTableEndCol;
 static int cpBufInstrumentValid = 0;
+static int cpBufWavetableValid = 0;
 
 void resetCopyBuffers(void) {
   cpBufGrooveLength = 0;
@@ -33,6 +35,7 @@ void resetCopyBuffers(void) {
   cpBufPhraseRows = 0;
   cpBufTableRows = 0;
   cpBufInstrumentValid = 0;
+  cpBufWavetableValid = 0;
 }
 
 void copyGroove(int grooveIdx, int startRow, int endRow, int isCut) {
@@ -577,4 +580,14 @@ void pasteInstrument(int instrumentIdx) {
   if (!cpBufInstrumentValid) return;
   chipnomadState->project.instruments[instrumentIdx] = cpBufInstrument;
   chipnomadState->project.tables[instrumentIdx] = cpBufInstrumentTable;
+}
+
+void copyWavetable(int wavetableIdx) {
+  memcpy(cpBufWavetable, chipnomadState->project.ayWavetables[wavetableIdx], 32);
+  cpBufWavetableValid = 1;
+}
+
+void pasteWavetable(int wavetableIdx) {
+  if (!cpBufWavetableValid) return;
+  memcpy(chipnomadState->project.ayWavetables[wavetableIdx], cpBufWavetable, 32);
 }
