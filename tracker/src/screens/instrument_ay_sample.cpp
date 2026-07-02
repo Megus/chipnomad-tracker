@@ -157,13 +157,30 @@ static int getColumnCount(int row) {
   return 1;
 }
 
+static void drawOscillatorHeaders(void) {
+  const ColorScheme cs = appSettings.colorScheme;
+  InstrumentAYSample* smp = &chipnomadState->project.instruments[cInstrument].chip.aySample;
+
+  // Determine oscillator on/off states
+  int toneOn = smp->oscTone.isOn;
+  int noiseOn = smp->oscNoise.isOn;
+
+  // Tone header (y 8) - color based on on/off state
+  gfxSetFgColor(toneOn ? cs.textTitles : cs.textInfo);
+  gfxPrint(COL_RIGHT_X, 8, "Tone");
+
+  // Noise header (y 12) - color based on on/off state
+  gfxSetFgColor(noiseOn ? cs.textTitles : cs.textInfo);
+  gfxPrint(COL_RIGHT_X, 12, "Noise");
+}
+
 static void drawStatic(void) {
   instrumentCommonDrawStatic();
 
   const ColorScheme cs = appSettings.colorScheme;
   InstrumentAYSample* smp = &chipnomadState->project.instruments[cInstrument].chip.aySample;
 
-  // Sample label (y 6) - use title color like "Tone" and "Noise"
+  // Sample label (y 6) - use title color like "Tone" and "Noise" (sample is always on)
   gfxSetFgColor(cs.textTitles);
   gfxPrint(COL_LEFT_X, 6, "Sample");
 
@@ -182,18 +199,13 @@ static void drawStatic(void) {
   gfxPrint(COL_LEFT_X, 12, "Pitch");
   gfxPrint(COL_LEFT_X, 13, "Fine");
 
-  // Tone header (y 8)
-  gfxSetFgColor(cs.textTitles);
-  gfxPrint(COL_RIGHT_X, 8, "Tone");
+  // Draw oscillator headers with dynamic colors
+  drawOscillatorHeaders();
 
   // Tone labels (y 9-10)
   gfxSetFgColor(cs.textDefault);
   gfxPrint(COL_RIGHT_X, 9, "Pitch");
   gfxPrint(COL_RIGHT_X, 10, "Fine");
-
-  // Noise header and on/off label (y 12)
-  gfxSetFgColor(cs.textTitles);
-  gfxPrint(COL_RIGHT_X, 12, "Noise");
 
   // Noise period label (y 13)
   gfxSetFgColor(cs.textDefault);
@@ -452,6 +464,9 @@ static int onEdit(int col, int row, CellEditAction action) {
     switch (row) {
       case 4: // Tone on/off
         handled = edit8noLast(action, &smp->oscTone.isOn, 1, 0, 1);
+        if (handled) {
+          drawOscillatorHeaders();  // Update header colors
+        }
         break;
       case 5: // Tone pitch
         handled = editSigned8(action, &smp->oscTone.pitchOffset, chipnomadState->project.pitchTable.octaveSize, -128, 127);
@@ -467,6 +482,9 @@ static int onEdit(int col, int row, CellEditAction action) {
         break;
       case 8: // Noise on/off
         handled = edit8noLast(action, &smp->oscNoise.isOn, 1, 0, 1);
+        if (handled) {
+          drawOscillatorHeaders();  // Update header colors
+        }
         break;
       case 9: // Noise period
         handled = edit8noLast(action, &smp->oscNoise.noisePeriod, 8, 0, 31);

@@ -24,6 +24,7 @@
   - Copy/paste wavetables same way as Instruments: **SHIFT**+**OPT** — Copy, **SHIFT**+**EDIT** — Paste
 - VSL FX command — volume slide
 - Mix Volume scaling was adjusted to make 100% a usable value (values over 65% could previously cause audible distortion)
+- 24TET (quarter-tone) linear pitch table added to the bundled content
 - *FIX*: Automatic trimming of text fields to prevent accidental leading and trailing spaces
 - *FIX*: Screen Map could disappear after visiting modal screens (character edit, FX selection, etc)
 - *FIX*: Arpeggio settings (ARC FX) were not reset on loading a project

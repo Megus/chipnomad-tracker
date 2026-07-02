@@ -137,6 +137,32 @@ static int getColumnCount(int row) {
   return 1;
 }
 
+static void drawOscillatorHeaders(void) {
+  const ColorScheme cs = appSettings.colorScheme;
+  InstrumentAY2* ay2 = &chipnomadState->project.instruments[cInstrument].chip.ay2;
+
+  // Determine oscillator on/off states
+  int toneOn = ay2->oscTone.isOn;
+  int noiseOn = ay2->oscNoise.isOn;
+  // Envelope is off when shape is 0, or when software osc is Pulse or Wavetable
+  int envelopeOn = (ay2->oscEnvelope.shape != 0) &&
+                   (ay2->oscSoftware.type != aySoftwareOscPulse) &&
+                   (ay2->oscSoftware.type != aySoftwareOscWavetable);
+  int softwareOscOn = (ay2->oscSoftware.type != aySoftwareOscNone);
+
+  // Top block headers (y 6)
+  gfxSetFgColor(toneOn ? cs.textTitles : cs.textInfo);
+  gfxPrint(COL_LEFT_X, 6, "Tone");
+  gfxSetFgColor(envelopeOn ? cs.textTitles : cs.textInfo);
+  gfxPrint(COL_RIGHT_X, 6, "Envelope");
+
+  // Bottom block headers (y 11)
+  gfxSetFgColor(noiseOn ? cs.textTitles : cs.textInfo);
+  gfxPrint(COL_LEFT_X, 11, "Noise");
+  gfxSetFgColor(softwareOscOn ? cs.textTitles : cs.textInfo);
+  gfxPrint(COL_RIGHT_X, 11, "Soft osc");
+}
+
 static void drawStatic(void) {
   instrumentCommonDrawStatic();
 
@@ -148,10 +174,8 @@ static void drawStatic(void) {
   const ColorScheme cs = appSettings.colorScheme;
   InstrumentAY2* ay2 = &chipnomadState->project.instruments[cInstrument].chip.ay2;
 
-  // Top block headers (y 6)
-  gfxSetFgColor(cs.textTitles);
-  gfxPrint(COL_LEFT_X, 6, "Tone");
-  gfxPrint(COL_RIGHT_X, 6, "Envelope");
+  // Draw oscillator headers with dynamic colors
+  drawOscillatorHeaders();
 
   // Top block labels (y 7-9)
   gfxSetFgColor(cs.textDefault);
@@ -159,11 +183,6 @@ static void drawStatic(void) {
   gfxPrint(COL_LEFT_X, 8, "Fine");
   gfxPrint(COL_RIGHT_X, 7, "Mode");
   // Row 8-9 labels are dynamic (Pitch/N and Fine/D or N and D)
-
-  // Bottom block headers (y 11)
-  gfxSetFgColor(cs.textTitles);
-  gfxPrint(COL_LEFT_X, 11, "Noise");
-  gfxPrint(COL_RIGHT_X, 11, "Soft osc");
 
   // Bottom block labels (y 12-14)
   gfxSetFgColor(cs.textDefault);
@@ -366,6 +385,9 @@ static int onEdit(int col, int row, CellEditAction action) {
     switch (row) {
       case 3: // Tone on/off
         handled = edit8noLast(action, &ay2->oscTone.isOn, 1, 0, 1);
+        if (handled) {
+          drawOscillatorHeaders();  // Update header colors
+        }
         break;
       case 4: // Tone pitch
         handled = editSigned8(action, &ay2->oscTone.pitchOffset, chipnomadState->project.pitchTable.octaveSize, -128, 127);
@@ -381,6 +403,9 @@ static int onEdit(int col, int row, CellEditAction action) {
         break;
       case 7: // Noise on/off
         handled = edit8noLast(action, &ay2->oscNoise.isOn, 1, 0, 1);
+        if (handled) {
+          drawOscillatorHeaders();  // Update header colors
+        }
         break;
       case 8: // Noise period
         handled = edit8noLast(action, &ay2->oscNoise.noisePeriod, 8, 0, 31);
@@ -392,6 +417,9 @@ static int onEdit(int col, int row, CellEditAction action) {
     switch (row) {
       case 3: // Envelope shape
         handled = edit8noLast(action, &ay2->oscEnvelope.shape, 8, 0, 15);
+        if (handled) {
+          drawOscillatorHeaders();  // Update header colors
+        }
         break;
       case 4: // Envelope mode (toggle between Osc and AutoEnv)
         {
@@ -450,6 +478,9 @@ static int onEdit(int col, int row, CellEditAction action) {
 
           // If type changed, clear and redraw rows that depend on type
           if (handled && oldType != type) {
+            // Update oscillator headers (envelope and soft osc colors may change)
+            drawOscillatorHeaders();
+
             // Clear P1 and P2 display areas (including labels, values, and wavetable preview)
             int y11 = rowToY(11);
             int y12 = rowToY(12);
