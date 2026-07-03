@@ -1,20 +1,14 @@
 #ifndef __SCREEN_EXPORT_H__
 #define __SCREEN_EXPORT_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "screens.h"
-
-// Forward declaration
-struct Exporter;
+#include "export/export.h"
 
 // Common rows on the export screen
 #define SCR_EXPORT_ROWS (4)
 
 // Export state
-extern struct Exporter* currentExporter;
+extern Exporter* currentExporter;
 extern int startRow;
 
 int exportCommonColumnCount(int row);
@@ -26,10 +20,5 @@ void generateExportPath(char* outputPath, int maxLen, const char* extension);
 void generatePSGExportPath(char* outputPath, int maxLen);
 
 extern ScreenData screenExportAY;
-
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

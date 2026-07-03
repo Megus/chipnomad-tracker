@@ -1,26 +1,24 @@
 #ifndef __CHIPNOMAD_LIB_H__
 #define __CHIPNOMAD_LIB_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "chips/chips.h"
 
-// Main ChipNomad library header
-// Include this file to access all ChipNomad library functionality
+extern "C" {
 
 #include "project.h"
 #include "playback.h"
-#include "chips/chips.h"
 #include "utils.h"
+
+}
 
 #define AUDIO_OVERLOAD_COOLDOWN_FRAMES 5
 #define PITCH_CONFLICT_COOLDOWN_FRAMES 5
 
 /**
 * Chip factory function type
-* Returns a SoundChip struct for the given chip index
+* Returns a SoundChip pointer for the given chip index
 */
-typedef SoundChip (*ChipFactory)(int chipIndex, int sampleRate, ChipSetup setup);
+typedef SoundChip* (*ChipFactory)(int chipIndex, int sampleRate, ChipSetup setup);
 
 /**
 * ChipNomad state encapsulating all library state
@@ -28,7 +26,7 @@ typedef SoundChip (*ChipFactory)(int chipIndex, int sampleRate, ChipSetup setup)
 struct ChipNomadState {
   Project project;
   PlaybackState playbackState;
-  SoundChip chips[PROJECT_MAX_CHIPS];
+  SoundChip* chips[PROJECT_MAX_CHIPS];
   int sampleRate;
   float frameSampleCounter;
   float mixVolume;
@@ -74,9 +72,5 @@ int chipnomadRender(ChipNomadState* state, float* buffer, int samples);
 * @param quality Quality level
 */
 void chipnomadSetQuality(ChipNomadState* state, ChipNomadQuality quality);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

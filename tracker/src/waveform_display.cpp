@@ -139,19 +139,19 @@ Bitmap* waveformDisplayGetBitmap(int trackIdx) {
   int chipIdx = trackIdx / 3;
   int ayChannel = trackIdx % 3;
 
-  SoundChip* chip = &chipnomadState->chips[chipIdx];
+  SoundChipAY* chip = static_cast<SoundChipAY*>(chipnomadState->chips[chipIdx]);
 
   // Read mixer register (reg 7)
-  uint8_t mixerReg = chip->regs[7];
+  uint8_t mixerReg = chip->getRegister(7);
   int hasTone = !((mixerReg >> ayChannel) & 1);
   int hasNoise = !((mixerReg >> (ayChannel + 3)) & 1);
 
   // Read volume register (reg 8/9/10)
-  uint8_t volumeReg = chip->regs[8 + ayChannel];
+  uint8_t volumeReg = chip->getRegister(8 + ayChannel);
   int envEnabled = (volumeReg & 0x10) != 0;
 
   // Read noise period (reg 6, lower 5 bits)
-  uint8_t noisePeriod = chip->regs[6] & 0x1F;
+  uint8_t noisePeriod = chip->getRegister(6) & 0x1F;
   int noiseShadeBase = 128 + noisePeriod * 2;
 
   Bitmap* bitmap = waveformBitmaps[trackIdx];
@@ -191,7 +191,7 @@ Bitmap* waveformDisplayGetBitmap(int trackIdx) {
     }
   } else {
     // Envelope enabled
-    uint8_t envShape = chip->regs[13];
+    uint8_t envShape = chip->getRegister(13);
 
     for (int x = 0; x < charW; x++) {
       int amplitude = getAYEnvelopeHeight(x, envShape);

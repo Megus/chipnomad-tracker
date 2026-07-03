@@ -1,9 +1,6 @@
 #include "doctest.h"
-
-extern "C" {
 #include "chipnomad_lib.h"
 #include "screens.h"
-}
 
 #include <cstring>
 

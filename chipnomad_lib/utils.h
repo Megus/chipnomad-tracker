@@ -1,9 +1,7 @@
-#ifndef __UTILS_H__
-#define __UTILS_H__
+#ifndef __CHIPNOMAD_LIB__UTILS_H__
+#define __CHIPNOMAD_LIB__UTILS_H__
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 
 #include <stdint.h>
 
@@ -26,8 +24,6 @@ float centsToFrequency(int cents);
 // Simple pseudo-random number generator. Returns a value in range [0, 65535]
 uint16_t utilsRandom(void);
 
-#ifdef __cplusplus
 }
-#endif
 
-#endif
+#endif // __CHIPNOMAD_LIB__UTILS_H__

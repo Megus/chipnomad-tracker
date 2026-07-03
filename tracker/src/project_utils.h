@@ -1,11 +1,11 @@
 #ifndef __PROJECT_UTILS_H__
 #define __PROJECT_UTILS_H__
 
+#include "chipnomad_lib.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "chipnomad_lib.h"
 
 void projectInitAY(Project* p);
 // Does chain have notes?

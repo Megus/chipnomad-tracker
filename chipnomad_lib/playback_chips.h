@@ -1,9 +1,7 @@
-#ifndef __PLAYBACK_CHIPS_H__
-#define __PLAYBACK_CHIPS_H__
+#ifndef __CHIPNOMAD_LIB__PLAYBACK_CHIPS_H__
+#define __CHIPNOMAD_LIB__PLAYBACK_CHIPS_H__
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 
 #include <stdint.h>
 #include "project_instruments.h"
@@ -77,8 +75,6 @@ union PlaybackChipNoteState {
 };
 
 
-#ifdef __cplusplus
 }
-#endif
 
-#endif
+#endif // __CHIPNOMAD_LIB__PLAYBACK_CHIPS_H__

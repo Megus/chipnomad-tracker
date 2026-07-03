@@ -1,9 +1,7 @@
-#ifndef __PROJECT_INSTRUMENTS_H__
-#define __PROJECT_INSTRUMENTS_H__
+#ifndef __CHIPNOMAD_LIB__PROJECT_INSTRUMENTS_H__
+#define __CHIPNOMAD_LIB__PROJECT_INSTRUMENTS_H__
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -159,8 +157,6 @@ struct InstrumentFunctions {
 
 InstrumentFunctions getInstrumentFunctions(enum InstrumentType type);
 
-#ifdef __cplusplus
 }
-#endif
 
-#endif
+#endif // __CHIPNOMAD_LIB__PROJECT_INSTRUMENTS_H__

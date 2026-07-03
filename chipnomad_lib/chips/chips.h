@@ -1,12 +1,10 @@
-#ifndef __CHIPS_H__
-#define __CHIPS_H__
+#ifndef __CHIPNOMAD_LIB__CHIPS_H__
+#define __CHIPNOMAD_LIB__CHIPS_H__
 
-#ifdef __cplusplus
 extern "C" {
-#endif
-
 #include <stdint.h>
 #include "../project.h"
+}
 
 /**
 * Chip emulation quality levels
@@ -18,28 +16,48 @@ enum class ChipNomadQuality : int {
   best
 };
 
-struct SoundChip {
-  void* userdata;
-  uint8_t regs[256];  // Space for 256 chip registers
+struct ayumi;
 
-  int (*timerFunc)(struct SoundChip* self, void* userdata);
-  void* timerUserdata;
+class SoundChip {
+  protected:
+    int (*timerFunc)(SoundChip* self, void* userdata);
+    void* timerUserdata;
 
-  int (*init)(struct SoundChip* self);
-  void (*setRegister)(struct SoundChip* self, uint16_t reg, uint8_t value);
-  void (*setTimerFunc)(struct SoundChip* self, int (*timerFunc)(struct SoundChip* self, void* userdata), void* timerUserdata);
-  void (*render)(struct SoundChip* self, float* buffer, int samples);
-  void (*setQuality)(struct SoundChip* self, ChipNomadQuality quality);
-  int (*cleanup)(struct SoundChip* self);
+  public:
+    SoundChip() : timerFunc(nullptr), timerUserdata(nullptr) {}
+    virtual ~SoundChip() {}
+
+    virtual void setTimerFunc(int (*timerFunc)(SoundChip* self, void* userdata), void* timerUserdata) {
+      this->timerFunc = timerFunc;
+      this->timerUserdata = timerUserdata;
+    }
+
+    virtual void setRegister(uint16_t reg, uint8_t value) = 0;
+    virtual uint8_t getRegister(uint16_t reg) = 0;
+    virtual void setQuality(ChipNomadQuality quality) = 0;
+    virtual void render(float* buffer, int samples) = 0;
 };
 
-SoundChip createChipAY(int sampleRate, ChipSetup setup);
-void updateChipAYType(SoundChip* chip, uint8_t isYM);
-void updateChipAYStereoMode(SoundChip* chip, enum StereoModeAY stereoMode, uint8_t separation);
-void updateChipAYClock(SoundChip* chip, int clockRate, int sampleRate);
+class SoundChipAY : public SoundChip {
+  private:
+    int sampleRate;
+    uint8_t registers[16];
+    ayumi* ay;
 
-#ifdef __cplusplus
-}
-#endif
+  public:
+    SoundChipAY(int sampleRate, ChipSetup setup);
+    ~SoundChipAY() override;
 
-#endif
+    void setRegister(uint16_t reg, uint8_t value) override;
+    uint8_t getRegister(uint16_t reg) override;
+
+    void updateType(uint8_t isYM);
+    void updateStereoMode(StereoModeAY stereoMode, uint8_t separation);
+    void updateClock(int clockRate);
+
+    void setTimerFunc(int (*timerFunc)(SoundChip* self, void* userdata), void* timerUserdata) override;
+    void render(float* buffer, int samples) override;
+    void setQuality(ChipNomadQuality quality) override;
+};
+
+#endif // __CHIPNOMAD_LIB__CHIPS_H__

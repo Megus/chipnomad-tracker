@@ -1,9 +1,7 @@
-#ifndef __PLAYBACK_INSTRUMENTS_H__
-#define __PLAYBACK_INSTRUMENTS_H__
+#ifndef __CHIPNOMAD_LIB__PLAYBACK_INSTRUMENTS_H__
+#define __CHIPNOMAD_LIB__PLAYBACK_INSTRUMENTS_H__
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 
 #include "playback.h"
 #include "playback_modulation.h"
@@ -26,9 +24,6 @@ int16_t playbackApplyVolumeEnvelope(PlaybackModState* mod, int maxVolume, int* s
 // Returns 1 if note should be stopped (ADSR release complete), 0 otherwise
 int playbackApplyVolumeModulation(PlaybackModState* mod, int8_t* volumeOffset, uint8_t* volume, int maxVolume);
 
-
-#ifdef __cplusplus
 }
-#endif
 
-#endif
+#endif // __CHIPNOMAD_LIB__PLAYBACK_INSTRUMENTS_H__

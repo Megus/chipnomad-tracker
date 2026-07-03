@@ -1,6 +1,8 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
+#include "chipnomad_lib.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -8,7 +10,6 @@ extern "C" {
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
-#include "chipnomad_lib.h"
 #include "corelib/corelib_input.h"
 #include "corelib_mainloop.h"
 

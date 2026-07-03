@@ -1,10 +1,9 @@
 #include "doctest.h"
-
-extern "C" {
 #include "chipnomad_lib.h"
 #include "screens.h"
 #include "screen_instrument.h"
 
+extern "C" {
 // External from screen_instrument.c
 extern int cInstrument;
 }

@@ -1,9 +1,7 @@
-#ifndef __PLAYBACK_H__
-#define __PLAYBACK_H__
+#ifndef __CHIPNOMAD_LIB__PLAYBACK_H__
+#define __CHIPNOMAD_LIB__PLAYBACK_H__
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 
 #include "project.h"
 #include "chips/chips.h"
@@ -259,8 +257,6 @@ void playbackClearLoopRange(PlaybackState* state);
  */
 int playbackNextFrame(struct ChipNomadState* state);
 
-#ifdef __cplusplus
 }
-#endif
 
-#endif
+#endif // __CHIPNOMAD_LIB__PLAYBACK_H__

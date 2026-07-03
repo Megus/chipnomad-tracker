@@ -3,35 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+
+extern "C" {
 #include "playback.h"
-#include "chips/chips.h"
-#include "chipnomad_lib.h"
-
-// WAV implementation data
-struct WAVExporterData {
-  FILE* file;
-  int sampleRate;
-  int channels;
-  int bitDepth;
-  int totalSamples;
-  int allTracksStopped;
-  int renderedSeconds;
-  char filename[1024];
-};
-
-// WAV Stems implementation data
-struct WAVStemsExporterData {
-  FILE** files;
-  int trackCount;
-  int currentTrack;
-  int sampleRate;
-  int channels;
-  int bitDepth;
-  int totalSamples;
-  int allTracksStopped;
-  int renderedSeconds;
-  char basePath[512];
-};
+}
 
 struct WAVHeader {
   char riff[4];
@@ -48,9 +23,6 @@ struct WAVHeader {
   char data[4];
   uint32_t dataSize;
 };
-
-// TODO: Stop using a global variable and instead have an allocated buffer in the exporter class
-static float* wavRenderBuffer = NULL;
 
 static void writeWAVHeader(FILE* file, int sampleRate, int channels, int bitDepth, int dataSize) {
   WAVHeader header;
@@ -72,276 +44,146 @@ static void writeWAVHeader(FILE* file, int sampleRate, int channels, int bitDept
   fwrite(&header, sizeof(WAVHeader), 1, file);
 }
 
-static int wavExportWrite(WAVExporterData* data, float* buffer, int samples) {
-  if (data->bitDepth == 16) {
-    for (int i = 0; i < samples * data->channels; i++) {
+///////////////////////////////////////////////////////////////////////////////
+// ExporterWAV
+///////////////////////////////////////////////////////////////////////////////
+
+ExporterWAV::ExporterWAV(const char* path, Project* project, int startRow, int sampleRate, int bitDepth, float mixVolume, bool stems)
+  : Exporter(project, startRow) {
+  this->sampleRate = sampleRate;
+  this->channels = 2;
+  this->bitDepth = bitDepth;
+  this->totalSamples = 0;
+  this->currentTrack = 0;
+  this->stems = stems;
+  strncpy(this->basePath, path, sizeof(this->basePath) - 1);
+  this->basePath[sizeof(this->basePath) - 1] = 0;
+
+  if (stems) {
+    fileCount = project->chipsCount * 3;
+  } else {
+    fileCount = 1;
+  }
+
+  files = (FILE**)malloc(sizeof(FILE*) * fileCount);
+  for (int i = 0; i < fileCount; i++) {
+    char fname[1024];
+    if (stems) {
+      snprintf(fname, sizeof(fname), "%s-%02d.wav", path, i + 1);
+    } else {
+      strncpy(fname, path, sizeof(fname) - 1);
+      fname[sizeof(fname) - 1] = 0;
+    }
+    files[i] = fopen(fname, "wb");
+    if (files[i]) {
+      writeWAVHeader(files[i], sampleRate, channels, bitDepth, 0);
+    }
+  }
+
+  renderBuffer = (float*)malloc(sizeof(float) * sampleRate * channels);
+
+  chipnomadInitChips(chipnomadState, sampleRate, NULL);
+  chipnomadSetQuality(chipnomadState, ChipNomadQuality::best);
+  chipnomadState->mixVolume = mixVolume;
+
+  if (stems) {
+    for (int t = 0; t < PROJECT_MAX_TRACKS; t++) {
+      chipnomadState->playbackState.trackEnabled[t] = (t == 0) ? 1 : 0;
+    }
+  }
+}
+
+int ExporterWAV::next() {
+  int samplesRendered = chipnomadRender(chipnomadState, renderBuffer, sampleRate);
+
+  if (samplesRendered > 0 && files[currentTrack]) {
+    writeSamples(files[currentTrack], renderBuffer, samplesRendered);
+  }
+
+  if (samplesRendered < sampleRate) {
+    if (stems) {
+      currentTrack++;
+      if (currentTrack >= fileCount) {
+        return -1;
+      }
+      playbackStartSong(&chipnomadState->playbackState, 0, 0, 0);
+      for (int t = 0; t < PROJECT_MAX_TRACKS; t++) {
+        chipnomadState->playbackState.trackEnabled[t] = (t == currentTrack) ? 1 : 0;
+      }
+      totalSamples = 0;
+    } else {
+      return -1;
+    }
+  }
+
+  return ++renderedSeconds;
+}
+
+int ExporterWAV::finish() {
+  for (int i = 0; i < fileCount; i++) {
+    if (files[i]) {
+      int dataSize = totalSamples * channels * (bitDepth / 8);
+      fseek(files[i], 0, 0);
+      writeWAVHeader(files[i], sampleRate, channels, bitDepth, dataSize);
+      fclose(files[i]);
+      files[i] = NULL;
+    }
+  }
+  free(files);
+  files = NULL;
+  free(renderBuffer);
+  renderBuffer = NULL;
+  return 0;
+}
+
+void ExporterWAV::cancel() {
+  if (files) {
+    for (int i = 0; i < fileCount; i++) {
+      if (files[i]) {
+        fclose(files[i]);
+        files[i] = NULL;
+      }
+      // Remove the file
+      char fname[1024];
+      if (stems) {
+        snprintf(fname, sizeof(fname), "%s-%02d.wav", basePath, i + 1);
+      } else {
+        strncpy(fname, basePath, sizeof(fname) - 1);
+        fname[sizeof(fname) - 1] = 0;
+      }
+      remove(fname);
+    }
+    free(files);
+    files = NULL;
+  }
+  if (renderBuffer) {
+    free(renderBuffer);
+    renderBuffer = NULL;
+  }
+}
+
+void ExporterWAV::writeSamples(FILE* f, float* buffer, int samples) {
+  if (bitDepth == 16) {
+    for (int i = 0; i < samples * channels; i++) {
       int sample = (int)(buffer[i] * 32767.0f);
       if (sample > 32767) sample = 32767;
       if (sample < -32768) sample = -32768;
       int16_t finalSample = (int16_t)sample;
-      fwrite(&finalSample, sizeof(int16_t), 1, data->file);
+      fwrite(&finalSample, sizeof(int16_t), 1, f);
     }
-  } else if (data->bitDepth == 24) {
-    for (int i = 0; i < samples * data->channels; i++) {
+  } else if (bitDepth == 24) {
+    for (int i = 0; i < samples * channels; i++) {
       int sample = (int)(buffer[i] * 8388607.0f);
       if (sample > 8388607) sample = 8388607;
       if (sample < -8388608) sample = -8388608;
       uint8_t bytes[3] = {(uint8_t)(sample & 0xFF), (uint8_t)((sample >> 8) & 0xFF), (uint8_t)((sample >> 16) & 0xFF)};
-      fwrite(bytes, 3, 1, data->file);
+      fwrite(bytes, 3, 1, f);
     }
-  } else if (data->bitDepth == 32) {
-    for (int i = 0; i < samples * data->channels; i++) {
+  } else if (bitDepth == 32) {
+    for (int i = 0; i < samples * channels; i++) {
       float sample = buffer[i];
-      fwrite(&sample, sizeof(float), 1, data->file);
+      fwrite(&sample, sizeof(float), 1, f);
     }
   }
-  data->totalSamples += samples;
-  return 0;
-}
-
-// WAV exporter methods
-static int wavNext(Exporter* self) {
-  WAVExporterData* data = (WAVExporterData*)self->data;
-  if (data->allTracksStopped) return -1;
-
-  int samplesRendered = chipnomadRender(self->chipnomadState, wavRenderBuffer, data->sampleRate);
-
-  if (samplesRendered > 0) {
-    wavExportWrite(data, wavRenderBuffer, samplesRendered);
-  }
-
-  if (samplesRendered < data->sampleRate) {
-    data->allTracksStopped = 1;
-    return -1;
-  }
-
-  return ++data->renderedSeconds;
-}
-
-static int wavFinish(Exporter* self) {
-  WAVExporterData* data = (WAVExporterData*)self->data;
-
-  int dataSize = data->totalSamples * data->channels * (data->bitDepth / 8);
-  fseek(data->file, 0, 0);
-  writeWAVHeader(data->file, data->sampleRate, data->channels, data->bitDepth, dataSize);
-
-  chipnomadDestroy(self->chipnomadState);
-  fclose(data->file);
-  free(data);
-  free(self);
-  return 0;
-}
-
-static void wavCancel(Exporter* self) {
-  WAVExporterData* data = (WAVExporterData*)self->data;
-
-  chipnomadDestroy(self->chipnomadState);
-  fclose(data->file);
-  remove(data->filename);
-  free(data);
-  free(self);
-}
-
-Exporter* createWAVExporter(const char* filename, Project* project, int startRow, int sampleRate, int bitDepth) {
-  Exporter* exporter = (Exporter*)malloc(sizeof(Exporter));
-  if (!exporter) return NULL;
-
-  WAVExporterData* data = (WAVExporterData*)malloc(sizeof(WAVExporterData));
-  if (!data) {
-    free(exporter);
-    return NULL;
-  }
-
-  data->file = fopen(filename, "wb");
-  if (data->file == NULL) {
-    free(data);
-    free(exporter);
-    return NULL;
-  }
-
-  data->sampleRate = sampleRate;
-  data->channels = 2;
-  data->bitDepth = bitDepth;
-  data->totalSamples = 0;
-  data->allTracksStopped = 0;
-  data->renderedSeconds = 0;
-  strncpy(data->filename, filename, sizeof(data->filename) - 1);
-  data->filename[sizeof(data->filename) - 1] = 0;
-
-  writeWAVHeader(data->file, sampleRate, 2, bitDepth, 0);
-
-  // Create ChipNomad state and initialize
-  exporter->chipnomadState = chipnomadCreate();
-  if (!exporter->chipnomadState) {
-    fclose(data->file);
-    free(data);
-    free(exporter);
-    return NULL;
-  }
-
-  // Copy project data and reinitialize playback
-  exporter->chipnomadState->project = *project;
-  playbackInit(&exporter->chipnomadState->playbackState, &exporter->chipnomadState->project);
-
-  // Initialize chips
-  chipnomadInitChips(exporter->chipnomadState, sampleRate, NULL);
-
-  // Use best quality for export
-  chipnomadSetQuality(exporter->chipnomadState, ChipNomadQuality::best);
-
-  playbackStartSong(&exporter->chipnomadState->playbackState, startRow, 0, 0);
-
-  exporter->data = data;
-  exporter->next = wavNext;
-  exporter->finish = wavFinish;
-  exporter->cancel = wavCancel;
-
-  return exporter;
-}
-
-// WAV Stems exporter methods
-static int wavStemsNext(Exporter* self) {
-  WAVStemsExporterData* data = (WAVStemsExporterData*)self->data;
-  if (data->allTracksStopped) return -1;
-
-  int samplesRendered = chipnomadRender(self->chipnomadState, wavRenderBuffer, data->sampleRate);
-
-  if (samplesRendered > 0) {
-    WAVExporterData tempData = {
-      .file = data->files[data->currentTrack],
-      .sampleRate = data->sampleRate,
-      .channels = data->channels,
-      .bitDepth = data->bitDepth,
-      .totalSamples = 0
-    };
-    wavExportWrite(&tempData, wavRenderBuffer, samplesRendered);
-    data->totalSamples += samplesRendered;
-  }
-
-  if (samplesRendered < data->sampleRate) {
-    data->currentTrack++;
-    if (data->currentTrack >= data->trackCount) {
-      data->allTracksStopped = 1;
-      return -1;
-    }
-
-    playbackStartSong(&self->chipnomadState->playbackState, 0, 0, 0);
-    for (int t = 0; t < PROJECT_MAX_TRACKS; t++) {
-      self->chipnomadState->playbackState.trackEnabled[t] = (t == data->currentTrack) ? 1 : 0;
-    }
-    data->totalSamples = 0;
-  }
-
-  return ++data->renderedSeconds;
-}
-
-static int wavStemsFinish(Exporter* self) {
-  WAVStemsExporterData* data = (WAVStemsExporterData*)self->data;
-
-  for (int i = 0; i < data->trackCount; i++) {
-    int dataSize = data->totalSamples * data->channels * (data->bitDepth / 8);
-    fseek(data->files[i], 0, 0);
-    writeWAVHeader(data->files[i], data->sampleRate, data->channels, data->bitDepth, dataSize);
-    fclose(data->files[i]);
-  }
-
-  chipnomadDestroy(self->chipnomadState);
-  free(wavRenderBuffer);
-  free(data->files);
-  free(data);
-  free(self);
-  return 0;
-}
-
-static void wavStemsCancel(Exporter* self) {
-  WAVStemsExporterData* data = (WAVStemsExporterData*)self->data;
-
-  for (int i = 0; i < data->trackCount; i++) {
-    fclose(data->files[i]);
-    char filename[1024];
-    snprintf(filename, sizeof(filename), "%s-%02d.wav", data->basePath, i + 1);
-    remove(filename);
-  }
-
-  chipnomadDestroy(self->chipnomadState);
-  free(wavRenderBuffer);
-  free(data->files);
-  free(data);
-  free(self);
-}
-
-Exporter* createWAVStemsExporter(const char* basePath, Project* project, int startRow, int sampleRate, int bitDepth) {
-  Exporter* exporter = (Exporter*)malloc(sizeof(Exporter));
-  if (!exporter) return NULL;
-
-  WAVStemsExporterData* data = (WAVStemsExporterData*)malloc(sizeof(WAVStemsExporterData));
-  if (!data) {
-    free(exporter);
-    return NULL;
-  }
-
-  int trackCount = project->chipsCount * 3;
-  data->files = (FILE**)malloc(sizeof(FILE*) * trackCount);
-  if (!data->files) {
-    free(data);
-    free(exporter);
-    return NULL;
-  }
-
-  for (int i = 0; i < trackCount; i++) {
-    char filename[1024];
-    snprintf(filename, sizeof(filename), "%s-%02d.wav", basePath, i + 1);
-    data->files[i] = fopen(filename, "wb");
-    if (data->files[i] == NULL) {
-      for (int j = 0; j < i; j++) {
-        fclose(data->files[j]);
-      }
-      free(data->files);
-      free(data);
-      free(exporter);
-      return NULL;
-    }
-    writeWAVHeader(data->files[i], sampleRate, 2, bitDepth, 0);
-  }
-
-  data->trackCount = trackCount;
-  data->currentTrack = 0;
-  data->sampleRate = sampleRate;
-  data->channels = 2;
-  data->bitDepth = bitDepth;
-  data->totalSamples = 0;
-  data->allTracksStopped = 0;
-  data->renderedSeconds = 0;
-  strncpy(data->basePath, basePath, sizeof(data->basePath) - 1);
-  data->basePath[sizeof(data->basePath) - 1] = 0;
-
-  exporter->chipnomadState = chipnomadCreate();
-  if (!exporter->chipnomadState) {
-    for (int i = 0; i < trackCount; i++) {
-      fclose(data->files[i]);
-    }
-    free(data->files);
-    free(data);
-    free(exporter);
-    return NULL;
-  }
-
-  wavRenderBuffer = (float*)malloc(sizeof(float) * sampleRate * 2);
-
-  exporter->chipnomadState->project = *project;
-  playbackInit(&exporter->chipnomadState->playbackState, &exporter->chipnomadState->project);
-  chipnomadInitChips(exporter->chipnomadState, sampleRate, NULL);
-  chipnomadSetQuality(exporter->chipnomadState, ChipNomadQuality::best);
-
-  playbackStartSong(&exporter->chipnomadState->playbackState, startRow, 0, 0);
-  for (int t = 0; t < PROJECT_MAX_TRACKS; t++) {
-    exporter->chipnomadState->playbackState.trackEnabled[t] = (t == 0) ? 1 : 0;
-  }
-
-  exporter->data = data;
-  exporter->next = wavStemsNext;
-  exporter->finish = wavStemsFinish;
-  exporter->cancel = wavStemsCancel;
-
-  return exporter;
+  totalSamples += samples;
 }

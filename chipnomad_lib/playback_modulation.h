@@ -1,9 +1,7 @@
-#ifndef __PLAYBACK_MODULATION_H__
-#define __PLAYBACK_MODULATION_H__
+#ifndef __CHIPNOMAD_LIB__PLAYBACK_MODULATION_H__
+#define __CHIPNOMAD_LIB__PLAYBACK_MODULATION_H__
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 
 #include <stdint.h>
 #include "project_instruments.h"
@@ -37,8 +35,6 @@ void playbackModNoteOff(PlaybackModState* state);
 int16_t playbackModScaleToRange(int16_t modValue, int16_t maxAmplitude);
 
 
-#ifdef __cplusplus
 }
-#endif
 
-#endif
+#endif // __CHIPNOMAD_LIB__PLAYBACK_MODULATION_H__

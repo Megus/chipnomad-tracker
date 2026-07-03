@@ -1,9 +1,7 @@
-#ifndef __PLAYBACK_FX_H__
-#define __PLAYBACK_FX_H__
+#ifndef __CHIPNOMAD_LIB__PLAYBACK_FX_H__
+#define __CHIPNOMAD_LIB__PLAYBACK_FX_H__
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 
 enum PlaybackArpType {
   arpTypeUp,
@@ -57,9 +55,6 @@ struct PlaybackFXState {
   } d;
 };
 
-
-#ifdef __cplusplus
 }
-#endif
 
-#endif
+#endif // __CHIPNOMAD_LIB__PLAYBACK_FX_H__

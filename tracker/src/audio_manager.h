@@ -1,12 +1,12 @@
 #ifndef __AUDIOMANAGER_H__
 #define __AUDIOMANAGER_H__
 
+#include "common.h"
+#include "chipnomad_lib.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "common.h"
-#include "chipnomad_lib.h"
 
 typedef void FrameCallback(void* userdata);
 

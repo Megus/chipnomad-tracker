@@ -66,13 +66,14 @@ static void fullRedraw(void) {
 
 static void draw(void) {
   if (currentExporter) {
-    int seconds = currentExporter->next(currentExporter);
+    int seconds = currentExporter->next();
     if (seconds == -1) {
-      if (currentExporter->finish(currentExporter) == 0) {
+      if (currentExporter->finish() == 0) {
         screenMessage(MESSAGE_TIME, "Export completed");
       } else {
         screenMessage(MESSAGE_TIME, "Export failed");
       }
+      delete currentExporter;
       currentExporter = NULL;
     } else {
       screenMessage(MESSAGE_TIME, "Exporting... %ds. B to cancel", seconds);
@@ -83,7 +84,8 @@ static void draw(void) {
 static int onInput(int isKeyDown, int keys, int tapCount) {
   if (currentExporter) {
     if (keys == keyOpt) {
-      currentExporter->cancel(currentExporter);
+      currentExporter->cancel();
+      delete currentExporter;
       currentExporter = NULL;
       screenMessage(MESSAGE_TIME, "Export cancelled");
     }
@@ -278,9 +280,8 @@ int exportCommonOnEdit(int col, int row, CellEditAction action) {
     char exportPath[1024];
     generateExportPath(exportPath, sizeof(exportPath), "wav");
 
-    currentExporter = createWAVExporter(exportPath, &chipnomadState->project, startRow, sampleRates[currentSampleRateIndex], bitDepths[currentBitDepthIndex]);
+    currentExporter = new ExporterWAV(exportPath, &chipnomadState->project, startRow, sampleRates[currentSampleRateIndex], bitDepths[currentBitDepthIndex], appSettings.mixVolume);
     if (currentExporter) {
-      currentExporter->chipnomadState->mixVolume = appSettings.mixVolume;
       screenMessage(MESSAGE_TIME, "Starting export...");
     } else {
       screenMessage(MESSAGE_TIME, "Export failed to start");
@@ -292,9 +293,8 @@ int exportCommonOnEdit(int col, int row, CellEditAction action) {
     char basePath[512];
     generateStemsExportPath(basePath, sizeof(basePath));
 
-    currentExporter = createWAVStemsExporter(basePath, &chipnomadState->project, startRow, sampleRates[currentSampleRateIndex], bitDepths[currentBitDepthIndex]);
+    currentExporter = new ExporterWAV(basePath, &chipnomadState->project, startRow, sampleRates[currentSampleRateIndex], bitDepths[currentBitDepthIndex], appSettings.mixVolume, true);
     if (currentExporter) {
-      currentExporter->chipnomadState->mixVolume = appSettings.mixVolume;
       int trackCount = chipnomadState->project.chipsCount * 3;
       screenMessage(MESSAGE_TIME, "Starting stems export (%d files)...", trackCount);
     } else {

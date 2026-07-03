@@ -3,18 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include "playback.h"
-#include "chips/chips.h"
-#include "chipnomad_lib.h"
 
-// PSG exporter state
-struct PSGExporterData {
-  FILE* files[3];
-  int numChips;
-  int allTracksStopped;
-  int renderedSeconds;
-  char baseFilename[1024];
-};
+extern "C" {
+#include "playback.h"
+}
 
 static void writePSGHeader(FILE* file) {
   const char header[17] = "PSG\x1a\0\0\0\0\0\0\0\0\0\0\0\0";
@@ -22,205 +14,133 @@ static void writePSGHeader(FILE* file) {
 }
 
 // PSG recording chip implementation
-struct PSGChipData {
-  FILE* file;
-  uint8_t lastRegs[14];
+class SoundChipPSG : public SoundChip {
+  private:
+    FILE* file;
+    uint8_t lastRegs[14];
+    uint8_t regs[256];
+
+  public:
+    SoundChipPSG(FILE* f) : file(f) {
+      memset(regs, 0, sizeof(regs));
+      regs[7] = 0x3f;
+      memset(lastRegs, 0, sizeof(lastRegs));
+      lastRegs[7] = 0x3f;
+    }
+
+    ~SoundChipPSG() override {}
+
+    void setRegister(uint16_t reg, uint8_t value) override {
+      if (reg > 13) return;
+      regs[reg] = value;
+
+      if (lastRegs[reg] != value || reg == 13) {
+        uint8_t regData[2] = {(uint8_t)reg, value};
+        fwrite(regData, 2, 1, file);
+        lastRegs[reg] = value;
+      }
+    }
+
+    uint8_t getRegister(uint16_t reg) override {
+      if (reg > 255) return 0;
+      return regs[reg];
+    }
+
+    void render(float* buffer, int samples) override {
+      for (int i = 0; i < samples * 2; i++) {
+        buffer[i] = 0.0f;
+      }
+    }
+
+    void setQuality(ChipNomadQuality quality) override {}
 };
-
-static int psgChipInit(SoundChip* self) {
-  PSGChipData* data = (PSGChipData*)self->userdata;
-  for (int i = 0; i < 14; i++) {
-    data->lastRegs[i] = 0;
-  }
-  data->lastRegs[7] = 0x3f;
-  return 0;
-}
-
-static void psgChipSetRegister(SoundChip* self, uint16_t reg, uint8_t value) {
-  if (reg > 13) return;
-
-  PSGChipData* data = (PSGChipData*)self->userdata;
-  self->regs[reg] = value;
-
-  if (data->lastRegs[reg] != value || reg == 13) {
-    uint8_t regData[2] = {(uint8_t)reg, value};
-    fwrite(regData, 2, 1, data->file);
-    data->lastRegs[reg] = value;
-  }
-}
-
-static void psgSetTimerFunc(SoundChip* self, int (*timerFunc)(SoundChip* self, void* userdata), void* timerUserdata) {
-  // PSG export doesn't support timer effects
-}
-
-static void psgChipRender(SoundChip* self, float* buffer, int samples) {
-  for (int i = 0; i < samples * 2; i++) {
-    buffer[i] = 0.0f;
-  }
-}
-
-static int psgChipCleanup(SoundChip* self) {
-  free(self->userdata);
-  return 0;
-}
 
 // File pointers for PSG factory
 static FILE* psgFiles[3];
 
-static SoundChip psgChipFactory(int chipIndex, int sampleRate, ChipSetup setup) {
-  PSGChipData* data = (PSGChipData*)malloc(sizeof(PSGChipData));
-  data->file = psgFiles[chipIndex];
-
-  SoundChip chip = {
-    .userdata = data,
-    .regs = {0},
-    .timerFunc = NULL,
-    .timerUserdata = NULL,
-    .init = psgChipInit,
-    .setRegister = psgChipSetRegister,
-    .setTimerFunc = psgSetTimerFunc,
-    .render = psgChipRender,
-    .setQuality = NULL,
-    .cleanup = psgChipCleanup,
-  };
-
-  for (int i = 0; i < 256; i++) {
-    chip.regs[i] = 0;
-  }
-  chip.regs[7] = 0x3f;
-
-  return chip;
+static SoundChip* psgChipFactory(int chipIndex, int sampleRate, ChipSetup setup) {
+  return new SoundChipPSG(psgFiles[chipIndex]);
 }
 
-// PSG exporter methods
-static int psgNext(Exporter* self) {
-  PSGExporterData* data = (PSGExporterData*)self->data;
-  if (data->allTracksStopped) return -1;
+///////////////////////////////////////////////////////////////////////////////
+// ExporterPSG
+///////////////////////////////////////////////////////////////////////////////
 
-  int framesPerChunk = (int)(self->chipnomadState->project.tickRate * 10 + 0.5f); // 10 seconds
-  int framesRendered = 0;
-
-  while (framesRendered < framesPerChunk && !data->allTracksStopped) {
-    uint8_t frameMarker = 0xFF;
-    for (int i = 0; i < data->numChips; i++) {
-      fwrite(&frameMarker, 1, 1, data->files[i]);
-    }
-
-    data->allTracksStopped = playbackNextFrame(self->chipnomadState);
-    framesRendered++;
-  }
-
-  if (data->allTracksStopped) return -1;
-
-  data->renderedSeconds += 10;
-  return data->renderedSeconds;
-}
-
-static int psgFinish(Exporter* self) {
-  PSGExporterData* data = (PSGExporterData*)self->data;
-
-  chipnomadDestroy(self->chipnomadState);
-  for (int i = 0; i < data->numChips; i++) {
-    fclose(data->files[i]);
-  }
-  free(data);
-  free(self);
-  return 0;
-}
-
-static void psgCancel(Exporter* self) {
-  PSGExporterData* data = (PSGExporterData*)self->data;
-
-  chipnomadDestroy(self->chipnomadState);
-  for (int i = 0; i < data->numChips; i++) {
-    fclose(data->files[i]);
-
-    char filename[1024];
-    if (data->numChips > 1) {
-      snprintf(filename, sizeof(filename), "%s-%d.psg", data->baseFilename, i + 1);
-    } else {
-      snprintf(filename, sizeof(filename), "%s.psg", data->baseFilename);
-    }
-    remove(filename);
-  }
-  free(data);
-  free(self);
-}
-
-Exporter* createPSGExporter(const char* filename, Project* project, int startRow) {
-  Exporter* exporter = (Exporter*)malloc(sizeof(Exporter));
-  if (!exporter) return NULL;
-
-  PSGExporterData* data = (PSGExporterData*)malloc(sizeof(PSGExporterData));
-  if (!data) {
-    free(exporter);
-    return NULL;
-  }
-
-  data->numChips = project->chipsCount;
-  data->allTracksStopped = 0;
-  data->renderedSeconds = 0;
+ExporterPSG::ExporterPSG(const char* filename, Project* project, int startRow)
+  : Exporter(project, startRow) {
+  numChips = project->chipsCount;
 
   // Extract base filename (remove .psg extension if present)
-  strncpy(data->baseFilename, filename, sizeof(data->baseFilename) - 1);
-  data->baseFilename[sizeof(data->baseFilename) - 1] = 0;
-  char* ext = strstr(data->baseFilename, ".psg");
+  strncpy(baseFilename, filename, sizeof(baseFilename) - 1);
+  baseFilename[sizeof(baseFilename) - 1] = 0;
+  char* ext = strstr(baseFilename, ".psg");
   if (ext) *ext = 0;
 
   // Open files for each chip
-  for (int i = 0; i < data->numChips; i++) {
+  for (int i = 0; i < numChips; i++) {
     char chipFilename[1024];
-    if (data->numChips > 1) {
-      snprintf(chipFilename, sizeof(chipFilename), "%s-%d.psg", data->baseFilename, i + 1);
+    if (numChips > 1) {
+      snprintf(chipFilename, sizeof(chipFilename), "%s-%d.psg", baseFilename, i + 1);
     } else {
-      snprintf(chipFilename, sizeof(chipFilename), "%s.psg", data->baseFilename);
+      snprintf(chipFilename, sizeof(chipFilename), "%s.psg", baseFilename);
+    }
+    files[i] = fopen(chipFilename, "wb");
+    if (files[i]) {
+      writePSGHeader(files[i]);
+    }
+  }
+
+  // Set up PSG chip factory
+  for (int i = 0; i < numChips; i++) {
+    psgFiles[i] = files[i];
+  }
+  chipnomadInitChips(chipnomadState, 44100, psgChipFactory);
+}
+
+int ExporterPSG::next() {
+  int framesPerChunk = (int)(chipnomadState->project.tickRate * 10 + 0.5f); // 10 seconds
+  int framesRendered = 0;
+  int done = 0;
+
+  while (framesRendered < framesPerChunk && !done) {
+    uint8_t frameMarker = 0xFF;
+    for (int i = 0; i < numChips; i++) {
+      fwrite(&frameMarker, 1, 1, files[i]);
     }
 
-    data->files[i] = fopen(chipFilename, "wb");
-    if (data->files[i] == NULL) {
-      // Close previously opened files
-      for (int j = 0; j < i; j++) {
-        fclose(data->files[j]);
+    done = playbackNextFrame(chipnomadState);
+    framesRendered++;
+  }
+
+  if (done) return -1;
+
+  renderedSeconds += 10;
+  return renderedSeconds;
+}
+
+int ExporterPSG::finish() {
+  for (int i = 0; i < numChips; i++) {
+    if (files[i]) {
+      fclose(files[i]);
+      files[i] = NULL;
+    }
+  }
+  return 0;
+}
+
+void ExporterPSG::cancel() {
+  for (int i = 0; i < numChips; i++) {
+    if (files[i]) {
+      fclose(files[i]);
+      files[i] = NULL;
+
+      char filename[1024];
+      if (numChips > 1) {
+        snprintf(filename, sizeof(filename), "%s-%d.psg", baseFilename, i + 1);
+      } else {
+        snprintf(filename, sizeof(filename), "%s.psg", baseFilename);
       }
-      free(data);
-      free(exporter);
-      return NULL;
-    }
-    writePSGHeader(data->files[i]);
-  }
-
-  // Create ChipNomad state and initialize
-  exporter->chipnomadState = chipnomadCreate();
-  if (!exporter->chipnomadState) {
-    for (int i = 0; i < data->numChips; i++) {
-      fclose(data->files[i]);
-    }
-    free(data);
-    free(exporter);
-    return NULL;
-  }
-
-  // Copy project data and reinitialize playback
-  exporter->chipnomadState->project = *project;
-  playbackInit(&exporter->chipnomadState->playbackState, &exporter->chipnomadState->project);
-
-  // Set up PSG factory and create chips
-  for (int i = 0; i < data->numChips; i++) {
-    psgFiles[i] = data->files[i];
-  }
-  chipnomadInitChips(exporter->chipnomadState, 44100, psgChipFactory); // Sample rate doesn't matter for PSG
-  for (int i = 0; i < data->numChips; i++) {
-    SoundChip* chip = &exporter->chipnomadState->chips[i];
-    if (chip->init) {
-      chip->init(chip);
+      remove(filename);
     }
   }
-  playbackStartSong(&exporter->chipnomadState->playbackState, startRow, 0, 0);
-
-  exporter->data = data;
-  exporter->next = psgNext;
-  exporter->finish = psgFinish;
-  exporter->cancel = psgCancel;
-
-  return exporter;
 }

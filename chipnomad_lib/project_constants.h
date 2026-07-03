@@ -1,9 +1,7 @@
-#ifndef __PROJECT_CONSTANTS_H__
-#define __PROJECT_CONSTANTS_H__
+#ifndef __CHIPNOMAD_LIB__PROJECT_CONSTANTS_H__
+#define __CHIPNOMAD_LIB__PROJECT_CONSTANTS_H__
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 
 #define PROJECT_MAX_TRACKS (10)
 #define PROJECT_MAX_LENGTH (256)
@@ -23,9 +21,6 @@ extern "C" {
 #define EMPTY_VALUE_8 (255)
 #define EMPTY_VALUE_16 (32767)
 
-
-#ifdef __cplusplus
 }
-#endif
 
-#endif
+#endif // __CHIPNOMAD_LIB__PROJECT_CONSTANTS_H__

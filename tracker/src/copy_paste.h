@@ -1,10 +1,11 @@
 #ifndef COPY_PASTE_H
 #define COPY_PASTE_H
 
+#include "screens/screens.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "screens/screens.h"
 
 // Groove copy/paste
 void copyGroove(int grooveIdx, int startRow, int endRow, int isCut);

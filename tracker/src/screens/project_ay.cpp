@@ -126,7 +126,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     handled = edit8noLast(action, &chipnomadState->project.chipSetup.ay.isYM, 1, 0, 1);
     if (handled && chipnomadState) {
       for (int i = 0; i < chipnomadState->project.chipsCount; i++) {
-        updateChipAYType(&chipnomadState->chips[i], chipnomadState->project.chipSetup.ay.isYM);
+        static_cast<SoundChipAY*>(chipnomadState->chips[i])->updateType(chipnomadState->project.chipSetup.ay.isYM);
       }
     }
   } else if (row == SCR_PROJECT_ROWS + 1) {
@@ -134,7 +134,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     handled = edit8noLast(action, (uint8_t*)&chipnomadState->project.chipSetup.ay.stereoMode, 1, 0, 2);
     if (handled && chipnomadState) {
       for (int i = 0; i < chipnomadState->project.chipsCount; i++) {
-        updateChipAYStereoMode(&chipnomadState->chips[i], chipnomadState->project.chipSetup.ay.stereoMode, chipnomadState->project.chipSetup.ay.stereoSeparation);
+        static_cast<SoundChipAY*>(chipnomadState->chips[i])->updateStereoMode(chipnomadState->project.chipSetup.ay.stereoMode, chipnomadState->project.chipSetup.ay.stereoSeparation);
       }
     }
   } else if (row == SCR_PROJECT_ROWS + 2) {
@@ -142,7 +142,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     handled = edit8noLast(action, &chipnomadState->project.chipSetup.ay.stereoSeparation, 10, 0, 100);
     if (handled && chipnomadState) {
       for (int i = 0; i < chipnomadState->project.chipsCount; i++) {
-        updateChipAYStereoMode(&chipnomadState->chips[i], chipnomadState->project.chipSetup.ay.stereoMode, chipnomadState->project.chipSetup.ay.stereoSeparation);
+        static_cast<SoundChipAY*>(chipnomadState->chips[i])->updateStereoMode(chipnomadState->project.chipSetup.ay.stereoMode, chipnomadState->project.chipSetup.ay.stereoSeparation);
       }
     }
   } else if (row == SCR_PROJECT_ROWS + 3) {
@@ -157,7 +157,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     if (handled && chipnomadState) {
       chipnomadState->project.chipSetup.ay.clock = clockPresets[newIndex];
       for (int i = 0; i < chipnomadState->project.chipsCount; i++) {
-        updateChipAYClock(&chipnomadState->chips[i], chipnomadState->project.chipSetup.ay.clock, appSettings.audioSampleRate);
+        static_cast<SoundChipAY*>(chipnomadState->chips[i])->updateClock(chipnomadState->project.chipSetup.ay.clock);
       }
     }
   } else if (row == SCR_PROJECT_ROWS + 5) {

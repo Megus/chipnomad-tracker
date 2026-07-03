@@ -1,11 +1,9 @@
-#ifndef __PLAYBACK_INTERNAL_H__
-#define __PLAYBACK_INTERNAL_H__
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#ifndef __CHIPNOMAD_LIB__PLAYBACK_INTERNAL_H__
+#define __CHIPNOMAD_LIB__PLAYBACK_INTERNAL_H__
 
 #include "chipnomad_lib.h"
+
+extern "C" {
 
 void handleNoteOff(PlaybackState* state, int trackIdx);
 void readPhraseRow(PlaybackState* state, int trackIdx, int skipDelCheck);
@@ -41,7 +39,6 @@ void handleInstrumentAYWavetable(PlaybackState* state, int trackIdx);
 void outputRegistersAY(ChipNomadState* state, int trackIdx, int chipIdx);
 void resetTrackAY(PlaybackState* state, int trackIdx);
 void resetOffsetsAY(PlaybackState* state, int trackIdx);
-int timerFunctionAY(struct SoundChip* chip, void* userdata);
 
 // Convert frequency to AY period
 int frequencyToAYPeriod(float frequency, int clockHz);
@@ -57,9 +54,8 @@ int frequencyToAYPeriod(float frequency, int clockHz);
 int16_t calculateAYPeriod(Project* p, uint8_t basePitch, int8_t pitchOffset, int16_t fineOffset,
                           int16_t specificFineOffset, int16_t periodOffset, int useFineOffset);
 
-
-#ifdef __cplusplus
 }
-#endif
 
-#endif
+int timerFunctionAY(SoundChip* chip, void* userdata);
+
+#endif // __CHIPNOMAD_LIB__PLAYBACK_INTERNAL_H__

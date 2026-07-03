@@ -1,11 +1,11 @@
 #ifndef __PITCH_TABLE_UTILS_H__
 #define __PITCH_TABLE_UTILS_H__
 
+#include "chipnomad_lib.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "chipnomad_lib.h"
 
 // Load pitch table from CSV file
 // Returns 0 on success, 1 on error

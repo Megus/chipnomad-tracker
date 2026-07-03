@@ -5,8 +5,8 @@
 
 static void detectAYPitchConflicts(ChipNomadState* state);
 
-static SoundChip defaultChipFactory(int chipIndex, int sampleRate, ChipSetup setup) {
-  return createChipAY(sampleRate, setup);
+static SoundChip* defaultChipFactory(int chipIndex, int sampleRate, ChipSetup setup) {
+  return new SoundChipAY(sampleRate, setup);
 }
 
 ChipNomadState* chipnomadCreate(void) {
@@ -36,8 +36,9 @@ void chipnomadDestroy(ChipNomadState* state) {
 
   // Cleanup chips
   for (int i = 0; i < PROJECT_MAX_CHIPS; i++) {
-    if (state->chips[i].cleanup) {
-      state->chips[i].cleanup(&state->chips[i]);
+    if (state->chips[i]) {
+      delete state->chips[i];
+      state->chips[i] = nullptr;
     }
   }
 
@@ -53,8 +54,9 @@ void chipnomadInitChips(ChipNomadState* state, int sampleRate, ChipFactory facto
   // Cleanup existing chips if already initialized
   if (state->sampleRate > 0) {
     for (int i = 0; i < PROJECT_MAX_CHIPS; i++) {
-      if (state->chips[i].cleanup) {
-        state->chips[i].cleanup(&state->chips[i]);
+      if (state->chips[i]) {
+        delete state->chips[i];
+        state->chips[i] = nullptr;
       }
     }
   }
@@ -109,10 +111,10 @@ int chipnomadRender(ChipNomadState* state, float* buffer, int samples) {
 
     // Mix all chips
     for (int chipIdx = 0; chipIdx < state->project.chipsCount; chipIdx++) {
-      SoundChip* chip = &state->chips[chipIdx];
-      if (chip->render) {
+      SoundChip* chip = state->chips[chipIdx];
+      if (chip) {
         // Render chip to mix buffer
-        chip->render(chip, state->mixBuffer, samplesToRender);
+        chip->render(state->mixBuffer, samplesToRender);
 
         // Mix into main buffer
         for (int i = 0; i < samplesToRender * 2; i++) {
@@ -158,13 +160,14 @@ static void detectAYPitchConflicts(ChipNomadState* state) {
   // Collect tone periods for all tracks (0xFFFF = not using tone)
   uint16_t trackPeriods[PROJECT_MAX_TRACKS];
   for (int chipIdx = 0; chipIdx < state->project.chipsCount; chipIdx++) {
-    SoundChip* chip = &state->chips[chipIdx];
+    SoundChipAY* chip = static_cast<SoundChipAY*>(state->chips[chipIdx]);
+    if (!chip) continue;
     int trackOffset = chipIdx * 3;
-    uint8_t mixer = chip->regs[7];
+    uint8_t mixer = chip->getRegister(7);
 
     for (int i = 0; i < 3; i++) {
-      uint16_t period = chip->regs[i * 2] | (chip->regs[i * 2 + 1] << 8);
-      uint8_t volume = chip->regs[8 + i];
+      uint16_t period = chip->getRegister(i * 2) | (chip->getRegister(i * 2 + 1) << 8);
+      uint8_t volume = chip->getRegister(8 + i);
       int toneEnabled = ((mixer >> i) & 1) == 0;
       int noiseEnabled = ((mixer >> (i + 3)) & 1) == 0;
       int envelopeMode = (volume & 16) != 0;
@@ -192,8 +195,8 @@ static void detectAYPitchConflicts(ChipNomadState* state) {
 
 void chipnomadSetQuality(ChipNomadState* state, ChipNomadQuality quality) {
   for (int i = 0; i < PROJECT_MAX_CHIPS; i++) {
-    if (state->chips[i].setQuality) {
-      state->chips[i].setQuality(&state->chips[i], quality);
+    if (state->chips[i]) {
+      state->chips[i]->setQuality(quality);
     }
   }
 }

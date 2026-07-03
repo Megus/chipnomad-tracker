@@ -1,8 +1,8 @@
 #include "doctest.h"
+#include "project_utils.h"
 
 extern "C" {
 #include "project.h"
-#include "project_utils.h"
 }
 
 #include <cstring>
