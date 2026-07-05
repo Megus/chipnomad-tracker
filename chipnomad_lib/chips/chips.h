@@ -32,10 +32,10 @@ class SoundChip {
       this->timerUserdata = timerUserdata;
     }
 
-    virtual void setRegister(uint16_t reg, uint8_t value) = 0;
-    virtual uint8_t getRegister(uint16_t reg) = 0;
-    virtual void setQuality(ChipNomadQuality quality) = 0;
-    virtual void render(float* buffer, int samples) = 0;
+    virtual void setRegister(uint16_t reg, uint8_t value) {};
+    virtual uint8_t getRegister(uint16_t reg) { return 0; };
+    virtual void setQuality(ChipNomadQuality quality) {};
+    virtual void render(float* buffer, int samples) {};
 };
 
 class SoundChipAY : public SoundChip {

@@ -84,11 +84,15 @@ class ExporterPSG : public Exporter {
 class ExporterVGM : public Exporter {
   private:
     FILE* file;
-    int numChips;
+    int waitSamples;
+    int totalSamples;
     char baseFilename[1024];
+
+    void writeWait();
 
   public:
     ExporterVGM(const char* filename, Project* project, int startRow);
+    ~ExporterVGM() override { cancel(); }
     int next() override;
     int finish() override;
     void cancel() override;

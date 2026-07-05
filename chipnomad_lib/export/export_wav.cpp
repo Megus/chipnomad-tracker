@@ -51,11 +51,11 @@ static void writeWAVHeader(FILE* file, int sampleRate, int channels, int bitDept
 ExporterWAV::ExporterWAV(const char* path, Project* project, int startRow, int sampleRate, int bitDepth, float mixVolume, bool stems)
   : Exporter(project, startRow) {
   this->sampleRate = sampleRate;
-  this->channels = 2;
   this->bitDepth = bitDepth;
-  this->totalSamples = 0;
-  this->currentTrack = 0;
   this->stems = stems;
+  channels = 2;
+  totalSamples = 0;
+  currentTrack = 0;
   strncpy(this->basePath, path, sizeof(this->basePath) - 1);
   this->basePath[sizeof(this->basePath) - 1] = 0;
 

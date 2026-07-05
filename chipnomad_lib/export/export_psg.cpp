@@ -4,9 +4,7 @@
 #include <string.h>
 #include <stdint.h>
 
-extern "C" {
 #include "playback.h"
-}
 
 static void writePSGHeader(FILE* file) {
   const char header[17] = "PSG\x1a\0\0\0\0\0\0\0\0\0\0\0\0";
@@ -17,8 +15,8 @@ static void writePSGHeader(FILE* file) {
 class SoundChipPSG : public SoundChip {
   private:
     FILE* file;
-    uint8_t lastRegs[14];
-    uint8_t regs[256];
+    uint8_t lastRegs[16];
+    uint8_t regs[16];
 
   public:
     SoundChipPSG(FILE* f) : file(f) {
@@ -42,17 +40,9 @@ class SoundChipPSG : public SoundChip {
     }
 
     uint8_t getRegister(uint16_t reg) override {
-      if (reg > 255) return 0;
+      if (reg > 13) return 0;
       return regs[reg];
     }
-
-    void render(float* buffer, int samples) override {
-      for (int i = 0; i < samples * 2; i++) {
-        buffer[i] = 0.0f;
-      }
-    }
-
-    void setQuality(ChipNomadQuality quality) override {}
 };
 
 // File pointers for PSG factory

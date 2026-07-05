@@ -5,7 +5,7 @@
 #include "export/export.h"
 
 // Common rows on the export screen
-#define SCR_EXPORT_ROWS (4)
+#define SCR_EXPORT_ROWS (5)
 
 // Export state
 extern Exporter* currentExporter;

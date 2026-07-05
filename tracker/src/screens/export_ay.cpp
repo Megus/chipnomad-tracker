@@ -16,13 +16,13 @@ static int getColumnCount(int row) {
 static void drawStatic(void) {
   exportCommonDrawStatic();
   gfxSetFgColor(appSettings.colorScheme.textValue);
-  gfxPrint(0, 8, "PSG");
+  gfxPrint(0, 10, "PSG");
 }
 
 static void drawCursor(int col, int row) {
   if (row < SCR_EXPORT_ROWS) return exportCommonDrawCursor(col, row);
   if (row == SCR_EXPORT_ROWS) {
-    gfxCursor(13, 8, 6);
+    gfxCursor(13, 10, 6);
   }
 }
 
@@ -32,7 +32,7 @@ static void drawField(int col, int row, CellState state) {
   gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
 
   if (row == SCR_EXPORT_ROWS) {
-    gfxPrint(13, 8, "Export");
+    gfxPrint(13, 10, "Export");
   }
 }
 
@@ -70,7 +70,7 @@ static void drawColHeader(int col, CellState state) {}
 static void drawSelection(int col1, int row1, int col2, int row2) {}
 
 ScreenData screenExportAY = {
-  .rows = 5,
+  .rows = 6,
   .cursorRow = 0,
   .cursorCol = 0,
   .topRow = 0,

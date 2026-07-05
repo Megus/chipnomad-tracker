@@ -92,6 +92,8 @@ int chipnomadRender(ChipNomadState* state, float* buffer, int samples) {
       detectAYPitchConflicts(state);
     }
 
+    if (allTracksStopped) break;
+
     int samplesToRender = ((int)state->frameSampleCounter < samplesLeft) ?
     (int)state->frameSampleCounter : samplesLeft;
     int bufferOffset = (samples - samplesLeft) * 2;
