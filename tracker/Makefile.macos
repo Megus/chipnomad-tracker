@@ -50,7 +50,7 @@ macOS-app-bundle: macOS
 	@echo "Copying SDL2.framework to bundle..."
 	@cp -R $(SDL2_FRAMEWORK) $(BUILD)/$(APP_BUNDLE)/Contents/Frameworks/
 	@cp packaging/macos/Info.plist $(BUILD)/$(APP_BUNDLE)/Contents/
-	@sed -i '' "s/VERSION_PLACEHOLDER/$$(grep 'appVersion.*=' src/version.cpp | cut -d'"' -f2)/g" $(BUILD)/$(APP_BUNDLE)/Contents/Info.plist
+	@sed -i '' "s/VERSION_PLACEHOLDER/$(VERSION)/g" $(BUILD)/$(APP_BUNDLE)/Contents/Info.plist
 	@codesign --force --sign - $(BUILD)/$(APP_BUNDLE)/Contents/Frameworks/SDL2.framework/SDL2
 	@codesign --force --sign - $(BUILD)/$(APP_BUNDLE)
 	@echo ".app bundle created at $(BUILD)/$(APP_BUNDLE)"
@@ -59,7 +59,6 @@ macOS-app-bundle: macOS
 macOS-deploy: macOS-app-bundle
 	@echo "Creating macOS deployment package..."
 	@mkdir -p ../../releases
-	$(eval VERSION := $(shell grep 'appVersion.*=' src/version.cpp | cut -d'"' -f2))
 	@cd $(BUILD) && zip -ry $(APP)-$$(date +%Y-%m-%d)-$(VERSION)-macOS.zip $(APP_BUNDLE) fonts instruments pitch-tables projects samples themes wavetables README.txt
 	@mv $(BUILD)/$(APP)-*-macOS.zip ../../releases/
 	@echo "macOS package created in ../../releases/"

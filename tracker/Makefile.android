@@ -36,7 +36,7 @@ STRIP = $(TOOLCHAIN)/bin/llvm-strip
 
 # Android-specific flags
 XTRA_CFLAGS = -DANDROID_BUILD -DMOBILE_BUILD -DMOBILE_LIFECYCLE -DTOUCH_INPUT -DGAMEPAD_SUPPORT -fPIC -I$(SDL2_INCLUDE)
-XTRA_LIBS = -L$(SDL2_LIB)/$(ARCH) -lSDL2 -lm -llog -landroid
+XTRA_LIBS = -static-libstdc++ -L$(SDL2_LIB)/$(ARCH) -lSDL2 -lm -llog -landroid
 
 CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(ANDROID_SOURCES) $(XTRA_CFLAGS)
 OUTPUT = -o $(BUILD_DIR)/libchipnomad.so
@@ -57,7 +57,6 @@ android-apk: android-lib
 android-deploy: android-apk
 	@echo "Creating Android deployment package..."
 	@mkdir -p ../../releases
-	$(eval VERSION := $(shell grep 'appVersion.*=' src/version.c | cut -d'"' -f2))
 	@rm -rf /tmp/chipnomad-android-package
 	@mkdir -p /tmp/chipnomad-android-package
 	@cp platforms/android/app/build/outputs/apk/debug/app-debug.apk /tmp/chipnomad-android-package/ChipNomad.apk

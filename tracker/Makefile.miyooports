@@ -38,7 +38,6 @@ MiyooPorts-deploy: MiyooPorts
 	@cp -r packaging/common/* /tmp/chipnomad-miyooports-package/Roms/PORTS/Games/ChipNomad/
 	@cp packaging/chipnomad-icon.png /tmp/chipnomad-miyooports-package/Roms/PORTS/Imgs/ChipNomad.png
 	@cp -r packaging/miyoo_ports/* /tmp/chipnomad-miyooports-package/Roms/PORTS/Shortcuts/ChipNomad
-	$(eval VERSION := $(shell grep 'appVersion.*=' src/version.c | cut -d'"' -f2))
 	@cd /tmp/chipnomad-miyooports-package && zip -r ChipNomad-$$(date +%Y-%m-%d)-$(VERSION)-MiyooPorts.zip .
 	@mv /tmp/chipnomad-miyooports-package/ChipNomad-*-MiyooPorts.zip ../../releases/
 	@rm -rf /tmp/chipnomad-miyooports-package

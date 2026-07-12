@@ -42,7 +42,6 @@ RG35xx-deploy: RG35xx .RG35xx-sh
 	cp $(BUILD)/launcher.sh $(BUILD)/deploy/$(APP).sh
 	cp packaging/rg35xx/j2k.so $(BUILD)/deploy/$(APP)
 	cp -r packaging/common/* $(BUILD)/deploy/$(APP)
-	$(eval VERSION := $(shell grep 'appVersion.*=' src/version.c | cut -d'"' -f2))
 	cd $(BUILD)/deploy && zip -r $(APP)-$$(date +%Y-%m-%d)-$(VERSION)-RG35xx.zip $(APP) $(APP).sh
 	mv $(BUILD)/deploy/$(APP)-*-RG35xx.zip ../../releases/
 	rm -rf $(BUILD)/deploy

@@ -13,7 +13,6 @@ CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(XTRA_CFLAGS)
 OUTPUT = -o $(BUILD)/chipnomad$(OUTPUT_EXT)
 
 APPNAME = ChipNomad
-VERSION = $(shell grep 'appVersion.*=' src/version.c | cut -d'"' -f2)
 
 # Simple Linux build
 .PHONY: linux
@@ -44,7 +43,6 @@ linux-deploy:
 	@echo 'cd "$$(dirname "$$0")"' >> $(BUILD)/$(APPNAME)-Linux/chipnomad.sh
 	@echo './chipnomad "$$@"' >> $(BUILD)/$(APPNAME)-Linux/chipnomad.sh
 	@chmod +x $(BUILD)/$(APPNAME)-Linux/chipnomad.sh
-	$(eval VERSION := $(shell grep 'appVersion.*=' src/version.c | cut -d'"' -f2))
 	@cd $(BUILD) && tar -czf $(APPNAME)-$$(date +%Y-%m-%d)-$(VERSION)-Linux-x86_64.tar.gz $(APPNAME)-Linux
 	@mv $(BUILD)/$(APPNAME)-*-Linux-x86_64.tar.gz ../../releases/
 	@echo "Linux package created in ../../releases/"

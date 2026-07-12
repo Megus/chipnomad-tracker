@@ -76,7 +76,7 @@ static void draw(void) {
       delete currentExporter;
       currentExporter = NULL;
     } else {
-      screenMessage(MESSAGE_TIME, "Exporting... %ds. B to cancel", seconds);
+      screenMessage(MESSAGE_TIME, "Exporting... %ds. OPT to cancel", seconds);
     }
   }
 }

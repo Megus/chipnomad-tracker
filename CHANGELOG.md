@@ -1,6 +1,6 @@
 # ChipNomad changelog
 
-## v1.0.4 (not yet published)
+## v1.0.4 (July 12, 2026)
 
 - The all-new modulation system similar to M8 tracker. Use 4 sources to modulate different values.
   - 3 modulation types:
@@ -24,6 +24,7 @@
   - Copy/paste wavetables same way as Instruments: **SHIFT**+**OPT** — Copy, **SHIFT**+**EDIT** — Paste
 - VSL FX command — volume slide
 - Mix Volume scaling was adjusted to make 100% a usable value (values over 65% could previously cause audible distortion)
+- VGM Export
 - 24TET (quarter-tone) linear pitch table added to the bundled content
 - *FIX*: Automatic trimming of text fields to prevent accidental leading and trailing spaces
 - *FIX*: Screen Map could disappear after visiting modal screens (character edit, FX selection, etc)

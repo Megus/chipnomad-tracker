@@ -48,7 +48,6 @@ windows-deploy:
 	@mkdir -p ../../releases
 	@cp -r packaging/common/* $(BUILD)/
 	@cp packaging/windows/README.txt $(BUILD)/
-	$(eval VERSION := $(shell grep 'appVersion.*=' src/version.c | cut -d'"' -f2))
 	@cd $(BUILD) && zip -r ChipNomad-$$(date +%Y-%m-%d)-$(VERSION)-Windows.zip chipnomad.exe SDL2.dll pitch-tables projects instruments README.txt
 	@mv $(BUILD)/ChipNomad-*-Windows.zip ../../releases/
 	@echo "Windows package created in ../../releases/"
