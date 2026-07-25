@@ -20,4 +20,4 @@ ChipNomad is available for multiple platforms:
 - Linux (x86 64-bit) — can be run on Steam Deck
 - Android — handhelds like Retroid Pocket 5, smartphones, and tablets
 
-{{< youtube 8jQGO4IxXOs >}}
+{{< youtube hzf-BgJmqYU >}}

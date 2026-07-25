@@ -26,10 +26,14 @@ enableEmoji = true
   pageRef = '/manual/'
   weight = 20
 [[menu.main]]
+  name = 'Promo Album'
+  pageRef = '/promo-album/'
+  weight = 30
+[[menu.main]]
   name = 'Discord'
   url = 'https://discord.gg/PJarAn2QCW'
-  weight = 30
+  weight = 40
 [[menu.main]]
   name = 'GitHub'
   url = 'https://github.com/Megus/chipnomad-tracker'
-  weight = 40
+  weight = 50
