@@ -1,26 +1,24 @@
 #ifndef __CHIPNOMAD_LIB__PLAYBACK_FX_H__
 #define __CHIPNOMAD_LIB__PLAYBACK_FX_H__
 
-extern "C" {
-
-enum PlaybackArpType {
-  arpTypeUp,
-  arpTypeDown,
-  arpTypeUpDown,
-  arpTypeUp1Oct,
-  arpTypeDown1Oct,
-  arpTypeUpDown1Oct,
-  arpTypeUp2Oct,
-  arpTypeDown2Oct,
-  arpTypeUpDown2Oct,
-  arpTypeUp3Oct,
-  arpTypeDown3Oct,
-  arpTypeUpDown3Oct,
-  arpTypeUp4Oct,
-  arpTypeDown4Oct,
-  arpTypeUpDown4Oct,
-  arpTypeUp5Oct,
-  arpTypeMax,
+enum class PlaybackArpType {
+  up,
+  down,
+  upDown,
+  up1Oct,
+  down1Oct,
+  upDown1Oct,
+  up2Oct,
+  down2Oct,
+  upDown2Oct,
+  up3Oct,
+  down3Oct,
+  upDown3Oct,
+  up4Oct,
+  down4Oct,
+  upDown4Oct,
+  up5Oct,
+  max,
 };
 
 struct PlaybackFXData_Bend {
@@ -34,7 +32,7 @@ struct PlaybackFXData_Slide {
 
 struct PlaybackFXData_Arpeggio {
   int speed;
-  enum PlaybackArpType type;
+  PlaybackArpType type;
 };
 
 struct PlaybackFXData_Retrigger {
@@ -54,7 +52,5 @@ struct PlaybackFXState {
     PlaybackFXData_Retrigger retrigger;
   } d;
 };
-
-}
 
 #endif // __CHIPNOMAD_LIB__PLAYBACK_FX_H__

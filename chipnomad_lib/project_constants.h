@@ -1,8 +1,6 @@
 #ifndef __CHIPNOMAD_LIB__PROJECT_CONSTANTS_H__
 #define __CHIPNOMAD_LIB__PROJECT_CONSTANTS_H__
 
-extern "C" {
-
 #define PROJECT_MAX_TRACKS (10)
 #define PROJECT_MAX_LENGTH (256)
 #define PROJECT_MAX_CHAINS (255)
@@ -20,7 +18,5 @@ extern "C" {
 #define NOTE_OFF (254)
 #define EMPTY_VALUE_8 (255)
 #define EMPTY_VALUE_16 (32767)
-
-}
 
 #endif // __CHIPNOMAD_LIB__PROJECT_CONSTANTS_H__

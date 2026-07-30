@@ -172,8 +172,8 @@ static void handleLFO(PlaybackModState* state) {
   // counter: current position in cycle
   // step: 0 = running, 0xff = stopped (for lfoOnce and lfoHold)
 
-  uint8_t shape = GET_P1(state);
-  uint8_t trigger = GET_P2(state);
+  LFOShape shape = static_cast<LFOShape>(GET_P1(state));
+  LFOTrigger trigger = static_cast<LFOTrigger>(GET_P2(state));
   uint8_t period = GET_P3(state);
 
   if (period == 0) {
@@ -192,7 +192,7 @@ static void handleLFO(PlaybackModState* state) {
   int16_t envelopeValue = 0;
 
   switch (shape) {
-    case lfoShapeTri: { // Triangle: bipolar -32385 to +32385
+    case LFOShape::tri: { // Triangle: bipolar -32385 to +32385
       // Triangle wave centered at 0
       float x = phase * 4.0f; // Scale to 0-4
       if (x < 1.0f) {
@@ -205,12 +205,12 @@ static void handleLFO(PlaybackModState* state) {
       break;
     }
 
-    case lfoShapeSin: { // Sine: bipolar -32385 to +32385
+    case LFOShape::sin: { // Sine: bipolar -32385 to +32385
       envelopeValue = (int16_t)(sinf(phase * 2.0f * 3.14159265f) * MOD_MAX_RANGE_F);
       break;
     }
 
-    case lfoShapeUniTri: { // Unipolar Triangle: 0 to 32385 to 0
+    case LFOShape::uniTri: { // Unipolar Triangle: 0 to 32385 to 0
       // Triangle wave that goes 0→max→0 over one period
       float x = phase * 2.0f; // Scale to 0-2
       if (x < 1.0f) {
@@ -221,39 +221,39 @@ static void handleLFO(PlaybackModState* state) {
       break;
     }
 
-    case lfoShapeUniSin: { // Unipolar Sine: 0 to 32385 to 0
+    case LFOShape::uniSin: { // Unipolar Sine: 0 to 32385 to 0
       // Smooth sine wave: (1 - cos(phase * 2π)) / 2
       // Starts slow from 0, accelerates to max, decelerates back to 0
       envelopeValue = (int16_t)((1.0f - cosf(phase * 2.0f * 3.14159265f)) * 0.5f * MOD_MAX_RANGE_F);
       break;
     }
 
-    case lfoShapeRampDown: { // Ramp down: unipolar 32385 to 0
+    case LFOShape::rampDown: { // Ramp down: unipolar 32385 to 0
       envelopeValue = (int16_t)(MOD_MAX_RANGE_F * (1.0f - phase));
       break;
     }
 
-    case lfoShapeRampUp: { // Ramp up: unipolar 0 to 32385
+    case LFOShape::rampUp: { // Ramp up: unipolar 0 to 32385
       envelopeValue = (int16_t)(MOD_MAX_RANGE_F * phase);
       break;
     }
 
-    case lfoShapeExpDown: { // Exponential decay: unipolar 32385 to 0
+    case LFOShape::expDown: { // Exponential decay: unipolar 32385 to 0
       envelopeValue = (int16_t)(MOD_MAX_RANGE_F * expf(-5.0f * phase));
       break;
     }
 
-    case lfoShapeExpUp: { // Exponential rise: unipolar 0 to 32385
+    case LFOShape::expUp: { // Exponential rise: unipolar 0 to 32385
       envelopeValue = (int16_t)(MOD_MAX_RANGE_F * (1.0f - expf(-5.0f * phase)));
       break;
     }
 
-    case lfoShapeSquare: { // Square: bipolar -32385 to +32385
+    case LFOShape::square: { // Square: bipolar -32385 to +32385
       envelopeValue = (phase < 0.5f) ? MOD_MAX_RANGE : -MOD_MAX_RANGE;
       break;
     }
 
-    case lfoShapeRandom: { // Random: bipolar sample-and-hold
+    case LFOShape::random: { // Random: bipolar sample-and-hold
       // Generate new random value only at the start of each period
       // Use data1 to store the current random value
       if (state->counter == 0) {
@@ -282,12 +282,12 @@ static void handleLFO(PlaybackModState* state) {
 
   // Check if we completed a cycle
   if (state->counter >= period) {
-    if (trigger == lfoTrigOnce) {
+    if (trigger == LFOTrigger::once) {
       // Stop and hold at zero
       state->step = 0xff;
       state->outValue = 0;
       return;
-    } else if (trigger == lfoTrigHold) {
+    } else if (trigger == LFOTrigger::hold) {
       // Stop and hold at last value (already in outValue)
       state->step = 0xff;
       return;
@@ -321,12 +321,12 @@ void playbackModInit(PlaybackModState* state, Modulation* mod) {
   state->cachedP2 = GET_P2(state);
 
   // Additional initialization based on modulation type
-  if (GET_TYPE(state) == modADSR) {
+  if (GET_TYPE(state) == ModulationType::ADSR) {
     // For ADSR, set initial values for Attack phase
     // Start from 0, target is full range (32385)
     state->data1 = 0;
     state->data2 = MOD_MAX_RANGE;
-  } else if (GET_TYPE(state) == modAHD) {
+  } else if (GET_TYPE(state) == ModulationType::AHD) {
     // For AHD, set initial values for Attack phase
     // Start from 0, target is full range (32385)
     state->data1 = 0;
@@ -336,24 +336,24 @@ void playbackModInit(PlaybackModState* state, Modulation* mod) {
 
 void playbackModNext(PlaybackModState* state) {
   // Check if type or LFO trigger mode changed - reinitialize if so
-  enum ModulationType currentType = GET_TYPE(state);
+  ModulationType currentType = GET_TYPE(state);
   uint8_t currentP2 = GET_P2(state);
 
   if (currentType != state->cachedType ||
-      (currentType == modLFO && currentP2 != state->cachedP2)) {
+      (currentType == ModulationType::LFO && currentP2 != state->cachedP2)) {
     // Type or LFO trigger mode changed - reinitialize
     playbackModInit(state, (Modulation*)state->modulation);
     // Note: After reinit, we still need to process this frame, so continue below
   }
 
   switch (GET_TYPE(state)) {
-    case modADSR:
+    case ModulationType::ADSR:
       handleADSR(state);
       break;
-    case modAHD:
+    case ModulationType::AHD:
       handleAHD(state);
       break;
-    case modLFO:
+    case ModulationType::LFO:
       handleLFO(state);
       break;
     default:
@@ -364,13 +364,13 @@ void playbackModNext(PlaybackModState* state) {
 
 void playbackModNoteOff(PlaybackModState* state) {
   switch (GET_TYPE(state)) {
-    case modADSR:
+    case ModulationType::ADSR:
       handleADSRnoteOff(state);
       break;
-    case modAHD:
+    case ModulationType::AHD:
       handleAHDnoteOff(state);
       break;
-    case modLFO:
+    case ModulationType::LFO:
       handleLFOnoteOff(state);
       break;
     default:

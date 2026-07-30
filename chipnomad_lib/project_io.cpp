@@ -721,7 +721,7 @@ static int projectLoadInternal(FILE* file, Project* project) {
   }
 
   if (!strcmp(buf, "AY8910")) {
-    p.chipType = chipAY;
+    p.chipType = ChipType::AY;
   } else {
     snprintf(projectFileError, 40, "Unknown chip type");
     return 1;
@@ -730,7 +730,7 @@ static int projectLoadInternal(FILE* file, Project* project) {
 
   // Chip-specific settings
   switch (p.chipType) {
-  case chipAY:
+  case ChipType::AY:
     line = peekLine(file);
     if (line == NULL) return 1;
     if (sscanf(line, "- *AY8910* Clock: %d", &p.chipSetup.ay.clock) != 1) return 1;
@@ -759,7 +759,7 @@ static int projectLoadInternal(FILE* file, Project* project) {
       if (line == NULL) return 1;
       consumeLine(file);
       // Default to ABC
-      p.chipSetup.ay.stereoMode = ayStereoABC;
+      p.chipSetup.ay.stereoMode = StereoModeAY::ABC;
       p.chipSetup.ay.stereoSeparation = 100;
     } else {
       // New stereo mode storage
@@ -769,11 +769,11 @@ static int projectLoadInternal(FILE* file, Project* project) {
           return 1;
         }
         if (!strcmp(buf, "ABC")) {
-          p.chipSetup.ay.stereoMode = ayStereoABC;
+          p.chipSetup.ay.stereoMode = StereoModeAY::ABC;
         } else if (!strcmp(buf, "ACB")) {
-          p.chipSetup.ay.stereoMode = ayStereoACB;
+          p.chipSetup.ay.stereoMode = StereoModeAY::ACB;
         } else if (!strcmp(buf, "BAC")) {
-          p.chipSetup.ay.stereoMode = ayStereoBAC;
+          p.chipSetup.ay.stereoMode = StereoModeAY::BAC;
         } else {
           snprintf(projectFileError, 40, "Unknown stereo mode");
           return 1;
@@ -1041,20 +1041,20 @@ static int projectSaveInternal(FILE* file, Project* project) {
   fprintf(file, "- Frame rate: %f\n", project->tickRate);
   fprintf(file, "- Chips count: %d\n", project->chipsCount);
   fprintf(file, "- Linear pitch: %d\n", project->linearPitch);
-  fprintf(file, "- Chip type: %s\n", chipNames[project->chipType]);
+  fprintf(file, "- Chip type: %s\n", chipNames[static_cast<int>(project->chipType)]);
 
   switch (project->chipType) {
-  case chipAY:
+  case ChipType::AY:
     fprintf(file, "- *AY8910* Clock: %d\n", project->chipSetup.ay.clock);
     fprintf(file, "- *AY8910* AY/YM: %d\n", project->chipSetup.ay.isYM);
     switch (project->chipSetup.ay.stereoMode) {
-    case ayStereoABC:
+    case StereoModeAY::ABC:
       fprintf(file, "- *AY8910* Stereo: ABC\n");
       break;
-    case ayStereoACB:
+    case StereoModeAY::ACB:
       fprintf(file, "- *AY8910* Stereo: ACB\n");
       break;
-    case ayStereoBAC:
+    case StereoModeAY::BAC:
       fprintf(file, "- *AY8910* Stereo: BAC\n");
       break;
     }

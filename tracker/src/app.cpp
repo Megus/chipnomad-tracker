@@ -35,7 +35,7 @@ static int keyRepeatCount;
 */
 static int inputCodeToKey(InputCode input) {
   // Logical buttons are not remappable
-  if (input.deviceType == inputLogical) {
+  if (input.deviceType == InputDeviceType::logical) {
     return input.code;
   }
 
@@ -137,7 +137,7 @@ static int inputPlayback(int keys, int tapCount) {
 */
 static void appInput(int isKeyDown, int keys, int tapCount) {
   // Stop phrase row and preview
-  if (chipnomadState->playbackState.tracks[*pSongTrack].mode == playbackModePhraseRow && keys == 0) {
+  if (chipnomadState->playbackState.tracks[*pSongTrack].mode == PlaybackMode::phraseRow && keys == 0) {
     playbackStop(&chipnomadState->playbackState);
   }
   // Let screen handle input first, then try global playback if not handled
@@ -162,7 +162,7 @@ static int autosaveCounter = 0;
 void appSetup(void) {
   // LOGD("--- ChipNomad started ---");
   // Initialize default key mappings if not loaded from settings
-  if (appSettings.keyMapping.keyUp[0].deviceType == inputNone) {
+  if (appSettings.keyMapping.keyUp[0].deviceType == InputDeviceType::none) {
     inputInitDefaultKeyMapping();
   }
 
@@ -281,7 +281,7 @@ void appOnEvent(MainLoopEventData eventData) {
   static int doubleTapMask = keyEdit | keyOpt | keyUnmapped;
 
   switch (eventData.type) {
-  case eventKeyDown: {
+  case MainLoopEvent::keyDown: {
     int value = inputCodeToKey(eventData.data.input);
 
     // Call raw input callback if set (for key mapping screen)
@@ -324,7 +324,7 @@ void appOnEvent(MainLoopEventData eventData) {
 
     break;
   }
-  case eventKeyUp: {
+  case MainLoopEvent::keyUp: {
     int value = inputCodeToKey(eventData.data.input);
 
     // Call raw input callback if set (for key mapping screen)
@@ -343,7 +343,7 @@ void appOnEvent(MainLoopEventData eventData) {
 
     break;
   }
-  case eventTick:
+  case MainLoopEvent::tick:
     // Autosave
     if (++autosaveCounter >= AUTOSAVE_INTERVAL_FRAMES) {
       autosaveCounter = 0;
@@ -375,12 +375,12 @@ void appOnEvent(MainLoopEventData eventData) {
       }
     }
     break;
-  case eventExit:
+  case MainLoopEvent::exit:
     // Auto-save the current project and settings on exit
     projectSave(&chipnomadState->project, getAutosavePath());
     settingsSave();
     break;
-  case eventSleep:
+  case MainLoopEvent::sleep:
     // Pause audio when app goes to background
     audioManager.pause();
     if (chipnomadState) {
@@ -392,11 +392,11 @@ void appOnEvent(MainLoopEventData eventData) {
     // Save settings
     settingsSave();
     break;
-  case eventWake:
+  case MainLoopEvent::wake:
     // Resume audio when app comes back to foreground
     audioManager.resume();
     break;
-  case eventFullRedraw:
+  case MainLoopEvent::fullRedraw:
     // Force full screen redraw
     gfxSetBgColor(appSettings.colorScheme.background);
     gfxClear();

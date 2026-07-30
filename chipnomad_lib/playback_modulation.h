@@ -1,8 +1,6 @@
 #ifndef __CHIPNOMAD_LIB__PLAYBACK_MODULATION_H__
 #define __CHIPNOMAD_LIB__PLAYBACK_MODULATION_H__
 
-extern "C" {
-
 #include <stdint.h>
 #include "project_instruments.h"
 
@@ -20,7 +18,7 @@ struct PlaybackModState {
   int16_t outValue; // Read calculated value from this field (16-bit signed range)
 
   // Cached values to detect changes that require reinitialization
-  enum ModulationType cachedType;
+  ModulationType cachedType;
   uint8_t cachedP2; // For LFO trigger mode detection
 };
 
@@ -33,8 +31,5 @@ void playbackModNoteOff(PlaybackModState* state);
 // maxAmplitude: maximum value for the target parameter (e.g., 15 for AY volume)
 // Returns scaled value in range [-maxAmplitude, maxAmplitude] with rounding
 int16_t playbackModScaleToRange(int16_t modValue, int16_t maxAmplitude);
-
-
-}
 
 #endif // __CHIPNOMAD_LIB__PLAYBACK_MODULATION_H__

@@ -64,11 +64,11 @@ int fxAYSampleCount = sizeof(fxNamesAYSample) / sizeof(FXName);
 
 // FX Groups array. FX counts are filled in fillFXNames()
 FXGroup fxGroups[] = {
-  {"Sequencer FX", fxNamesSequencer, 0, 8, instNone},
-  {"Modulation FX", fxNamesModulation, 0, 5, instNone},
-  {"AY Classic FX", fxNamesAY1, 0, 8, instAY1},
-  {"AY Plus FX", fxNamesAY2, 0, 8, instAY2},
-  {"AYSample FX", fxNamesAYSample, 0, 8, instAYSample},
+  {"Sequencer FX", fxNamesSequencer, 0, 8, InstrumentType::none},
+  {"Modulation FX", fxNamesModulation, 0, 5, InstrumentType::none},
+  {"AY Classic FX", fxNamesAY1, 0, 8, InstrumentType::AY1},
+  {"AY Plus FX", fxNamesAY2, 0, 8, InstrumentType::AY2},
+  {"AYSample FX", fxNamesAYSample, 0, 8, InstrumentType::AYSample},
 };
 int fxGroupCount = sizeof(fxGroups) / sizeof(FXGroup);
 
@@ -174,7 +174,7 @@ int8_t phraseIsEmpty(Project* project, int phrase) {
 
 // Is instrument empty?
 int8_t instrumentIsEmpty(Project* project, int instrument) {
-  return project->instruments[instrument].type == instNone;
+  return project->instruments[instrument].type == InstrumentType::none;
 }
 
 // Is table empty?
@@ -257,8 +257,8 @@ void chainClear(Chain* chain) {
 
 // Clear a single instrument with proper initialization
 void instrumentClear(Instrument* instrument) {
-  getInstrumentFunctions((enum InstrumentType)instrument->type).free(instrument);
-  getInstrumentFunctions(instNone).init(instrument);
+  getInstrumentFunctions(instrument->type).free(instrument);
+  getInstrumentFunctions(InstrumentType::none).init(instrument);
 }
 
 // Clear a single table with proper initialization

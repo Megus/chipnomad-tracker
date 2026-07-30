@@ -4,10 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-extern "C" {
 #include "project.h"
-}
-
 #include "chipnomad_lib.h"
 
 // Exporter base class

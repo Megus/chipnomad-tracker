@@ -4,9 +4,7 @@
 #include <string.h>
 #include <stdint.h>
 
-extern "C" {
 #include "playback.h"
-}
 
 struct WAVHeader {
   char riff[4];

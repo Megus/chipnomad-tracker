@@ -1,9 +1,7 @@
 #include "doctest.h"
 
-extern "C" {
 #include "project.h"
 #include "project_io_common.h"
-}
 
 #include <cstring>
 
@@ -31,10 +29,10 @@ struct TestFixture {
 //   std::strcpy(p1.author, "Test Author");
 //   p1.tickRate = 50.0f;
 //   p1.chipsCount = 1;
-//   p1.chipType = chipAY;
+//   p1.chipType = ChipType::AY;
 //   p1.chipSetup.ay.clock = 1773400;
 //   p1.chipSetup.ay.isYM = 0;
-//   p1.chipSetup.ay.stereoMode = ayStereoABC;
+//   p1.chipSetup.ay.stereoMode = StereoModeAY::ABC;
 //   p1.chipSetup.ay.stereoSeparation = 100;
 //   p1.chipSetup.ay.pwmFullRange = 0;
 //   p1.tracksCount = 3;
@@ -103,10 +101,10 @@ TEST_CASE_FIXTURE(TestFixture, "projectSave_always_version_2_0") {
   std::strcpy(p.title, "New Project");
   p.tickRate = 50.0f;
   p.chipsCount = 1;
-  p.chipType = chipAY;
+  p.chipType = ChipType::AY;
   p.chipSetup.ay.clock = 1773400;
   p.chipSetup.ay.isYM = 0;
-  p.chipSetup.ay.stereoMode = ayStereoABC;
+  p.chipSetup.ay.stereoMode = StereoModeAY::ABC;
   p.chipSetup.ay.stereoSeparation = 100;
   p.chipSetup.ay.pwmFullRange = 0;
   p.tracksCount = 3;
@@ -169,10 +167,10 @@ TEST_CASE_FIXTURE(TestFixture, "projectSaveLoad_octaveSize_preserved") {
   std::strcpy(p1.author, "Test");
   p1.tickRate = 50.0f;
   p1.chipsCount = 1;
-  p1.chipType = chipAY;
+  p1.chipType = ChipType::AY;
   p1.chipSetup.ay.clock = 1773400;
   p1.chipSetup.ay.isYM = 0;
-  p1.chipSetup.ay.stereoMode = ayStereoABC;
+  p1.chipSetup.ay.stereoMode = StereoModeAY::ABC;
   p1.chipSetup.ay.stereoSeparation = 100;
   p1.chipSetup.ay.pwmFullRange = 0;
   p1.tracksCount = 3;
@@ -221,10 +219,10 @@ TEST_CASE_FIXTURE(TestFixture, "projectSaveLoad_empty_title") {
   std::strcpy(p1.author, "Test Author");
   p1.tickRate = 50.0f;
   p1.chipsCount = 1;
-  p1.chipType = chipAY;
+  p1.chipType = ChipType::AY;
   p1.chipSetup.ay.clock = 1773400;
   p1.chipSetup.ay.isYM = 0;
-  p1.chipSetup.ay.stereoMode = ayStereoABC;
+  p1.chipSetup.ay.stereoMode = StereoModeAY::ABC;
   p1.chipSetup.ay.stereoSeparation = 100;
   p1.chipSetup.ay.pwmFullRange = 0;
   p1.tracksCount = 3;
@@ -260,10 +258,10 @@ TEST_CASE_FIXTURE(TestFixture, "projectSaveLoad_empty_author") {
   p1.author[0] = '\0';  // Empty author
   p1.tickRate = 50.0f;
   p1.chipsCount = 1;
-  p1.chipType = chipAY;
+  p1.chipType = ChipType::AY;
   p1.chipSetup.ay.clock = 1773400;
   p1.chipSetup.ay.isYM = 0;
-  p1.chipSetup.ay.stereoMode = ayStereoABC;
+  p1.chipSetup.ay.stereoMode = StereoModeAY::ABC;
   p1.chipSetup.ay.stereoSeparation = 100;
   p1.chipSetup.ay.pwmFullRange = 0;
   p1.tracksCount = 3;
@@ -295,10 +293,10 @@ TEST_CASE_FIXTURE(TestFixture, "projectSaveLoad_wavetables") {
   std::strcpy(p1.author, "Test");
   p1.tickRate = 50.0f;
   p1.chipsCount = 1;
-  p1.chipType = chipAY;
+  p1.chipType = ChipType::AY;
   p1.chipSetup.ay.clock = 1773400;
   p1.chipSetup.ay.isYM = 0;
-  p1.chipSetup.ay.stereoMode = ayStereoABC;
+  p1.chipSetup.ay.stereoMode = StereoModeAY::ABC;
   p1.chipSetup.ay.stereoSeparation = 100;
   p1.chipSetup.ay.pwmFullRange = 0;
   p1.tracksCount = 3;
@@ -382,10 +380,10 @@ TEST_CASE_FIXTURE(TestFixture, "projectSaveLoad_no_wavetables") {
   std::strcpy(p1.author, "Test");
   p1.tickRate = 50.0f;
   p1.chipsCount = 1;
-  p1.chipType = chipAY;
+  p1.chipType = ChipType::AY;
   p1.chipSetup.ay.clock = 1773400;
   p1.chipSetup.ay.isYM = 0;
-  p1.chipSetup.ay.stereoMode = ayStereoABC;
+  p1.chipSetup.ay.stereoMode = StereoModeAY::ABC;
   p1.chipSetup.ay.stereoSeparation = 100;
   p1.chipSetup.ay.pwmFullRange = 0;
   p1.tracksCount = 3;

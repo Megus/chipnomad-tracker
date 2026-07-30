@@ -95,56 +95,56 @@ static int getModRow(int row) {
   return row < 7 ? row : row - 7;
 }
 
-static const char* modTypeName(enum ModulationType type) {
+static const char* modTypeName(ModulationType type) {
   switch (type) {
-    case modADSR: return "ADSR";
-    case modAHD:  return "AHD ";
-    case modLFO:  return "LFO ";
+    case ModulationType::ADSR: return "ADSR";
+    case ModulationType::AHD:  return "AHD ";
+    case ModulationType::LFO:  return "LFO ";
     default:      return "?   ";
   }
 }
 
-static const char* lfoShapeName(uint8_t shape) {
+static const char* lfoShapeName(LFOShape shape) {
   switch (shape) {
-    case lfoShapeTri:      return "Tri   ";
-    case lfoShapeSin:      return "Sin   ";
-    case lfoShapeUniTri:   return "UniTri";
-    case lfoShapeUniSin:   return "UniSin";
-    case lfoShapeRampDown: return "RampDn";
-    case lfoShapeRampUp:   return "RampUp";
-    case lfoShapeExpDown:  return "ExpDn ";
-    case lfoShapeExpUp:    return "ExpUp ";
-    case lfoShapeSquare:   return "Square";
-    case lfoShapeRandom:   return "Random";
+    case LFOShape::tri:      return "Tri   ";
+    case LFOShape::sin:      return "Sin   ";
+    case LFOShape::uniTri:   return "UniTri";
+    case LFOShape::uniSin:   return "UniSin";
+    case LFOShape::rampDown: return "RampDn";
+    case LFOShape::rampUp:   return "RampUp";
+    case LFOShape::expDown:  return "ExpDn ";
+    case LFOShape::expUp:    return "ExpUp ";
+    case LFOShape::square:   return "Square";
+    case LFOShape::random:   return "Random";
     default:               return "?     ";
   }
 }
 
-static const char* lfoTrigName(uint8_t trig) {
+static const char* lfoTrigName(LFOTrigger trig) {
   switch (trig) {
-    case lfoTrigFree:   return "Free  ";
-    case lfoTrigRetrig: return "Retrig";
-    case lfoTrigHold:   return "Hold  ";
-    case lfoTrigOnce:   return "Once  ";
+    case LFOTrigger::free:   return "Free  ";
+    case LFOTrigger::retrig: return "Retrig";
+    case LFOTrigger::hold:   return "Hold  ";
+    case LFOTrigger::once:   return "Once  ";
     default:            return "?     ";
   }
 }
 
 // Get the parameter label for a given modulator type and parameter index (0-3)
-static const char* paramLabel(enum ModulationType type, int paramIdx) {
+static const char* paramLabel(ModulationType type, int paramIdx) {
   switch (type) {
-    case modADSR:
+    case ModulationType::ADSR:
       if (paramIdx == 0) return "Atk";
       if (paramIdx == 1) return "Dec";
       if (paramIdx == 2) return "Sus";
       if (paramIdx == 3) return "Rel";
       break;
-    case modAHD:
+    case ModulationType::AHD:
       if (paramIdx == 0) return "Atk";
       if (paramIdx == 1) return "Hold";
       if (paramIdx == 2) return "Dec";
       break;
-    case modLFO:
+    case ModulationType::LFO:
       if (paramIdx == 0) return "Shape";
       if (paramIdx == 1) return "Trig";
       if (paramIdx == 2) return "Period";
@@ -156,17 +156,17 @@ static const char* paramLabel(enum ModulationType type, int paramIdx) {
 }
 
 // How many parameter rows does this modulation type have?
-static int paramCount(enum ModulationType type) {
+static int paramCount(ModulationType type) {
   switch (type) {
-    case modADSR: return 4;
-    case modAHD:  return 3;
-    case modLFO:  return 3;
+    case ModulationType::ADSR: return 4;
+    case ModulationType::AHD:  return 3;
+    case ModulationType::LFO:  return 3;
     default:      return 0;
   }
 }
 
 static int isCellValid(int col, int row) {
-  if (chipnomadState->project.instruments[cInstrument].type == instNone) return 0;
+  if (chipnomadState->project.instruments[cInstrument].type == InstrumentType::none) return 0;
 
   int modRow = getModRow(row);
   if (modRow <= 2) return 1; // Type, Dest, Amt always valid
@@ -187,7 +187,7 @@ static void drawStatic(void) {
   gfxSetFgColor(cs.textTitles);
   gfxPrintf(0, 0, "MODULATION %02X", cInstrument);
 
-  if (chipnomadState->project.instruments[cInstrument].type == instNone) return;
+  if (chipnomadState->project.instruments[cInstrument].type == InstrumentType::none) return;
 
   for (int block = 0; block < 2; block++) {
     int baseY = block == 0 ? 2 : 10;
@@ -216,7 +216,7 @@ static void drawCursor(int col, int row) {
     case 1: gfxCursor(valX, y, 8); break; // Dest
     case 2: gfxCursor(valX, y, 2); break; // Amt
     default:
-      if (mod->type == modLFO && (modRow - 3) <= 1) {
+      if (mod->type == ModulationType::LFO && (modRow - 3) <= 1) {
         gfxCursor(valX, y, 6); // LFO shape/trig names
       } else {
         gfxCursor(valX, y, 2); // Hex values
@@ -226,7 +226,7 @@ static void drawCursor(int col, int row) {
 }
 
 static void drawField(int col, int row, CellState state) {
-  if (chipnomadState->project.instruments[cInstrument].type == instNone) return;
+  if (chipnomadState->project.instruments[cInstrument].type == InstrumentType::none) return;
 
   int y = rowToY(row);
   int valX = col == 0 ? COL_LEFT_VAL : COL_RIGHT_VAL;
@@ -245,7 +245,7 @@ static void drawField(int col, int row, CellState state) {
       gfxClearRect(valX, y, 8, 1);
       {
         Instrument* inst = &chipnomadState->project.instruments[cInstrument];
-        InstrumentFunctions funcs = getInstrumentFunctions((enum InstrumentType)inst->type);
+        InstrumentFunctions funcs = getInstrumentFunctions(inst->type);
         if (funcs.modName) {
           gfxPrint(valX, y, funcs.modName(mod->destination));
         }
@@ -269,14 +269,14 @@ static void drawField(int col, int row, CellState state) {
       gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
       gfxClearRect(valX, y, 6, 1);
 
-      if (mod->type == modAHD || mod->type == modADSR) {
+      if (mod->type == ModulationType::AHD || mod->type == ModulationType::ADSR) {
         uint8_t* params = &mod->p1;
         gfxPrint(valX, y, byteToHex(params[paramIdx]));
-      } else if (mod->type == modLFO) {
+      } else if (mod->type == ModulationType::LFO) {
         if (paramIdx == 0) {
-          gfxPrint(valX, y, lfoShapeName(mod->p1));
+          gfxPrint(valX, y, lfoShapeName(static_cast<LFOShape>(mod->p1)));
         } else if (paramIdx == 1) {
-          gfxPrint(valX, y, lfoTrigName(mod->p2));
+          gfxPrint(valX, y, lfoTrigName(static_cast<LFOTrigger>(mod->p2)));
         } else if (paramIdx == 2) {
           gfxPrint(valX, y, byteToHex(mod->p3));
         }
@@ -287,7 +287,7 @@ static void drawField(int col, int row, CellState state) {
 }
 
 static int onEdit(int col, int row, enum CellEditAction action) {
-  if (chipnomadState->project.instruments[cInstrument].type == instNone) return 0;
+  if (chipnomadState->project.instruments[cInstrument].type == InstrumentType::none) return 0;
 
   int handled = 0;
   int modRow = getModRow(row);
@@ -296,14 +296,14 @@ static int onEdit(int col, int row, enum CellEditAction action) {
 
   switch (modRow) {
     case 0: { // Type
-      uint8_t type = (uint8_t)mod->type;
+      uint8_t type = static_cast<uint8_t>(mod->type);
       uint8_t oldType = type;
-      handled = edit8noLast(action, &type, 1, 0, modTotalCount - 1);
-      mod->type = (enum ModulationType)type;
+      handled = edit8noLast(action, &type, 1, 0, static_cast<uint8_t>(ModulationType::totalCount) - 1);
+      mod->type = static_cast<ModulationType>(type);
       if (oldType != type) {
         mod->p1 = 0;
         mod->p2 = 0;
-        mod->p3 = (mod->type == modADSR) ? 255 : 6;
+        mod->p3 = (mod->type == ModulationType::ADSR) ? 255 : 6;
         mod->p4 = 0;
         screenFullRedraw(&screenData);
       }
@@ -311,7 +311,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     }
     case 1: { // Destination
       Instrument* inst = &chipnomadState->project.instruments[cInstrument];
-      InstrumentFunctions funcs = getInstrumentFunctions((enum InstrumentType)inst->type);
+      InstrumentFunctions funcs = getInstrumentFunctions(inst->type);
       handled = edit8noLast(action, &mod->destination, 1, 0, funcs.modDestinationsCount);
       break;
     }
@@ -325,16 +325,16 @@ static int onEdit(int col, int row, enum CellEditAction action) {
       int paramIdx = modRow - 3;
       if (paramIdx >= paramCount(mod->type)) break;
 
-      if (mod->type == modAHD || mod->type == modADSR) {
+      if (mod->type == ModulationType::AHD || mod->type == ModulationType::ADSR) {
         uint8_t* params = &mod->p1;
         handled = edit8noLast(action, &params[paramIdx], 16, 0, 255);
         if (handled) {
           // Full field names for AHD and ADSR
           const char* fullName = NULL;
-          if (mod->type == modADSR) {
+          if (mod->type == ModulationType::ADSR) {
             const char* adsrNames[] = {"Attack", "Decay", "Sustain", "Release"};
             if (paramIdx < 4) fullName = adsrNames[paramIdx];
-          } else if (mod->type == modAHD) {
+          } else if (mod->type == ModulationType::AHD) {
             const char* ahdNames[] = {"Attack", "Hold", "Decay"};
             if (paramIdx < 3) fullName = ahdNames[paramIdx];
           }
@@ -342,12 +342,12 @@ static int onEdit(int col, int row, enum CellEditAction action) {
             screenMessage(0, "%s %hhu ticks", fullName, params[paramIdx]);
           }
         }
-      } else if (mod->type == modLFO) {
+      } else if (mod->type == ModulationType::LFO) {
         if (paramIdx == 0) {
-          handled = edit8noLast(action, &mod->p1, 1, 0, lfoShapeTotalCount - 1);
+          handled = edit8noLast(action, &mod->p1, 1, 0, static_cast<uint8_t>(LFOShape::totalCount) - 1);
           // No hint for LFO shape - not adding value
         } else if (paramIdx == 1) {
-          handled = edit8noLast(action, &mod->p2, 1, 0, lfoTrigTotalCount - 1);
+          handled = edit8noLast(action, &mod->p2, 1, 0, static_cast<uint8_t>(LFOTrigger::totalCount) - 1);
           // No hint for LFO trigger - not adding value
         } else if (paramIdx == 2) {
           handled = edit8noLast(action, &mod->p3, 16, 0, 255);

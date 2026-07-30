@@ -17,7 +17,7 @@ typedef enum {
 static int captureRow = 0;
 static int captureCol = 0;
 static CaptureState captureState = STATE_NAVIGATION;
-static InputCode pendingCapture = {inputNone, 0};
+static InputCode pendingCapture = {InputDeviceType::none, 0};
 static void fullRedraw(void);
 
 static const char* buttonNames[] = {
@@ -42,7 +42,7 @@ static void onRawInput(InputCode input, int isDown) {
   if (!isDown) return;
 
   // Logical buttons (e.g. touch vpad) are not remappable
-  if (input.deviceType == inputLogical) {
+  if (input.deviceType == InputDeviceType::logical) {
     inputRawCallback = NULL;
     captureState = STATE_CAPTURE_DONE;
     return;
@@ -93,7 +93,7 @@ static void drawField(int col, int row, CellState state) {
     gfxClearRect(11 + col * 8, row + 2, 7, 1);
     InputCode* slot = getKeySlot(row, col);
     if (slot) {
-      int isEmpty = (slot->deviceType == inputNone);
+      int isEmpty = (slot->deviceType == InputDeviceType::none);
       if (state == CellState::focus) {
         gfxSetFgColor(appSettings.colorScheme.textValue);
       } else if (isEmpty) {
@@ -131,7 +131,7 @@ static int onEdit(int col, int row, CellEditAction action) {
     } else if (action == CellEditAction::clear && col > 0) {
       InputCode* slot = getKeySlot(row, col);
       if (slot) {
-        slot->deviceType = inputNone;
+        slot->deviceType = InputDeviceType::none;
         slot->code = 0;
       }
       return 1;
@@ -186,7 +186,7 @@ static void draw(void) {
 
 static void applyPendingCapture(void) {
   InputCode* slot = getKeySlot(captureRow, captureCol);
-  if (slot && pendingCapture.deviceType != inputNone) {
+  if (slot && pendingCapture.deviceType != InputDeviceType::none) {
     InputCode previous = *slot;
 
     // Find conflicting slot and swap
@@ -202,7 +202,7 @@ static void applyPendingCapture(void) {
 
     *slot = pendingCapture;
   }
-  pendingCapture = (InputCode){inputNone, 0};
+  pendingCapture = (InputCode){InputDeviceType::none, 0};
 }
 
 static int onInput(int isKeyDown, int keys, int tapCount) {

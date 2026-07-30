@@ -1,6 +1,5 @@
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as s3 from 'aws-cdk-lib/aws-s3';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
@@ -9,6 +8,8 @@ import { CfnOutput, Duration, RemovalPolicy, Stack } from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 import { Certificate, CertificateValidation } from 'aws-cdk-lib/aws-certificatemanager';
+import * as path from 'path';
+import * as fs from 'fs';
 
 const domainName = "chipnomad.org";
 const prefix = "ChipNomadCom"
@@ -48,11 +49,12 @@ export class WebChipNomadCom extends Construct {
     });
     new CfnOutput(this, `${prefix}Certificate`, { value: certificate.certificateArn });
 
-    // Redirect Lambda@Edge
-    const redirectFunction = new cloudfront.experimental.EdgeFunction(this, `${prefix}Redirect`, {
-      runtime: lambda.Runtime.NODEJS_LATEST,
-      handler: 'redirect.handler',
-      code: lambda.Code.fromAsset('../lambdas/redirect')
+    // CloudFront Function for URL rewriting
+    const redirectFunction = new cloudfront.Function(this, `${prefix}RedirectFunction`, {
+      code: cloudfront.FunctionCode.fromFile({
+        filePath: path.join(__dirname, '../../lambdas/redirect/redirect.js'),
+      }),
+      runtime: cloudfront.FunctionRuntime.JS_2_0,
     });
 
     // CloudFront distribution
@@ -74,10 +76,10 @@ export class WebChipNomadCom extends Construct {
         compress: true,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-        edgeLambdas: [
+        functionAssociations: [
           {
-            eventType: cloudfront.LambdaEdgeEventType.ORIGIN_REQUEST,
-            functionVersion: redirectFunction.currentVersion
+            function: redirectFunction,
+            eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
           }
         ]
       }

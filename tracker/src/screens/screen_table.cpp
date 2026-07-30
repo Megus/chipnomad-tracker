@@ -203,7 +203,7 @@ static void draw(void) {
 
   PlaybackTrackState* track = &chipnomadState->playbackState.tracks[*pSongTrack];
   struct PlaybackTableState* pTable = NULL;
-  if (track->mode != playbackModeStopped) {
+  if (track->mode != PlaybackMode::stopped) {
     int instrumentTableIdx = track->note.instrumentTable.tableIdx;
     int auxTableIdx = track->note.auxTable.tableIdx;
     if (tableIdx == instrumentTableIdx) {

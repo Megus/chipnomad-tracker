@@ -10,7 +10,7 @@ int16_t playbackApplyVolumeEnvelope(PlaybackModState* mod, int maxVolume, int* s
   *stopNote = 0;
 
   // Only handle ADSR/AHD - skip LFO
-  if (mod->modulation->type == modLFO) {
+  if (mod->modulation->type == ModulationType::LFO) {
     return -1;
   }
 
@@ -41,7 +41,7 @@ int16_t playbackApplyVolumeEnvelope(PlaybackModState* mod, int maxVolume, int* s
 int playbackApplyVolumeModulation(PlaybackModState* mod, int8_t* volumeOffset, uint8_t* volume, int maxVolume) {
   int stopNote = 0;
 
-  if (mod->modulation->type == modLFO) {
+  if (mod->modulation->type == ModulationType::LFO) {
     // LFO: Add to volumeOffset
     *volumeOffset += playbackModScaleToRange(mod->outValue, 127);
   } else {

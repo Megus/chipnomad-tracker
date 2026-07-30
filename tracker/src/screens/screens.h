@@ -2,10 +2,7 @@
 #define __SCREENS_H__
 
 #include "common.h"
-
-extern "C" {
 #include "../chipnomad_lib/playback.h"
-}
 
 #define MESSAGE_TIME (60)
 

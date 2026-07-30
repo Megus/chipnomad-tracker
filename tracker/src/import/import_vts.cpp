@@ -287,7 +287,6 @@ static void finalizeVTSInstrument(Table* table, int rowCount, int loopRow,
 }
 
 // Export with C linkage for header compatibility
-extern "C" {
 
 int instrumentLoadVTS(const char* path, int instrumentIdx) {
   if (instrumentIdx < 0 || instrumentIdx >= PROJECT_MAX_INSTRUMENTS) {
@@ -302,7 +301,7 @@ int instrumentLoadVTS(const char* path, int instrumentIdx) {
   Instrument* inst = &chipnomadState->project.instruments[instrumentIdx];
   Table* table = &chipnomadState->project.tables[instrumentIdx];
 
-  getInstrumentFunctions(instAY1).init(inst);
+  getInstrumentFunctions(InstrumentType::AY1).init(inst);
 
   if (fgets(lineBuffer, sizeof(lineBuffer), file) == NULL) {
     fclose(file);
@@ -337,7 +336,7 @@ int instrumentLoadVTSFromMemory(char** lines, int lineCount, int instrumentIdx, 
   Instrument* inst = &chipnomadState->project.instruments[instrumentIdx];
   Table* table = &chipnomadState->project.tables[instrumentIdx];
 
-  getInstrumentFunctions(instAY1).init(inst);
+  getInstrumentFunctions(InstrumentType::AY1).init(inst);
 
   if (instrumentName != NULL) {
     strncpy(inst->name, instrumentName, PROJECT_INSTRUMENT_NAME_LENGTH);
@@ -363,5 +362,3 @@ int instrumentLoadVTSFromMemory(char** lines, int lineCount, int instrumentIdx, 
 
   return 0;
 }
-
-} // extern "C"

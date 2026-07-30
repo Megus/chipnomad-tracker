@@ -150,7 +150,7 @@ int chipnomadRender(ChipNomadState* state, float* buffer, int samples) {
 }
 
 static void detectAYPitchConflicts(ChipNomadState* state) {
-  if (!state || state->project.chipType != chipAY) return;
+  if (!state || state->project.chipType != ChipType::AY) return;
 
   // Decrease existing warning cooldowns
   for (int i = 0; i < state->project.tracksCount; i++) {

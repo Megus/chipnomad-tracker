@@ -15,7 +15,7 @@ int8_t phraseHasNotes(Project* p, int phrase);
 // Instrument name
 const char* instrumentName(Project* p, uint8_t instrument);
 // Instrument type name
-const char* instrumentTypeName(uint8_t type);
+const char* instrumentTypeName(InstrumentType type);
 // Get first note used with an instrument
 uint8_t instrumentFirstNote(Project* p, uint8_t instrument);
 // Swap two instruments and their default tables

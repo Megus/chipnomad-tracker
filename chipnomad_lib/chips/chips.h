@@ -1,10 +1,8 @@
 #ifndef __CHIPNOMAD_LIB__CHIPS_H__
 #define __CHIPNOMAD_LIB__CHIPS_H__
 
-extern "C" {
 #include <stdint.h>
 #include "../project.h"
-}
 
 /**
 * Chip emulation quality levels

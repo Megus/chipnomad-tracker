@@ -8,19 +8,19 @@
 #include "misc.h"
 
 // Helper function to get modulation type name
-static const char* getModulationTypeName(enum ModulationType type) {
+static const char* getModulationTypeName(ModulationType type) {
   switch (type) {
-    case modADSR: return "ADSR";
-    case modAHD: return "AHD";
-    case modLFO: return "LFO";
+    case ModulationType::ADSR: return "ADSR";
+    case ModulationType::AHD: return "AHD";
+    case ModulationType::LFO: return "LFO";
     default: return "Unknown";
   }
 }
 
 // Helper function to get parameter name based on modulation type
-static const char* getModulationParamName(enum ModulationType type, int paramIdx) {
+static const char* getModulationParamName(ModulationType type, int paramIdx) {
   switch (type) {
-    case modADSR:
+    case ModulationType::ADSR:
       switch (paramIdx) {
         case 0: return "Attack";
         case 1: return "Decay";
@@ -28,7 +28,7 @@ static const char* getModulationParamName(enum ModulationType type, int paramIdx
         case 3: return "Release";
         default: return "Param";
       }
-    case modAHD:
+    case ModulationType::AHD:
       switch (paramIdx) {
         case 0: return "Attack";
         case 1: return "Hold";
@@ -36,7 +36,7 @@ static const char* getModulationParamName(enum ModulationType type, int paramIdx
         case 3: return "---";
         default: return "Param";
       }
-    case modLFO:
+    case ModulationType::LFO:
       switch (paramIdx) {
         case 0: return "Shape";
         case 1: return "Trigger";
@@ -158,7 +158,7 @@ const char* helpFXHint(uint8_t* fx, int isTable, uint8_t instrumentIdx) {
       // Amount FX
       int modSlot = (fx[0] - fxM1A) / 5; // 0-3
       if (instrumentIdx != EMPTY_VALUE_8 && instrumentIdx < PROJECT_MAX_INSTRUMENTS) {
-        enum ModulationType modType = chipnomadState->project.instruments[instrumentIdx].modulation[modSlot].type;
+        ModulationType modType = chipnomadState->project.instruments[instrumentIdx].modulation[modSlot].type;
         snprintf(buffer, bufferSize, "Mod %d %s amount %+hhd (relative)", modSlot + 1, getModulationTypeName(modType), (int8_t)fx[1]);
       } else {
         snprintf(buffer, bufferSize, "Mod %d amount %+hhd (relative)", modSlot + 1, (int8_t)fx[1]);
@@ -173,7 +173,7 @@ const char* helpFXHint(uint8_t* fx, int isTable, uint8_t instrumentIdx) {
       int modSlot = (fx[0] - fxM1A) / 5; // 0-3
       int paramIdx = (fx[0] - fxM1A) % 5 - 1; // 0-3 (subtract 1 because M1A is amount)
       if (instrumentIdx != EMPTY_VALUE_8 && instrumentIdx < PROJECT_MAX_INSTRUMENTS) {
-        enum ModulationType modType = chipnomadState->project.instruments[instrumentIdx].modulation[modSlot].type;
+        ModulationType modType = chipnomadState->project.instruments[instrumentIdx].modulation[modSlot].type;
         const char* paramName = getModulationParamName(modType, paramIdx);
         snprintf(buffer, bufferSize, "Mod %d %s %s: %+hhd (relative)", modSlot + 1, getModulationTypeName(modType), paramName, (int8_t)fx[1]);
       } else {
@@ -270,7 +270,7 @@ const char* helpFXHint(uint8_t* fx, int isTable, uint8_t instrumentIdx) {
       static const char* oscTypeNames[] = {
         "Off", "Pulse", "SyncTone", "SyncEnv", "Wavetbl", "ToneFM", "EnvFM"
       };
-      const char* name = (fx[1] < aySoftwareOscSample) ? oscTypeNames[fx[1]] : "?";
+      const char* name = (fx[1] < static_cast<uint8_t>(AYSoftwareOscType::sample)) ? oscTypeNames[fx[1]] : "?";
       snprintf(buffer, bufferSize, "Software osc: %s", name);
       break;
     }
@@ -415,7 +415,7 @@ const char* helpFXDescription(enum FX fxIdx, uint8_t instrumentIdx) {
     if (paramIdx == 0) {
       // Amount FX
       if (instrumentIdx != EMPTY_VALUE_8 && instrumentIdx < PROJECT_MAX_INSTRUMENTS) {
-        enum ModulationType modType = chipnomadState->project.instruments[instrumentIdx].modulation[modSlot].type;
+        ModulationType modType = chipnomadState->project.instruments[instrumentIdx].modulation[modSlot].type;
         snprintf(buffer, bufferSize, "Mod %d Amount (relative)\n%s: Offsets modulation\namount",
                 modSlot + 1, getModulationTypeName(modType));
       } else {
@@ -424,11 +424,11 @@ const char* helpFXDescription(enum FX fxIdx, uint8_t instrumentIdx) {
     } else {
       // Parameter FX
       if (instrumentIdx != EMPTY_VALUE_8 && instrumentIdx < PROJECT_MAX_INSTRUMENTS) {
-        enum ModulationType modType = chipnomadState->project.instruments[instrumentIdx].modulation[modSlot].type;
+        ModulationType modType = chipnomadState->project.instruments[instrumentIdx].modulation[modSlot].type;
 
         // Generate context-specific description
         switch (modType) {
-          case modADSR:
+          case ModulationType::ADSR:
             switch (paramIdx - 1) {
               case 0: snprintf(buffer, bufferSize, "Mod %d Param 1 (relative)\nADSR: Attack time offset", modSlot + 1); break;
               case 1: snprintf(buffer, bufferSize, "Mod %d Param 2 (relative)\nADSR: Decay time offset", modSlot + 1); break;
@@ -436,7 +436,7 @@ const char* helpFXDescription(enum FX fxIdx, uint8_t instrumentIdx) {
               case 3: snprintf(buffer, bufferSize, "Mod %d Param 4 (relative)\nADSR: Release time offset", modSlot + 1); break;
             }
             break;
-          case modAHD:
+          case ModulationType::AHD:
             switch (paramIdx - 1) {
               case 0: snprintf(buffer, bufferSize, "Mod %d Param 1 (relative)\nAHD: Attack time offset\n(0-255 tics)", modSlot + 1); break;
               case 1: snprintf(buffer, bufferSize, "Mod %d Param 2 (relative)\nAHD: Hold time offset\n(0-255 tics)", modSlot + 1); break;
@@ -444,7 +444,7 @@ const char* helpFXDescription(enum FX fxIdx, uint8_t instrumentIdx) {
               case 3: snprintf(buffer, bufferSize, "Mod %d Param 4 (relative)\nAHD: (unused)", modSlot + 1); break;
             }
             break;
-          case modLFO:
+          case ModulationType::LFO:
             switch (paramIdx - 1) {
               case 0: snprintf(buffer, bufferSize, "Mod %d Param 1 (relative)\nLFO: Wave shape offset", modSlot + 1); break;
               case 1: snprintf(buffer, bufferSize, "Mod %d Param 2 (relative)\nLFO: Trigger mode offset", modSlot + 1); break;

@@ -458,7 +458,7 @@ void visualsRender(VisualState* visualState) {
       for (int trackIdx = 0; trackIdx < trackCount; trackIdx++) {
         PlaybackTrackState* track = &visualState->playback->tracks[trackIdx];
 
-        if (track->mode == playbackModeStopped) continue;
+        if (track->mode == PlaybackMode::stopped) continue;
 
         // Get current phrase
         uint16_t chainIdx = visualState->project->song[track->songRow][trackIdx];
@@ -499,7 +499,7 @@ void visualsRender(VisualState* visualState) {
       for (int trackIdx = 0; trackIdx < trackCount; trackIdx++) {
         PlaybackTrackState* track = &visualState->playback->tracks[trackIdx];
 
-        if (track->mode == playbackModeStopped) continue;
+        if (track->mode == PlaybackMode::stopped) continue;
 
         // Calculate track position
         int trackStartX = startX + trackIdx * (trackContentWidth + trackSpacing);

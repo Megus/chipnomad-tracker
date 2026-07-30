@@ -1,21 +1,17 @@
 #ifndef __CORELIB_INPUT_H__
 #define __CORELIB_INPUT_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdint.h>
 
-enum InputDeviceType {
-  inputNone = 0,
-  inputLogical = 1,
-  inputKeyboard = 2,
-  inputGamepad = 3,
+enum class InputDeviceType {
+  none = 0,
+  logical = 1,
+  keyboard = 2,
+  gamepad = 3,
 };
 
 struct InputCode {
-  enum InputDeviceType deviceType;
+  InputDeviceType deviceType;
   int32_t code;
 };
 
@@ -36,10 +32,5 @@ void inputInitDefaultKeyMapping(void);
 
 // Convert input code to human-readable name
 const char* inputGetKeyName(InputCode input);
-
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

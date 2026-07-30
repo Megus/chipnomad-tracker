@@ -1,9 +1,7 @@
 #include "doctest.h"
 
-extern "C" {
 #include "project.h"
 #include "project_instruments.h"
-}
 
 #include <cstring>
 #include <cstdlib>
@@ -25,7 +23,7 @@ TEST_CASE_FIXTURE(SampleEncodingFixture, "sample empty save load") {
 
   // Create an AYSample instrument with no sample data
   Instrument* inst = &p.instruments[0];
-  getInstrumentFunctions(instAYSample).init(inst);
+  getInstrumentFunctions(InstrumentType::AYSample).init(inst);
   std::strcpy(inst->name, "Empty Sample");
   inst->chip.aySample.sampleRate = 8000;
   inst->chip.aySample.fileLength = 0;
@@ -46,7 +44,7 @@ TEST_CASE_FIXTURE(SampleEncodingFixture, "sample empty save load") {
   CHECK(result == 0);
 
   // Verify empty sample loaded correctly
-  CHECK(p2.instruments[0].type == instAYSample);
+  CHECK(p2.instruments[0].type == InstrumentType::AYSample);
   CHECK(std::strcmp(p2.instruments[0].name, "Empty Sample") == 0);
   CHECK(p2.instruments[0].chip.aySample.sampleRate == 8000);
   CHECK(p2.instruments[0].chip.aySample.fileLength == 0);
@@ -62,7 +60,7 @@ TEST_CASE_FIXTURE(SampleEncodingFixture, "sample small save load") {
 
   // Create an AYSample instrument with small sample data
   Instrument* inst = &p.instruments[0];
-  getInstrumentFunctions(instAYSample).init(inst);
+  getInstrumentFunctions(InstrumentType::AYSample).init(inst);
   std::strcpy(inst->name, "Small Sample");
 
   // Create test data: 10 bytes
@@ -86,7 +84,7 @@ TEST_CASE_FIXTURE(SampleEncodingFixture, "sample small save load") {
   CHECK(result == 0);
 
   // Verify sample loaded correctly
-  CHECK(p2.instruments[0].type == instAYSample);
+  CHECK(p2.instruments[0].type == InstrumentType::AYSample);
   CHECK(std::strcmp(p2.instruments[0].name, "Small Sample") == 0);
   CHECK(p2.instruments[0].chip.aySample.fileLength == 10);
   CHECK(p2.instruments[0].chip.aySample.sampleData != nullptr);
@@ -106,7 +104,7 @@ TEST_CASE_FIXTURE(SampleEncodingFixture, "sample large save load") {
 
   // Create an AYSample instrument with larger sample data
   Instrument* inst = &p.instruments[0];
-  getInstrumentFunctions(instAYSample).init(inst);
+  getInstrumentFunctions(InstrumentType::AYSample).init(inst);
   std::strcpy(inst->name, "Large Sample");
 
   // Create test data: 200 bytes (more than one 80-char line)
@@ -134,7 +132,7 @@ TEST_CASE_FIXTURE(SampleEncodingFixture, "sample large save load") {
   CHECK(result == 0);
 
   // Verify sample loaded correctly
-  CHECK(p2.instruments[0].type == instAYSample);
+  CHECK(p2.instruments[0].type == InstrumentType::AYSample);
   CHECK(std::strcmp(p2.instruments[0].name, "Large Sample") == 0);
   CHECK(p2.instruments[0].chip.aySample.fileLength == 200);
   CHECK(p2.instruments[0].chip.aySample.sampleRate == 16000);
@@ -158,7 +156,7 @@ TEST_CASE_FIXTURE(SampleEncodingFixture, "sample max size save load") {
 
   // Create an AYSample instrument with maximum sample data
   Instrument* inst = &p.instruments[0];
-  getInstrumentFunctions(instAYSample).init(inst);
+  getInstrumentFunctions(InstrumentType::AYSample).init(inst);
   std::strcpy(inst->name, "Max Sample");
 
   // Create test data: 16384 bytes (maximum)
@@ -183,7 +181,7 @@ TEST_CASE_FIXTURE(SampleEncodingFixture, "sample max size save load") {
   CHECK(result == 0);
 
   // Verify sample loaded correctly
-  CHECK(p2.instruments[0].type == instAYSample);
+  CHECK(p2.instruments[0].type == InstrumentType::AYSample);
   CHECK(p2.instruments[0].chip.aySample.fileLength == PROJECT_MAX_SAMPLE_SIZE);
   CHECK(p2.instruments[0].chip.aySample.sampleData != nullptr);
 

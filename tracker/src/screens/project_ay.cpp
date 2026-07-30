@@ -89,7 +89,7 @@ static void drawField(int col, int row, CellState state) {
   } else if (row == SCR_PROJECT_ROWS + 1) {
     // Panning scheme
     gfxClearRect(13, 12, 5, 1);
-    gfxPrint(13, 12, stereoModes[chipnomadState->project.chipSetup.ay.stereoMode]);
+    gfxPrint(13, 12, stereoModes[static_cast<int>(chipnomadState->project.chipSetup.ay.stereoMode)]);
   } else if (row == SCR_PROJECT_ROWS + 2) {
     // Stereo width
     gfxPrintf(13, 13, "%03d%%", chipnomadState->project.chipSetup.ay.stereoSeparation);

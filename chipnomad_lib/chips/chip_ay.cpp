@@ -7,18 +7,18 @@
 
 static constexpr float ayVolumeScale = 0.6f; // Scale AY volume to avoid clipping when mixing multiple chips
 
-static void setPanning(struct ayumi* ay, enum StereoModeAY stereoMode, uint8_t separation) {
+static void setPanning(struct ayumi* ay, StereoModeAY stereoMode, uint8_t separation) {
   float sep = (float)separation / 200.0;
   float panA = 0.5, panB = 0.5, panC = 0.5;
 
   switch (stereoMode) {
-  case ayStereoABC:
+  case StereoModeAY::ABC:
     panA = 0.5 - sep; panB = 0.5; panC = 0.5 + sep;
     break;
-  case ayStereoACB:
+  case StereoModeAY::ACB:
     panA = 0.5 - sep; panB = 0.5 + sep; panC = 0.5;
     break;
-  case ayStereoBAC:
+  case StereoModeAY::BAC:
     panA = 0.5; panB = 0.5 - sep; panC = 0.5 + sep;
     break;
   }

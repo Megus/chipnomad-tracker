@@ -1,8 +1,6 @@
 #ifndef __CHIPNOMAD_LIB__PROJECT_H__
 #define __CHIPNOMAD_LIB__PROJECT_H__
 
-extern "C" {
-
 #include <stdio.h>
 #include <stdint.h>
 #include "project_instruments.h"
@@ -112,7 +110,7 @@ struct FXGroup {
   FXName* fxList;                // Array of FX in this group
   int count;                     // Number of FX in this group
   int columns;                   // Number of columns for grid layout (default 8)
-  enum InstrumentType instType;  // instNone for non-instrument groups
+  InstrumentType instType;  // InstrumentType::none for non-instrument groups
 };
 
 extern FXName fxNames[256]; // All names
@@ -121,21 +119,21 @@ extern int fxGroupCount; // Number of FX groups
 
 // Chips
 
-enum ChipType {
-  chipAY = 0,
-  chipTotalCount,
+enum class ChipType {
+  AY = 0,
+  totalCount,
 };
 
-enum StereoModeAY {
-  ayStereoABC,
-  ayStereoACB,
-  ayStereoBAC,
+enum class StereoModeAY : uint8_t {
+  ABC,
+  ACB,
+  BAC,
 };
 
 struct ChipSetupAY {
   int clock;
   uint8_t isYM;
-  enum StereoModeAY stereoMode;
+  StereoModeAY stereoMode;
   uint8_t stereoSeparation;
   uint8_t pwmFullRange; // 0 = 16 steps (hardware accurate), 1 = 256 steps (extended precision)
 };
@@ -202,7 +200,7 @@ struct Project {
   char author[PROJECT_TITLE_LENGTH + 1];
 
   float tickRate;
-  enum ChipType chipType;
+  ChipType chipType;
   ChipSetup chipSetup;
   int chipsCount;
   uint8_t linearPitch;
@@ -265,7 +263,5 @@ void chainClear(Chain* chain);
 void instrumentClear(Instrument* instrument);
 // Clear a single table with proper initialization
 void tableClear(Table* table);
-
-}
 
 #endif // __CHIPNOMAD_LIB__PROJECT_H__

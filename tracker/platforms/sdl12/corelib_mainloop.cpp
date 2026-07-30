@@ -23,7 +23,7 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(MainLoopEventData eventData
 
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT) {
-        eventData.type = eventExit;
+        eventData.type = MainLoopEvent::exit;
         eventData.data.value = 0;
         onEvent(eventData);
         return;
@@ -31,19 +31,19 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(MainLoopEventData eventData
         if (event.key.keysym.sym == BTN_MENU) {
           menu = event.type == SDL_KEYDOWN;
         } else if (menu && event.type == SDL_KEYDOWN && event.key.keysym.sym == BTN_X) {
-          eventData.type = eventExit;
+          eventData.type = MainLoopEvent::exit;
           eventData.data.value = 0;
           onEvent(eventData);
           return;
         } else {
-          eventData.type = event.type == SDL_KEYDOWN ? eventKeyDown : eventKeyUp;
-          eventData.data.input = (InputCode){inputKeyboard, event.key.keysym.sym};
+          eventData.type = event.type == SDL_KEYDOWN ? MainLoopEvent::keyDown : MainLoopEvent::keyUp;
+          eventData.data.input = (InputCode){InputDeviceType::keyboard, event.key.keysym.sym};
           onEvent(eventData);
         }
       }
     }
 
-    eventData.type = eventTick;
+    eventData.type = MainLoopEvent::tick;
     eventData.data.value = 0;
     onEvent(eventData);
 

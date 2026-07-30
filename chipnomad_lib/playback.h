@@ -1,8 +1,6 @@
 #ifndef __CHIPNOMAD_LIB__PLAYBACK_H__
 #define __CHIPNOMAD_LIB__PLAYBACK_H__
 
-extern "C" {
-
 #include "project.h"
 #include "chips/chips.h"
 #include "playback_fx.h"
@@ -11,14 +9,14 @@ extern "C" {
 
 struct ChipNomadState;
 
-enum PlaybackMode {
-  playbackModeNone, // For queue
-  playbackModeStopped,
-  playbackModeSong,
-  playbackModeChain,
-  playbackModePhrase,
-  playbackModePhraseRow,
-  playbackModeLoop,
+enum class PlaybackMode {
+  none, // For queue
+  stopped,
+  song,
+  chain,
+  phrase,
+  phraseRow,
+  loop,
 };
 
 struct PlaybackTableState {
@@ -53,7 +51,7 @@ struct PlaybackNoteState {
 };
 
 struct PlaybackTrackQueue {
-  enum PlaybackMode mode;
+  PlaybackMode mode;
   int songRow;
   int chainRow;
   int phraseRow;
@@ -63,7 +61,7 @@ struct PlaybackTrackQueue {
 struct PlaybackTrackState {
   PlaybackTrackQueue queue;
 
-  enum PlaybackMode mode;
+  PlaybackMode mode;
   // Position in the song
   int songRow;
   int chainRow;
@@ -256,7 +254,5 @@ void playbackClearLoopRange(PlaybackState* state);
  * @return 1 if all tracks have finished playing, 0 if any track is still active
  */
 int playbackNextFrame(struct ChipNomadState* state);
-
-}
 
 #endif // __CHIPNOMAD_LIB__PLAYBACK_H__

@@ -2,14 +2,9 @@
 #define __CHIPNOMAD_LIB_H__
 
 #include "chips/chips.h"
-
-extern "C" {
-
 #include "project.h"
 #include "playback.h"
 #include "utils.h"
-
-}
 
 #define AUDIO_OVERLOAD_COOLDOWN_FRAMES 5
 #define PITCH_CONFLICT_COOLDOWN_FRAMES 5

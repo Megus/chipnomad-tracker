@@ -1,8 +1,6 @@
 #include "doctest.h"
 
-extern "C" {
 #include "../src/wavetable_io.h"
-}
 
 #include <cstring>
 #include <unistd.h>

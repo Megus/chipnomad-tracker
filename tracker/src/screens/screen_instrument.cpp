@@ -133,9 +133,9 @@ static ScreenData screenInstrumentNone = {
 static ScreenData* instrumentScreen(void) {
   ScreenData* data = &screenInstrumentNone;
   switch (chipnomadState->project.instruments[cInstrument].type) {
-    case instAY1:         data = &screenInstrumentAY; break;
-    case instAY2:         data = &screenInstrumentAY2; break;
-    case instAYSample:    data = &screenInstrumentAYSample; break;
+    case InstrumentType::AY1:         data = &screenInstrumentAY; break;
+    case InstrumentType::AY2:         data = &screenInstrumentAY2; break;
+    case InstrumentType::AYSample:    data = &screenInstrumentAYSample; break;
     default: break;
   }
   data->drawRowHeader = drawRowHeader;
@@ -192,7 +192,7 @@ void instrumentCommonDrawStatic(void) {
   gfxSetFgColor(cs.textDefault);
   gfxPrint(0, 2, "Type");
 
-  if (chipnomadState->project.instruments[cInstrument].type == instNone) return;
+  if (chipnomadState->project.instruments[cInstrument].type == InstrumentType::none) return;
 
   gfxPrint(0, 3, "Name");
   gfxPrint(0, 4, "Transp.");
@@ -256,18 +256,18 @@ int instrumentCommonOnEdit(int col, int row, enum CellEditAction action) {
   int handled = 0;
   if (row == 0 && col == 0) {
     // Instrument type
-    uint8_t oldType = chipnomadState->project.instruments[cInstrument].type;
-    handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].type, 1, 0, 3);
-    uint8_t newType = chipnomadState->project.instruments[cInstrument].type;
+    InstrumentType oldType = chipnomadState->project.instruments[cInstrument].type;
+    handled = edit8noLast(action, reinterpret_cast<uint8_t*>(&chipnomadState->project.instruments[cInstrument].type), 1, 0, 3);
+    InstrumentType newType = chipnomadState->project.instruments[cInstrument].type;
 
     if (oldType != newType) {
       // Free old instrument data (critical for sample instruments to prevent memory leaks!)
       // Note: free() will zero the entire struct including the type field
-      getInstrumentFunctions((enum InstrumentType)oldType).free(&chipnomadState->project.instruments[cInstrument]);
+      getInstrumentFunctions(oldType).free(&chipnomadState->project.instruments[cInstrument]);
 
       // Restore the new type and initialize
       chipnomadState->project.instruments[cInstrument].type = newType;
-      getInstrumentFunctions((enum InstrumentType)newType).init(&chipnomadState->project.instruments[cInstrument]);
+      getInstrumentFunctions(newType).init(&chipnomadState->project.instruments[cInstrument]);
 
       fullRedraw();
     }

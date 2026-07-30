@@ -70,52 +70,52 @@ void inputInitDefaultKeyMapping(void) {
   KeyboardLayout layout = detectKeyboardLayout();
 
   // Keyboard mappings (all platforms)
-  appSettings.keyMapping.keyUp[0] = (InputCode){inputKeyboard, BTN_UP};
-  appSettings.keyMapping.keyDown[0] = (InputCode){inputKeyboard, BTN_DOWN};
-  appSettings.keyMapping.keyLeft[0] = (InputCode){inputKeyboard, BTN_LEFT};
-  appSettings.keyMapping.keyRight[0] = (InputCode){inputKeyboard, BTN_RIGHT};
-  appSettings.keyMapping.keyOpt[0] = (InputCode){inputKeyboard, (layout == LAYOUT_QWERTZ) ? SDLK_y : BTN_B};
-  appSettings.keyMapping.keyPlay[0] = (InputCode){inputKeyboard, BTN_START};
-  appSettings.keyMapping.keyShift[0] = (InputCode){inputKeyboard, BTN_SELECT};
-  appSettings.keyMapping.keyEdit[0] = (InputCode){inputKeyboard, BTN_A};
+  appSettings.keyMapping.keyUp[0] = (InputCode){InputDeviceType::keyboard, BTN_UP};
+  appSettings.keyMapping.keyDown[0] = (InputCode){InputDeviceType::keyboard, BTN_DOWN};
+  appSettings.keyMapping.keyLeft[0] = (InputCode){InputDeviceType::keyboard, BTN_LEFT};
+  appSettings.keyMapping.keyRight[0] = (InputCode){InputDeviceType::keyboard, BTN_RIGHT};
+  appSettings.keyMapping.keyOpt[0] = (InputCode){InputDeviceType::keyboard, (layout == LAYOUT_QWERTZ) ? SDLK_y : BTN_B};
+  appSettings.keyMapping.keyPlay[0] = (InputCode){InputDeviceType::keyboard, BTN_START};
+  appSettings.keyMapping.keyShift[0] = (InputCode){InputDeviceType::keyboard, BTN_SELECT};
+  appSettings.keyMapping.keyEdit[0] = (InputCode){InputDeviceType::keyboard, BTN_A};
 
 #if defined(DESKTOP_BUILD) || defined(ANDROID_BUILD)
   // Gamepad mappings (Desktop and Android only)
-  appSettings.keyMapping.keyUp[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_DPAD_UP};
-  appSettings.keyMapping.keyDown[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_DPAD_DOWN};
-  appSettings.keyMapping.keyLeft[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_DPAD_LEFT};
-  appSettings.keyMapping.keyRight[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_DPAD_RIGHT};
-  appSettings.keyMapping.keyEdit[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_A};
-  appSettings.keyMapping.keyOpt[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_B};
-  appSettings.keyMapping.keyPlay[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_START};
-  appSettings.keyMapping.keyShift[1] = (InputCode){inputGamepad, SDL_CONTROLLER_BUTTON_BACK};
+  appSettings.keyMapping.keyUp[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_DPAD_UP};
+  appSettings.keyMapping.keyDown[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_DPAD_DOWN};
+  appSettings.keyMapping.keyLeft[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_DPAD_LEFT};
+  appSettings.keyMapping.keyRight[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_DPAD_RIGHT};
+  appSettings.keyMapping.keyEdit[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_A};
+  appSettings.keyMapping.keyOpt[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_B};
+  appSettings.keyMapping.keyPlay[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_START};
+  appSettings.keyMapping.keyShift[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_BACK};
 #else
   // PortMaster: keyboard only
-  appSettings.keyMapping.keyUp[1] = (InputCode){inputNone, 0};
-  appSettings.keyMapping.keyDown[1] = (InputCode){inputNone, 0};
-  appSettings.keyMapping.keyLeft[1] = (InputCode){inputNone, 0};
-  appSettings.keyMapping.keyRight[1] = (InputCode){inputNone, 0};
-  appSettings.keyMapping.keyEdit[1] = (InputCode){inputNone, 0};
-  appSettings.keyMapping.keyOpt[1] = (InputCode){inputNone, 0};
-  appSettings.keyMapping.keyPlay[1] = (InputCode){inputNone, 0};
-  appSettings.keyMapping.keyShift[1] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyUp[1] = (InputCode){InputDeviceType::none, 0};
+  appSettings.keyMapping.keyDown[1] = (InputCode){InputDeviceType::none, 0};
+  appSettings.keyMapping.keyLeft[1] = (InputCode){InputDeviceType::none, 0};
+  appSettings.keyMapping.keyRight[1] = (InputCode){InputDeviceType::none, 0};
+  appSettings.keyMapping.keyEdit[1] = (InputCode){InputDeviceType::none, 0};
+  appSettings.keyMapping.keyOpt[1] = (InputCode){InputDeviceType::none, 0};
+  appSettings.keyMapping.keyPlay[1] = (InputCode){InputDeviceType::none, 0};
+  appSettings.keyMapping.keyShift[1] = (InputCode){InputDeviceType::none, 0};
 #endif
 
   // Slot 2 empty for all platforms
-  appSettings.keyMapping.keyUp[2] = (InputCode){inputNone, 0};
-  appSettings.keyMapping.keyDown[2] = (InputCode){inputNone, 0};
-  appSettings.keyMapping.keyLeft[2] = (InputCode){inputNone, 0};
-  appSettings.keyMapping.keyRight[2] = (InputCode){inputNone, 0};
-  appSettings.keyMapping.keyEdit[2] = (InputCode){inputNone, 0};
-  appSettings.keyMapping.keyOpt[2] = (InputCode){inputNone, 0};
-  appSettings.keyMapping.keyPlay[2] = (InputCode){inputNone, 0};
-  appSettings.keyMapping.keyShift[2] = (InputCode){inputNone, 0};
+  appSettings.keyMapping.keyUp[2] = (InputCode){InputDeviceType::none, 0};
+  appSettings.keyMapping.keyDown[2] = (InputCode){InputDeviceType::none, 0};
+  appSettings.keyMapping.keyLeft[2] = (InputCode){InputDeviceType::none, 0};
+  appSettings.keyMapping.keyRight[2] = (InputCode){InputDeviceType::none, 0};
+  appSettings.keyMapping.keyEdit[2] = (InputCode){InputDeviceType::none, 0};
+  appSettings.keyMapping.keyOpt[2] = (InputCode){InputDeviceType::none, 0};
+  appSettings.keyMapping.keyPlay[2] = (InputCode){InputDeviceType::none, 0};
+  appSettings.keyMapping.keyShift[2] = (InputCode){InputDeviceType::none, 0};
 }
 
 const char* inputGetKeyName(InputCode input) {
-  if (input.deviceType == inputNone) return "---";
+  if (input.deviceType == InputDeviceType::none) return "---";
 
-  if (input.deviceType == inputGamepad) {
+  if (input.deviceType == InputDeviceType::gamepad) {
     switch (input.code) {
       case SDL_CONTROLLER_BUTTON_A: return "Pad A";
       case SDL_CONTROLLER_BUTTON_B: return "Pad B";

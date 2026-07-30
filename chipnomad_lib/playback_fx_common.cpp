@@ -50,58 +50,58 @@ static uint8_t calculateArpUpDownOffset(const uint8_t *arp, const uint8_t period
   }
 }
 
-static int8_t calculateArpModeOffset(uint8_t arp[3], const uint8_t period, const int cycleCounter, const enum PlaybackArpType arpType, const uint8_t octaveSize) {
+static int8_t calculateArpModeOffset(uint8_t arp[3], const uint8_t period, const int cycleCounter, const PlaybackArpType arpType, const uint8_t octaveSize) {
   uint8_t noteOffset = 0;
 
   switch (arpType) {
-  case arpTypeUpDown4Oct:
+  case PlaybackArpType::upDown4Oct:
     noteOffset = calculateArpUpDownOffset(arp, period, cycleCounter, 28, octaveSize);
     break;
-  case arpTypeUpDown3Oct:
+  case PlaybackArpType::upDown3Oct:
     noteOffset = calculateArpUpDownOffset(arp, period, cycleCounter, 22, octaveSize);
     break;
-  case arpTypeUpDown2Oct:
+  case PlaybackArpType::upDown2Oct:
     noteOffset = calculateArpUpDownOffset(arp, period, cycleCounter, 16, octaveSize);
     break;
-  case arpTypeUpDown1Oct:
+  case PlaybackArpType::upDown1Oct:
     noteOffset = calculateArpUpDownOffset(arp, period, cycleCounter, 10, octaveSize);
     break;
-  case arpTypeUpDown:
+  case PlaybackArpType::upDown:
     noteOffset = calculateArpUpDownOffset(arp, period, cycleCounter, 4, octaveSize);
     break;
-  case arpTypeDown4Oct:
+  case PlaybackArpType::down4Oct:
     noteOffset = (cycleCounter % 5) * -octaveSize + arp[2-period];
     break;
-  case arpTypeDown3Oct:
+  case PlaybackArpType::down3Oct:
     noteOffset = (cycleCounter % 4) * -octaveSize + arp[2-period];
     break;
-  case arpTypeDown2Oct:
+  case PlaybackArpType::down2Oct:
     noteOffset = (cycleCounter % 3) * -octaveSize + arp[2-period];
     break;
-  case arpTypeDown1Oct:
+  case PlaybackArpType::down1Oct:
     if (cycleCounter % 2 == 1) {
       noteOffset = -octaveSize;
     }
-  case arpTypeDown:
+  case PlaybackArpType::down:
     noteOffset += arp[2-period];
     break;
-  case arpTypeUp5Oct:
+  case PlaybackArpType::up5Oct:
     noteOffset = (cycleCounter % 6) * octaveSize + arp[period];
     break;
-  case arpTypeUp4Oct:
+  case PlaybackArpType::up4Oct:
     noteOffset = (cycleCounter % 5) * octaveSize + arp[period];
     break;
-  case arpTypeUp3Oct:
+  case PlaybackArpType::up3Oct:
     noteOffset = (cycleCounter % 4) * octaveSize + arp[period];
     break;
-  case arpTypeUp2Oct:
+  case PlaybackArpType::up2Oct:
     noteOffset = (cycleCounter % 3) * octaveSize + arp[period];
     break;
-  case arpTypeUp1Oct:
+  case PlaybackArpType::up1Oct:
     if (cycleCounter % 2 == 1) {
       noteOffset = octaveSize;
     }
-  case arpTypeUp:
+  case PlaybackArpType::up:
     default:
     noteOffset += arp[period];
     break;
@@ -155,7 +155,7 @@ static void initFX_ARC(PlaybackState* state, PlaybackTrackState* track, int trac
   int speed = fx->fxValue & 0x0F;
   if (speed == 0) speed = 1;
   track->note.fx[fxARP].d.arpeggio.speed = speed;
-  track->note.fx[fxARP].d.arpeggio.type = (enum PlaybackArpType)((fx->fxValue & 0xF0) >> 4);
+  track->note.fx[fxARP].d.arpeggio.type = static_cast<PlaybackArpType>((fx->fxValue & 0xF0) >> 4);
 }
 
 // PIT - Pitch offset (semitones)

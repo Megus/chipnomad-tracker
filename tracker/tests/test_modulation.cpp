@@ -1,7 +1,5 @@
 #include "doctest.h"
-extern "C" {
 #include "../../chipnomad_lib/playback_modulation.h"
-}
 #include <string.h>
 #include <stdio.h>
 
@@ -56,7 +54,7 @@ void printModulationOutput(Modulation *mod, int frames, int noteOffFrame, int16_
 // Test playbackModInit
 TEST_CASE("test_modInit_ADSR_initializes_correctly") {
   Modulation mod = {
-    .type = modADSR,
+    .type = ModulationType::ADSR,
     .destination = 1,
     .amount = 100,
     .p1 = 10,  // Attack
@@ -78,14 +76,14 @@ TEST_CASE("test_modInit_ADSR_initializes_correctly") {
   CHECK(state.data1 == 0);
   CHECK(state.data2 == 32385);
   CHECK(state.outValue == 0);
-  CHECK(state.cachedType == modADSR);
+  CHECK(state.cachedType == ModulationType::ADSR);
   CHECK(state.cachedP2 == 20);
 }
 
 // Test ADSR attack phase
 TEST_CASE("test_ADSR_attack_phase_ramps_up") {
   Modulation mod = {
-    .type = modADSR,
+    .type = ModulationType::ADSR,
     .destination = 0,
     .amount = 127,  // Full positive amount
     .p1 = 10,  // Attack duration
@@ -119,7 +117,7 @@ TEST_CASE("test_ADSR_attack_phase_ramps_up") {
 // Test ADSR with zero attack goes straight to sustain
 TEST_CASE("test_ADSR_zero_attack_goes_to_sustain") {
   Modulation mod = {
-    .type = modADSR,
+    .type = ModulationType::ADSR,
     .destination = 0,
     .amount = 127,
     .p1 = 0,   // Zero attack
@@ -144,7 +142,7 @@ TEST_CASE("test_ADSR_zero_attack_goes_to_sustain") {
 // Test ADSR sustain phase holds value
 TEST_CASE("test_ADSR_sustain_phase_holds_value") {
   Modulation mod = {
-    .type = modADSR,
+    .type = ModulationType::ADSR,
     .destination = 0,
     .amount = 127,
     .p1 = 0,   // Zero attack
@@ -170,7 +168,7 @@ TEST_CASE("test_ADSR_sustain_phase_holds_value") {
 // Test ADSR note off triggers release
 TEST_CASE("test_ADSR_noteOff_triggers_release") {
   Modulation mod = {
-    .type = modADSR,
+    .type = ModulationType::ADSR,
     .destination = 0,
     .amount = 127,
     .p1 = 0,
@@ -202,7 +200,7 @@ TEST_CASE("test_ADSR_noteOff_triggers_release") {
 // Test ADSR release phase ramps to zero
 TEST_CASE("test_ADSR_release_ramps_to_zero") {
   Modulation mod = {
-    .type = modADSR,
+    .type = ModulationType::ADSR,
     .destination = 0,
     .amount = 127,
     .p1 = 0,
@@ -237,7 +235,7 @@ TEST_CASE("test_ADSR_release_ramps_to_zero") {
 // Test ADSR decay phase
 TEST_CASE("test_ADSR_decay_phase_ramps_to_sustain") {
   Modulation mod = {
-    .type = modADSR,
+    .type = ModulationType::ADSR,
     .destination = 0,
     .amount = 127,
     .p1 = 1,   // Short attack
@@ -274,7 +272,7 @@ TEST_CASE("test_ADSR_decay_phase_ramps_to_sustain") {
 // Test amount scaling - positive amount
 TEST_CASE("test_ADSR_amount_positive_scales_correctly") {
   Modulation mod = {
-    .type = modADSR,
+    .type = ModulationType::ADSR,
     .destination = 0,
     .amount = 64,  // Half of max (127)
     .p1 = 0,
@@ -296,7 +294,7 @@ TEST_CASE("test_ADSR_amount_positive_scales_correctly") {
 // Test amount scaling - negative amount
 TEST_CASE("test_ADSR_amount_negative_inverts_output") {
   Modulation mod = {
-    .type = modADSR,
+    .type = ModulationType::ADSR,
     .destination = 0,
     .amount = -127,  // Full negative
     .p1 = 0,
@@ -319,7 +317,7 @@ TEST_CASE("test_ADSR_amount_negative_inverts_output") {
 // Test amount scaling - zero amount
 TEST_CASE("test_ADSR_amount_zero_outputs_zero") {
   Modulation mod = {
-    .type = modADSR,
+    .type = ModulationType::ADSR,
     .destination = 0,
     .amount = 0,  // Zero amount
     .p1 = 0,
@@ -385,7 +383,7 @@ TEST_CASE("test_scaleToRange_different_maxAmplitudes") {
 // Test ADSR full cycle
 TEST_CASE("test_ADSR_full_cycle") {
   Modulation mod = {
-    .type = modADSR,
+    .type = ModulationType::ADSR,
     .destination = 0,
     .amount = 127,
     .p1 = 3,   // Attack
@@ -439,7 +437,7 @@ TEST_CASE("test_ADSR_full_cycle") {
 // Test AHD initialization
 TEST_CASE("test_modInit_AHD_initializes_correctly") {
   Modulation mod = {
-    .type = modAHD,
+    .type = ModulationType::AHD,
     .destination = 1,
     .amount = 100,
     .p1 = 10,  // Attack
@@ -461,14 +459,14 @@ TEST_CASE("test_modInit_AHD_initializes_correctly") {
   CHECK(state.data1 == 0);
   CHECK(state.data2 == 32385);
   CHECK(state.outValue == 0);
-  CHECK(state.cachedType == modAHD);
+  CHECK(state.cachedType == ModulationType::AHD);
   CHECK(state.cachedP2 == 20);
 }
 
 // Test AHD attack phase
 TEST_CASE("test_AHD_attack_phase_ramps_up") {
   Modulation mod = {
-    .type = modAHD,
+    .type = ModulationType::AHD,
     .destination = 0,
     .amount = 127,
     .p1 = 10,  // Attack duration
@@ -502,7 +500,7 @@ TEST_CASE("test_AHD_attack_phase_ramps_up") {
 // Test AHD hold phase
 TEST_CASE("test_AHD_hold_phase_stays_at_peak") {
   Modulation mod = {
-    .type = modAHD,
+    .type = ModulationType::AHD,
     .destination = 0,
     .amount = 127,
     .p1 = 1,   // Short attack
@@ -541,7 +539,7 @@ TEST_CASE("test_AHD_hold_phase_stays_at_peak") {
 // Test AHD decay phase
 TEST_CASE("test_AHD_decay_phase_ramps_to_zero") {
   Modulation mod = {
-    .type = modAHD,
+    .type = ModulationType::AHD,
     .destination = 0,
     .amount = 127,
     .p1 = 1,   // Short attack
@@ -581,7 +579,7 @@ TEST_CASE("test_AHD_decay_phase_ramps_to_zero") {
 // Test AHD with zero attack
 TEST_CASE("test_AHD_zero_attack_goes_to_hold") {
   Modulation mod = {
-    .type = modAHD,
+    .type = ModulationType::AHD,
     .destination = 0,
     .amount = 127,
     .p1 = 0,   // Zero attack
@@ -605,7 +603,7 @@ TEST_CASE("test_AHD_zero_attack_goes_to_hold") {
 // Test AHD with zero hold
 TEST_CASE("test_AHD_zero_hold_goes_to_decay") {
   Modulation mod = {
-    .type = modAHD,
+    .type = ModulationType::AHD,
     .destination = 0,
     .amount = 127,
     .p1 = 1,   // Short attack
@@ -628,7 +626,7 @@ TEST_CASE("test_AHD_zero_hold_goes_to_decay") {
 // Test AHD note off does nothing
 TEST_CASE("test_AHD_noteOff_does_nothing") {
   Modulation mod = {
-    .type = modAHD,
+    .type = ModulationType::AHD,
     .destination = 0,
     .amount = 127,
     .p1 = 0,
@@ -661,7 +659,7 @@ TEST_CASE("test_AHD_noteOff_does_nothing") {
 // Test AHD full cycle
 TEST_CASE("test_AHD_full_cycle") {
   Modulation mod = {
-    .type = modAHD,
+    .type = ModulationType::AHD,
     .destination = 0,
     .amount = 127,
     .p1 = 3,   // Attack
@@ -710,7 +708,7 @@ TEST_CASE("test_AHD_full_cycle") {
 // Test AHD with negative amount
 TEST_CASE("test_AHD_negative_amount_inverts_output") {
   Modulation mod = {
-    .type = modAHD,
+    .type = ModulationType::AHD,
     .destination = 0,
     .amount = -127,  // Full negative
     .p1 = 0,
@@ -732,11 +730,11 @@ TEST_CASE("test_AHD_negative_amount_inverts_output") {
 // Test LFO initialization
 TEST_CASE("test_modInit_LFO_initializes_correctly") {
   Modulation mod = {
-    .type = modLFO,
+    .type = ModulationType::LFO,
     .destination = 1,
     .amount = 100,
-    .p1 = lfoShapeTri,    // Shape
-    .p2 = lfoTrigFree,   // Trigger
+    .p1 = static_cast<uint8_t>(LFOShape::tri),    // Shape
+    .p2 = static_cast<uint8_t>(LFOTrigger::free),   // Trigger
     .p3 = 20,        // Period
     .p4 = 0          // Unused
   };
@@ -751,18 +749,18 @@ TEST_CASE("test_modInit_LFO_initializes_correctly") {
   CHECK(state.p4Offset == 0);
   CHECK(state.step == 0);
   CHECK(state.counter == 0);
-  CHECK(state.cachedType == modLFO);
-  CHECK(state.cachedP2 == lfoTrigFree);
+  CHECK(state.cachedType == ModulationType::LFO);
+  CHECK(state.cachedP2 == static_cast<uint8_t>(LFOTrigger::free));
 }
 
 // Test LFO triangle shape oscillates
 TEST_CASE("test_LFO_triangle_oscillates") {
   Modulation mod = {
-    .type = modLFO,
+    .type = ModulationType::LFO,
     .destination = 0,
     .amount = 127,
-    .p1 = lfoShapeTri,
-    .p2 = lfoTrigFree,
+    .p1 = static_cast<uint8_t>(LFOShape::tri),
+    .p2 = static_cast<uint8_t>(LFOTrigger::free),
     .p3 = 16,  // 16 tick period
     .p4 = 0
   };
@@ -798,11 +796,11 @@ TEST_CASE("test_LFO_triangle_oscillates") {
 // Test LFO square wave
 TEST_CASE("test_LFO_square_toggles") {
   Modulation mod = {
-    .type = modLFO,
+    .type = ModulationType::LFO,
     .destination = 0,
     .amount = 127,
-    .p1 = lfoShapeSquare,
-    .p2 = lfoTrigFree,
+    .p1 = static_cast<uint8_t>(LFOShape::square),
+    .p2 = static_cast<uint8_t>(LFOTrigger::free),
     .p3 = 10,
     .p4 = 0
   };
@@ -830,11 +828,11 @@ TEST_CASE("test_LFO_square_toggles") {
 // Test LFO ramp up
 TEST_CASE("test_LFO_rampUp_increases") {
   Modulation mod = {
-    .type = modLFO,
+    .type = ModulationType::LFO,
     .destination = 0,
     .amount = 127,
-    .p1 = lfoShapeRampUp,
-    .p2 = lfoTrigFree,
+    .p1 = static_cast<uint8_t>(LFOShape::rampUp),
+    .p2 = static_cast<uint8_t>(LFOTrigger::free),
     .p3 = 10,
     .p4 = 0
   };
@@ -860,11 +858,11 @@ TEST_CASE("test_LFO_rampUp_increases") {
 // Test LFO ramp down
 TEST_CASE("test_LFO_rampDown_decreases") {
   Modulation mod = {
-    .type = modLFO,
+    .type = ModulationType::LFO,
     .destination = 0,
     .amount = 127,
-    .p1 = lfoShapeRampDown,
-    .p2 = lfoTrigFree,
+    .p1 = static_cast<uint8_t>(LFOShape::rampDown),
+    .p2 = static_cast<uint8_t>(LFOTrigger::free),
     .p3 = 10,
     .p4 = 0
   };
@@ -890,11 +888,11 @@ TEST_CASE("test_LFO_rampDown_decreases") {
 // Test LFO wraps around with lfoFree
 TEST_CASE("test_LFO_free_wraps_around") {
   Modulation mod = {
-    .type = modLFO,
+    .type = ModulationType::LFO,
     .destination = 0,
     .amount = 127,
-    .p1 = lfoShapeSquare,
-    .p2 = lfoTrigFree,
+    .p1 = static_cast<uint8_t>(LFOShape::square),
+    .p2 = static_cast<uint8_t>(LFOTrigger::free),
     .p3 = 4,  // Short period
     .p4 = 0
   };
@@ -916,11 +914,11 @@ TEST_CASE("test_LFO_free_wraps_around") {
 // Test LFO stops with lfoOnce
 TEST_CASE("test_LFO_once_stops_after_cycle") {
   Modulation mod = {
-    .type = modLFO,
+    .type = ModulationType::LFO,
     .destination = 0,
     .amount = 127,
-    .p1 = lfoShapeSquare,
-    .p2 = lfoTrigOnce,
+    .p1 = static_cast<uint8_t>(LFOShape::square),
+    .p2 = static_cast<uint8_t>(LFOTrigger::once),
     .p3 = 4,
     .p4 = 0
   };
@@ -947,11 +945,11 @@ TEST_CASE("test_LFO_once_stops_after_cycle") {
 // Test LFO holds last value with lfoHold
 TEST_CASE("test_LFO_hold_stops_at_last_value") {
   Modulation mod = {
-    .type = modLFO,
+    .type = ModulationType::LFO,
     .destination = 0,
     .amount = 127,
-    .p1 = lfoShapeRampUp,
-    .p2 = lfoTrigHold,
+    .p1 = static_cast<uint8_t>(LFOShape::rampUp),
+    .p2 = static_cast<uint8_t>(LFOTrigger::hold),
     .p3 = 5,
     .p4 = 0
   };
@@ -979,11 +977,11 @@ TEST_CASE("test_LFO_hold_stops_at_last_value") {
 // Test LFO with negative amount inverts
 TEST_CASE("test_LFO_negative_amount_inverts") {
   Modulation mod = {
-    .type = modLFO,
+    .type = ModulationType::LFO,
     .destination = 0,
     .amount = -127,
-    .p1 = lfoShapeSquare,
-    .p2 = lfoTrigFree,
+    .p1 = static_cast<uint8_t>(LFOShape::square),
+    .p2 = static_cast<uint8_t>(LFOTrigger::free),
     .p3 = 10,
     .p4 = 0
   };
@@ -1005,11 +1003,11 @@ TEST_CASE("test_LFO_negative_amount_inverts") {
 // Test LFO with zero period outputs zero
 TEST_CASE("test_LFO_zero_period_outputs_zero") {
   Modulation mod = {
-    .type = modLFO,
+    .type = ModulationType::LFO,
     .destination = 0,
     .amount = 127,
-    .p1 = lfoShapeTri,
-    .p2 = lfoTrigFree,
+    .p1 = static_cast<uint8_t>(LFOShape::tri),
+    .p2 = static_cast<uint8_t>(LFOTrigger::free),
     .p3 = 0,  // Zero period
     .p4 = 0
   };
@@ -1024,7 +1022,7 @@ TEST_CASE("test_LFO_zero_period_outputs_zero") {
 // Test type change detection and reinitialization
 TEST_CASE("test_type_change_reinitializes") {
   Modulation mod = {
-    .type = modADSR,
+    .type = ModulationType::ADSR,
     .destination = 1,
     .amount = 127,
     .p1 = 10,  // Attack
@@ -1048,13 +1046,13 @@ TEST_CASE("test_type_change_reinitializes") {
   int16_t adsrValue = state.outValue;
 
   // Change type to AHD
-  mod.type = modAHD;
+  mod.type = ModulationType::AHD;
 
   // Next call should detect change and reinitialize
   playbackModNext(&state);
 
   // Should be reinitialized: step 0, counter 0 (or 1 after first next)
-  CHECK(state.cachedType == modAHD);
+  CHECK(state.cachedType == ModulationType::AHD);
   CHECK(state.step == 0);
   CHECK(state.counter == 1); // Counter increments in first call
   // Value should be different (restarted from beginning)
@@ -1063,11 +1061,11 @@ TEST_CASE("test_type_change_reinitializes") {
 
 TEST_CASE("test_LFO_trigger_mode_change_reinitializes") {
   Modulation mod = {
-    .type = modLFO,
+    .type = ModulationType::LFO,
     .destination = 1,
     .amount = 127,
-    .p1 = lfoShapeTri,    // Shape
-    .p2 = lfoTrigFree,   // Trigger - free running
+    .p1 = static_cast<uint8_t>(LFOShape::tri),    // Shape
+    .p2 = static_cast<uint8_t>(LFOTrigger::free),   // Trigger - free running
     .p3 = 16,        // Period
     .p4 = 0
   };
@@ -1081,22 +1079,22 @@ TEST_CASE("test_LFO_trigger_mode_change_reinitializes") {
   }
 
   CHECK(state.counter == 8);
-  CHECK(state.cachedP2 == lfoTrigFree);
+  CHECK(state.cachedP2 == static_cast<uint8_t>(LFOTrigger::free));
 
   // Change trigger mode to lfoOnce
-  mod.p2 = lfoTrigOnce;
+  mod.p2 = static_cast<uint8_t>(LFOTrigger::once);
 
   // Next call should detect change and reinitialize
   playbackModNext(&state);
 
   // Should be reinitialized
-  CHECK(state.cachedP2 == lfoTrigOnce);
+  CHECK(state.cachedP2 == static_cast<uint8_t>(LFOTrigger::once));
   CHECK(state.counter == 1); // Restarted and advanced one step
 }
 
 TEST_CASE("test_parameter_change_without_type_change_continues") {
   Modulation mod = {
-    .type = modADSR,
+    .type = ModulationType::ADSR,
     .destination = 1,
     .amount = 127,
     .p1 = 10,  // Attack
@@ -1124,16 +1122,16 @@ TEST_CASE("test_parameter_change_without_type_change_continues") {
   // Should continue from where it was (counter should increment)
   CHECK(state.step == 0);
   CHECK(state.counter == 6);
-  CHECK(state.cachedType == modADSR);
+  CHECK(state.cachedType == ModulationType::ADSR);
 }
 
 TEST_CASE("test_LFO_shape_change_without_trigger_change_continues") {
   Modulation mod = {
-    .type = modLFO,
+    .type = ModulationType::LFO,
     .destination = 1,
     .amount = 127,
-    .p1 = lfoShapeTri,    // Shape
-    .p2 = lfoTrigFree,   // Trigger
+    .p1 = static_cast<uint8_t>(LFOShape::tri),    // Shape
+    .p2 = static_cast<uint8_t>(LFOTrigger::free),   // Trigger
     .p3 = 16,        // Period
     .p4 = 0
   };
@@ -1150,25 +1148,25 @@ TEST_CASE("test_LFO_shape_change_without_trigger_change_continues") {
   int16_t triValue = state.outValue;
 
   // Change shape to square (p1) - should NOT reinitialize
-  mod.p1 = lfoShapeSquare;
+  mod.p1 = static_cast<uint8_t>(LFOShape::square);
 
   playbackModNext(&state);
 
   // Should continue from same position (counter increments)
   CHECK(state.counter == 5);
-  CHECK(state.cachedType == modLFO);
-  CHECK(state.cachedP2 == lfoTrigFree);
+  CHECK(state.cachedType == ModulationType::LFO);
+  CHECK(state.cachedP2 == static_cast<uint8_t>(LFOTrigger::free));
   // Value will be different due to shape change, but counter continues
   CHECK(state.outValue != triValue);
 }
 
 TEST_CASE("test_LFO_random_changes_each_period") {
   Modulation mod = {
-    .type = modLFO,
+    .type = ModulationType::LFO,
     .destination = 1,
     .amount = 127,
-    .p1 = lfoShapeRandom,  // Random shape
-    .p2 = lfoTrigFree,     // Free running
+    .p1 = static_cast<uint8_t>(LFOShape::random),  // Random shape
+    .p2 = static_cast<uint8_t>(LFOTrigger::free),     // Free running
     .p3 = 8,               // Period: 8 frames
     .p4 = 0
   };
@@ -1211,11 +1209,11 @@ TEST_CASE("test_LFO_random_changes_each_period") {
 
 void testStand(void) {
   Modulation mod = {
-    .type = modLFO,
+    .type = ModulationType::LFO,
     .destination = 1,
     .amount = 127,
-    .p1 = lfoShapeRandom,
-    .p2 = lfoTrigRetrig,
+    .p1 = static_cast<uint8_t>(LFOShape::random),
+    .p2 = static_cast<uint8_t>(LFOTrigger::retrig),
     .p3 = 5,
     .p4 = 0
   };
@@ -1233,7 +1231,7 @@ TEST_CASE("test_legacy_AY1_volume_sustain_scaling") {
   for (uint8_t sustainValue = 0; sustainValue <= 15; sustainValue++) {
     // Create a modulation with ADSR type and the sustain value
     Modulation mod = {
-      .type = modADSR,
+      .type = ModulationType::ADSR,
       .destination = 1,  // Volume
       .amount = 127,     // Full positive amount (legacy AY1 uses 127)
       .p1 = 0,           // Attack: 0 (instant)
@@ -1275,11 +1273,11 @@ TEST_CASE("test_legacy_AY1_volume_sustain_scaling") {
 // Test LFO UniTri (unipolar triangle) goes from 0 to max to 0
 TEST_CASE("test_LFO_UniTri_unipolar_range") {
   Modulation mod = {
-    .type = modLFO,
+    .type = ModulationType::LFO,
     .destination = 0,
     .amount = 127,
-    .p1 = lfoShapeUniTri,
-    .p2 = lfoTrigFree,
+    .p1 = static_cast<uint8_t>(LFOShape::uniTri),
+    .p2 = static_cast<uint8_t>(LFOTrigger::free),
     .p3 = 16,  // 16 tick period
     .p4 = 0
   };
@@ -1331,11 +1329,11 @@ TEST_CASE("test_LFO_UniTri_unipolar_range") {
 // Test LFO UniSine (unipolar sine) goes from 0 to max to 0 with smooth easing
 TEST_CASE("test_LFO_UniSine_unipolar_smooth") {
   Modulation mod = {
-    .type = modLFO,
+    .type = ModulationType::LFO,
     .destination = 0,
     .amount = 127,
-    .p1 = lfoShapeUniSin,
-    .p2 = lfoTrigFree,
+    .p1 = static_cast<uint8_t>(LFOShape::uniSin),
+    .p2 = static_cast<uint8_t>(LFOTrigger::free),
     .p3 = 16,  // 16 tick period
     .p4 = 0
   };
@@ -1376,11 +1374,11 @@ TEST_CASE("test_LFO_UniSine_unipolar_smooth") {
 // Test UniTri with negative amount (still unipolar, but subtracted)
 TEST_CASE("test_LFO_UniTri_negative_amount_stays_unipolar") {
   Modulation mod = {
-    .type = modLFO,
+    .type = ModulationType::LFO,
     .destination = 0,
     .amount = -127,  // Negative amount
-    .p1 = lfoShapeUniTri,
-    .p2 = lfoTrigFree,
+    .p1 = static_cast<uint8_t>(LFOShape::uniTri),
+    .p2 = static_cast<uint8_t>(LFOTrigger::free),
     .p3 = 8,
     .p4 = 0
   };
@@ -1405,11 +1403,11 @@ TEST_CASE("test_LFO_UniTri_negative_amount_stays_unipolar") {
 // Test UniSine with negative amount
 TEST_CASE("test_LFO_UniSine_negative_amount_stays_unipolar") {
   Modulation mod = {
-    .type = modLFO,
+    .type = ModulationType::LFO,
     .destination = 0,
     .amount = -127,  // Negative amount
-    .p1 = lfoShapeUniSin,
-    .p2 = lfoTrigFree,
+    .p1 = static_cast<uint8_t>(LFOShape::uniSin),
+    .p2 = static_cast<uint8_t>(LFOTrigger::free),
     .p3 = 8,
     .p4 = 0
   };

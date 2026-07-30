@@ -2,6 +2,8 @@
 #define __COMMON_H__
 
 #include "chipnomad_lib.h"
+#include "corelib/corelib_input.h"
+#include "corelib_mainloop.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -10,8 +12,6 @@ extern "C" {
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
-#include "corelib/corelib_input.h"
-#include "corelib_mainloop.h"
 
 #define AUTOSAVE_FILENAME "autosave.cnm"
 #define FILENAME_LENGTH (24)

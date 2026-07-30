@@ -13,7 +13,7 @@ static int loadInstrumentAY1Legacy(FILE* file, Instrument* instrument) {
     if (strncmp(line, "- Volume envelope: ", 19) == 0) {
       // Read ADSR values into modulation struct
       Modulation* ve = &instrument->chip.ay.volumeEnvelope;
-      ve->type = modADSR;
+      ve->type = ModulationType::ADSR;
       ve->destination = 1;
       ve->amount = 127;
       sscanf(line, "- Volume envelope: %hhu,%hhu,%hhu,%hhu",
@@ -38,7 +38,7 @@ static int loadInstrumentAY1(FILE* file, Instrument* instrument) {
     if (strncmp(line, "- Volume envelope: ", 19) == 0) {
       // Read ADSR values into modulation struct
       Modulation* ve = &instrument->chip.ay.volumeEnvelope;
-      ve->type = modADSR;
+      ve->type = ModulationType::ADSR;
       ve->destination = 1;
       ve->amount = 127;
       sscanf(line, "- Volume envelope: %hhu,%hhu,%hhu,%hhu",
@@ -231,7 +231,7 @@ int instrumentLoadData(FILE* file, Instrument* instrument, Project* p) {
     if (strncmp(line, "- Name: ", 8) == 0) {
       sscanf(line, "- Name: %[^\n]", instrument->name);
     } else if (strncmp(line, "- Type: ", 8) == 0) {
-      sscanf(line, "- Type: %hhd", &instrument->type);
+      sscanf(line, "- Type: %hhd", reinterpret_cast<uint8_t*>(&instrument->type));
     } else if (strncmp(line, "- Table speed: ", 15) == 0) {
       sscanf(line, "- Table speed: %hhu", &instrument->tableSpeed);
     } else if (strncmp(line, "- Transpose: ", 13) == 0) {
@@ -247,7 +247,7 @@ int instrumentLoadData(FILE* file, Instrument* instrument, Project* p) {
   if (projectFileVersion == 1) {
     // Legacy format (version 1.0): no modulation, no "Chip data:" separator
     // Only AY1 instruments existed in version 1.0
-    if (instrument->type == instAY1) {
+    if (instrument->type == InstrumentType::AY1) {
       if (loadInstrumentAY1Legacy(file, instrument)) return 1;
     }
     return 0;
@@ -268,13 +268,13 @@ int instrumentLoadData(FILE* file, Instrument* instrument, Project* p) {
     consumeLine(file);
     // Load chip-specific data based on instrument type
     switch (instrument->type) {
-      case instAY1:
+      case InstrumentType::AY1:
         if (loadInstrumentAY1(file, instrument)) return 1;
         break;
-      case instAY2:
+      case InstrumentType::AY2:
         if (loadInstrumentAY2(file, instrument)) return 1;
         break;
-      case instAYSample:
+      case InstrumentType::AYSample:
         if (loadInstrumentAYSample(file, instrument)) return 1;
         break;
       default:
@@ -384,7 +384,7 @@ static int saveModulation(FILE* file, Instrument* instrument) {
 int instrumentSaveData(FILE* file, int idx, Instrument* instrument) {
   fprintf(file, "\n### Instrument %X\n\n", idx);
   fprintf(file, "- Name: %s\n", instrument->name);
-  fprintf(file, "- Type: %hhd\n", instrument->type);
+  fprintf(file, "- Type: %hhd\n", static_cast<uint8_t>(instrument->type));
   fprintf(file, "- Table speed: %hhu\n", instrument->tableSpeed);
   fprintf(file, "- Transpose: %hhu\n", instrument->transposeEnabled);
 
@@ -394,13 +394,13 @@ int instrumentSaveData(FILE* file, int idx, Instrument* instrument) {
   // Save chip-specific data
   fprintf(file, "- Chip data:\n");
   switch (instrument->type) {
-    case instAY1:
+    case InstrumentType::AY1:
       saveInstrumentAY1(file, instrument);
       break;
-    case instAY2:
+    case InstrumentType::AY2:
       saveInstrumentAY2(file, instrument);
       break;
-    case instAYSample:
+    case InstrumentType::AYSample:
       saveInstrumentAYSample(file, instrument);
       break;
     default:

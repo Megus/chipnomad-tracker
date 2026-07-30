@@ -183,7 +183,7 @@ static void draw(void) {
 
   gfxClearRect(2, 3, 1, 16);
   PlaybackTrackState* track = &chipnomadState->playbackState.tracks[*pSongTrack];
-  if (track->mode != playbackModeStopped && track->mode != playbackModePhraseRow && track->songRow != EMPTY_VALUE_16) {
+  if (track->mode != PlaybackMode::stopped && track->mode != PlaybackMode::phraseRow && track->songRow != EMPTY_VALUE_16) {
     // Chain row
     if (*pSongRow == track->songRow) {
       gfxSetFgColor(appSettings.colorScheme.playMarkers);
@@ -280,7 +280,7 @@ static int editCell(int col, int row, CellEditAction action) {
     }
   }
 
-  if (handled && (!playbackIsPlaying(&chipnomadState->playbackState) || chipnomadState->playbackState.tracks[*pSongTrack].mode == playbackModePhraseRow)) {
+  if (handled && (!playbackIsPlaying(&chipnomadState->playbackState) || chipnomadState->playbackState.tracks[*pSongTrack].mode == PlaybackMode::phraseRow)) {
     PhraseRow* row = &phraseRows[screen.cursorRow];
     if (row->note != EMPTY_VALUE_8 && row->note != NOTE_OFF && row->instrument == EMPTY_VALUE_8) {
       PhraseRow previewRow = *row;
@@ -318,13 +318,9 @@ static int onEdit(int col, int row, CellEditAction action) {
       if (startCol == 3 || startCol == 5 || startCol == 7) {
         // FX type column: show FX selection
         int fxIdx = (startCol - 3) / 2;
-        // Get instrument type from current phrase row or traverse back
+        // Get instrument index from current phrase row or traverse back
         uint8_t instrumentNum = lookupInstrument(&chipnomadState->project, *pSongRow, *pChainRow, screen.cursorRow, *pSongTrack);
-        enum InstrumentType instType = instNone;
-        if (instrumentNum != EMPTY_VALUE_8) {
-          instType = (enum InstrumentType)chipnomadState->project.instruments[instrumentNum].type;
-        }
-        fxEditFullDraw(phraseRows[screen.cursorRow].fx[fxIdx][0], instType);
+        fxEditFullDraw(phraseRows[screen.cursorRow].fx[fxIdx][0], instrumentNum);
         isFxEdit = 1;
       } else {
         // Regular big increase/decrease for note, volume, instrument, FX value

@@ -4,10 +4,11 @@
 
 #include <cstring>
 
+// Reference the global chipnomadState from app.cpp
+extern ChipNomadState* chipnomadState;
+
 TEST_SUITE("edit_common") {
 
-// Reference the global chipnomadState from app.c
-extern "C" ChipNomadState* chipnomadState;
 static ChipNomadState testState;
 
 #define S(r, c) chipnomadState->project.song[r][c]

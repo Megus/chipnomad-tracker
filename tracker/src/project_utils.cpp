@@ -6,12 +6,12 @@ void projectInitAY(Project* project) {
   projectInit(project);
 
   project->tickRate = 50;
-  project->chipType = chipAY;
+  project->chipType = ChipType::AY;
   project->chipsCount = 1;
   project->chipSetup.ay = (struct ChipSetupAY){
     .clock = 1773400,
     .isYM = 0,
-    .stereoMode = ayStereoABC,
+    .stereoMode = StereoModeAY::ABC,
     .stereoSeparation = 50,
     .pwmFullRange = 0, // Default to hardware-accurate 16 steps
   };
@@ -48,7 +48,7 @@ int8_t phraseHasNotes(Project* project, int phrase) {
 
 // Instrument name
 const char* instrumentName(Project* project, uint8_t instrument) {
-  if (project->instruments[instrument].type == instNone) return "None";
+  if (project->instruments[instrument].type == InstrumentType::none) return "None";
   if (strlen(project->instruments[instrument].name) == 0) {
     return instrumentTypeName(project->instruments[instrument].type);
   } else {
@@ -57,15 +57,15 @@ const char* instrumentName(Project* project, uint8_t instrument) {
 }
 
 // Instrument type name
-const char* instrumentTypeName(uint8_t type) {
+const char* instrumentTypeName(InstrumentType type) {
   switch (type) {
-    case instAY1:
+    case InstrumentType::AY1:
       return "AY Classic";
-    case instAY2:
+    case InstrumentType::AY2:
       return "AY Plus";
-    case instAYSample:
+    case InstrumentType::AYSample:
       return "AY Sample";
-    case instNone:
+    case InstrumentType::none:
       return "None";
     default:
       return "";
@@ -170,7 +170,7 @@ int findEmptyPhrase(Project* project, int start) {
 // Find empty instrument slot
 int findEmptyInstrument(Project* project, int start) {
   for (int i = start; i < PROJECT_MAX_INSTRUMENTS; i++) {
-    if (project->instruments[i].type == instNone) return i;
+    if (project->instruments[i].type == InstrumentType::none) return i;
   }
   return EMPTY_VALUE_8;
 }

@@ -1,8 +1,6 @@
 #ifndef __CHIPNOMAD_LIB__PLAYBACK_CHIPS_H__
 #define __CHIPNOMAD_LIB__PLAYBACK_CHIPS_H__
 
-extern "C" {
-
 #include <stdint.h>
 #include "project_instruments.h"
 #include "playback_modulation.h"
@@ -40,7 +38,7 @@ struct PlaybackAYNoteState {
   int16_t envFineOffset;
 
   // Software oscillator
-  enum AYSoftwareOscType softType;
+  AYSoftwareOscType softType;
   uint16_t softPeriodCounter; // Counter for software oscillator timing
   uint8_t softFMPhase; // Phase for FM modulation (0/1)
   int16_t softFMPeriodOffset; // Period offset for FM modulation
@@ -73,8 +71,5 @@ struct PlaybackAYNoteState {
 union PlaybackChipNoteState {
   PlaybackAYNoteState ay;
 };
-
-
-}
 
 #endif // __CHIPNOMAD_LIB__PLAYBACK_CHIPS_H__

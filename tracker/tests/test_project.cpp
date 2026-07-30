@@ -1,8 +1,6 @@
 #include "doctest.h"
 
-extern "C" {
 #include "project.h"
-}
 
 #include <cstring>
 
@@ -64,7 +62,7 @@ TEST_CASE_FIXTURE(ProjectFixture, "instrumentIsEmpty true for none") {
 }
 
 TEST_CASE_FIXTURE(ProjectFixture, "instrumentIsEmpty false for ay") {
-  p.instruments[0].type = instAY1;
+  p.instruments[0].type = InstrumentType::AY1;
   CHECK_FALSE(instrumentIsEmpty(&p, 0));
 }
 
@@ -167,7 +165,7 @@ TEST_CASE_FIXTURE(ProjectFixture, "chainClear") {
 }
 
 TEST_CASE_FIXTURE(ProjectFixture, "instrumentClear") {
-  p.instruments[0].type = instAY1;
+  p.instruments[0].type = InstrumentType::AY1;
   std::strcpy(p.instruments[0].name, "Test");
   instrumentClear(&p.instruments[0]);
   CHECK(instrumentIsEmpty(&p, 0));

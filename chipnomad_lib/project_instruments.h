@@ -1,8 +1,6 @@
 #ifndef __CHIPNOMAD_LIB__PROJECT_INSTRUMENTS_H__
 #define __CHIPNOMAD_LIB__PROJECT_INSTRUMENTS_H__
 
-extern "C" {
-
 #include <stdlib.h>
 #include <stdint.h>
 #include "project_constants.h"
@@ -12,44 +10,44 @@ struct Project;
 
 // Instruments
 
-enum InstrumentType {
-  instNone = 0,
-  instAY1 = 1,
-  instAY2 = 2,
-  instAYSample = 3,
+enum class InstrumentType : uint8_t {
+  none = 0,
+  AY1 = 1,
+  AY2 = 2,
+  AYSample = 3,
 };
 
-enum ModulationType {
-  modADSR = 0,
-  modAHD = 1,
-  modLFO = 2,
-  modTotalCount,
+enum class ModulationType : uint8_t {
+  ADSR = 0,
+  AHD = 1,
+  LFO = 2,
+  totalCount,
 };
 
-enum LFOShape {
-  lfoShapeTri = 0,
-  lfoShapeSin = 1,
-  lfoShapeUniTri = 2,
-  lfoShapeUniSin = 3,
-  lfoShapeRampDown = 4,
-  lfoShapeRampUp = 5,
-  lfoShapeExpDown = 6,
-  lfoShapeExpUp = 7,
-  lfoShapeSquare = 8,
-  lfoShapeRandom = 9,
-  lfoShapeTotalCount,
+enum class LFOShape : uint8_t {
+  tri = 0,
+  sin = 1,
+  uniTri = 2,
+  uniSin = 3,
+  rampDown = 4,
+  rampUp = 5,
+  expDown = 6,
+  expUp = 7,
+  square = 8,
+  random = 9,
+  totalCount,
 };
 
-enum LFOTrigger {
-  lfoTrigFree = 0,
-  lfoTrigRetrig = 1,
-  lfoTrigHold = 2,
-  lfoTrigOnce = 3,
-  lfoTrigTotalCount,
+enum class LFOTrigger : uint8_t {
+  free = 0,
+  retrig = 1,
+  hold = 2,
+  once = 3,
+  totalCount,
 };
 
 struct Modulation {
-  enum ModulationType type;
+  ModulationType type;
   uint8_t destination;
   int8_t amount;
   uint8_t p1; // ADSR: A, AHD: A, LFO: Shape
@@ -88,20 +86,20 @@ struct InstrumentAYOscEnvelope {
   int8_t fineTune;
 };
 
-enum AYSoftwareOscType {
-  aySoftwareOscNone = 0,
-  aySoftwareOscPulse = 1,
-  aySoftwareOscSyncTone = 2,
-  aySoftwareOscSyncEnvelope = 3,
-  aySoftwareOscWavetable = 4,
-  aySoftwareOscToneFM = 5,
-  aySoftwareOscEnvFM = 6,
-  aySoftwareOscSample = 7, // Needs to be last for various conditions for AY2 instrument
-  aySoftwareOscTotalCount,
+enum class AYSoftwareOscType : uint8_t {
+  none = 0,
+  pulse = 1,
+  syncTone = 2,
+  syncEnvelope = 3,
+  wavetable = 4,
+  toneFM = 5,
+  envFM = 6,
+  sample = 7, // Needs to be last for various conditions for AY2 instrument
+  totalCount,
 };
 
 struct InstrumentAYOscSoftware {
-  enum AYSoftwareOscType type;
+  AYSoftwareOscType type;
   uint8_t pitchFlag;
   int8_t pitchOffset;
   int8_t fineTune;
@@ -140,7 +138,7 @@ union InstrumentChipData {
 };
 
 struct Instrument {
-  uint8_t type;
+  InstrumentType type;
   char name[PROJECT_INSTRUMENT_NAME_LENGTH + 1];
   uint8_t tableSpeed;
   uint8_t transposeEnabled;
@@ -155,8 +153,6 @@ struct InstrumentFunctions {
   int (*free)(Instrument* instrument);
 };
 
-InstrumentFunctions getInstrumentFunctions(enum InstrumentType type);
-
-}
+InstrumentFunctions getInstrumentFunctions(InstrumentType type);
 
 #endif // __CHIPNOMAD_LIB__PROJECT_INSTRUMENTS_H__

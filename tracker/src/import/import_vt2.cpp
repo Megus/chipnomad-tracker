@@ -963,7 +963,7 @@ static int cloneInstrumentsForEnvelopes(Project* project, const InstrumentEnvelo
 
     if (clonesCreated > 0) {
       Instrument emptyInst;
-      getInstrumentFunctions(instNone).init(&emptyInst);
+      getInstrumentFunctions(InstrumentType::none).init(&emptyInst);
       project->instruments[instIdx] = emptyInst;
 
       Table emptyTable = {};

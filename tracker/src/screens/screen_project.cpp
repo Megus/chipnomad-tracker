@@ -144,7 +144,7 @@ static ScreenData screenProjectCommon = {
 
 static ScreenData* projectScreen(void) {
   ScreenData* data = &screenProjectCommon;
-  if (chipnomadState->project.chipType == chipAY) {
+  if (chipnomadState->project.chipType == ChipType::AY) {
     data = &screenProjectAY;
   }
   data->drawRowHeader = drawRowHeader;

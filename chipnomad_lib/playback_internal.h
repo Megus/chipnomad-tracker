@@ -3,8 +3,6 @@
 
 #include "chipnomad_lib.h"
 
-extern "C" {
-
 void handleNoteOff(PlaybackState* state, int trackIdx);
 void readPhraseRow(PlaybackState* state, int trackIdx, int skipDelCheck);
 void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRow, int skipDelCheck);
@@ -44,17 +42,8 @@ void resetOffsetsAY(PlaybackState* state, int trackIdx);
 int frequencyToAYPeriod(float frequency, int clockHz);
 
 // Calculate AY period from pitch with offsets
-// Parameters:
-// - basePitch: base pitch value (can be fixed pitch or note pitch)
-// - pitchOffset: coarse pitch offset (in semitones)
-// - fineOffset: fine pitch offset (cents in linear mode, period in traditional mode)
-// - specificFineOffset: oscillator-specific fine offset (toneFineOffset, envFineOffset, etc.)
-// - periodOffset: period offset (from PRD FX or modulation)
-// - useFineOffset: whether to apply the global fineOffset (true for tone, false for envelope in period mode)
 int16_t calculateAYPeriod(Project* p, uint8_t basePitch, int8_t pitchOffset, int16_t fineOffset,
                           int16_t specificFineOffset, int16_t periodOffset, int useFineOffset);
-
-}
 
 int timerFunctionAY(SoundChip* chip, void* userdata);
 

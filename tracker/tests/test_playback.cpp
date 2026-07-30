@@ -27,9 +27,9 @@ struct PlaybackFixture {
 
     Project* p = &state->project;
     p->tickRate = 50;
-    p->chipType = chipAY;
+    p->chipType = ChipType::AY;
     p->chipsCount = 1;
-    p->chipSetup.ay = (ChipSetupAY){ .clock = 1773400, .isYM = 0, .stereoMode = ayStereoABC, .stereoSeparation = 50, .pwmFullRange = 0 };
+    p->chipSetup.ay = (ChipSetupAY){ .clock = 1773400, .isYM = 0, .stereoMode = StereoModeAY::ABC, .stereoSeparation = 50, .pwmFullRange = 0 };
     p->tracksCount = projectGetTotalTracks(p);
     p->linearPitch = 0;
     calculatePitchTableAY(p);
@@ -44,10 +44,10 @@ struct PlaybackFixture {
 
   // Helper: set up a simple instrument
   void setInstrument(int idx, uint8_t veA, uint8_t veD, uint8_t veS, uint8_t veR) {
-    state->project.instruments[idx].type = instAY1;
+    state->project.instruments[idx].type = InstrumentType::AY1;
     state->project.instruments[idx].tableSpeed = 1;
     state->project.instruments[idx].transposeEnabled = 1;
-    state->project.instruments[idx].chip.ay.volumeEnvelope.type = modADSR;
+    state->project.instruments[idx].chip.ay.volumeEnvelope.type = ModulationType::ADSR;
     state->project.instruments[idx].chip.ay.volumeEnvelope.amount = 127;  // Full amount
     state->project.instruments[idx].chip.ay.volumeEnvelope.p1 = veA;  // Attack
     state->project.instruments[idx].chip.ay.volumeEnvelope.p2 = veD;  // Decay

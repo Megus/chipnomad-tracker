@@ -1,9 +1,7 @@
 #include "doctest.h"
 
-extern "C" {
 #include "import_wav.h"
 #include "project_constants.h"
-}
 
 #include <cstdio>
 #include <cstdlib>

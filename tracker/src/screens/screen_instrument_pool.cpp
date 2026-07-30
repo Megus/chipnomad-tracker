@@ -85,7 +85,7 @@ static void draw(void) {
   // Draw playback markers for currently playing instruments
   for (int track = 0; track < chipnomadState->project.tracksCount; track++) {
     PlaybackTrackState* trackState = &chipnomadState->playbackState.tracks[track];
-    if (trackState->mode != playbackModeStopped && trackState->note.instrument < PROJECT_MAX_INSTRUMENTS) {
+    if (trackState->mode != PlaybackMode::stopped && trackState->note.instrument < PROJECT_MAX_INSTRUMENTS) {
       int instrument = trackState->note.instrument;
       if (instrument >= topRow && instrument < topRow + 16) {
         int y = 3 + (instrument - topRow);

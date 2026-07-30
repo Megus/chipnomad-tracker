@@ -47,7 +47,7 @@ static ScreenData screenExportCommon = {
 
 static ScreenData* exportScreen(void) {
   ScreenData* data = &screenExportCommon;
-  if (chipnomadState->project.chipType == chipAY) {
+  if (chipnomadState->project.chipType == ChipType::AY) {
     data = &screenExportAY;
   }
   return data;

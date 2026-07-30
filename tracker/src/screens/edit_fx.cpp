@@ -9,11 +9,11 @@ int expandedGroup;     // Currently expanded group (-1 = none)
 uint8_t currentInstrumentIdx;  // Current instrument index for context-aware help
 
 // Helper to get instrument type from stored instrument index
-static enum InstrumentType getCurrentInstrumentType() {
+static InstrumentType getCurrentInstrumentType() {
   if (currentInstrumentIdx != EMPTY_VALUE_8 && currentInstrumentIdx < PROJECT_MAX_INSTRUMENTS) {
-    return (enum InstrumentType)chipnomadState->project.instruments[currentInstrumentIdx].type;
+    return chipnomadState->project.instruments[currentInstrumentIdx].type;
   }
-  return instNone;
+  return InstrumentType::none;
 }
 
 void fxEditFullDraw(uint8_t currentFX, uint8_t instrumentIdx);
@@ -76,14 +76,14 @@ int editFXValue(CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable
 // Helper functions for FX group management
 
 // Get number of visible groups based on current instrument type
-int getVisibleGroupCount(enum InstrumentType instType) {
+int getVisibleGroupCount(InstrumentType instType) {
   extern FXGroup fxGroups[];
   extern int fxGroupCount;
 
   int count = 0;
   for (int i = 0; i < fxGroupCount; i++) {
-    // Show group if it's non-instrument (instNone) or matches current instrument type
-    if (fxGroups[i].instType == instNone || fxGroups[i].instType == instType) {
+    // Show group if it's non-instrument (InstrumentType::none) or matches current instrument type
+    if (fxGroups[i].instType == InstrumentType::none || fxGroups[i].instType == instType) {
       count++;
     }
   }
@@ -91,13 +91,13 @@ int getVisibleGroupCount(enum InstrumentType instType) {
 }
 
 // Get visible group by index (skips groups that don't match instrument type)
-FXGroup* getVisibleGroup(int visibleIdx, enum InstrumentType instType) {
+FXGroup* getVisibleGroup(int visibleIdx, InstrumentType instType) {
   extern FXGroup fxGroups[];
   extern int fxGroupCount;
 
   int visibleCount = 0;
   for (int i = 0; i < fxGroupCount; i++) {
-    if (fxGroups[i].instType == instNone || fxGroups[i].instType == instType) {
+    if (fxGroups[i].instType == InstrumentType::none || fxGroups[i].instType == instType) {
       if (visibleCount == visibleIdx) {
         return &fxGroups[i];
       }
@@ -108,13 +108,13 @@ FXGroup* getVisibleGroup(int visibleIdx, enum InstrumentType instType) {
 }
 
 // Get actual group index from visible index
-int getActualGroupIndex(int visibleIdx, enum InstrumentType instType) {
+int getActualGroupIndex(int visibleIdx, InstrumentType instType) {
   extern FXGroup fxGroups[];
   extern int fxGroupCount;
 
   int visibleCount = 0;
   for (int i = 0; i < fxGroupCount; i++) {
-    if (fxGroups[i].instType == instNone || fxGroups[i].instType == instType) {
+    if (fxGroups[i].instType == InstrumentType::none || fxGroups[i].instType == instType) {
       if (visibleCount == visibleIdx) {
         return i;
       }
@@ -200,9 +200,9 @@ void fxEditFullDraw(uint8_t currentFX, uint8_t instrumentIdx) {
   currentInstrumentIdx = instrumentIdx;
 
   // Get instrument type for filtering groups
-  enum InstrumentType instType = instNone;
+  InstrumentType instType = InstrumentType::none;
   if (instrumentIdx != EMPTY_VALUE_8 && instrumentIdx < PROJECT_MAX_INSTRUMENTS) {
-    instType = (enum InstrumentType)chipnomadState->project.instruments[instrumentIdx].type;
+    instType = chipnomadState->project.instruments[instrumentIdx].type;
   }
 
   // Get visible groups

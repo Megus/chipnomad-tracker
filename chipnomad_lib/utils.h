@@ -1,8 +1,6 @@
 #ifndef __CHIPNOMAD_LIB__UTILS_H__
 #define __CHIPNOMAD_LIB__UTILS_H__
 
-extern "C" {
-
 #include <stdint.h>
 
 const char* byteToHex(uint8_t byte);
@@ -23,7 +21,5 @@ float centsToFrequency(int cents);
 
 // Simple pseudo-random number generator. Returns a value in range [0, 65535]
 uint16_t utilsRandom(void);
-
-}
 
 #endif // __CHIPNOMAD_LIB__UTILS_H__
