@@ -6,9 +6,9 @@ layout: single
 
 # Instrument Screens
 
-- [AY Classic Instrument](/manual/instrument-screen/ay-classic)
-- [AY Plus Instrument](/manual/instrument-screen/ay-plus)
-- [AY Sample Instrument](/manual/instrument-screen/ay-sample)
+- [AY Classic Instrument](/manual/instrument-screen/ay-classic/)
+- [AY Plus Instrument](/manual/instrument-screen/ay-plus/)
+- [AY Sample Instrument](/manual/instrument-screen/ay-sample/)
 
 ## Common instrument parameters
 

@@ -8,7 +8,7 @@ layout: single
 
 ![Wavetable Screen](wavetables.png)
 
-One of [AY Plus](/manual/instrument-screen/ay-plus) software oscillator types is the Wavetable. You can have up to 256 32-step wavetables in a project. All wavetable instruments use the same set of waves. This screen is dedicated to editing wavetables.
+One of [AY Plus](/manual/instrument-screen/ay-plus/) software oscillator types is the Wavetable. You can have up to 256 32-step wavetables in a project. All wavetable instruments use the same set of waves. This screen is dedicated to editing wavetables.
 
 AY volume levels are non-linear, and the waveform is rendered true to the actual output levels.
 
