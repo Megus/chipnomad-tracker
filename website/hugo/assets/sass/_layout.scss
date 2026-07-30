@@ -1,3 +1,7 @@
+@use 'sass:math';
+@use 'sass:color';
+@use 'variables' as *;
+
 /**
  * Site header
  */
@@ -17,13 +21,13 @@
   margin-left: auto;
   padding-right: $spacing-unit;
   padding-left: $spacing-unit;
-  @extend %clearfix;
+  @include clearfix;
 
   @include media-query($on-laptop) {
     max-width: -webkit-calc(#{$home-width} - (#{$spacing-unit}));
     max-width:         calc(#{$home-width} - (#{$spacing-unit}));
-    padding-right: $spacing-unit / 2;
-    padding-left: $spacing-unit / 2;
+    padding-right: math.div($spacing-unit, 2);
+    padding-left: math.div($spacing-unit, 2);
   }
 }
 
@@ -75,7 +79,7 @@
   @include media-query($on-palm) {
     position: absolute;
     top: 16px;
-    right: $spacing-unit / 2;
+    right: math.div($spacing-unit, 2);
     border-radius: 5px;
     text-align: right;
 

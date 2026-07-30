@@ -15,7 +15,7 @@ SDL_PATH = C:\SDL\x86_64-w64-mingw32
 endif
 
 XTRA_CFLAGS = -I"$(SDL_PATH)\include" -L"$(SDL_PATH)\lib" -DDESKTOP_BUILD -D__USE_MINGW_ANSI_STDIO=1
-XTRA_LIBS = -lmingw32 -lSDL2main -lSDL2
+XTRA_LIBS = -lmingw32 -lSDL2main -lSDL2 -static-libgcc -static-libstdc++
 CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(XTRA_CFLAGS)
 OUTPUT = -o $(BUILD)/chipnomad$(OUTPUT_EXT)
 
@@ -33,6 +33,7 @@ windows:
 		$(INCLUDES) $(SOURCES) \
 		-L/opt/SDL2/x86_64-w64-mingw32/lib \
 		-lmingw32 -lSDL2main -lSDL2 \
+		-static-libgcc -static-libstdc++ \
 		-DDESKTOP_BUILD -D__USE_MINGW_ANSI_STDIO=1 \
 		-o $(BUILD)/chipnomad.exe
 	cp /opt/SDL2/x86_64-w64-mingw32/bin/SDL2.dll $(BUILD)/
@@ -48,6 +49,6 @@ windows-deploy:
 	@mkdir -p ../../releases
 	@cp -r packaging/common/* $(BUILD)/
 	@cp packaging/windows/README.txt $(BUILD)/
-	@cd $(BUILD) && zip -r ChipNomad-$$(date +%Y-%m-%d)-$(VERSION)-Windows.zip chipnomad.exe SDL2.dll pitch-tables projects instruments README.txt
+	@cd $(BUILD) && zip -r ChipNomad-$$(date +%Y-%m-%d)-$(VERSION)-Windows.zip chipnomad.exe SDL2.dll $(COMMON_DATA_DIRS) README.txt
 	@mv $(BUILD)/ChipNomad-*-Windows.zip ../../releases/
 	@echo "Windows package created in ../../releases/"

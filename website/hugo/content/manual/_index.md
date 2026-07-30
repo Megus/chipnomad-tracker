@@ -8,7 +8,7 @@ layout: single
 
 **ChipNomad** is a multi-platform chiptune [tracker](https://en.wikipedia.org/wiki/Music_tracker). It is heavily inspired by [LSDj](https://www.littlesounddj.com/lsd/index.php) and [Dirtywave M8](https://dirtywave.com). While ChipNomad is available for desktop platforms (Windows, macOS, Linux), it is designed for handheld consoles, such as Anbernic RG35xx, TrimUI Brick, etc.
 
-ChipNomad currently supports only [AY-3-8910/YM2149F](https://en.wikipedia.org/wiki/General_Instrument_AY-3-8910) chips with more chips coming in the future.
+ChipNomad currently supports only [AY-3-8910/YM2149F](/chips/ay-3-8910/). More chips coming in the future.
 
 - [Introduction](#introduction)
 - [Installation](installation/)
@@ -18,7 +18,13 @@ ChipNomad currently supports only [AY-3-8910/YM2149F](https://en.wikipedia.org/w
 - [Phrase Screen](phrase-screen/)
 - [Groove Screen](groove-screen/)
 - [Instrument Screen](instrument-screen/)
+  - [AY Classic Instrument](/manual/instrument-screen/ay-classic)
+  - [AY Plus Instrument](/manual/instrument-screen/ay-plus)
+  - [AY Sample Instrument](/manual/instrument-screen/ay-sample)
+- [Modulation Screen](modulation-screen/)
+- [Instrument Pool Screen](instrument-pool-screen/)
 - [Table Screen](table-screen/)
+- [Wavetable Screen](wavetable-screen/)
 - [Project Screen](project-screen/)
 - [Settings Screen](settings-screen/)
 - [Tracker FX reference](tracker-fx/)
@@ -31,9 +37,9 @@ The core UI concept and the song structure is the same as in LSDj or M8 Tracker,
 ChipNomad screens are laid out in the map. Each screen is dedicated to a singe function.
 
 ```
-P G
+P GM
 SCPIT
-S  P
+S  PW
 ```
 
 - [**P**roject](project-screen/) settings (chip type, tick rate, etc)
@@ -42,7 +48,9 @@ S  P
 - [**C**hain](chain-screen/) editor
 - [**P**hrase](phrase-screen/) editor
 - [**I**nstrument](instrument-screen/) editor and Instrument **P**ool
+- [**M**odulation](modulation-screen/)
 - [**T**able](table-screen/) editor
+- [**W**avetable](wavetable-screen/) editor
 - [**G**roove](groove-screen/) editor
 
 ## Common controls

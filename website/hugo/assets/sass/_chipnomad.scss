@@ -1,3 +1,7 @@
+@use 'sass:math';
+@use 'sass:color';
+@use 'variables' as *;
+
 .cn-download {
   text-align: center;
   margin-top: $spacing-unit;
@@ -8,14 +12,14 @@
     @include relative-font-size(1.5);
     font-weight: bold;
     text-decoration: none;
-    padding: $spacing-unit / 3 $spacing-unit * 1.5;
+    padding: math.div($spacing-unit, 3) $spacing-unit * 1.5;
     border-radius: 40px;
     background-color: $link-color;
     color: $background-color;
     transition: background-color 0.2s;
 
     &:hover {
-      background-color: lighten($link-color, 10%);
+      background-color: color.adjust($link-color, $lightness: 10%);
       text-decoration: none;
       color: $background-color;
     }

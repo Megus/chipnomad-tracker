@@ -1,15 +1,20 @@
 baseURL = 'https://chipnomad.org/'
-languageCode = 'en-us'
+locale = 'en-us'
 title = 'ChipNomad'
 
 enableEmoji = true
 
-[markup.goldmark.renderer]
-  unsafe = true
-
-[markup.tableOfContents]
-  startLevel = 2
-  endLevel = 3
+[markup]
+  [markup.tableOfContents]
+    startLevel = 2
+    endLevel = 3
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+    [markup.goldmark.parser]
+      wrapStandaloneImageWithinParagraph = false
+      [markup.goldmark.parser.attribute]
+        block = true
 
 [params]
   description = 'ChipNomad - a chiptune tracker for handheld consoles'

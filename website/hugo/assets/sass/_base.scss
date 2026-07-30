@@ -1,3 +1,7 @@
+@use 'sass:math';
+@use 'sass:color';
+@use 'variables' as *;
+
 /**
  * Reset some basic elements
  */
@@ -35,9 +39,8 @@ body {
 */
 h1, h2, h3, h4, h5, h6,
 p, blockquote, pre,
-ul, ol, dl, figure,
-%vertical-rhythm {
-  margin-bottom: $spacing-unit / 2;
+ul, ol, dl, figure {
+  margin-bottom: math.div($spacing-unit, 2);
 }
 
 /**
@@ -53,6 +56,7 @@ main {
 img {
   max-width: 100%;
   vertical-align: middle;
+  margin-bottom: 1em;
 }
 
 
@@ -75,7 +79,7 @@ figcaption {
 */
 ul, ol {
   margin-left: $spacing-unit;
-  padding-bottom: $spacing-unit / 2;
+  padding-bottom: math.div($spacing-unit, 2);
 }
 
 li {
@@ -142,7 +146,7 @@ a {
 blockquote {
   color: $grey-color;
   border-left: 4px solid $grey-color-light;
-  padding-left: $spacing-unit / 2;
+  padding-left: math.div($spacing-unit, 2);
   margin-top: $spacing-unit;
   margin-bottom: $spacing-unit;
   @include relative-font-size(1.125);
@@ -189,13 +193,13 @@ code {
   margin-left: auto;
   padding-right: $spacing-unit;
   padding-left: $spacing-unit;
-  @extend %clearfix;
+  @include clearfix;
 
   @include media-query($on-laptop) {
     max-width: -webkit-calc(#{$content-width} - (#{$spacing-unit}));
     max-width:         calc(#{$content-width} - (#{$spacing-unit}));
-    padding-right: $spacing-unit / 2;
-    padding-left: $spacing-unit / 2;
+    padding-right: math.div($spacing-unit, 2);
+    padding-left: math.div($spacing-unit, 2);
   }
 }
 
@@ -203,15 +207,6 @@ code {
   background-color: rgba(0,0,0,0.2);
 }
 
-
-/**
-* Clearfix
-*/
-%clearfix:after {
-  content: "";
-  display: table;
-  clear: both;
-}
 
 
 
@@ -223,7 +218,7 @@ code {
    height: 40px;
    display: inline-block;
    margin-right: 16px;
-   margin-bottom: $spacing-unit / 2;
+   margin-bottom: math.div($spacing-unit, 2);
    color: #{$grey-color};
    vertical-align: text-top;
    border-radius:50%;
@@ -274,4 +269,12 @@ hr::before {
 
 .drop-shadow {
   filter: drop-shadow(0px 4px 2px $brand-color);
+}
+
+.img-small {
+  width: 50%;
+
+  @include media-query($on-palm) {
+    width: 100%;
+  }
 }

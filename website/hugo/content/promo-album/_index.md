@@ -19,7 +19,7 @@ I want more chiptune enthusiasts to learn about ChipNomad. I'm inviting all musi
 </p>
 <p style="text-align: center;">
   <strong>Progress as of July 25, 2026</strong>:
-  <strong>2</strong> tracks submitted, <strong>7</strong> authors agreed to participate
+  <strong>2</strong> tracks submitted, <strong>8</strong> authors agreed to participate
 </p>
 
 ---

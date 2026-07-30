@@ -28,6 +28,9 @@ CPP_LIBS =
 # Common compiler flags
 COMMON_CFLAGS = $(STD_FLAG) -Wall -g -Os -flto
 
+# Common data directories from packaging/common (auto-discovered)
+COMMON_DATA_DIRS = $(patsubst packaging/common/%/,%,$(wildcard packaging/common/*/))
+
 # Build target helper
 define build_target
 	mkdir -p $(BUILD)

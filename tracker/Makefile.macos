@@ -59,6 +59,6 @@ macOS-app-bundle: macOS
 macOS-deploy: macOS-app-bundle
 	@echo "Creating macOS deployment package..."
 	@mkdir -p ../../releases
-	@cd $(BUILD) && zip -ry $(APP)-$$(date +%Y-%m-%d)-$(VERSION)-macOS.zip $(APP_BUNDLE) fonts instruments pitch-tables projects samples themes wavetables README.txt
+	@cd $(BUILD) && zip -ry $(APP)-$$(date +%Y-%m-%d)-$(VERSION)-macOS.zip $(APP_BUNDLE) $(COMMON_DATA_DIRS) README.txt
 	@mv $(BUILD)/$(APP)-*-macOS.zip ../../releases/
 	@echo "macOS package created in ../../releases/"

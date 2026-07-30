@@ -1,3 +1,7 @@
+@use 'sass:math';
+@use 'sass:color';
+@use 'variables' as *;
+
 /**
  * Home page
  */
@@ -6,7 +10,7 @@
   max-width:         calc(#{$home-width} - (#{$spacing-unit}));
   margin-right: auto;
   margin-left: auto;
-  @extend %clearfix;
+  @include clearfix;
 
   h3 {
     margin-top: 0px;
@@ -36,8 +40,8 @@
 
 .announcement-body {
   @include relative-font-size(1.25);
-  margin-left: $spacing-unit / 2;
-  margin-right: $spacing-unit / 2;
+  margin-left: math.div($spacing-unit, 2);
+  margin-right: math.div($spacing-unit, 2);
 }
 
 @include media-query($on-palm) {
@@ -56,13 +60,13 @@
   position: relative;
   box-shadow: 0 2 16px rgba(0,0,0, 0.8);
   border-radius: 40px;
-  margin-bottom: $spacing-unit / 2;
-  padding: $spacing-unit / 3;
+  margin-bottom: math.div($spacing-unit, 2);
+  padding: math.div($spacing-unit, 3);
   text-decoration: none;
   display: flex;
   flex-direction: row;
   align-items: center;
-  background-color: lighten($background-color, 8%);
+  background-color: color.adjust($background-color, $lightness: 8%);
   color: $grey-color-light;
   width: 300px;
   overflow: hidden;
@@ -85,7 +89,7 @@
 }
 
 .home-social-links a:hover {
-  background-color: lighten($background-color, 12%);
+  background-color: color.adjust($background-color, $lightness: 12%);
 }
 
 @include media-query($on-palm) {

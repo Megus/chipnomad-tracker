@@ -31,6 +31,7 @@ struct PlaybackFixture {
     p->chipsCount = 1;
     p->chipSetup.ay = (ChipSetupAY){ .clock = 1773400, .isYM = 0, .stereoMode = ayStereoABC, .stereoSeparation = 50, .pwmFullRange = 0 };
     p->tracksCount = projectGetTotalTracks(p);
+    p->linearPitch = 0;
     calculatePitchTableAY(p);
 
     chipnomadInitChips(state, 44100, mockChipFactory);

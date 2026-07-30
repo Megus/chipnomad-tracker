@@ -1,0 +1,64 @@
+@use 'sass:math';
+@use 'sass:color';
+
+// Define defaults for each variable.
+
+$base-font-family: 'PT Sans', sans-serif;
+$header-font-family: 'PT Sans Caption', sans-serif;
+$code-font-family: 'PT Mono', monospace;
+$base-font-size:   18px !default;
+$base-font-weight: 400 !default;
+$small-font-size:  $base-font-size * 0.875 !default;
+$base-line-height: 1.5 !default;
+
+$spacing-unit:     30px !default;
+
+$text-color:       #b7d3d9 !default;
+$link-color:       #4bcbe8 !default;
+$link-under-color: #5f3dbb !default;
+$background-color: #051326 !default;
+$brand-color:      #a7c3c9 !default;
+$code-background:  #000 !default;
+
+$background-dark:   color.adjust($background-color, $lightness: -2%) !default;
+
+$grey-color:       #a2a2b2 !default;
+$grey-color-light: color.adjust($grey-color, $lightness: 50%) !default;
+$grey-color-dark:  color.adjust($grey-color, $lightness: -25%) !default;
+
+$table-text-align: left !default;
+
+// Width of the content area
+$content-width:    800px !default;
+$home-width:       1024px !default;
+
+$on-palm:          600px !default;
+$on-laptop:        800px !default;
+
+@mixin media-query($device) {
+  @media screen and (max-width: $device) {
+    @content;
+  }
+}
+
+@mixin relative-font-size($ratio) {
+  font-size: $base-font-size * $ratio;
+}
+
+%clearfix:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+@mixin clearfix {
+  &:after {
+    content: "";
+    display: table;
+    clear: both;
+  }
+}
+
+%vertical-rhythm {
+  margin-bottom: math.div($spacing-unit, 2);
+}

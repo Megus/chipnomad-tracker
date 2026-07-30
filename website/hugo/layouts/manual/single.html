@@ -4,7 +4,7 @@
 {{ define "main" }}
   <main class="page-content" aria-role="main">
     <div class="home manual-content">
-      {{ if not .IsSection }}
+      {{ if and .Parent (not .Parent.IsHome) }}
         {{ partial "breadcrumbs.html" . }}
       {{ end }}
       {{ .Content }}

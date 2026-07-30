@@ -23,10 +23,11 @@ AY-specific settings:
 - Chip subtype: AY-3-8910 or YM2149F
 - Stereo layout (ABC, ACB, BAC)
 - Stereo width
+- PWM range (for AY Plus instruments)
 - Chip clock (select from several most common values)
 - Pitch table operations: load, save, generate
 
-## Manage
+## Manage Project
 
 ![](manage.png)
 
@@ -44,4 +45,6 @@ Load/save pitch tables and generate a standard 12TET table (A4 = 440Hz) for the 
 
 Export to WAV as a mix, or create stems (each track is a separate WAV file).
 
-Export to PSG format to use with players native to retro platforms that use AY/YM chips (ZX Spectrum, Atari ST, Amstrad CPC, etc).
+Export to PSG format to use with players native to retro platforms that use AY/YM chips (ZX Spectrum, Atari ST, Amstrad CPC, etc). PSG doesn't support software oscillators (4th oscillator in AY Plus instruments).
+
+Export to VGM format to use with the wide variety of VGM players. VGM will capture AY/YM software oscillators but some sounds may not be captured precisely. Sample data export is not optimized, so if you use samples in the project then VGM file may be very big.

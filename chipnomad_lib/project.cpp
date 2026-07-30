@@ -8,17 +8,17 @@ FXName fxNames[256];
 
 // FX Names organized by groups (in the order as they appear in FX select screen)
 
-// Sequencer FX (renamed from fxNamesCommon)
+// Sequencer FX
 FXName fxNamesSequencer[] = {
   {fxARP, "ARP"}, {fxARC, "ARC"}, {fxPVB, "PVB"}, {fxPBN, "PBN"}, {fxPSL, "PSL"},
-  {fxPIT, "PIT"}, {fxFIN, "FIN"}, {fxPRD, "PRD"}, {fxVOL, "VOL"}, {fxVSL, "VSL"}, {fxRET, "RET"},
-  {fxDEL, "DEL"}, {fxOFF, "OFF"}, {fxKIL, "KIL"}, {fxTIC, "TIC"}, {fxTBL, "TBL"},
-  {fxTBX, "TBX"}, {fxTHO, "THO"}, {fxTXH, "TXH"}, {fxGRV, "GRV"}, {fxGGR, "GGR"},
-  {fxHOP, "HOP"}, {fxSNG, "SNG"}
+  {fxPIT, "PIT"}, {fxFIN, "FIN"}, {fxPRD, "PRD"}, {fxVOL, "VOL"}, {fxVSL, "VSL"},
+  {fxRET, "RET"}, {fxDEL, "DEL"}, {fxOFF, "OFF"}, {fxKIL, "KIL"}, {fxTIC, "TIC"},
+  {fxTBL, "TBL"}, {fxTBX, "TBX"}, {fxTHO, "THO"}, {fxTXH, "TXH"}, {fxGRV, "GRV"},
+  {fxGGR, "GGR"}, {fxHOP, "HOP"}, {fxSNG, "SNG"}
 };
 int fxSequencerCount = sizeof(fxNamesSequencer) / sizeof(FXName);
 
-// Modulation FX (new group)
+// Modulation FX
 FXName fxNamesModulation[] = {
   {fxM1A, "M1A"}, {fxM11, "M11"}, {fxM12, "M12"}, {fxM13, "M13"}, {fxM14, "M14"},
   {fxM2A, "M2A"}, {fxM21, "M21"}, {fxM22, "M22"}, {fxM23, "M23"}, {fxM24, "M24"},
@@ -29,7 +29,7 @@ int fxModulationCount = sizeof(fxNamesModulation) / sizeof(FXName);
 
 // AY1 FX
 FXName fxNamesAY1[] = {
-  {fxAYM, "AYM"}, {fxNOI, "NOI"}, {fxNOA, "NOA"}, {fxERT, "ERT"},{fxEAU, "EAU"},
+  {fxAYM, "AYM"}, {fxNOI, "NOI"}, {fxNOA, "NOA"}, {fxERT, "ERT"}, {fxEAU, "EAU"},
   {fxEVB, "EVB"}, {fxEBN, "EBN"}, {fxESL, "ESL"}, {fxENT, "ENT"}, {fxEPT, "EPT"},
   {fxEPL, "EPL"}, {fxEPH, "EPH"},
 };
@@ -104,7 +104,7 @@ void projectInit(Project* p) {
   // Title
   strcpy(p->title, "");
   strcpy(p->author, "");
-  p->linearPitch = 0;
+  p->linearPitch = 1;
 
   // Clean song structure
   for (int c = 0; c < PROJECT_MAX_LENGTH; c++) {
