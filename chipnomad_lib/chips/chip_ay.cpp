@@ -106,6 +106,7 @@ void SoundChipAY::updateClock(int clockRate) {
 void SoundChipAY::render(float* buffer, int samples) {
   for (int c = 0; c < samples; c++) {
     ayumi_process(ay);
+    ayumi_remove_dc(ay);
     *buffer++ = ay->left * ayVolumeScale;
     *buffer++ = ay->right * ayVolumeScale;
   }

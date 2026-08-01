@@ -59,6 +59,15 @@ img {
   margin-bottom: 1em;
 }
 
+/**
+* Main body on phones
+*/
+@include media-query($on-palm) {
+  main {
+    margin-left: 0.5em;
+    margin-right: 0.5em;
+  }
+}
 
 
 /**
