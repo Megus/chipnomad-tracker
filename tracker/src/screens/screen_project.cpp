@@ -54,7 +54,7 @@ static void onProjectLoaded(const char* path) {
 
   if (success) {
     projectModified = 0; // Clear modified flag after loading
-    pendingReinitChips = 1;
+    audio.reinitChips();
 
     // Store filename without extension
     extractFilenameWithoutExtension(path, appSettings.projectFilename, FILENAME_LENGTH + 1);
@@ -390,7 +390,7 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
       playbackStop(&chipnomadState->playbackState);
       clearNotePreview();
       chipnomadState->project.tracksCount = projectGetTotalTracks(&chipnomadState->project);
-      pendingReinitChips = 1;
+      audio.reinitChips();
       projectModified = 1;
     }
   }

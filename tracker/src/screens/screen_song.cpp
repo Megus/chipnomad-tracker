@@ -157,9 +157,9 @@ static void draw(void) {
 
     // Draw mute/solo indicator above track number
     gfxSetFgColor(appSettings.colorScheme.textTitles);
-    if (audioManager.trackStates[c] == TRACK_MUTED) {
+    if (audio.trackStates[c] == TrackState::muted) {
       gfxPrint(3 + c * 3, 1, "M");
-    } else if (audioManager.trackStates[c] == TRACK_SOLO) {
+    } else if (audio.trackStates[c] == TrackState::solo) {
       gfxPrint(3 + c * 3, 1, "S");
     } else {
       gfxPrint(3 + c * 3, 1, " "); // Clear indicator
@@ -350,27 +350,27 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
 
       case MUTE_SOLO_OPT_PRESSED:
         if (isKeyDown && keys == (keyOpt | keyShift)) {
-          audioManager.toggleTrackMute(screen.cursorCol);
+          audio.toggleTrackMute(screen.cursorCol);
           muteSoloState = MUTE_SOLO_MUTE_STATE;
           handled = 1;
         } else if (isKeyDown && keys == (keyOpt | keyPlay)) {
-          audioManager.toggleTrackSolo(screen.cursorCol);
+          audio.toggleTrackSolo(screen.cursorCol);
           muteSoloState = MUTE_SOLO_SOLO_STATE;
           handled = 1;
         } else if (isKeyDown && keys == (keyOpt | keyLeft)) {
           // Solo tracks to the left (including cursor)
           for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
-            audioManager.trackStates[i] = (i <= screen.cursorCol) ? TRACK_SOLO : TRACK_NORMAL;
+            audio.trackStates[i] = (i <= screen.cursorCol) ? TrackState::solo : TrackState::normal;
           }
-          audioManager.toggleTrackSolo(-1);
+          audio.toggleTrackSolo(-1);
           muteSoloState = MUTE_SOLO_TEMP_LEFT;
           handled = 1;
         } else if (isKeyDown && keys == (keyOpt | keyRight)) {
           // Solo tracks to the right (including cursor)
           for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
-            audioManager.trackStates[i] = (i >= screen.cursorCol) ? TRACK_SOLO : TRACK_NORMAL;
+            audio.trackStates[i] = (i >= screen.cursorCol) ? TrackState::solo : TrackState::normal;
           }
-          audioManager.toggleTrackSolo(-1);
+          audio.toggleTrackSolo(-1);
           muteSoloState = MUTE_SOLO_TEMP_RIGHT;
           handled = 1;
         } else if (isKeyDown && keys == keyOpt) {
@@ -383,7 +383,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
       case MUTE_SOLO_MUTE_STATE:
         if (!isKeyDown && keys == keyOpt) {
           // SHIFT released first - momentary unmute
-          audioManager.toggleTrackMute(screen.cursorCol);
+          audio.toggleTrackMute(screen.cursorCol);
           muteSoloState = MUTE_SOLO_OPT_PRESSED;
           handled = 1;
         } else if (!isKeyDown && keys == keyShift) {
@@ -400,7 +400,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
       case MUTE_SOLO_SOLO_STATE:
         if (!isKeyDown && keys == keyOpt) {
           // PLAY released first - momentary unsolo
-          audioManager.toggleTrackSolo(screen.cursorCol);
+          audio.toggleTrackSolo(screen.cursorCol);
           muteSoloState = MUTE_SOLO_OPT_PRESSED;
           handled = 1;
         } else if (!isKeyDown && keys == keyPlay) {
@@ -419,9 +419,9 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
         if (!isKeyDown && (keys == keyOpt || keys == 0)) {
           // Reset all tracks to normal
           for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
-            audioManager.trackStates[i] = TRACK_NORMAL;
+            audio.trackStates[i] = TrackState::normal;
           }
-          audioManager.toggleTrackSolo(-1);
+          audio.toggleTrackSolo(-1);
           muteSoloState = (keys == keyOpt) ? MUTE_SOLO_OPT_PRESSED : MUTE_SOLO_EMPTY;
           handled = 1;
         } else if (keys == (keyOpt | keyLeft) || keys == (keyOpt | keyRight)) {

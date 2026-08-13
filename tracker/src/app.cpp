@@ -182,13 +182,14 @@ void appSetup(void) {
 
   // Create ChipNomad state
   chipnomadState = chipnomadCreate();
+  audio = *new AudioManager(chipnomadState); // Create the AudioManager instance
   if (!chipnomadState) {
     // Handle error - for now just exit
     return;
   }
 
   // Try to load an auto-saved project
-  if (projectLoad(&chipnomadState->project, getAutosavePath())) {
+  if (!projectLoad(&chipnomadState->project, getAutosavePath())) {
     // Failed to load autosave, initialize empty project
     projectInitAY(&chipnomadState->project);
   }
@@ -205,8 +206,8 @@ void appSetup(void) {
   // Initialize audio system
   chipnomadInitChips(chipnomadState, appSettings.audioSampleRate, NULL);
   chipnomadSetQuality(chipnomadState, (ChipNomadQuality)appSettings.quality);
-  audioManager.start(appSettings.audioSampleRate, appSettings.audioBufferSize);
-  audioManager.resume();
+  audio.start(appSettings.audioSampleRate, appSettings.audioBufferSize);
+  audio.resume();
 
   screenSetup(&screenSong, 0);
 }
@@ -215,7 +216,7 @@ void appSetup(void) {
 * @brief Release all resources before closing the application
 */
 void appCleanup(void) {
-  audioManager.stop();
+  audio.stop();
   chipnomadDestroy(chipnomadState);
   chipnomadState = NULL;
 }
@@ -235,9 +236,9 @@ void appDraw(void) {
   for (int c = 0; c < chipnomadState->project.tracksCount; c++) {
     // Draw mute/solo indicator to the left of track number
     gfxSetFgColor(cs.textTitles);
-    if (audioManager.trackStates[c] == TRACK_MUTED) {
+    if (audio.trackStates[c] == TrackState::muted) {
       gfxPrint(34, 3 + c, "M");
-    } else if (audioManager.trackStates[c] == TRACK_SOLO) {
+    } else if (audio.trackStates[c] == TrackState::solo) {
       gfxPrint(34, 3 + c, "S");
     } else {
       gfxPrint(34, 3 + c, " "); // Clear indicator
@@ -382,7 +383,7 @@ void appOnEvent(MainLoopEventData eventData) {
     break;
   case MainLoopEvent::sleep:
     // Pause audio when app goes to background
-    audioManager.pause();
+    audio.pause();
     if (chipnomadState) {
       // Stop playback to avoid state issues
       playbackStop(&chipnomadState->playbackState);
@@ -394,7 +395,7 @@ void appOnEvent(MainLoopEventData eventData) {
     break;
   case MainLoopEvent::wake:
     // Resume audio when app comes back to foreground
-    audioManager.resume();
+    audio.resume();
     break;
   case MainLoopEvent::fullRedraw:
     // Force full screen redraw
