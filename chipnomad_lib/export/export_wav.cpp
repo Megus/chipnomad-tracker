@@ -131,7 +131,7 @@ int ExporterWAV::finish() {
   files = NULL;
   free(renderBuffer);
   renderBuffer = NULL;
-  return 0;
+  return 1;
 }
 
 void ExporterWAV::cancel() {

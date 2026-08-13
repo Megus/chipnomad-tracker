@@ -68,7 +68,7 @@ static int start(int sampleRate, int bufferSize) {
   }
   updatePlaybackMuteFlags();
 
-  return 0;
+  return 1;
 }
 
 static void pause(void) {

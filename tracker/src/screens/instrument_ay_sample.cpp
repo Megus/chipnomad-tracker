@@ -20,7 +20,7 @@
 // y 3: Name  _______________
 // y 4: Transp. On       Tbl. Tic 01
 // y 5: (spacing)
-// y 6: Sample  Load  Lift
+// y 6: Sample  Load
 // y 7: sample_filename.wav
 // y 8: Rate  [8000 ]    Tone   [On ]
 // y 9: Start [0000]     Pitch  [+0  ]
@@ -34,7 +34,7 @@
 //
 // Logical rows:
 // 0-2: common (type, name, transpose/tic)
-// 3: Load button (col 0) + Lift button (col 1)
+// 3: Load button
 // 4: Rate         | Tone on/off
 // 5: Start        | Tone pitch
 // 6: Length       | Tone fine
@@ -93,7 +93,7 @@ static void onSampleLoaded(const char* path) {
   uint16_t sampleLength;
   uint16_t sampleRate;
   WavLoadResult result;
-  uint8_t* sampleData = loadWavFile(path, PROJECT_MAX_SAMPLE_SIZE, &sampleLength, &sampleRate, &result);
+  uint8_t* sampleData = loadWavFile(path, PROJECT_MAX_SAMPLE_SIZE, &sampleLength, &sampleRate, &result, true);
 
   if (sampleData == NULL) {
     // Show error message
@@ -110,6 +110,9 @@ static void onSampleLoaded(const char* path) {
   smp->fileLength = sampleLength;      // Size of data in file
   smp->sampleLength = sampleLength;    // Playback length (initially same as file length)
   smp->sampleRate = sampleRate;
+
+  // Auto-lift: shift waveform so troughs sit at zero (expected by AY playback)
+  sampleLiftToZero(smp->sampleData, smp->fileLength, smp->sampleRate);
 
   // Reset sample playback parameters to sensible defaults
   smp->sampleStart = 0;
@@ -147,7 +150,7 @@ static void onSampleCancelled(void) {
 
 static int getColumnCount(int row) {
   if (row < 3) return instrumentCommonColumnCount(row);
-  if (row == 3) return 2; // Load button + Lift button
+  if (row == 3) return 1; // Load button only
   // Rows 4-6: col 0 = sample params, col 1 = tone
   if (row >= 4 && row <= 6) return 2;
   // Row 7: col 0 = loop start only
@@ -228,9 +231,6 @@ static void drawCursor(int col, int row) {
     if (col == 0) {
       // Load button
       gfxCursor(COL_LEFT_VAL, y, 4);
-    } else if (col == 1) {
-      // Lift button
-      gfxCursor(COL_LEFT_VAL + 6, y, 4);
     }
     return;
   }
@@ -267,9 +267,6 @@ static void drawField(int col, int row, CellState state) {
     if (col == 0) {
       // Load button
       gfxPrint(COL_LEFT_VAL, y, "Load");
-    } else if (col == 1) {
-      // Lift button
-      gfxPrint(COL_LEFT_VAL + 6, y, "Lift");
     }
     return;
   }
@@ -336,22 +333,6 @@ static int onEdit(int col, int row, CellEditAction action) {
       // Load sample
       fileBrowserSetup("LOAD SAMPLE", ".wav", appSettings.samplePath, onSampleLoaded, onSampleCancelled);
       screenSetup(&screenFileBrowser, 0);
-    } else if (col == 1) {
-      // Lift sample to zero
-      if (smp->sampleData && smp->sampleLength > 0) {
-        sampleLiftToZero(smp->sampleData, smp->fileLength, smp->sampleRate);
-        projectModified = 1;
-        screenMessage(MESSAGE_TIME, "Sample lifted to zero");
-
-        // Update preview to show the modified sample
-        updateSamplePreview();
-        if (samplePreviewBitmap) {
-          gfxSetFgColor(appSettings.colorScheme.textInfo);
-          gfxDrawBitmap(samplePreviewBitmap, PREVIEW_COL, PREVIEW_ROW);
-        }
-      } else {
-        screenMessage(MESSAGE_TIME, "No sample loaded");
-      }
     }
     return 0;
   }

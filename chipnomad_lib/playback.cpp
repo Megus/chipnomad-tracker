@@ -744,11 +744,11 @@ static int skipZeroGrooveRows(PlaybackState* state, int trackIdx) {
     if (track->grooveRow == curGrooveRow) {
       // All rows are zero, stop playback
       resetTrack(state, trackIdx);
-      return 1;
+      return 0;
     }
   }
 
-  return 0;
+  return 1;
 }
 
 

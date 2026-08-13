@@ -68,7 +68,7 @@ static void draw(void) {
   if (currentExporter) {
     int seconds = currentExporter->next();
     if (seconds == -1) {
-      if (currentExporter->finish() == 0) {
+      if (currentExporter->finish()) {
         screenMessage(MESSAGE_TIME, "Export completed");
       } else {
         screenMessage(MESSAGE_TIME, "Export failed");

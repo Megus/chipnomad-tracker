@@ -115,7 +115,7 @@ int ExporterPSG::finish() {
       files[i] = NULL;
     }
   }
-  return 0;
+  return 1;
 }
 
 void ExporterPSG::cancel() {

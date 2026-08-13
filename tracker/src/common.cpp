@@ -61,11 +61,11 @@ int projectModified = 0;
 
 int settingsSave(void) {
   char defaultDir[PATH_LENGTH];
-  if (fileGetDefaultDirectory(defaultDir, PATH_LENGTH) != 0) return 1;
+  if (!fileGetDefaultDirectory(defaultDir, PATH_LENGTH)) return 0;
   snprintf(settingsPath, sizeof(settingsPath), "%s%ssettings.txt", defaultDir, PATH_SEPARATOR_STR);
 
   FILE* file = fopen(settingsPath, "w");
-  if (file == NULL) return 1;
+  if (file == NULL) return 0;
 
   fprintf(file, "screenWidth: %d\n", appSettings.screenWidth);
   fprintf(file, "screenHeight: %d\n", appSettings.screenHeight);
@@ -121,7 +121,7 @@ int settingsSave(void) {
   fprintf(file, "wavetablePath: %s\n", appSettings.wavetablePath);
 
   fclose(file);
-  return 0;
+  return 1;
 }
 
 int settingsLoad(void) {
@@ -129,11 +129,11 @@ int settingsLoad(void) {
   initDefaultAppSettings();
 
   char defaultDir[PATH_LENGTH];
-  if (fileGetDefaultDirectory(defaultDir, PATH_LENGTH) != 0) return 1;
+  if (!fileGetDefaultDirectory(defaultDir, PATH_LENGTH)) return 0;
   snprintf(settingsPath, sizeof(settingsPath), "%s%ssettings.txt", defaultDir, PATH_SEPARATOR_STR);
 
   FILE* file = fopen(settingsPath, "r");
-  if (file == NULL) return 1;
+  if (file == NULL) return 0;
 
   while (fgets(lineBuffer, sizeof(lineBuffer), file) != NULL) {
     char* line = lineBuffer;
@@ -252,7 +252,7 @@ int settingsLoad(void) {
   }
 
   fclose(file);
-  return 0;
+  return 1;
 }
 
 void resetToDefaultColors(void) {
@@ -270,7 +270,7 @@ void resetToDefaultColors(void) {
 
 int saveTheme(const char* path) {
   FILE* file = fopen(path, "w");
-  if (file == NULL) return 1;
+  if (file == NULL) return 0;
 
   fprintf(file, "colorBackground: 0x%06x\n", appSettings.colorScheme.background);
   fprintf(file, "colorTextEmpty: 0x%06x\n", appSettings.colorScheme.textEmpty);
@@ -284,12 +284,12 @@ int saveTheme(const char* path) {
   fprintf(file, "colorWarning: 0x%06x\n", appSettings.colorScheme.warning);
 
   fclose(file);
-  return 0;
+  return 1;
 }
 
 int loadTheme(const char* path) {
   FILE* file = fopen(path, "r");
-  if (file == NULL) return 1;
+  if (file == NULL) return 0;
 
   // First reset to defaults to ensure all colors have valid values
   resetToDefaultColors();
@@ -320,12 +320,12 @@ int loadTheme(const char* path) {
   }
 
   fclose(file);
-  return 0;
+  return 1;
 }
 
 const char* getAutosavePath(void) {
   char defaultDir[PATH_LENGTH];
-  if (fileGetDefaultDirectory(defaultDir, PATH_LENGTH) != 0) return AUTOSAVE_FILENAME;
+  if (!fileGetDefaultDirectory(defaultDir, PATH_LENGTH)) return AUTOSAVE_FILENAME;
   snprintf(autosavePath, sizeof(autosavePath), "%s%s%s", defaultDir, PATH_SEPARATOR_STR, AUTOSAVE_FILENAME);
   return autosavePath;
 }

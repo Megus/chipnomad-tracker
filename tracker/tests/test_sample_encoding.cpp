@@ -2,6 +2,7 @@
 
 #include "project.h"
 #include "project_instruments.h"
+#include "error.h"
 
 #include <cstring>
 #include <cstdlib>
@@ -32,16 +33,16 @@ TEST_CASE_FIXTURE(SampleEncodingFixture, "sample empty save load") {
   // Save to file
   const char* testFile = "test_empty_sample.cnm";
   int result = instrumentSave(&p, testFile, 0);
-  if (result != 0) {
-    std::printf("Save error: %s\n", projectFileError);
+  if (!result) {
+    std::printf("Save error: %s\n", chipnomad::Error::message);
   }
-  CHECK(result == 0);
+  CHECK(result == 1);
 
   // Load from file
   Project p2;
   projectInit(&p2);
   result = instrumentLoad(&p2, testFile, 0);
-  CHECK(result == 0);
+  CHECK(result == 1);
 
   // Verify empty sample loaded correctly
   CHECK(p2.instruments[0].type == InstrumentType::AYSample);
@@ -75,13 +76,13 @@ TEST_CASE_FIXTURE(SampleEncodingFixture, "sample small save load") {
   // Save to file
   const char* testFile = "test_small_sample.cnm";
   int result = instrumentSave(&p, testFile, 0);
-  CHECK(result == 0);
+  CHECK(result == 1);
 
   // Load from file
   Project p2;
   projectInit(&p2);
   result = instrumentLoad(&p2, testFile, 0);
-  CHECK(result == 0);
+  CHECK(result == 1);
 
   // Verify sample loaded correctly
   CHECK(p2.instruments[0].type == InstrumentType::AYSample);
@@ -123,13 +124,13 @@ TEST_CASE_FIXTURE(SampleEncodingFixture, "sample large save load") {
   // Save to file
   const char* testFile = "test_large_sample.cnm";
   int result = instrumentSave(&p, testFile, 0);
-  CHECK(result == 0);
+  CHECK(result == 1);
 
   // Load from file
   Project p2;
   projectInit(&p2);
   result = instrumentLoad(&p2, testFile, 0);
-  CHECK(result == 0);
+  CHECK(result == 1);
 
   // Verify sample loaded correctly
   CHECK(p2.instruments[0].type == InstrumentType::AYSample);
@@ -172,13 +173,13 @@ TEST_CASE_FIXTURE(SampleEncodingFixture, "sample max size save load") {
   // Save to file
   const char* testFile = "test_max_sample.cnm";
   int result = instrumentSave(&p, testFile, 0);
-  CHECK(result == 0);
+  CHECK(result == 1);
 
   // Load from file
   Project p2;
   projectInit(&p2);
   result = instrumentLoad(&p2, testFile, 0);
-  CHECK(result == 0);
+  CHECK(result == 1);
 
   // Verify sample loaded correctly
   CHECK(p2.instruments[0].type == InstrumentType::AYSample);

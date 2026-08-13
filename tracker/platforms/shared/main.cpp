@@ -22,7 +22,7 @@ int main(int argv, char** args) {
     }
   }
 
-  if (gfxSetup(&appSettings.screenWidth, &appSettings.screenHeight) != 0) return 1;
+  if (!gfxSetup(&appSettings.screenWidth, &appSettings.screenHeight)) return 1;
 
   appSetup();
   mainLoopRun(appDraw, appOnEvent);

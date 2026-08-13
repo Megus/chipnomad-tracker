@@ -11,7 +11,7 @@ static char* editingString = NULL;
 static int editingStringLength = 0;
 
 static void onLoadSelected(const char* path) {
-  if (pitchTableLoadCSV(&chipnomadState->project, path) == 0) {
+  if (pitchTableLoadCSV(&chipnomadState->project, path)) {
     extractFilenameWithoutExtension(path, chipnomadState->project.pitchTable.name, PROJECT_PITCH_TABLE_TITLE_LENGTH + 1);
 
     // Save the directory path

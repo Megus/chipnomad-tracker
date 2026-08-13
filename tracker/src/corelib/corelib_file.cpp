@@ -42,7 +42,7 @@ int fileGetDefaultDirectory(char* buffer, int bufferSize) {
   const char* dataPath = "/storage/emulated/0/Documents/ChipNomad";
   createDirectoryRecursive(dataPath);
   snprintf(buffer, bufferSize, "%s", dataPath);
-  return 0;
+  return 1;
 #elif defined(MACOS_BUILD)
   const char* home = getenv("HOME");
   if (home) {
@@ -51,9 +51,9 @@ int fileGetDefaultDirectory(char* buffer, int bufferSize) {
   } else {
     snprintf(buffer, bufferSize, ".");
   }
-  return 0;
+  return 1;
 #else
-  return getcwd(buffer, bufferSize) ? 0 : -1;
+  return getcwd(buffer, bufferSize) ? 1 : 0;
 #endif
 }
 
@@ -64,14 +64,14 @@ int fileDirectoryExists(const char* path) {
 
 int fileCreateDirectory(const char* path) {
   #ifdef _WIN32
-  return mkdir(path) == 0 ? 0 : -1;
+  return mkdir(path) == 0 ? 1 : 0;
   #else
-  return mkdir(path, 0755) == 0 ? 0 : -1;
+  return mkdir(path, 0755) == 0 ? 1 : 0;
   #endif
 }
 
 int fileDelete(const char* path) {
-  return remove(path) == 0 ? 0 : -1;
+  return remove(path) == 0 ? 1 : 0;
 }
 
 FileEntry* fileListDirectory(const char* path, const char* extension, int* entryCount) {

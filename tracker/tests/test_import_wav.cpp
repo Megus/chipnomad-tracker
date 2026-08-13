@@ -93,7 +93,7 @@ TEST_CASE("load wav 8bit mono") {
   uint16_t length, sampleRate;
   WavLoadResult result;
   uint8_t* data = loadWavFile(testFile, PROJECT_MAX_SAMPLE_SIZE,
-                               &length, &sampleRate, &result);
+                               &length, &sampleRate, &result, false);
 
   CHECK(result == WAV_SUCCESS);
   CHECK(data != nullptr);
@@ -117,7 +117,7 @@ TEST_CASE("load wav 16bit mono") {
   uint16_t length, sampleRate;
   WavLoadResult result;
   uint8_t* data = loadWavFile(testFile, PROJECT_MAX_SAMPLE_SIZE,
-                               &length, &sampleRate, &result);
+                               &length, &sampleRate, &result, false);
 
   CHECK(result == WAV_SUCCESS);
   CHECK(data != nullptr);
@@ -140,7 +140,7 @@ TEST_CASE("load wav file not found") {
   uint16_t length, sampleRate;
   WavLoadResult result;
   uint8_t* data = loadWavFile("nonexistent.wav", PROJECT_MAX_SAMPLE_SIZE,
-                               &length, &sampleRate, &result);
+                               &length, &sampleRate, &result, false);
 
   CHECK(data == nullptr);
   CHECK(result == WAV_ERROR_FILE_NOT_FOUND);
@@ -155,7 +155,7 @@ TEST_CASE("load wav invalid file") {
   uint16_t length, sampleRate;
   WavLoadResult result;
   uint8_t* data = loadWavFile(testFile, PROJECT_MAX_SAMPLE_SIZE,
-                               &length, &sampleRate, &result);
+                               &length, &sampleRate, &result, false);
 
   CHECK(data == nullptr);
   CHECK(result == WAV_ERROR_NOT_WAV);
@@ -174,7 +174,7 @@ TEST_CASE("load wav size limit") {
   uint16_t length, sampleRate;
   WavLoadResult result;
   // Limit to 100 samples
-  uint8_t* data = loadWavFile(testFile, 100, &length, &sampleRate, &result);
+  uint8_t* data = loadWavFile(testFile, 100, &length, &sampleRate, &result, false);
 
   CHECK(result == WAV_SUCCESS);
   CHECK(data != nullptr);

@@ -6,7 +6,6 @@
 #include <stdint.h>
 
 // Shared state for I/O operations
-extern char projectFileError[41];
 extern int projectFileVersion;
 
 // Peek/consume pattern for line reading

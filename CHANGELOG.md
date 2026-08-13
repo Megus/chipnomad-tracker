@@ -1,5 +1,11 @@
 # ChipNomad changelog
 
+## v1.0.5 (not yet released)
+
+- AY Sample instrument automatically normalizes samples and makes them unipolar (for better playback quality on AY)
+- *FIX*: Hint at Modulation screen showed "Sustain XX ticks"
+- *FIX*: Sample copy didn't create a copy of the sample data
+
 ## v1.0.4 (July 12, 2026)
 
 - The all-new modulation system similar to M8 tracker. Use 4 sources to modulate different values.

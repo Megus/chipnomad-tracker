@@ -49,10 +49,10 @@ static int fileExists(const char* path) {
 
 static int copyAssetFile(const char* assetPath, const char* destPath) {
     AAssetManager* mgr = getAssetManager();
-    if (!mgr) return 1;
+    if (!mgr) return 0;
 
     AAsset* asset = AAssetManager_open(mgr, assetPath, AASSET_MODE_BUFFER);
-    if (!asset) return 1;
+    if (!asset) return 0;
 
     char dirPath[512];
     strcpy(dirPath, destPath);
@@ -65,7 +65,7 @@ static int copyAssetFile(const char* assetPath, const char* destPath) {
     FILE* outFile = fopen(destPath, "wb");
     if (!outFile) {
         AAsset_close(asset);
-        return 1;
+        return 0;
     }
 
     const void* buffer = AAsset_getBuffer(asset);
@@ -74,16 +74,16 @@ static int copyAssetFile(const char* assetPath, const char* destPath) {
     if (fwrite(buffer, 1, size, outFile) != size) {
         fclose(outFile);
         AAsset_close(asset);
-        return 1;
+        return 0;
     }
 
     fclose(outFile);
     AAsset_close(asset);
-    return 0;
+    return 1;
 }
 
 int assetsInit(void) {
-    if (!getAssetManager()) return 1;
+    if (!getAssetManager()) return 0;
 
     const char* dataPath = "/storage/emulated/0/Documents/ChipNomad";
     const char* bundledPath = "/storage/emulated/0/Documents/ChipNomad/BundledContent";
@@ -119,5 +119,5 @@ int assetsInit(void) {
         AAssetDir_close(dir);
     }
 
-    return 0;
+    return 1;
 }

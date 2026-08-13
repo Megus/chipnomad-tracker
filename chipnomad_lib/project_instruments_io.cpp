@@ -7,8 +7,8 @@
 static int loadInstrumentAY1Legacy(FILE* file, Instrument* instrument) {
   while (1) {
     char* line = peekLine(file);
-    if (line == NULL) return 1;
-    if (line[0] == '#') return 0;
+    if (line == NULL) return 0;
+    if (line[0] == '#') return 1;
 
     if (strncmp(line, "- Volume envelope: ", 19) == 0) {
       // Read ADSR values into modulation struct
@@ -32,8 +32,8 @@ static int loadInstrumentAY1Legacy(FILE* file, Instrument* instrument) {
 static int loadInstrumentAY1(FILE* file, Instrument* instrument) {
   while (1) {
     char* line = peekLine(file);
-    if (line == NULL) return 1;
-    if (line[0] == '#') return 0;
+    if (line == NULL) return 0;
+    if (line[0] == '#') return 1;
 
     if (strncmp(line, "- Volume envelope: ", 19) == 0) {
       // Read ADSR values into modulation struct
@@ -57,8 +57,8 @@ static int loadInstrumentAY1(FILE* file, Instrument* instrument) {
 static int loadInstrumentAY2(FILE* file, Instrument* instrument) {
   while (1) {
     char* line = peekLine(file);
-    if (line == NULL) return 1;
-    if (line[0] == '#') return 0;
+    if (line == NULL) return 0;
+    if (line[0] == '#') return 1;
 
     // Tone oscillator
     if (strncmp(line, "- Tone on: ", 11) == 0) {
@@ -182,23 +182,23 @@ static int loadInstrumentAYSample(FILE* file, Instrument* instrument) {
 
         // Load binary data
         if (dataLen > 0) {
-          if (loadBinaryData(file, &instrument->chip.aySample.sampleData, &dataLen, PROJECT_MAX_SAMPLE_SIZE)) {
-            return 1;
+          if (!loadBinaryData(file, &instrument->chip.aySample.sampleData, &dataLen, PROJECT_MAX_SAMPLE_SIZE)) {
+            return 0;
           }
         }
       }
     }
   }
 
-  return 0;
+  return 1;
 }
 
 // Load modulation data
 static int loadModulation(FILE* file, Instrument* instrument) {
   for (int i = 0; i < 4; i++) {
     char* line = peekLine(file);
-    if (line == NULL) return 1;
-    if (line[0] == '#') return 0;
+    if (line == NULL) return 0;
+    if (line[0] == '#') return 1;
 
     char modPrefix[32];
     snprintf(modPrefix, 32, "- Mod%d: ", i + 1);
@@ -215,7 +215,7 @@ static int loadModulation(FILE* file, Instrument* instrument) {
     }
     consumeLine(file);
   }
-  return 0;
+  return 1;
 }
 
 // Main load function
@@ -225,8 +225,8 @@ int instrumentLoadData(FILE* file, Instrument* instrument, Project* p) {
   // Read common fields first
   while (1) {
     char* line = peekLine(file);
-    if (line == NULL) return 1;
-    if (line[0] == '#') return 0;
+    if (line == NULL) return 0;
+    if (line[0] == '#') return 1;
 
     if (strncmp(line, "- Name: ", 8) == 0) {
       sscanf(line, "- Name: %[^\n]", instrument->name);
@@ -248,20 +248,20 @@ int instrumentLoadData(FILE* file, Instrument* instrument, Project* p) {
     // Legacy format (version 1.0): no modulation, no "Chip data:" separator
     // Only AY1 instruments existed in version 1.0
     if (instrument->type == InstrumentType::AY1) {
-      if (loadInstrumentAY1Legacy(file, instrument)) return 1;
+      return loadInstrumentAY1Legacy(file, instrument);
     }
     return 0;
   }
 
   // New format (version 2.0): read modulation and chip data sections
   char* line = peekLine(file);
-  if (line == NULL) return 1;
+  if (line == NULL) return 0;
 
   if (strncmp(line, "- Modulation:", 13) == 0) {
     consumeLine(file);
-    if (loadModulation(file, instrument)) return 1;
+    if (!loadModulation(file, instrument)) return 0;
     line = peekLine(file);  // Read next line after modulation
-    if (line == NULL) return 1;
+    if (line == NULL) return 0;
   }
 
   if (strncmp(line, "- Chip data:", 12) == 0) {
@@ -269,20 +269,20 @@ int instrumentLoadData(FILE* file, Instrument* instrument, Project* p) {
     // Load chip-specific data based on instrument type
     switch (instrument->type) {
       case InstrumentType::AY1:
-        if (loadInstrumentAY1(file, instrument)) return 1;
+        if (!loadInstrumentAY1(file, instrument)) return 0;
         break;
       case InstrumentType::AY2:
-        if (loadInstrumentAY2(file, instrument)) return 1;
+        if (!loadInstrumentAY2(file, instrument)) return 0;
         break;
       case InstrumentType::AYSample:
-        if (loadInstrumentAYSample(file, instrument)) return 1;
+        if (!loadInstrumentAYSample(file, instrument)) return 0;
         break;
       default:
         break;
     }
   }
 
-  return 0;
+  return 1;
 }
 
 // Save AY1 instrument data
@@ -294,7 +294,7 @@ static int saveInstrumentAY1(FILE* file, Instrument* instrument) {
   fprintf(file, "- Auto envelope: %hhd,%hhd\n",
     instrument->chip.ay.autoEnvN, instrument->chip.ay.autoEnvD);
   fprintf(file, "- Default mixer: %02X\n", instrument->chip.ay.defaultMixer);
-  return 0;
+  return 1;
 }
 
 // Save AY2 instrument data
@@ -328,7 +328,7 @@ static int saveInstrumentAY2(FILE* file, Instrument* instrument) {
   fprintf(file, "- FM depth: %hhu\n", instrument->chip.ay2.oscSoftware.fmDepth);
   fprintf(file, "- Env Shape Pair: %hhu\n", instrument->chip.ay2.oscSoftware.envShapePair);
 
-  return 0;
+  return 1;
 }
 
 // Save AYSample instrument data
@@ -360,7 +360,7 @@ static int saveInstrumentAYSample(FILE* file, Instrument* instrument) {
                   instrument->chip.aySample.fileLength);
   }
 
-  return 0;
+  return 1;
 }
 
 // Save modulation data
@@ -377,7 +377,7 @@ static int saveModulation(FILE* file, Instrument* instrument) {
       instrument->modulation[i].p3,
       instrument->modulation[i].p4);
   }
-  return 0;
+  return 1;
 }
 
 // Main save function
@@ -407,5 +407,5 @@ int instrumentSaveData(FILE* file, int idx, Instrument* instrument) {
       break;
   }
 
-  return 0;
+  return 1;
 }

@@ -33,9 +33,13 @@ TRACKER_SRC_SOURCES = src/string_utils.cpp \
                       src/project_utils.cpp \
                       src/pitch_table_utils.cpp \
                       src/wavetable_io.cpp \
+                      src/copy_paste.cpp \
+                      src/sample_utils.cpp \
                       $(wildcard src/screens/edit_common.cpp) \
                       $(wildcard src/corelib/corelib_file.cpp) \
-                      $(wildcard src/import/import_wav.cpp)
+                      $(wildcard src/import/import_wav.cpp) \
+                      $(wildcard src/import/import_vts.cpp) \
+                      $(wildcard src/import/import_common.cpp)
 
 # Mock sources
 MOCK_SOURCES = $(wildcard tests/mocks/*.cpp)

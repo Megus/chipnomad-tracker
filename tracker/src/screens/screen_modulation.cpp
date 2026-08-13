@@ -339,7 +339,14 @@ static int onEdit(int col, int row, enum CellEditAction action) {
             if (paramIdx < 3) fullName = ahdNames[paramIdx];
           }
           if (fullName) {
-            screenMessage(0, "%s %hhu ticks", fullName, params[paramIdx]);
+            if (mod->type == ModulationType::ADSR && paramIdx == 2) {
+              // Sustain
+              // TODO: Calculate scaled value
+              screenMessage(0, "%s %hhu", fullName, params[paramIdx]);
+            } else {
+              // Attack, Decay, Release, Hold
+              screenMessage(0, "%s %hhu ticks", fullName, params[paramIdx]);
+            }
           }
         }
       } else if (mod->type == ModulationType::LFO) {

@@ -6,9 +6,9 @@
 #include "project.h"
 #include "project_io_common.h"
 #include "utils.h"
+#include "error.h"
 
 // Shared state
-char projectFileError[41];
 int projectFileVersion = 2;  // Default to current version
 static char chipNames[][16] = { "AY8910" };
 
@@ -43,7 +43,6 @@ char* peekLine(FILE* file) {
     while (1) {
       currentLine = readAndTrimLine(file);
       if (currentLine == NULL) {
-        snprintf(projectFileError, 40, "Unexpected end of file");
         return NULL;
       }
       // Skip empty lines
@@ -71,7 +70,7 @@ static const char* encodeTable = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij
 // Note: Caller is responsible for writing the section header (#### Section Name)
 int saveBinaryData(FILE* file, const uint8_t* data, uint16_t dataLen) {
   if (dataLen == 0 || data == NULL) {
-    return 0;  // Nothing to save
+    return 1;  // Nothing to save
   }
 
   // Write data header (length and data marker)
@@ -114,7 +113,7 @@ int saveBinaryData(FILE* file, const uint8_t* data, uint16_t dataLen) {
     fprintf(file, "%s\n", lineBuffer);
   }
 
-  return 0;
+  return 1;
 }
 
 // Load binary data from a #### section
@@ -134,15 +133,15 @@ int loadBinaryData(FILE* file, uint8_t** outData, uint16_t* outLen, uint16_t max
   }
 
   if (*outLen == 0 || *outLen > maxLen) {
-    snprintf(projectFileError, 40, "Invalid data length");
-    return 1;
+    chipnomad::Error::set("Invalid data length");
+    return 0;
   }
 
   // Allocate buffer
   uint8_t* buffer = (uint8_t*)malloc(*outLen);
   if (buffer == NULL) {
-    snprintf(projectFileError, 40, "Memory allocation failed");
-    return 1;
+    chipnomad::Error::set("Memory allocation failed");
+    return 0;
   }
 
   uint16_t bufferPos = 0;
@@ -190,7 +189,7 @@ int loadBinaryData(FILE* file, uint8_t** outData, uint16_t* outLen, uint16_t max
   }
 
   *outData = buffer;
-  return 0;
+  return 1;
 }
 
 // Helper functions for parsing
@@ -251,33 +250,35 @@ static uint8_t scanFX(char* str, Project* p) {
 ///////////////////////////////////////////////////////////////////////////////
 // Load functions
 
-static int projectLoadPitchTable(FILE* file, Project* p) {
+static void projectLoadPitchTable(FILE* file, Project* p) {
+  static const char *pitchTableError = "Invalid pitch table format";
+
   char buf[128];
 
   char* line = peekLine(file);
-  if (line == NULL) return 1;
-  if (strcmp(line, "## Pitch table")) return 1;
+  if (line == NULL) throw pitchTableError;
+  if (strcmp(line, "## Pitch table")) throw pitchTableError;
   consumeLine(file);
 
   line = peekLine(file);
-  if (line == NULL) return 1;
-  if (sscanf(line, "- Title: %[^\n]", p->pitchTable.name) != 1) return 1;
+  if (line == NULL) throw pitchTableError;
+  if (sscanf(line, "- Title: %[^\n]", p->pitchTable.name) != 1) throw pitchTableError;
   consumeLine(file);
 
   line = peekLine(file);
-  if (line == NULL) return 1;
+  if (line == NULL) throw pitchTableError;
   consumeLine(file);  // Skip opening ```
 
   int idx = 0;
   int period;
   while (1) {
     line = peekLine(file);
-    if (line == NULL) return 1;
+    if (line == NULL) throw pitchTableError;
     if (sscanf(line, "%s %d", buf, &period) != 2) {
       // Couldn't parse - must be closing ``` or next section
       break;
     }
-    if (strlen(buf) != 3) return 1;
+    if (strlen(buf) != 3) throw pitchTableError;
     strcpy(p->pitchTable.noteNames[idx], buf);
     p->pitchTable.values[idx] = period;
     idx++;
@@ -301,28 +302,28 @@ static int projectLoadPitchTable(FILE* file, Project* p) {
   if (line[0] == '`') {
     consumeLine(file);
   }
-
-  return 0;
 }
 
-static int projectLoadSong(FILE* file, Project* p) {
+static void projectLoadSong(FILE* file, Project* p) {
+  static const char *songError = "Invalid song data format";
+
   char buf[4];
   char* line = peekLine(file);
-  if (line == NULL) return 1;
-  if (strcmp(line, "## Song")) return 1;
+  if (line == NULL) throw songError;
+  if (strcmp(line, "## Song")) throw songError;
   consumeLine(file);
 
   line = peekLine(file);
-  if (line == NULL) return 1;
+  if (line == NULL) throw songError;
   consumeLine(file);  // Skip opening ```
 
   int idx = 0;
   while (1) {
     line = peekLine(file);
-    if (line == NULL) return 1;
+    if (line == NULL) throw songError;
     if (line[0] == '#' || line[0] == '`') break;  // Next section or closing ```
     // Minimum length: 2 chars per cell, plus 1 separator for each cell (optional for last)
-    if (strlen(line) < (p->tracksCount * 2 + p->tracksCount - 1)) return 1;
+    if (strlen(line) < (p->tracksCount * 2 + p->tracksCount - 1)) throw songError;
 
     for (int c = 0; c < p->tracksCount; c++) {
       buf[0] = line[c * 3];
@@ -332,7 +333,7 @@ static int projectLoadSong(FILE* file, Project* p) {
         p->song[idx][c] = EMPTY_VALUE_16;
       } else {
         uint16_t result;
-        if (sscanf(buf, "%hX", &result) != 1) return 1;
+        if (sscanf(buf, "%hX", &result) != 1) throw songError;
         p->song[idx][c] = result;
       }
       // Check for highlight marker
@@ -350,42 +351,42 @@ static int projectLoadSong(FILE* file, Project* p) {
   if (line[0] == '`') {
     consumeLine(file);
   }
-
-  return 0;
 }
 
-static int projectLoadChains(FILE* file, Project* p) {
+static void projectLoadChains(FILE* file, Project* p) {
+  static const char* chainsError = "Invalid chains data format";
+
   int idx;
 
   char* line = peekLine(file);
-  if (line == NULL) return 1;
-  if (strcmp(line, "## Chains")) return 1;
+  if (line == NULL) throw chainsError;
+  if (strcmp(line, "## Chains")) throw chainsError;
   consumeLine(file);
 
   while (1) {
     line = peekLine(file);
-    if (line == NULL) return 1;
+    if (line == NULL) throw chainsError;
     if (strncmp(line, "### Chain", 9)) break;
-    if (sscanf(line, "### Chain %X", &idx) != 1) return 1;
+    if (sscanf(line, "### Chain %X", &idx) != 1) throw chainsError;
     consumeLine(file);
 
     // Skip opening ```
     line = peekLine(file);
-    if (line == NULL) return 1;
+    if (line == NULL) throw chainsError;
     if (line[0] == '`') {
       consumeLine(file);
     }
 
     for (int c = 0; c < 16; c++) {
       line = peekLine(file);
-      if (line == NULL) return 1;
-      if (strlen(line) != 6) return 1;
+      if (line == NULL) throw chainsError;
+      if (strlen(line) != 6) throw chainsError;
 
       if (line[0] == '-' && line[1] == '-' && line[2] == '-') {
         p->chains[idx].rows[c].phrase = EMPTY_VALUE_16;
       } else {
         uint16_t result;
-        if (sscanf(line, "%hX", &result) != 1) return 1;
+        if (sscanf(line, "%hX", &result) != 1) throw chainsError;
         p->chains[idx].rows[c].phrase = result;
       }
       p->chains[idx].rows[c].transpose = scanByteOrEmpty(line + 4);
@@ -394,82 +395,82 @@ static int projectLoadChains(FILE* file, Project* p) {
 
     // Skip closing ```
     line = peekLine(file);
-    if (line == NULL) return 1;
+    if (line == NULL) throw chainsError;
     if (line[0] == '`') {
       consumeLine(file);
     }
   }
-
-  return 0;
 }
 
-static int projectLoadGrooves(FILE* file, Project* p) {
+static void projectLoadGrooves(FILE* file, Project* p) {
+  static const char* groovesError = "Invalid grooves data format";
+
   int idx;
 
   char* line = peekLine(file);
-  if (line == NULL) return 1;
-  if (strcmp(line, "## Grooves")) return 1;
+  if (line == NULL) throw groovesError;
+  if (strcmp(line, "## Grooves")) throw groovesError;
   consumeLine(file);
 
   while (1) {
     line = peekLine(file);
-    if (line == NULL) return 1;
+    if (line == NULL) throw groovesError;
     if (strncmp(line, "### Groove", 10)) break;
-    if (sscanf(line, "### Groove %X", &idx) != 1) return 1;
+    if (sscanf(line, "### Groove %X", &idx) != 1) throw groovesError;
     consumeLine(file);
 
     // Skip opening ```
     line = peekLine(file);
-    if (line == NULL) return 1;
+    if (line == NULL) throw groovesError;
     if (line[0] == '`') {
       consumeLine(file);
     }
 
     for (int c = 0; c < 16; c++) {
       line = peekLine(file);
-      if (line == NULL) return 1;
-      if (strlen(line) != 2) return 1;
+      if (line == NULL) throw groovesError;
+      if (strlen(line) != 2) throw groovesError;
       p->grooves[idx].speed[c] = scanByteOrEmpty(line);
       consumeLine(file);
     }
 
     // Skip closing ```
     line = peekLine(file);
-    if (line == NULL) return 1;
+    if (line == NULL) throw groovesError;
     if (line[0] == '`') {
       consumeLine(file);
     }
   }
-
-  return 0;
 }
 
-static int projectLoadPhrases(FILE* file, Project* p) {
+static void projectLoadPhrases(FILE* file, Project* p) {
+  static const char* phrasesError = "Invalid phrases data format";
+
   int idx;
 
   char* line = peekLine(file);
-  if (line == NULL) return 1;
-  if (strcmp(line, "## Phrases")) return 1;
+  if (line == NULL) throw phrasesError;
+  if (strcmp(line, "## Phrases")) throw phrasesError;
   consumeLine(file);
 
   while (1) {
     line = peekLine(file);
-    if (line == NULL) return 1;
+    if (line == NULL) throw phrasesError;
     if (strncmp(line, "### Phrase", 10)) break;
-    if (sscanf(line, "### Phrase %X", &idx) != 1) return 1;
+    if (sscanf(line, "### Phrase %X", &idx) != 1) throw phrasesError;
     consumeLine(file);
 
     // Skip opening ```
     line = peekLine(file);
-    if (line == NULL) return 1;
+    if (line == NULL) throw phrasesError;
     if (line[0] == '`') {
       consumeLine(file);
     }
 
     for (int c = 0; c < 16; c++) {
       line = peekLine(file);
-      if (line == NULL) return 1;
-      if (strlen(line) != 30) return 1;
+      if (line == NULL) throw phrasesError;
+      if (strlen(line) != 30) throw phrasesError;
       // Note
       p->phrases[idx].rows[c].note = scanNote(line, p);
       // Instrument
@@ -486,48 +487,47 @@ static int projectLoadPhrases(FILE* file, Project* p) {
 
     // Skip closing ```
     line = peekLine(file);
-    if (line == NULL) return 1;
+    if (line == NULL) throw phrasesError;
     if (line[0] == '`') {
       consumeLine(file);
     }
   }
-
-  return 0;
 }
 
-static int projectLoadInstruments(FILE* file, Project* p) {
+static void projectLoadInstruments(FILE* file, Project* p) {
+  static const char* instrumentsError = "Invalid instruments data format";
   int idx;
 
   char* line = peekLine(file);
-  if (line == NULL) return 1;
-  if (strcmp(line, "## Instruments")) return 1;
+  if (line == NULL) throw instrumentsError;
+  if (strcmp(line, "## Instruments")) throw instrumentsError;
   consumeLine(file);
 
   line = peekLine(file);
-  if (line == NULL) return 1;
+  if (line == NULL) throw instrumentsError;
   while (strncmp(line, "### Instrument", 14) == 0) {
-    if (sscanf(line, "### Instrument %X", &idx) != 1) return 1;
+    if (sscanf(line, "### Instrument %X", &idx) != 1) throw instrumentsError;
     consumeLine(file);
-    if (instrumentLoadData(file, &p->instruments[idx], p)) return 1;
+    if (!instrumentLoadData(file, &p->instruments[idx], p)) throw instrumentsError;
     line = peekLine(file);
-    if (line == NULL) return 1;
+    if (line == NULL) throw instrumentsError;
   }
-
-  return 0;
 }
 
-static int loadTable(FILE* file, Table* table, Project* p) {
+static void loadTable(FILE* file, Table* table, Project* p) {
+  static const char* tableError = "Invalid table data format";
+
   // Skip opening ```
   char* line = peekLine(file);
-  if (line == NULL) return 1;
+  if (line == NULL) throw tableError;
   if (line[0] == '`') {
     consumeLine(file);
   }
 
   for (int d = 0; d < 16; d++) {
     line = peekLine(file);
-    if (line == NULL) return 1;
-    if (strlen(line) < 35) return 1;  // Minimum length check
+    if (line == NULL) throw tableError;
+    if (strlen(line) < 35) throw tableError;  // Minimum length check
 
     // Pitch flag
     table->rows[d].pitchFlag = (line[0] == '=') ? 1 : 0;
@@ -545,49 +545,48 @@ static int loadTable(FILE* file, Table* table, Project* p) {
 
   // Skip closing ```
   line = peekLine(file);
-  if (line == NULL) return 1;
+  if (line == NULL) throw tableError;
   if (line[0] == '`') {
     consumeLine(file);
   }
-
-  return 0;
 }
 
-static int projectLoadTables(FILE* file, Project* p) {
+static void projectLoadTables(FILE* file, Project* p) {
+  static const char* tableError = "Invalid tables data format";
   int idx;
 
   char* line = peekLine(file);
-  if (line == NULL) return 1;
-  if (strcmp(line, "## Tables")) return 1;
+  if (line == NULL) throw tableError;
+  if (strcmp(line, "## Tables")) throw tableError;
   consumeLine(file);
 
   while (1) {
     line = peekLine(file);
-    if (line == NULL) return 1;
+    if (line == NULL) throw tableError;
     if (strncmp(line, "### Table", 9)) break;
-    if (sscanf(line, "### Table %X", &idx) != 1) return 1;
+    if (sscanf(line, "### Table %X", &idx) != 1) throw tableError;
     consumeLine(file);
-    if (loadTable(file, &p->tables[idx], p)) return 1;
+    loadTable(file, &p->tables[idx], p);
   }
-
-  return 0;
 }
 
-static int projectLoadAYWavetables(FILE* file, Project* p) {
+static void projectLoadAYWavetables(FILE* file, Project* p) {
+  static const char* wavetableError = "Invalid AY wavetable data format";
+
   char* line = peekLine(file);
-  if (line == NULL) return 1;
+  if (line == NULL) throw wavetableError;
 
   // This section is optional for backwards compatibility
   if (strcmp(line, "## AY Wavetables")) {
     // Section not found, that's OK - just return success
-    return 0;
+    return;
   }
   consumeLine(file);
 
   // Read wavetable data lines until we hit EOF or another section
   while (1) {
     line = peekLine(file);
-    if (line == NULL) return 1;
+    if (line == NULL) throw wavetableError;
 
     // Check if we've reached EOF or another section marker
     if (!strcmp(line, "EOF") || !strncmp(line, "##", 2)) {
@@ -598,22 +597,13 @@ static int projectLoadAYWavetables(FILE* file, Project* p) {
     int wavetableIdx;
     char data[33];  // 32 hex digits + null terminator
 
-    if (sscanf(line, "%X %32s", &wavetableIdx, data) != 2) {
-      snprintf(projectFileError, 40, "Invalid wavetable format");
-      return 1;
-    }
+    if (sscanf(line, "%X %32s", &wavetableIdx, data) != 2) throw wavetableError;
 
     // Validate wavetable index
-    if (wavetableIdx < 0 || wavetableIdx > 255) {
-      snprintf(projectFileError, 40, "Invalid wavetable index");
-      return 1;
-    }
+    if (wavetableIdx < 0 || wavetableIdx > 255) throw wavetableError;
 
     // Validate data length
-    if (strlen(data) != 32) {
-      snprintf(projectFileError, 40, "Invalid wavetable data length");
-      return 1;
-    }
+    if (strlen(data) != 32) throw wavetableError;
 
     // Parse hex digits and store in wavetable
     for (int i = 0; i < 32; i++) {
@@ -627,8 +617,7 @@ static int projectLoadAYWavetables(FILE* file, Project* p) {
       } else if (c >= 'a' && c <= 'f') {
         value = c - 'a' + 10;
       } else {
-        snprintf(projectFileError, 40, "Invalid hex digit in wavetable");
-        return 1;
+        throw wavetableError;
       }
 
       p->ayWavetables[wavetableIdx][i] = value & 0x0F;
@@ -636,137 +625,125 @@ static int projectLoadAYWavetables(FILE* file, Project* p) {
 
     consumeLine(file);
   }
-
-  return 0;
 }
 
-static int projectLoadInternal(FILE* file, Project* project) {
-  char buf[128];
-  Project p;
-  projectInit(&p);
+int projectLoad(Project* project, const char* path) {
+  static const char* formatError = "Incorrect file format";
 
-  snprintf(projectFileError, 40, "Module header");
-  char* line = peekLine(file);
-  if (line == NULL) return 1;
-  if (strncmp(line, "# ChipNomad Tracker Module", 26)) {
-    snprintf(projectFileError, 40, "Incorrect module format");
-    return 1;
+  resetPeekConsume();
+  chipnomad::Error::clear();
+
+  // Open file
+  FILE* file = fopen(path, "rb");
+  if (file == NULL) {
+    chipnomad::Error::set("Can't open file");
+    return 0;
   }
 
-  // Detect version
-  if (strlen(line) > 26) {
-    if (strncmp(line + 26, " 2.0", 4) == 0) {
-      projectFileVersion = 2;
-    } else if (strncmp(line + 26, " 1.0", 4) == 0) {
+  // Parse project file
+  try {
+    char buf[128];
+    Project p;
+    projectInit(&p);
+
+    char* line = peekLine(file);
+    if (line == NULL) throw formatError;
+    if (strncmp(line, "# ChipNomad Tracker Module", 26)) {
+      throw "Incorrect module format";
+    }
+
+    // Detect version
+    if (strlen(line) > 26) {
+      if (strncmp(line + 26, " 2.0", 4) == 0) {
+        projectFileVersion = 2;
+      } else if (strncmp(line + 26, " 1.0", 4) == 0) {
+        projectFileVersion = 1;
+      } else {
+        throw "Incorrect module version";
+      }
+    } else {
+      // No version specified = 1.0 (legacy)
       projectFileVersion = 1;
+    }
+    consumeLine(file);
+
+    line = peekLine(file);
+    if (line == NULL) throw formatError;
+    if (!strncmp(line, "- Title:", 8)) {
+      if (sscanf(line, "- Title: %[^\n]", p.title) != 1) {
+        // Empty title is valid, just set it to empty string
+        p.title[0] = 0;
+      }
     } else {
-      snprintf(projectFileError, 40, "Incorrect module version");
-      return 1;
+      throw "Invalid title";
     }
-  } else {
-    // No version specified = 1.0 (legacy)
-    projectFileVersion = 1;
-  }
-  consumeLine(file);
-
-  line = peekLine(file);
-  if (line == NULL) return 1;
-  if (!strncmp(line, "- Title:", 8)) {
-    if (sscanf(line, "- Title: %[^\n]", p.title) != 1) {
-      // Empty title is valid, just set it to empty string
-      p.title[0] = 0;
-    }
-  } else {
-    snprintf(projectFileError, 40, "Invalid title");
-    return 1;
-  }
-  consumeLine(file);
-
-  line = peekLine(file);
-  if (line == NULL) return 1;
-  if (!strncmp(line, "- Author:", 9)) {
-    if (sscanf(line, "- Author: %[^\n]", p.author) != 1) {
-      p.author[0] = 0;
-    }
-  }
-  consumeLine(file);
-
-  snprintf(projectFileError, 40, "Invalid project settings");
-  line = peekLine(file);
-  if (line == NULL) return 1;
-  if (sscanf(line, "- Frame rate: %f", &p.tickRate) != 1) return 1;
-  consumeLine(file);
-
-  line = peekLine(file);
-  if (line == NULL) return 1;
-  if (sscanf(line, "- Chips count: %d", &p.chipsCount) != 1) return 1;
-  consumeLine(file);
-
-  // Try to read linear pitch (optional for backwards compatibility)
-  line = peekLine(file);
-  if (line == NULL) return 1;
-  int tempLinearPitch;
-  if (sscanf(line, "- Linear pitch: %d", &tempLinearPitch) == 1) {
-    p.linearPitch = (uint8_t)tempLinearPitch;
-    consumeLine(file);
-    line = peekLine(file);  // Read next line for chip type
-    if (line == NULL) return 1;
-  }
-  // If linear pitch not found, line already contains the chip type line
-
-  // Chip type
-  if (sscanf(line, "- Chip type: %s", buf) != 1) {
-    snprintf(projectFileError, 40, "Invalid chip type");
-    return 1;
-  }
-
-  if (!strcmp(buf, "AY8910")) {
-    p.chipType = ChipType::AY;
-  } else {
-    snprintf(projectFileError, 40, "Unknown chip type");
-    return 1;
-  }
-  consumeLine(file);
-
-  // Chip-specific settings
-  switch (p.chipType) {
-  case ChipType::AY:
-    line = peekLine(file);
-    if (line == NULL) return 1;
-    if (sscanf(line, "- *AY8910* Clock: %d", &p.chipSetup.ay.clock) != 1) return 1;
     consumeLine(file);
 
-    int tempIsYM;
     line = peekLine(file);
-    if (line == NULL) return 1;
-    if (sscanf(line, "- *AY8910* AY/YM: %d", &tempIsYM) != 1) return 1;
-    p.chipSetup.ay.isYM = (uint8_t)tempIsYM;
+    if (line == NULL) throw formatError;
+    if (!strncmp(line, "- Author:", 9)) {
+      if (sscanf(line, "- Author: %[^\n]", p.author) != 1) {
+        p.author[0] = 0;
+      }
+    }
     consumeLine(file);
 
-    // TODO: Remove old pan logic for the first public release
+    chipnomad::Error::clear();
     line = peekLine(file);
-    if (line == NULL) return 1;
-    if (strncmp(line, "- *AY8910* PanA:", 15) == 0) {
-      // Old pan storage
+    if (line == NULL) throw formatError;
+    if (sscanf(line, "- Frame rate: %f", &p.tickRate) != 1) throw formatError;
+    consumeLine(file);
+
+    line = peekLine(file);
+    if (line == NULL) throw formatError;
+    if (sscanf(line, "- Chips count: %d", &p.chipsCount) != 1) throw formatError;
+    consumeLine(file);
+
+    // Try to read linear pitch (optional for backwards compatibility)
+    line = peekLine(file);
+    if (line == NULL) throw formatError;
+    int tempLinearPitch;
+    if (sscanf(line, "- Linear pitch: %d", &tempLinearPitch) == 1) {
+      p.linearPitch = (uint8_t)tempLinearPitch;
       consumeLine(file);
-      line = peekLine(file);  // Skip B
-      if (line == NULL) return 1;
-      consumeLine(file);
-      line = peekLine(file);  // Skip C
-      if (line == NULL) return 1;
-      consumeLine(file);
-      line = peekLine(file);  // Skip stereo mode
-      if (line == NULL) return 1;
-      consumeLine(file);
-      // Default to ABC
-      p.chipSetup.ay.stereoMode = StereoModeAY::ABC;
-      p.chipSetup.ay.stereoSeparation = 100;
+      line = peekLine(file);  // Read next line for chip type
+      if (line == NULL) throw formatError;
+    }
+    // If linear pitch not found, line already contains the chip type line
+
+    // Chip type
+    if (sscanf(line, "- Chip type: %s", buf) != 1) {
+      throw "Invalid chip type";
+    }
+
+    if (!strcmp(buf, "AY8910")) {
+      p.chipType = ChipType::AY;
     } else {
-      // New stereo mode storage
+      throw "Unknown chip type";
+    }
+    consumeLine(file);
+
+    // Chip-specific settings
+    switch (p.chipType) {
+    case ChipType::AY:
+      line = peekLine(file);
+      if (line == NULL) throw formatError;
+      if (sscanf(line, "- *AY8910* Clock: %d", &p.chipSetup.ay.clock) != 1) throw formatError;
+      consumeLine(file);
+
+      int tempIsYM;
+      line = peekLine(file);
+      if (line == NULL) throw formatError;
+      if (sscanf(line, "- *AY8910* AY/YM: %d", &tempIsYM) != 1) throw formatError;
+      p.chipSetup.ay.isYM = (uint8_t)tempIsYM;
+      consumeLine(file);
+
+      line = peekLine(file);
+      if (line == NULL) throw formatError;
+      // AY Stereo mode
       if (strncmp(line, "- *AY8910* Stereo:", 17) == 0) {
         if (sscanf(line, "- *AY8910* Stereo: %s", buf) != 1) {
-          snprintf(projectFileError, 40, "Invalid stereo mode");
-          return 1;
+          throw "Invalid stereo mode";
         }
         if (!strcmp(buf, "ABC")) {
           p.chipSetup.ay.stereoMode = StereoModeAY::ABC;
@@ -775,71 +752,52 @@ static int projectLoadInternal(FILE* file, Project* project) {
         } else if (!strcmp(buf, "BAC")) {
           p.chipSetup.ay.stereoMode = StereoModeAY::BAC;
         } else {
-          snprintf(projectFileError, 40, "Unknown stereo mode");
-          return 1;
+          throw "Unknown stereo mode";
         }
       } else {
-        snprintf(projectFileError, 40, "Invalid stereo mode");
-        return 1;
+        throw "Invalid stereo mode";
       }
       consumeLine(file);
 
       line = peekLine(file);
-      if (line == NULL) return 1;
-      if (sscanf(line, "- *AY8910* Stereo separation: %hhu", &p.chipSetup.ay.stereoSeparation) != 1) return 1;
+      if (line == NULL) throw formatError;
+      if (sscanf(line, "- *AY8910* Stereo separation: %hhu", &p.chipSetup.ay.stereoSeparation) != 1) throw formatError;
       consumeLine(file);
 
       // PWM range (optional field for backwards compatibility)
       line = peekLine(file);
       if (line != NULL && strncmp(line, "- *AY8910* PWM range: ", 22) == 0) {
-        if (sscanf(line, "- *AY8910* PWM range: %hhu", &p.chipSetup.ay.pwmFullRange) != 1) return 1;
+        if (sscanf(line, "- *AY8910* PWM range: %hhu", &p.chipSetup.ay.pwmFullRange) != 1) throw formatError;
         consumeLine(file);
       } else {
         // Default to 16-step mode for old files
         p.chipSetup.ay.pwmFullRange = 0;
       }
+      break;
+    default:
+      break;
     }
-    break;
-  default:
-    break;
+
+    p.tracksCount = projectGetTotalTracks(&p);
+
+    projectLoadPitchTable(file, &p);
+    projectLoadSong(file, &p);
+    projectLoadChains(file, &p);
+    projectLoadGrooves(file, &p);
+    projectLoadPhrases(file, &p);
+    projectLoadInstruments(file, &p);
+    projectLoadTables(file, &p);
+    projectLoadAYWavetables(file, &p);
+
+    *project = p;
+  } catch (const char* error) {
+    chipnomad::Error::set(error);
+    fclose(file);
+    return 0;
   }
 
-  p.tracksCount = projectGetTotalTracks(&p);
-
-  snprintf(projectFileError, 40, "Invalid pitch table");
-  if (projectLoadPitchTable(file, &p)) return 1;
-  snprintf(projectFileError, 40, "Invalid song data");
-  if (projectLoadSong(file, &p)) return 1;
-  snprintf(projectFileError, 40, "Invalid chain data");
-  if (projectLoadChains(file, &p)) return 1;
-  snprintf(projectFileError, 40, "Invalid groove data");
-  if (projectLoadGrooves(file, &p)) return 1;
-  snprintf(projectFileError, 40, "Invalid phrase data");
-  if (projectLoadPhrases(file, &p)) return 1;
-  snprintf(projectFileError, 40, "Invalid instrument data");
-  if (projectLoadInstruments(file, &p)) return 1;
-  snprintf(projectFileError, 40, "Invalid table data");
-  if (projectLoadTables(file, &p)) return 1;
-  snprintf(projectFileError, 40, "Invalid wavetable data");
-  if (projectLoadAYWavetables(file, &p)) return 1;
-
-  *project = p;
-  return 0;
-}
-
-int projectLoad(Project* p, const char* path) {
-  projectFileError[0] = 0;
-  resetPeekConsume();  // Ensure clean state
-
-  FILE* file = fopen(path, "rb");
-  if (file == NULL) {
-    snprintf(projectFileError, 40, "Can't open file");
-    return 1;
-  }
-
-  int result = projectLoadInternal(file, p);
   fclose(file);
-  return result;
+  return 1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -855,7 +813,7 @@ static int projectSavePitchTable(FILE* file, Project* project) {
 
   fprintf(file, "```\n");
 
-  return 0;
+  return 1;
 }
 
 static int projectSaveSong(FILE* file, Project* project) {
@@ -900,7 +858,7 @@ static int projectSaveSong(FILE* file, Project* project) {
 
   fprintf(file, "```\n");
 
-  return 0;
+  return 1;
 }
 
 static int projectSaveChains(FILE* file, Project* project) {
@@ -921,7 +879,7 @@ static int projectSaveChains(FILE* file, Project* project) {
     }
   }
 
-  return 0;
+  return 1;
 }
 
 static int projectSaveGrooves(FILE* file, Project* project) {
@@ -937,7 +895,7 @@ static int projectSaveGrooves(FILE* file, Project* project) {
     }
   }
 
-  return 0;
+  return 1;
 }
 
 static int projectSavePhrases(FILE* file, Project* project) {
@@ -965,7 +923,7 @@ static int projectSavePhrases(FILE* file, Project* project) {
     }
   }
 
-  return 0;
+  return 1;
 }
 
 int saveTable(FILE* file, int idx, Table* table) {
@@ -983,7 +941,7 @@ int saveTable(FILE* file, int idx, Table* table) {
       fxNames[table->rows[d].fx[3][0]].name, byteToHex(table->rows[d].fx[3][1]));
   }
   fprintf(file, "```\n");
-  return 0;
+  return 1;
 }
 
 static int projectSaveInstruments(FILE* file, Project* project) {
@@ -993,7 +951,7 @@ static int projectSaveInstruments(FILE* file, Project* project) {
       instrumentSaveData(file, c, &project->instruments[c]);
     }
   }
-  return 0;
+  return 1;
 }
 
 static int projectSaveTables(FILE* file, Project* project) {
@@ -1003,7 +961,7 @@ static int projectSaveTables(FILE* file, Project* project) {
       saveTable(file, c, &project->tables[c]);
     }
   }
-  return 0;
+  return 1;
 }
 
 static int projectSaveAYWavetables(FILE* file, Project* project) {
@@ -1014,7 +972,7 @@ static int projectSaveAYWavetables(FILE* file, Project* project) {
   }
 
   // Only write section if there are non-empty wavetables
-  if (count == 0) return 0;
+  if (count == 0) return 1;
 
   fprintf(file, "\n## AY Wavetables\n\n");
 
@@ -1029,7 +987,7 @@ static int projectSaveAYWavetables(FILE* file, Project* project) {
     }
   }
 
-  return 0;
+  return 1;
 }
 
 static int projectSaveInternal(FILE* file, Project* project) {
@@ -1074,14 +1032,14 @@ static int projectSaveInternal(FILE* file, Project* project) {
   projectSaveTables(file, project);
   projectSaveAYWavetables(file, project);
   fprintf(file, "EOF\n");
-  return 0;
+  return 1;
 }
 
 int projectSave(Project* p, const char* path) {
-  projectFileError[0] = 0;
+  chipnomad::Error::clear();
 
   FILE* file = fopen(path, "wb");
-  if (file == NULL) return 1;
+  if (file == NULL) return 0;
 
   int result = projectSaveInternal(file, p);
   fclose(file);
@@ -1092,12 +1050,12 @@ int projectSave(Project* p, const char* path) {
 // Instrument file I/O
 
 int instrumentSave(Project* project, const char* path, int instrumentIdx) {
-  projectFileError[0] = 0;
+  chipnomad::Error::clear();
 
   FILE* file = fopen(path, "wb");
   if (file == NULL) {
-    snprintf(projectFileError, 40, "Can't open file");
-    return 1;
+    chipnomad::Error::set("Can't open file");
+    return 0;
   }
 
   fprintf(file, "# ChipNomad Instrument 2.0\n\n");
@@ -1105,16 +1063,15 @@ int instrumentSave(Project* project, const char* path, int instrumentIdx) {
   saveTable(file, 0, &project->tables[instrumentIdx]);
 
   fclose(file);
-  return 0;
+  return 1;
 }
 
-static int instrumentLoadInternal(FILE* file, Project* project, int instrumentIdx) {
+static void instrumentLoadInternal(FILE* file, Project* project, int instrumentIdx) {
+  const char* instrumentError = "Incorrect instrument file format";
+
   char* line = peekLine(file);
-  if (line == NULL) return 1;
-  if (strncmp(line, "# ChipNomad Instrument", 22)) {
-    snprintf(projectFileError, 40, "Incorrect instrument format");
-    return 1;
-  }
+  if (line == NULL) throw instrumentError;
+  if (strncmp(line, "# ChipNomad Instrument", 22)) throw instrumentError;
 
   // Detect version
   if (strlen(line) > 22) {
@@ -1123,8 +1080,7 @@ static int instrumentLoadInternal(FILE* file, Project* project, int instrumentId
     } else if (strncmp(line + 22, " 1.0", 4) == 0) {
       projectFileVersion = 1;
     } else {
-      snprintf(projectFileError, 40, "Incorrect instrument version");
-      return 1;
+      throw instrumentError;
     }
   } else {
     // No version specified = 1.0 (legacy)
@@ -1132,41 +1088,39 @@ static int instrumentLoadInternal(FILE* file, Project* project, int instrumentId
   }
   consumeLine(file);
 
-  snprintf(projectFileError, 40, "Invalid instrument data");
+  chipnomad::Error::set("Invalid instrument data");
   line = peekLine(file);
-  if (line == NULL) return 1;
-  if (strncmp(line, "### Instrument", 14)) return 1;
+  if (line == NULL) throw instrumentError;
+  if (strncmp(line, "### Instrument", 14)) throw instrumentError;
   consumeLine(file);
 
-  if (instrumentLoadData(file, &project->instruments[instrumentIdx], project)) return 1;
+  if (!instrumentLoadData(file, &project->instruments[instrumentIdx], project)) throw instrumentError;
   // instrumentLoadData leaves the next section header in peek buffer
-  snprintf(projectFileError, 40, "Invalid table data");
+  chipnomad::Error::set("Invalid table data");
   line = peekLine(file);
-  if (line == NULL) {
-    snprintf(projectFileError, 40, "Missing table section");
-    return 1;
-  }
-  if (strncmp(line, "### Table", 9)) {
-    snprintf(projectFileError, 40, "Expected table, got: %.20s", line);
-    return 1;
-  }
+  if (line == NULL) throw "Expected table section after instrument data";
+  if (strncmp(line, "### Table", 9)) throw "Expected table section after instrument data";
   consumeLine(file);
-  if (loadTable(file, &project->tables[instrumentIdx], project)) return 1;
-
-  return 0;
+  loadTable(file, &project->tables[instrumentIdx], project);
 }
 
 int instrumentLoad(Project* project, const char* path, int instrumentIdx) {
-  projectFileError[0] = 0;
   resetPeekConsume();  // Ensure clean state
+  chipnomad::Error::clear();
 
   FILE* file = fopen(path, "rb");
   if (file == NULL) {
-    snprintf(projectFileError, 40, "Can't open file");
-    return 1;
+    chipnomad::Error::set("Can't open file");
+    return 0;
   }
 
-  int result = instrumentLoadInternal(file, project, instrumentIdx);
+  try {
+    instrumentLoadInternal(file, project, instrumentIdx);
+  } catch (const char* error) {
+    chipnomad::Error::set(error);
+    fclose(file);
+    return 0;
+  }
   fclose(file);
-  return result;
+  return 1;
 }

@@ -215,14 +215,13 @@ struct Project {
   Chain chains[PROJECT_MAX_CHAINS];
   Phrase phrases[PROJECT_MAX_PHRASES];
   Groove grooves[PROJECT_MAX_GROOVES];
-  Instrument instruments[PROJECT_MAX_INSTRUMENTS];
+  Instrument instruments[PROJECT_MAX_INSTRUMENTS + 1]; // +1 for instrument preview
   Table tables[PROJECT_MAX_TABLES];
 
   // Additional data for different chips
-  uint8_t ayWavetables[256][32]; // 256 wavetables with 32 4-bit values each (AY chip)
+  uint8_t ayWavetables[256][32]; // 256 AY wavetables with 32 4-bit values each
 };
 
-extern char projectFileError[41];
 
 // Fill FX names (call this first before loading any projects)
 void fillFXNames();

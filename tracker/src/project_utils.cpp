@@ -5,6 +5,7 @@
 void projectInitAY(Project* project) {
   projectInit(project);
 
+  project->linearPitch = 1; // Default to linear pitch table
   project->tickRate = 50;
   project->chipType = ChipType::AY;
   project->chipsCount = 1;
@@ -18,7 +19,8 @@ void projectInitAY(Project* project) {
 
   project->tracksCount = projectGetTotalTracks(project);
 
-  calculatePitchTableAY(project);
+  calculateLinearPitchTable12TET(project); // Linear pitch table
+  //calculatePitchTableAY(project); // AY period pitch table
 }
 
 // Does chain have notes?

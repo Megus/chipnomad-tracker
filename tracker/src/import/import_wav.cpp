@@ -135,46 +135,74 @@ static int findDataChunk(FILE* file, WavDataChunkHeader* dataHeader) {
   }
 }
 
-// Helper: Convert sample to 8-bit unsigned
-static inline uint8_t convertSampleTo8Bit(int32_t sample, int bitsPerSample) {
-  // Scale to 8-bit range and convert to unsigned
-  int32_t scaled;
+// Helper: Read a single sample frame (all channels averaged) from file into a signed 16-bit value
+// For 8-bit WAV: converts unsigned 0-255 to signed -128..127 range (as 16-bit: -32768..32512)
+// For 16-bit WAV: keeps as-is
+// For 24/32-bit WAV: scales down to 16-bit
+static int readSampleAs16Bit(FILE* file, const WavFmtChunk* fmt, int16_t* out) {
+  int32_t sampleSum = 0;
 
-  switch (bitsPerSample) {
-    case 8:
-      // 8-bit WAV is already unsigned (0-255)
-      return (uint8_t)sample;
+  for (int ch = 0; ch < fmt->numChannels; ch++) {
+    int32_t sample = 0;
 
-    case 16:
-      // 16-bit signed (-32768 to 32767) -> 8-bit unsigned (0-255)
-      scaled = (sample + 32768) >> 8;
-      break;
+    switch (fmt->bitsPerSample) {
+      case 8: {
+        uint8_t s;
+        if (fread(&s, 1, 1, file) != 1) return 0;
+        // Convert unsigned 8-bit to signed 16-bit range
+        sample = ((int32_t)s - 128) * 256;
+        break;
+      }
 
-    case 24:
-      // 24-bit signed -> 8-bit unsigned
-      scaled = (sample + 8388608) >> 16;
-      break;
+      case 16: {
+        int16_t s;
+        if (fread(&s, 2, 1, file) != 1) return 0;
+        sample = s;
+        break;
+      }
 
-    case 32:
-      // 32-bit signed -> 8-bit unsigned
-      scaled = ((int64_t)sample + 2147483648LL) >> 24;
-      break;
+      case 24: {
+        uint8_t bytes[3];
+        if (fread(bytes, 3, 1, file) != 1) return 0;
+        sample = (int32_t)((bytes[0]) | (bytes[1] << 8) | (bytes[2] << 16));
+        if (sample & 0x800000) {
+          sample |= 0xFF000000;
+        }
+        // Scale 24-bit to 16-bit
+        sample >>= 8;
+        break;
+      }
 
-    default:
-      return 128; // Silence
+      case 32: {
+        int32_t s;
+        if (fread(&s, 4, 1, file) != 1) return 0;
+        // Scale 32-bit to 16-bit
+        sample = s >> 16;
+        break;
+      }
+    }
+
+    sampleSum += sample;
   }
 
-  // Clamp to 0-255
-  if (scaled < 0) scaled = 0;
-  if (scaled > 255) scaled = 255;
+  // Average channels if stereo
+  if (fmt->numChannels > 1) {
+    sampleSum /= fmt->numChannels;
+  }
 
-  return (uint8_t)scaled;
+  // Clamp to 16-bit range
+  if (sampleSum < -32768) sampleSum = -32768;
+  if (sampleSum > 32767) sampleSum = 32767;
+
+  *out = (int16_t)sampleSum;
+  return 1;
 }
 
 // Helper: Read and convert sample data
 static uint8_t* readAndConvertSamples(FILE* file, const WavFmtChunk* fmt,
                                       uint32_t dataSize, uint16_t maxLength,
-                                      uint16_t* outLength, WavLoadResult* result) {
+                                      uint16_t* outLength, WavLoadResult* result,
+                                      bool normalize) {
   // Calculate number of samples
   uint32_t bytesPerSample = fmt->bitsPerSample / 8;
   uint32_t totalSamples = dataSize / (bytesPerSample * fmt->numChannels);
@@ -186,92 +214,70 @@ static uint8_t* readAndConvertSamples(FILE* file, const WavFmtChunk* fmt,
 
   *outLength = (uint16_t)totalSamples;
 
-  // Allocate output buffer
-  uint8_t* output = (uint8_t*)malloc(totalSamples);
-  if (output == NULL) {
+  // Read all samples into 16-bit buffer (shared for both paths)
+  int16_t* buf16 = (int16_t*)malloc(totalSamples * sizeof(int16_t));
+  if (buf16 == NULL) {
     *result = WAV_ERROR_MEMORY;
     return NULL;
   }
 
-  // Read and convert samples
   for (uint32_t i = 0; i < totalSamples; i++) {
-    int32_t sampleSum = 0;
-
-    // Read all channels and average them
-    for (int ch = 0; ch < fmt->numChannels; ch++) {
-      int32_t sample = 0;
-
-      // Read sample based on bit depth
-      switch (fmt->bitsPerSample) {
-        case 8: {
-          uint8_t s;
-          if (fread(&s, 1, 1, file) != 1) {
-            free(output);
-            *result = WAV_ERROR_INVALID_DATA;
-            return NULL;
-          }
-          sample = s;
-          break;
-        }
-
-        case 16: {
-          int16_t s;
-          if (fread(&s, 2, 1, file) != 1) {
-            free(output);
-            *result = WAV_ERROR_INVALID_DATA;
-            return NULL;
-          }
-          sample = s;
-          break;
-        }
-
-        case 24: {
-          uint8_t bytes[3];
-          if (fread(bytes, 3, 1, file) != 1) {
-            free(output);
-            *result = WAV_ERROR_INVALID_DATA;
-            return NULL;
-          }
-          // Reconstruct 24-bit signed value (little-endian)
-          sample = (int32_t)((bytes[0]) | (bytes[1] << 8) | (bytes[2] << 16));
-          // Sign extend from 24-bit to 32-bit
-          if (sample & 0x800000) {
-            sample |= 0xFF000000;
-          }
-          break;
-        }
-
-        case 32: {
-          int32_t s;
-          if (fread(&s, 4, 1, file) != 1) {
-            free(output);
-            *result = WAV_ERROR_INVALID_DATA;
-            return NULL;
-          }
-          sample = s;
-          break;
-        }
-      }
-
-      sampleSum += sample;
+    if (!readSampleAs16Bit(file, fmt, &buf16[i])) {
+      free(buf16);
+      *result = WAV_ERROR_INVALID_DATA;
+      return NULL;
     }
-
-    // Average channels if stereo
-    if (fmt->numChannels > 1) {
-      sampleSum /= fmt->numChannels;
-    }
-
-    // Convert to 8-bit unsigned
-    output[i] = convertSampleTo8Bit(sampleSum, fmt->bitsPerSample);
   }
 
+  // Allocate output buffer
+  uint8_t* output = (uint8_t*)malloc(totalSamples);
+  if (output == NULL) {
+    free(buf16);
+    *result = WAV_ERROR_MEMORY;
+    return NULL;
+  }
+
+  if (normalize) {
+    // Find peak absolute value in the truncated sample
+    int32_t peak = 0;
+    for (uint32_t i = 0; i < totalSamples; i++) {
+      int32_t abs_val = buf16[i] < 0 ? -(int32_t)buf16[i] : (int32_t)buf16[i];
+      if (abs_val > peak) peak = abs_val;
+    }
+
+    // Normalize and convert to 8-bit unsigned
+    if (peak == 0) {
+      // Silent sample - fill with center value
+      memset(output, 128, totalSamples);
+    } else {
+      for (uint32_t i = 0; i < totalSamples; i++) {
+        // Scale to full 16-bit range: sample * 32767 / peak
+        int32_t normalized = (int32_t)buf16[i] * 32767 / peak;
+        // Convert signed 16-bit to unsigned 8-bit: (normalized + 32768) >> 8
+        int32_t scaled = (normalized + 32768) >> 8;
+        if (scaled < 0) scaled = 0;
+        if (scaled > 255) scaled = 255;
+        output[i] = (uint8_t)scaled;
+      }
+    }
+  } else {
+    // Straight 16-bit to 8-bit conversion (no normalization)
+    for (uint32_t i = 0; i < totalSamples; i++) {
+      int32_t scaled = ((int32_t)buf16[i] + 32768) >> 8;
+      if (scaled < 0) scaled = 0;
+      if (scaled > 255) scaled = 255;
+      output[i] = (uint8_t)scaled;
+    }
+  }
+
+  free(buf16);
   *result = WAV_SUCCESS;
   return output;
 }
 
 uint8_t* loadWavFile(const char* path, uint16_t maxLength,
                      uint16_t* outLength, uint16_t* outSampleRate,
-                     WavLoadResult* outResult) {
+                     WavLoadResult* outResult, bool normalize) {
   FILE* file = NULL;
   WavHeader header;
   WavFmtChunk fmt;
@@ -346,7 +352,8 @@ uint8_t* loadWavFile(const char* path, uint16_t maxLength,
 
   // Read and convert sample data
   sampleData = readAndConvertSamples(file, &fmt, dataHeader.chunkSize,
-                                     maxLength, outLength, outResult);
+                                     maxLength, outLength, outResult,
+                                     normalize);
 
   if (sampleData != NULL) {
     *outSampleRate = (uint16_t)fmt.sampleRate;

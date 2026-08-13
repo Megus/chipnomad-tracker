@@ -2,6 +2,7 @@
 #include "screens.h"
 #include "project_utils.h"
 #include <string.h>
+#include <stdlib.h>
 
 uint16_t cpBufSong[PROJECT_MAX_LENGTH][PROJECT_MAX_TRACKS];
 Chain cpBufChain;
@@ -433,6 +434,18 @@ int cloneInstrument(int srcIdx, int dstIdx) {
   if (srcIdx >= PROJECT_MAX_INSTRUMENTS || dstIdx >= PROJECT_MAX_INSTRUMENTS) return 0;
   chipnomadState->project.instruments[dstIdx] = chipnomadState->project.instruments[srcIdx];
   chipnomadState->project.tables[dstIdx] = chipnomadState->project.tables[srcIdx];
+
+  // Deep copy sample data for AYSample instruments
+  Instrument* src = &chipnomadState->project.instruments[srcIdx];
+  if (src->type == InstrumentType::AYSample && src->chip.aySample.sampleData != NULL) {
+    uint16_t len = src->chip.aySample.fileLength;
+    uint8_t* copy = (uint8_t*)malloc(len);
+    if (copy) {
+      memcpy(copy, src->chip.aySample.sampleData, len);
+    }
+    chipnomadState->project.instruments[dstIdx].chip.aySample.sampleData = copy;
+  }
+
   return 1;
 }
 
@@ -580,6 +593,16 @@ void pasteInstrument(int instrumentIdx) {
   if (!cpBufInstrumentValid) return;
   chipnomadState->project.instruments[instrumentIdx] = cpBufInstrument;
   chipnomadState->project.tables[instrumentIdx] = cpBufInstrumentTable;
+
+  // Deep copy sample data for AYSample instruments
+  if (cpBufInstrument.type == InstrumentType::AYSample && cpBufInstrument.chip.aySample.sampleData != NULL) {
+    uint16_t len = cpBufInstrument.chip.aySample.fileLength;
+    uint8_t* copy = (uint8_t*)malloc(len);
+    if (copy) {
+      memcpy(copy, cpBufInstrument.chip.aySample.sampleData, len);
+    }
+    chipnomadState->project.instruments[instrumentIdx].chip.aySample.sampleData = copy;
+  }
 }
 
 void copyWavetable(int wavetableIdx) {

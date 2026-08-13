@@ -286,16 +286,15 @@ static void finalizeVTSInstrument(Table* table, int rowCount, int loopRow,
   }
 }
 
-// Export with C linkage for header compatibility
 
 int instrumentLoadVTS(const char* path, int instrumentIdx) {
   if (instrumentIdx < 0 || instrumentIdx >= PROJECT_MAX_INSTRUMENTS) {
-    return 1;
+    return 0;
   }
 
   FILE* file = fopen(path, "r");
   if (file == NULL) {
-    return 1;
+    return 0;
   }
 
   Instrument* inst = &chipnomadState->project.instruments[instrumentIdx];
@@ -305,7 +304,7 @@ int instrumentLoadVTS(const char* path, int instrumentIdx) {
 
   if (fgets(lineBuffer, sizeof(lineBuffer), file) == NULL) {
     fclose(file);
-    return 1;
+    return 0;
   }
 
   extractInstrumentName(lineBuffer, path, inst->name, PROJECT_INSTRUMENT_NAME_LENGTH);
@@ -325,12 +324,12 @@ int instrumentLoadVTS(const char* path, int instrumentIdx) {
   finalizeVTSInstrument(table, rowCount, loopRow, vtsOffsets, vtsOffsetTypes);
 
   fclose(file);
-  return 0;
+  return 1;
 }
 
 int instrumentLoadVTSFromMemory(char** lines, int lineCount, int instrumentIdx, const char* instrumentName) {
   if (instrumentIdx < 0 || instrumentIdx >= PROJECT_MAX_INSTRUMENTS) {
-    return 1;
+    return 0;
   }
 
   Instrument* inst = &chipnomadState->project.instruments[instrumentIdx];
@@ -360,5 +359,5 @@ int instrumentLoadVTSFromMemory(char** lines, int lineCount, int instrumentIdx, 
 
   finalizeVTSInstrument(table, rowCount, loopRow, vtsOffsets, vtsOffsetTypes);
 
-  return 0;
+  return 1;
 }

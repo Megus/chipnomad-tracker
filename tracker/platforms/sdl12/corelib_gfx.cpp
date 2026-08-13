@@ -67,7 +67,7 @@ static SDL_Surface* offscreenSurface = NULL;
 int gfxSetup(int *screenWidth, int *screenHeight) {
   if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
     printf("SDL2 Initialization Error: %s\n", SDL_GetError());
-    return 1;
+    return 0;
   }
 
 #ifdef MIYOOPORTS_BUILD
@@ -75,21 +75,21 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
   if (!sdlScreen) {
     printf("SDL1.2 Set Video Mode Error: %s\n", SDL_GetError());
     SDL_Quit();
-    return 1;
+    return 0;
   }
   offscreenSurface = SDL_CreateRGBSurface(SDL_SWSURFACE, WINDOW_WIDTH, WINDOW_HEIGHT, 32,
     sdlScreen->format->Rmask, sdlScreen->format->Gmask, sdlScreen->format->Bmask, sdlScreen->format->Amask);
   if (!offscreenSurface) {
     printf("Failed to create offscreen surface: %s\n", SDL_GetError());
     SDL_Quit();
-    return 1;
+    return 0;
   }
 #else
   sdlScreen = SDL_SetVideoMode(WINDOW_WIDTH, WINDOW_HEIGHT, 32, SDL_HWSURFACE);
   if (!sdlScreen) {
     printf("SDL1.2 Set Video Mode Error: %s\n", SDL_GetError());
     SDL_Quit();
-    return 1;
+    return 0;
   }
 #endif
 
@@ -104,7 +104,7 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
   createCharSurfaces();
   isDirty = 1;
 
-  return 0;
+  return 1;
 }
 
 void gfxCleanup(void) {

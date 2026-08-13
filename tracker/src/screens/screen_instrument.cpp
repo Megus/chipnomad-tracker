@@ -11,6 +11,7 @@
 #include "import_vts.h"
 #include <string.h>
 #include <strings.h>
+#include "error.h"
 
 extern const AppScreen screenInstrumentPool;
 
@@ -39,15 +40,15 @@ static const InstrumentFormat importFormats[] = {
 };
 
 static void onInstrumentLoaded(const char* path) {
-  int result = 1;
+  int success = 0;
   const char* ext = strrchr(path, '.');
   int formatHandled = 0;
 
   if (ext != NULL) {
     for (size_t i = 0; i < sizeof(importFormats) / sizeof(importFormats[0]); i++) {
       if (strcasecmp(ext, importFormats[i].extension) == 0) {
-        result = importFormats[i].handler(path, cInstrument);
-        if (result == 0) {
+        success = importFormats[i].handler(path, cInstrument);
+        if (success) {
           screenMessage(MESSAGE_TIME, importFormats[i].successMsg);
         } else {
           screenMessage(MESSAGE_TIME, importFormats[i].errorMsg);
@@ -59,15 +60,15 @@ static void onInstrumentLoaded(const char* path) {
   }
 
   if (!formatHandled) {
-    result = instrumentLoad(&chipnomadState->project, path, cInstrument);
-    if (result == 0) {
+    success = instrumentLoad(&chipnomadState->project, path, cInstrument);
+    if (success) {
       screenMessage(MESSAGE_TIME, "Instrument loaded");
     } else {
-      screenMessage(MESSAGE_TIME, "%s", projectFileError);
+      screenMessage(MESSAGE_TIME, "%s", chipnomad::Error::message);
     }
   }
 
-  if (result == 0) {
+  if (success) {
     // Save the directory path
     const char* lastSeparator = strrchr(path, PATH_SEPARATOR);
     if (lastSeparator) {

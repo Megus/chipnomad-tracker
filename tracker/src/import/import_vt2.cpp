@@ -543,7 +543,7 @@ static int parseVT2PatternRow(const char* line, VT2PatternRow* row) {
 
 static int loadVT2Module(const char* path, VT2Module* module) {
   FILE* file = fopen(path, "r");
-  if (file == NULL) return 1;
+  if (file == NULL) return 0;
 
   memset(module, 0, sizeof(VT2Module));
 
@@ -656,7 +656,7 @@ static int loadVT2Module(const char* path, VT2Module* module) {
   }
 
   fclose(file);
-  return 0;
+  return 1;
 }
 
 // Groove 00 = start speed (default, all 16 rows same speed)
@@ -985,13 +985,13 @@ static int cloneInstrumentsForEnvelopes(Project* project, const InstrumentEnvelo
 
 int projectLoadVT2(const char* path) {
   if (!chipnomadState) {
-    return 1;
+    return 0;
   }
 
 
   VT2Module module;
-  if (loadVT2Module(path, &module) != 0) {
-    return 1;
+  if (!loadVT2Module(path, &module)) {
+    return 0;
   }
 
   Project p;
@@ -1029,18 +1029,18 @@ int projectLoadVT2(const char* path) {
   Project* savedProject = &chipnomadState->project;
   chipnomadState->project = p;
 
-  int sampleImportResult = importVT2Samples(path, &chipnomadState->project, module.sampleCount);
+  int sampleImportSuccess = importVT2Samples(path, &chipnomadState->project, module.sampleCount);
 
   InstrumentCloneMap cloneMap;
-  if (sampleImportResult == 0) {
+  if (sampleImportSuccess) {
     cloneInstrumentsForEnvelopes(&chipnomadState->project, envelopeUsage, module.sampleCount, &cloneMap);
   }
 
   Project tempWithSamples = chipnomadState->project;
   chipnomadState->project = *savedProject;
 
-  if (sampleImportResult != 0) {
-    return 1;
+  if (!sampleImportSuccess) {
+    return 0;
   }
 
   project = &tempWithSamples;
@@ -1131,13 +1131,12 @@ int projectLoadVT2(const char* path) {
 
   chipnomadState->project = *project;
 
-
-  return 0;
+  return 1;
 }
 
 static int importVT2Samples(const char* path, Project* project, int sampleCount) {
   FILE* file = fopen(path, "r");
-  if (file == NULL) return 1;
+  if (file == NULL) return 0;
 
   int currentSample = -1;
   int inSampleSection = 0;
@@ -1151,7 +1150,7 @@ static int importVT2Samples(const char* path, Project* project, int sampleCount)
         free(sampleLines[j]);
       }
       fclose(file);
-      return 1;
+      return 0;
     }
   }
 
@@ -1198,5 +1197,5 @@ static int importVT2Samples(const char* path, Project* project, int sampleCount)
   }
 
   fclose(file);
-  return 0;
+  return 1;
 }

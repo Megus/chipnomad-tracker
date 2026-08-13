@@ -20,10 +20,10 @@ int audioSetup(AudioCallback* audioCallback, int sampleRate, int bufferSize) {
 
   if (SDL_OpenAudio(&spec, NULL) < 0) {
     fprintf(stderr, "Failed to open audio: %s\n", SDL_GetError());
-    return 1;
+    return 0;
   }
 
-  return 0;
+  return 1;
 }
 
 void audioPause(int isPaused) {

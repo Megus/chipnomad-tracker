@@ -148,7 +148,7 @@ static void createFolder(void) {
   char fullPath[2048];
   snprintf(fullPath, sizeof(fullPath), "%s%s%s", currentPath, PATH_SEPARATOR_STR, folderName);
 
-  if (fileCreateDirectory(fullPath) == 0) {
+  if (fileCreateDirectory(fullPath)) {
     if (onFolderCreated) {
       onFolderCreated();
     }

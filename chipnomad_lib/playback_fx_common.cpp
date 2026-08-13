@@ -438,7 +438,7 @@ int handleFX(PlaybackState* state, int trackIdx, int chipIdx) {
     }
   }
 
-  return 0;
+  return 1;
 }
 
 int restartFX(PlaybackState* state, int trackIdx) {
@@ -455,5 +455,5 @@ int restartFX(PlaybackState* state, int trackIdx) {
     }
   }
 
-  return 0;
+  return 1;
 }

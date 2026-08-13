@@ -165,7 +165,7 @@ int ExporterVGM::next() {
 }
 
 int ExporterVGM::finish() {
-  if (!file) return 1;
+  if (!file) return 0;
 
   // Write finalized VGM header
   long fileSize = ftell(file);
@@ -214,7 +214,7 @@ int ExporterVGM::finish() {
 
   fclose(file);
   file = NULL;
-  return 0;
+  return 1;
 }
 
 void ExporterVGM::cancel() {

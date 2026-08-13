@@ -21,7 +21,7 @@ static void stripTrailingWhitespace(char* str) {
 
 int pitchTableLoadCSV(Project* project, const char* path) {
   FILE* file = fopen(path, "r");
-  if (file == NULL) return 1;
+  if (file == NULL) return 0;
 
   int noteIndex = 0;
   int noteCol = -1, valueCol = -1;
@@ -30,7 +30,7 @@ int pitchTableLoadCSV(Project* project, const char* path) {
   // Read header line and find column positions
   if (fgets(lineBuffer, sizeof(lineBuffer), file) == NULL) {
     fclose(file);
-    return 1;
+    return 0;
   }
 
   // Parse header to find Note and value columns
@@ -50,7 +50,7 @@ int pitchTableLoadCSV(Project* project, const char* path) {
   // Check if both required columns were found
   if (noteCol == -1 || valueCol == -1) {
     fclose(file);
-    return 1;
+    return 0;
   }
 
   // Read data lines
@@ -100,10 +100,10 @@ int pitchTableLoadCSV(Project* project, const char* path) {
       }
     }
 
-    return 0;
+    return 1;
   }
 
-  return 1;
+  return 0;
 }
 
 int pitchTableSaveCSV(Project* project, const char* folderPath, const char* filename) {
@@ -111,7 +111,7 @@ int pitchTableSaveCSV(Project* project, const char* folderPath, const char* file
   snprintf(fullPath, sizeof(fullPath), "%s/%s.csv", folderPath, filename);
 
   FILE* file = fopen(fullPath, "w");
-  if (file == NULL) return 1;
+  if (file == NULL) return 0;
 
   // Write header with appropriate column name
   const char* valueColumn = project->linearPitch ? "Cents" : "Period";
@@ -123,7 +123,7 @@ int pitchTableSaveCSV(Project* project, const char* folderPath, const char* file
   }
 
   fclose(file);
-  return 0;
+  return 1;
 }
 
 // Create 12TET scale

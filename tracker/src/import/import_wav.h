@@ -26,10 +26,12 @@ typedef enum {
 //   outLength: Pointer to store actual sample length
 //   outSampleRate: Pointer to store sample rate from WAV file
 //   outResult: Pointer to store result code
+//   normalize: If true, normalize the truncated sample to full scale in 16-bit
+//              before converting to 8-bit (avoids rounding errors)
 // Returns: Pointer to sample data (uint8_t array), or NULL on failure
 uint8_t* loadWavFile(const char* path, uint16_t maxLength,
                      uint16_t* outLength, uint16_t* outSampleRate,
-                     WavLoadResult* outResult);
+                     WavLoadResult* outResult, bool normalize);
 
 // Get human-readable error message for result code
 const char* getWavLoadErrorMessage(WavLoadResult result);

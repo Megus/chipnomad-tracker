@@ -93,7 +93,7 @@ static void createFontTexture(void) {
 // FIXME: On RG35XX+, the SDL2 seems to be built without haptic
 // support enabled, so SDL_INIT_EVERYTHING will fail.
 #ifdef PORTMASTER_BUILD
-#define SDL_INIT_FLAGS (SDL_INIT_EVERYTHING & ~SDL_INIT_HAPTIC)
+#define SDL_INIT_FLAGS (SDL_INIT_EVERYTHING & ~SDL_INIT_HAPTIC & ~SDL_INIT_SENSOR)
 #else
 #define SDL_INIT_FLAGS (SDL_INIT_EVERYTHING)
 #endif
@@ -101,7 +101,7 @@ static void createFontTexture(void) {
 int gfxSetup(int *screenWidth, int *screenHeight) {
   if (SDL_Init(SDL_INIT_FLAGS) != 0) {
     fprintf(stderr, "SDL2 Initialization Error: %s\n", SDL_GetError());
-    return 1;
+    return 0;
   }
 
   snprintf(printBuffer, PRINT_BUFFER_SIZE, "%s v%s (%s)", appTitle, appVersion, appBuild);
@@ -140,7 +140,7 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
   if (!window) {
     fprintf(stderr, "SDL2 Create Window Error: %s\n", SDL_GetError());
     SDL_Quit();
-    return 1;
+    return 0;
   }
 
   renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
@@ -216,7 +216,7 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
   dpadRect = (SDL_Rect){dpadX, dpadY, btnSize * 3 + buttonGap * 2, (btnSize + buttonGap) * 3 - buttonGap};
 #endif
 
-  return 0;
+  return 1;
 }
 
 void gfxCleanup(void) {

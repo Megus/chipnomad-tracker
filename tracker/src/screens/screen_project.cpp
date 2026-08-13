@@ -10,6 +10,7 @@
 #include "audio_manager.h"
 #include "file_browser.h"
 #include "import/import_vt2.h"
+#include "error.h"
 #include <string.h>
 #include <strings.h>
 
@@ -41,25 +42,17 @@ static void onProjectLoaded(const char* path) {
 
   // Check file extension to determine loader
   const char* ext = strrchr(path, '.');
-  int loadResult = -1;
+  int success = 0;
 
-  if (ext != NULL) {
-    if (strcasecmp(ext, ".vt2") == 0) {
-      // Load VT2 file
-      loadResult = projectLoadVT2(path);
-    } else if (strcasecmp(ext, ".cnm") == 0) {
-      // Load ChipNomad native format
-      loadResult = projectLoad(&chipnomadState->project, path);
-    } else {
-      // Try native format by default
-      loadResult = projectLoad(&chipnomadState->project, path);
-    }
+  if (ext != NULL && strcasecmp(ext, ".vt2") == 0) {
+    // Load VT2 file
+    success = projectLoadVT2(path);
   } else {
     // No extension, try native format
-    loadResult = projectLoad(&chipnomadState->project, path);
+    success = projectLoad(&chipnomadState->project, path);
   }
 
-  if (loadResult == 0) {
+  if (success) {
     projectModified = 0; // Clear modified flag after loading
     pendingReinitChips = 1;
 
@@ -74,7 +67,7 @@ static void onProjectLoaded(const char* path) {
       memset(&chipnomadState->playbackState.tracks[i].note.fx, 0, sizeof(chipnomadState->playbackState.tracks[i].note.fx));
     }
   } else {
-    screenMessage(MESSAGE_TIME, "%s", projectFileError);
+    screenMessage(MESSAGE_TIME, "%s", chipnomad::Error::message);
   }
 
   screenSetup(&screenProject, 0);
@@ -84,7 +77,7 @@ static void onProjectSaved(const char* folderPath) {
   char fullPath[2048];
   snprintf(fullPath, sizeof(fullPath), "%s%s%s.cnm", folderPath, PATH_SEPARATOR_STR, appSettings.projectFilename);
 
-  if (projectSave(&chipnomadState->project, fullPath) == 0) {
+  if (projectSave(&chipnomadState->project, fullPath)) {
     // Save the directory path
     projectModified = 0; // Clear modified flag after saving
     strncpy(appSettings.projectPath, folderPath, PATH_LENGTH);

@@ -44,8 +44,7 @@ static ScreenData screenColorThemeData = {
 static int isCharEdit = 0;
 
 static void onThemeLoaded(const char* path) {
-  int result = loadTheme(path);
-  if (result == 0) {
+  if (loadTheme(path)) {
     screenMessage(MESSAGE_TIME, "Theme loaded");
     extractFilenameWithoutExtension(path, appSettings.themeName, THEME_NAME_LENGTH + 1);
     // Store the directory path
@@ -68,7 +67,7 @@ static void onThemeSaved(const char* folderPath) {
   char fullPath[2048];
   snprintf(fullPath, sizeof(fullPath), "%s%s%s.cth", folderPath, PATH_SEPARATOR_STR, appSettings.themeName);
 
-  if (saveTheme(fullPath) == 0) {
+  if (saveTheme(fullPath)) {
     screenMessage(MESSAGE_TIME, "Theme saved");
     // Store the directory path
     strncpy(appSettings.themePath, folderPath, PATH_LENGTH);
