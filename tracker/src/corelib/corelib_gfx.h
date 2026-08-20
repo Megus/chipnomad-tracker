@@ -76,6 +76,28 @@ void gfxPrint(int x, int y, const char* text);
 void gfxPrintf(int x, int y, const char* format, ...);
 
 /**
+ * @brief Draw a line with a given opacity (alpha blend over the background)
+ *
+ * @param x1 Start X in pixels
+ * @param y1 Start Y in pixels
+ * @param x2 End X in pixels
+ * @param y2 End Y in pixels
+ * @param alpha Opacity 0..255 (0 = invisible, 255 = fully opaque)
+ */
+void gfxDrawLineAlpha(int x1, int y1, int x2, int y2, int alpha);
+
+/**
+ * @brief Enable or disable transparent text rendering
+ *
+ * When enabled, gfxPrint/gfxPrintf draw only the glyphs without clearing the
+ * character cell background. This lets text overlay an existing background
+ * layer (e.g. the bottom table row drawn over the oscilloscope).
+ *
+ * @param enabled 1 to enable transparent text, 0 to disable (default)
+ */
+void gfxSetTransparentText(int enabled);
+
+/**
  * @brief Create a bitmap with specified size in characters
  *
  * @param widthChars Width in characters
@@ -129,6 +151,31 @@ int gfxGetCharWidth(void);
  * @return int Character height
  */
 int gfxGetCharHeight(void);
+
+/**
+ * @brief Get the vertical centering offset of the text grid in pixels
+ *
+ * The 40x20 text grid is centered on the screen; this returns the pixel margin
+ * above and below it (0 when the grid exactly fills the screen height). Useful
+ * for drawing full-bleed elements that reach the physical screen edges.
+ *
+ * @return int Vertical offset in pixels
+ */
+int gfxGetOffsetY(void);
+
+/**
+ * @brief Get the physical screen width in pixels
+ *
+ * @return int Screen width in pixels
+ */
+int gfxGetScreenWidth(void);
+
+/**
+ * @brief Get the physical screen height in pixels
+ *
+ * @return int Screen height in pixels
+ */
+int gfxGetScreenHeight(void);
 
 /**
  * @brief Reload font (recreate font texture after font change)

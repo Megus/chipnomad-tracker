@@ -195,11 +195,6 @@ static void fullRedraw(void) {
 static void draw(void) {
   if (isFxEdit) return;
 
-  gfxClearRect(2, 3, 1, 16);
-  gfxClearRect(9, 3, 1, 16);
-  gfxClearRect(15, 3, 1, 16);
-  gfxClearRect(21, 3, 1, 16);
-  gfxClearRect(27, 3, 1, 16);
 
   PlaybackTrackState* track = &chipnomadState->playbackState.tracks[*pSongTrack];
   struct PlaybackTableState* pTable = NULL;

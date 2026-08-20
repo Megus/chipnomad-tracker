@@ -101,7 +101,6 @@ static void fullRedraw(void) {
 
 static void draw(void) {
   // Clear the marker column
-  gfxClearRect(2, 3, 1, 16);
 
   // Show play position if this groove is currently playing
   if (chipnomadState->playbackState.tracks[*pSongTrack].grooveIdx == groove) {

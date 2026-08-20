@@ -7,6 +7,7 @@
 #include "corelib_file.h"
 #include "utils.h"
 #include "copy_paste.h"
+#include "oscilloscope.h"
 
 const AppScreen* currentScreen = NULL;
 
@@ -22,7 +23,8 @@ void drawScreenMap() {
   const ColorScheme cs = appSettings.colorScheme;
   gfxSetBgColor(cs.background);
   gfxSetFgColor(cs.textInfo);
-  gfxClearRect(35, smY, 5, 5);
+  // Draw the map transparently (glyphs only) so it doesn't cover the oscilloscope.
+  gfxSetTransparentText(1);
 
   // Core screens
   gfxPrint(35, smY + 1, "SCPIT");
@@ -71,6 +73,8 @@ void drawScreenMap() {
   } else if (currentScreen == &screenSettings) {
     gfxPrint(35, smY + 2, "S");
   }
+
+  gfxSetTransparentText(0);
 }
 
 void screenSetup(const AppScreen* screen, int input) {
@@ -82,15 +86,25 @@ void screenDraw() {
   if (pendingScreen != NULL) {
     currentScreen = pendingScreen;
     currentScreen->setup(pendingScreenInput);
-    gfxSetBgColor(appSettings.colorScheme.background);
-    gfxSetCursorColor(appSettings.colorScheme.cursor);
-    gfxClearRect(0, 0, 40, 20);
-    currentScreen->fullRedraw();
-    drawScreenMap();
-
     pendingScreen = NULL;
   }
 
+  // Clear the full screen (including the letterbox margins around the text
+  // grid), then draw layers back-to-front every frame: oscilloscope (back
+  // layer) -> screen content (front layer). A full clear is required because
+  // the oscilloscope is drawn full-bleed into the margins with an alpha blend,
+  // and transparent pixels don't erase the previous frame.
+  gfxSetBgColor(appSettings.colorScheme.background);
+  gfxSetCursorColor(appSettings.colorScheme.cursor);
+  gfxClear();
+
+  // Back layer: oscilloscope (overlaid per-track waveform lines).
+  oscilloscopeDraw();
+
+  // Front layer: screen content (bottom table rows drawn transparent so the
+  // oscilloscope shows through behind the symbols).
+  currentScreen->fullRedraw();
+  drawScreenMap();
   currentScreen->draw();
 
   // Draw cached message
@@ -185,7 +199,7 @@ void screenFullRedraw(ScreenData* screen) {
   }
 
   gfxSetBgColor(appSettings.colorScheme.background);
-  gfxClearRect(0, 0, 40, 20);
+  gfxClearRect(0, 0, 40, 19 - OSCILLOSCOPE_OVERLAP_ROWS);   // keep the bottom oscilloscope strip intact
   drawScreenMap();
 
   // Static content
@@ -200,7 +214,11 @@ void screenFullRedraw(ScreenData* screen) {
   int maxRow = screen->topRow + 16;
   if (maxRow > screen->rows) maxRow = screen->rows;
 
+  // The bottom three visible rows overlap the oscilloscope, so draw them
+  // transparently (glyphs only) so the symbols stay on top while the
+  // oscilloscope shows through.
   for (int row = screen->topRow; row < maxRow; row++) {
+    gfxSetTransparentText(row >= maxRow - OSCILLOSCOPE_OVERLAP_ROWS);
     for (int col = 0; col < screen->getColumnCount(row); col++) {
       CellState state = CellState::normal;
       if (screen->selectMode == 1 && col >= selCol1 && col <= selCol2 && row >= selRow1 && row <= selRow2) {
@@ -212,11 +230,14 @@ void screenFullRedraw(ScreenData* screen) {
       screen->drawField(col, row, state);
     }
   }
+  gfxSetTransparentText(0);
 
   // Row headers
   for (int row = screen->topRow; row < maxRow; row++) {
+    gfxSetTransparentText(row >= maxRow - OSCILLOSCOPE_OVERLAP_ROWS);
     screen->drawRowHeader(row, (screen->cursorRow == row) ? CellState::focus : CellState::normal);
   }
+  gfxSetTransparentText(0);
 
   // Column headers make sense only for spreadsheet-like screens, so we get the number of columns of the first row
   for (int col = 0; col < screen->getColumnCount(0); col++) {

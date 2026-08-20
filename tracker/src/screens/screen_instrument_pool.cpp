@@ -80,7 +80,6 @@ static void fullRedraw(void) {
 
 static void draw(void) {
   // Clear playback markers
-  gfxClearRect(3, 3, 1, 16);
 
   // Draw playback markers for currently playing instruments
   for (int track = 0; track < chipnomadState->project.tracksCount; track++) {

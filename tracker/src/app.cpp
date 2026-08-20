@@ -9,6 +9,7 @@
 #include "chipnomad_lib.h"
 #include "project_utils.h"
 #include "waveform_display.h"
+#include "oscilloscope.h"
 #include "corelib_input.h"
 
 // Raw input callback for key mapping screen
@@ -179,6 +180,9 @@ void appSetup(void) {
 
   // Initialize waveform display
   waveformDisplayInit();
+
+  // Initialize oscilloscope display
+  oscilloscopeInit(appSettings.audioSampleRate);
 
   // Create ChipNomad state
   chipnomadState = chipnomadCreate();

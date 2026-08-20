@@ -253,11 +253,32 @@ void gfxPoint(int x, int y, uint32_t color) {
   isDirty = 1;
 }
 
+void gfxDrawLineAlpha(int x1, int y1, int x2, int y2, int alpha) {
+  if (alpha <= 0) return;
+  if (alpha > 255) alpha = 255;
+
+  uint8_t r = (fgColor >> 16) & 0xFF;
+  uint8_t g = (fgColor >> 8) & 0xFF;
+  uint8_t b = fgColor & 0xFF;
+
+  SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+  SDL_SetRenderDrawColor(renderer, r, g, b, (uint8_t)alpha);
+  SDL_RenderDrawLine(renderer, x1, y1, x2, y2);
+  SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+  isDirty = 1;
+}
+
 void gfxClearRect(int x, int y, int w, int h) {
   SDL_Rect rect = { CHAR_X(x), CHAR_Y(y), w * charW, h * charH };
   setColor(bgColor);
   SDL_RenderFillRect(renderer, &rect);
   isDirty = 1;
+}
+
+static int transparentText = 0;
+
+void gfxSetTransparentText(int enabled) {
+  transparentText = enabled;
 }
 
 void gfxPrint(int x, int y, const char* text) {
@@ -267,21 +288,23 @@ void gfxPrint(int x, int y, const char* text) {
   int cy = CHAR_Y(y);
   int len = (int)strlen(text);
 
-  // Draw background rectangles first
-  setColor(bgColor);
-  for (int i = 0; i < len; i++) {
-    if (text[i] == '\r' && text[i + 1] == '\n') {
-      i++;
-      cx = CHAR_X(x);
-      cy += charH;
-      continue;
-    }
-    SDL_Rect bgRect = {cx, cy, charW, charH};
-    SDL_RenderFillRect(renderer, &bgRect);
-    cx += charW;
-    if (cx >= offsetX + TEXT_COLS * charW) {
-      cx = CHAR_X(x);
-      cy += charH;
+  // Draw background rectangles first (skipped when transparent text is enabled)
+  if (!transparentText) {
+    setColor(bgColor);
+    for (int i = 0; i < len; i++) {
+      if (text[i] == '\r' && text[i + 1] == '\n') {
+        i++;
+        cx = CHAR_X(x);
+        cy += charH;
+        continue;
+      }
+      SDL_Rect bgRect = {cx, cy, charW, charH};
+      SDL_RenderFillRect(renderer, &bgRect);
+      cx += charW;
+      if (cx >= offsetX + TEXT_COLS * charW) {
+        cx = CHAR_X(x);
+        cy += charH;
+      }
     }
   }
 
@@ -483,6 +506,18 @@ int gfxGetCharWidth(void) {
 
 int gfxGetCharHeight(void) {
   return charH;
+}
+
+int gfxGetOffsetY(void) {
+  return offsetY;
+}
+
+int gfxGetScreenWidth(void) {
+  return screenW;
+}
+
+int gfxGetScreenHeight(void) {
+  return screenH;
 }
 
 void gfxReloadFont(void) {
