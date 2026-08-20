@@ -1,5 +1,6 @@
 #include "screen_settings.h"
 #include "screen_color_theme.h"
+#include "screen_osc_colors.h"
 #include "screen_keymapping.h"
 #include "file_browser.h"
 #include "common.h"
@@ -20,7 +21,7 @@ static void settingsDrawField(int col, int row, CellState state);
 static int settingsOnEdit(int col, int row, CellEditAction action);
 
 static ScreenData screenSettingsData = {
-  .rows = 8,
+  .rows = 9,
   .cursorRow = 0,
   .cursorCol = 0,
   .topRow = 0,
@@ -110,6 +111,8 @@ void settingsDrawCursor(int col, int row) {
   } else if (row == 6 && col == 0) {
     gfxCursor(0, 8, 16);
   } else if (row == 7 && col == 0) {
+    gfxCursor(0, 9, 20);
+  } else if (row == 8 && col == 0) {
     gfxCursor(0, 17, 14);
   }
 }
@@ -153,6 +156,9 @@ void settingsDrawField(int col, int row, CellState state) {
     gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     gfxPrint(0, 8, "Edit color theme");
   } else if (row == 7 && col == 0) {
+    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    gfxPrint(0, 9, "Oscilloscope colors");
+  } else if (row == 8 && col == 0) {
     gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     gfxPrint(0, 17, "Quit ChipNomad");
   }
@@ -201,6 +207,9 @@ int settingsOnEdit(int col, int row, CellEditAction action) {
     screenSetup(&screenColorTheme, 0);
     return 0;
   } else if (row == 7 && col == 0 && action == CellEditAction::tap) {
+    screenSetup(&screenOscColors, 0);
+    return 0;
+  } else if (row == 8 && col == 0 && action == CellEditAction::tap) {
     // Trigger exit event
     mainLoopTriggerQuit();
     return 1;

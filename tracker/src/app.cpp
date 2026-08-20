@@ -9,6 +9,7 @@
 #include "chipnomad_lib.h"
 #include "project_utils.h"
 #include "waveform_display.h"
+#include "oscilloscope.h"
 #include "corelib_input.h"
 
 // Raw input callback for key mapping screen
@@ -179,6 +180,9 @@ void appSetup(void) {
 
   // Initialize waveform display
   waveformDisplayInit();
+
+  // Initialize oscilloscope display
+  oscilloscopeInit(appSettings.audioSampleRate);
 
   // Create ChipNomad state
   chipnomadState = chipnomadCreate();
@@ -398,13 +402,9 @@ void appOnEvent(MainLoopEventData eventData) {
     audio.resume();
     break;
   case MainLoopEvent::fullRedraw:
-    // Force full screen redraw
-    gfxSetBgColor(appSettings.colorScheme.background);
-    gfxClear();
-    if (currentScreen) {
-      currentScreen->fullRedraw();
-      drawScreenMap();
-    }
+    // Force full screen redraw: mark the cached UI layer dirty so the next
+    // frame re-renders everything.
+    screenInvalidate();
     break;
   }
 }

@@ -53,6 +53,9 @@ static int buttonPressed[8] = {0};
 static SDL_Texture* fontTexture = NULL;
 static SDL_Rect charRects[95]; // ASCII 32-126
 
+// Offscreen UI layer (cached UI content, composited over the oscilloscope)
+static SDL_Texture* uiLayerTexture = NULL;
+
 static void createFontTexture(void) {
   if (!currentResolution || !currentResolution->data) return;
 
@@ -176,6 +179,12 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
   createFontTexture();
   isDirty = 1;
 
+  // Create the offscreen UI layer texture (full-screen, transparent background)
+  uiLayerTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, screenW, screenH);
+  if (uiLayerTexture) {
+    SDL_SetTextureBlendMode(uiLayerTexture, SDL_BLENDMODE_BLEND);
+  }
+
 #ifdef TOUCH_INPUT
   // Setup virtual gamepad layout using window coordinates
   extern int vpadEnabled;
@@ -221,6 +230,7 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
 
 void gfxCleanup(void) {
   if (fontTexture) SDL_DestroyTexture(fontTexture);
+  if (uiLayerTexture) SDL_DestroyTexture(uiLayerTexture);
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
 }
@@ -253,10 +263,48 @@ void gfxPoint(int x, int y, uint32_t color) {
   isDirty = 1;
 }
 
+void gfxDrawLineAlpha(int x1, int y1, int x2, int y2, int alpha) {
+  if (alpha <= 0) return;
+  if (alpha > 255) alpha = 255;
+
+  uint8_t r = (fgColor >> 16) & 0xFF;
+  uint8_t g = (fgColor >> 8) & 0xFF;
+  uint8_t b = fgColor & 0xFF;
+
+  SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+  SDL_SetRenderDrawColor(renderer, r, g, b, (uint8_t)alpha);
+  SDL_RenderDrawLine(renderer, x1, y1, x2, y2);
+  SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+  isDirty = 1;
+}
+
 void gfxClearRect(int x, int y, int w, int h) {
   SDL_Rect rect = { CHAR_X(x), CHAR_Y(y), w * charW, h * charH };
   setColor(bgColor);
   SDL_RenderFillRect(renderer, &rect);
+  isDirty = 1;
+}
+
+static int transparentText = 0;
+
+void gfxSetTransparentText(int enabled) {
+  transparentText = enabled;
+}
+
+void gfxBeginLayer(void) {
+  if (!uiLayerTexture) return;
+  SDL_SetRenderTarget(renderer, uiLayerTexture);
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+  SDL_RenderClear(renderer);
+}
+
+void gfxEndLayer(void) {
+  SDL_SetRenderTarget(renderer, NULL);
+}
+
+void gfxCompositeLayer(void) {
+  if (!uiLayerTexture) return;
+  SDL_RenderCopy(renderer, uiLayerTexture, NULL, NULL);
   isDirty = 1;
 }
 
@@ -267,21 +315,23 @@ void gfxPrint(int x, int y, const char* text) {
   int cy = CHAR_Y(y);
   int len = (int)strlen(text);
 
-  // Draw background rectangles first
-  setColor(bgColor);
-  for (int i = 0; i < len; i++) {
-    if (text[i] == '\r' && text[i + 1] == '\n') {
-      i++;
-      cx = CHAR_X(x);
-      cy += charH;
-      continue;
-    }
-    SDL_Rect bgRect = {cx, cy, charW, charH};
-    SDL_RenderFillRect(renderer, &bgRect);
-    cx += charW;
-    if (cx >= offsetX + TEXT_COLS * charW) {
-      cx = CHAR_X(x);
-      cy += charH;
+  // Draw background rectangles first (skipped when transparent text is enabled)
+  if (!transparentText) {
+    setColor(bgColor);
+    for (int i = 0; i < len; i++) {
+      if (text[i] == '\r' && text[i + 1] == '\n') {
+        i++;
+        cx = CHAR_X(x);
+        cy += charH;
+        continue;
+      }
+      SDL_Rect bgRect = {cx, cy, charW, charH};
+      SDL_RenderFillRect(renderer, &bgRect);
+      cx += charW;
+      if (cx >= offsetX + TEXT_COLS * charW) {
+        cx = CHAR_X(x);
+        cy += charH;
+      }
     }
   }
 
@@ -483,6 +533,18 @@ int gfxGetCharWidth(void) {
 
 int gfxGetCharHeight(void) {
   return charH;
+}
+
+int gfxGetOffsetY(void) {
+  return offsetY;
+}
+
+int gfxGetScreenWidth(void) {
+  return screenW;
+}
+
+int gfxGetScreenHeight(void) {
+  return screenH;
 }
 
 void gfxReloadFont(void) {

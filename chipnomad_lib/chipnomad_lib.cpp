@@ -74,7 +74,7 @@ void chipnomadInitChips(ChipNomadState* state, int sampleRate, ChipFactory facto
   }
 }
 
-int chipnomadRender(ChipNomadState* state, float* buffer, int samples) {
+static int chipnomadRenderInternal(ChipNomadState* state, float* buffer, int samples, float** trackBuffers, int trackCount) {
   if (!state) return 0;
 
   int samplesLeft = samples;
@@ -97,6 +97,7 @@ int chipnomadRender(ChipNomadState* state, float* buffer, int samples) {
     int samplesToRender = ((int)state->frameSampleCounter < samplesLeft) ?
     (int)state->frameSampleCounter : samplesLeft;
     int bufferOffset = (samples - samplesLeft) * 2;
+    int trackOffset = samples - samplesLeft;
 
     // Clear buffer section
     for (int i = 0; i < samplesToRender * 2; i++) {
@@ -115,8 +116,17 @@ int chipnomadRender(ChipNomadState* state, float* buffer, int samples) {
     for (int chipIdx = 0; chipIdx < state->project.chipsCount; chipIdx++) {
       SoundChip* chip = state->chips[chipIdx];
       if (chip) {
-        // Render chip to mix buffer
-        chip->render(state->mixBuffer, samplesToRender);
+        // Render chip to mix buffer, optionally capturing per-channel output
+        if (trackBuffers) {
+          float* chBufs[3] = {NULL, NULL, NULL};
+          for (int ch = 0; ch < 3; ch++) {
+            int track = chipIdx * 3 + ch;
+            if (track < trackCount) chBufs[ch] = trackBuffers[track] + trackOffset;
+          }
+          chip->renderChannels(state->mixBuffer, chBufs, samplesToRender);
+        } else {
+          chip->render(state->mixBuffer, samplesToRender);
+        }
 
         // Mix into main buffer
         for (int i = 0; i < samplesToRender * 2; i++) {
@@ -147,6 +157,14 @@ int chipnomadRender(ChipNomadState* state, float* buffer, int samples) {
   }
 
   return samples - samplesLeft;
+}
+
+int chipnomadRender(ChipNomadState* state, float* buffer, int samples) {
+  return chipnomadRenderInternal(state, buffer, samples, NULL, 0);
+}
+
+int chipnomadRenderTracks(ChipNomadState* state, float* buffer, int samples, float** trackBuffers, int trackCount) {
+  return chipnomadRenderInternal(state, buffer, samples, trackBuffers, trackCount);
 }
 
 static void detectAYPitchConflicts(ChipNomadState* state) {

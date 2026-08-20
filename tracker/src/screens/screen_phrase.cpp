@@ -177,11 +177,9 @@ static void drawSelection(int col1, int row1, int col2, int row2) {
 static void draw(void) {
   if (isFxEdit) return;
 
-  gfxClearRect(0, 3, 1, 16);
   gfxSetFgColor(appSettings.colorScheme.textInfo);
   gfxPrint(0, 3 + *pChainRow, "<");
 
-  gfxClearRect(2, 3, 1, 16);
   PlaybackTrackState* track = &chipnomadState->playbackState.tracks[*pSongTrack];
   if (track->mode != PlaybackMode::stopped && track->mode != PlaybackMode::phraseRow && track->songRow != EMPTY_VALUE_16) {
     // Chain row

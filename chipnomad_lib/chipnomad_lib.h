@@ -62,6 +62,19 @@ void chipnomadInitChips(ChipNomadState* state, int sampleRate, ChipFactory facto
 int chipnomadRender(ChipNomadState* state, float* buffer, int samples);
 
 /**
+ * Render audio with automatic tick rate handling, and capture per-track output.
+ *
+ * @param state ChipNomad state
+ * @param buffer Interleaved stereo float buffer (left, right, left, right...)
+ * @param samples Number of stereo sample pairs to render
+ * @param trackBuffers Array of trackCount float buffers (mono, length `samples`)
+ *        that receive each track's (chip channel's) output. May be NULL.
+ * @param trackCount Number of tracks (== project.tracksCount)
+ * @return Number of samples actually rendered
+ */
+int chipnomadRenderTracks(ChipNomadState* state, float* buffer, int samples, float** trackBuffers, int trackCount);
+
+/**
 * Set emulation quality for all chips
 * @param state ChipNomad state
 * @param quality Quality level

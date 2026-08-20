@@ -27,17 +27,8 @@ void initDefaultAppSettings(void) {
   // Zero out key mapping (platform-specific defaults applied later)
   memset(&appSettings.keyMapping, 0, sizeof(KeyMapping));
 
-  // Color scheme defaults
-  appSettings.colorScheme.background = 0x000f1a;
-  appSettings.colorScheme.textEmpty = 0x002638;
-  appSettings.colorScheme.textInfo = 0x4878b0;
-  appSettings.colorScheme.textDefault = 0xa0d0f0;
-  appSettings.colorScheme.textValue = 0xe2ebf8;
-  appSettings.colorScheme.textTitles = 0xbfdf50;
-  appSettings.colorScheme.playMarkers = 0xefe000;
-  appSettings.colorScheme.cursor = 0x7ddcff;
-  appSettings.colorScheme.selection = 0x00d090;
-  appSettings.colorScheme.warning = 0xff4040;
+  // Color scheme defaults (full palette, including oscilloscope line colors)
+  resetToDefaultColors();
 
   // String defaults
   strncpy(appSettings.themeName, "Default", THEME_NAME_LENGTH);
@@ -58,6 +49,19 @@ int* pSongTrack;
 int* pChainRow;
 ChipNomadState* chipnomadState;
 int projectModified = 0;
+
+static int tryLoadOscColor(const char* line) {
+  for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
+    char key[24];
+    snprintf(key, sizeof(key), "colorOsc%d: ", i);
+    int keyLen = (int)strlen(key);
+    if (strncmp(line, key, keyLen) == 0) {
+      sscanf(line + keyLen, "0x%x", &appSettings.colorScheme.oscColors[i]);
+      return 1;
+    }
+  }
+  return 0;
+}
 
 int settingsSave(void) {
   char defaultDir[PATH_LENGTH];
@@ -109,6 +113,9 @@ int settingsSave(void) {
   fprintf(file, "colorCursor: 0x%06x\n", appSettings.colorScheme.cursor);
   fprintf(file, "colorSelection: 0x%06x\n", appSettings.colorScheme.selection);
   fprintf(file, "colorWarning: 0x%06x\n", appSettings.colorScheme.warning);
+  for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
+    fprintf(file, "colorOsc%d: 0x%06x\n", i, appSettings.colorScheme.oscColors[i]);
+  }
   fprintf(file, "themeName: %s\n", appSettings.themeName);
   fprintf(file, "projectFilename: %s\n", appSettings.projectFilename);
   fprintf(file, "projectPath: %s\n", appSettings.projectPath);
@@ -218,6 +225,8 @@ int settingsLoad(void) {
       sscanf(line + 16, "0x%x", &appSettings.colorScheme.selection);
     } else if (strncmp(line, "colorWarning: ", 14) == 0) {
       sscanf(line + 14, "0x%x", &appSettings.colorScheme.warning);
+    } else if (tryLoadOscColor(line)) {
+      // handled by helper
     } else if (strncmp(line, "themeName: ", 11) == 0) {
       strncpy(appSettings.themeName, line + 11, 16);
       appSettings.themeName[16] = 0;
@@ -266,6 +275,16 @@ void resetToDefaultColors(void) {
   appSettings.colorScheme.cursor = 0x7ddcff;
   appSettings.colorScheme.selection = 0x00d090;
   appSettings.colorScheme.warning = 0xff4040;
+  appSettings.colorScheme.oscColors[0] = 0x20a0a0;
+  appSettings.colorScheme.oscColors[1] = 0x40a050;
+  appSettings.colorScheme.oscColors[2] = 0x80a000;
+  appSettings.colorScheme.oscColors[3] = 0xc0a000;
+  appSettings.colorScheme.oscColors[4] = 0xe0a090;
+  appSettings.colorScheme.oscColors[5] = 0xf0a040;
+  appSettings.colorScheme.oscColors[6] = 0xffa00f;
+  appSettings.colorScheme.oscColors[7] = 0xff8000;
+  appSettings.colorScheme.oscColors[8] = 0xff40c0;  // 9th voice (magenta)
+  appSettings.colorScheme.oscColors[9] = 0xc0c0c0;  // spare (unused track 10)
 }
 
 int saveTheme(const char* path) {
@@ -282,6 +301,9 @@ int saveTheme(const char* path) {
   fprintf(file, "colorCursor: 0x%06x\n", appSettings.colorScheme.cursor);
   fprintf(file, "colorSelection: 0x%06x\n", appSettings.colorScheme.selection);
   fprintf(file, "colorWarning: 0x%06x\n", appSettings.colorScheme.warning);
+  for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
+    fprintf(file, "colorOsc%d: 0x%06x\n", i, appSettings.colorScheme.oscColors[i]);
+  }
 
   fclose(file);
   return 1;
@@ -316,6 +338,8 @@ int loadTheme(const char* path) {
       sscanf(line + 16, "0x%x", &appSettings.colorScheme.selection);
     } else if (strncmp(line, "colorWarning: ", 14) == 0) {
       sscanf(line + 14, "0x%x", &appSettings.colorScheme.warning);
+    } else if (tryLoadOscColor(line)) {
+      // handled by helper
     }
   }
 
