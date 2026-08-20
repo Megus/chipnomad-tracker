@@ -283,9 +283,8 @@ void resetToDefaultColors(void) {
   appSettings.colorScheme.oscColors[5] = 0xf0a040;
   appSettings.colorScheme.oscColors[6] = 0xffa00f;
   appSettings.colorScheme.oscColors[7] = 0xff8000;
-  for (int i = 8; i < PROJECT_MAX_TRACKS; i++) {
-    appSettings.colorScheme.oscColors[i] = 0xc0c0c0;  // light gray (spare)
-  }
+  appSettings.colorScheme.oscColors[8] = 0xff40c0;  // 9th voice (magenta)
+  appSettings.colorScheme.oscColors[9] = 0xc0c0c0;  // spare (unused track 10)
 }
 
 int saveTheme(const char* path) {

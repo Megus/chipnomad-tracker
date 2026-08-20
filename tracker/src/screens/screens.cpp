@@ -17,6 +17,18 @@ static char messageBuffer[42] = "";
 static AppScreen const* pendingScreen;
 static int pendingScreenInput;
 
+// Cached UI layer state
+static int uiDirty = 1;       // UI layer needs re-render
+static int inLayerRender = 0; // currently rendering into the cached layer
+
+void screenInvalidate(void) {
+  uiDirty = 1;
+}
+
+int screenInLayerRender(void) {
+  return inLayerRender;
+}
+
 void drawScreenMap() {
   const static int smY = 15;
 
@@ -87,13 +99,15 @@ void screenDraw() {
     currentScreen = pendingScreen;
     currentScreen->setup(pendingScreenInput);
     pendingScreen = NULL;
+    uiDirty = 1;
   }
 
   // Clear the full screen (including the letterbox margins around the text
-  // grid), then draw layers back-to-front every frame: oscilloscope (back
-  // layer) -> screen content (front layer). A full clear is required because
-  // the oscilloscope is drawn full-bleed into the margins with an alpha blend,
-  // and transparent pixels don't erase the previous frame.
+  // grid), then draw layers back-to-front: oscilloscope (dynamic back layer)
+  // -> cached UI layer (static, re-rendered only when dirty) -> dynamic
+  // overlays. A full clear is required because the oscilloscope is drawn
+  // full-bleed into the margins with an alpha blend, and transparent pixels
+  // don't erase the previous frame.
   gfxSetBgColor(appSettings.colorScheme.background);
   gfxSetCursorColor(appSettings.colorScheme.cursor);
   gfxClear();
@@ -101,10 +115,20 @@ void screenDraw() {
   // Back layer: oscilloscope (overlaid per-track waveform lines).
   oscilloscopeDraw();
 
-  // Front layer: screen content (bottom table rows drawn transparent so the
-  // oscilloscope shows through behind the symbols).
-  currentScreen->fullRedraw();
-  drawScreenMap();
+  // Front layer: cached UI content (screen full redraw + screen map). Only
+  // re-rendered when dirty; composited over the oscilloscope every frame.
+  if (uiDirty) {
+    gfxBeginLayer();
+    inLayerRender = 1;
+    currentScreen->fullRedraw();
+    drawScreenMap();
+    inLayerRender = 0;
+    gfxEndLayer();
+    uiDirty = 0;
+  }
+  gfxCompositeLayer();
+
+  // Dynamic overlays (play markers etc.), drawn every frame on top of the layer.
   currentScreen->draw();
 
   // Draw cached message
@@ -190,6 +214,13 @@ static void validateCursorBounds(ScreenData* screen) {
 }
 
 void screenFullRedraw(ScreenData* screen) {
+  // When called outside the layer render (e.g. from an input handler after
+  // content changed), just mark the layer dirty and let screenDraw re-render it.
+  if (!inLayerRender) {
+    uiDirty = 1;
+    return;
+  }
+
   validateCursorBounds(screen);
 
   if (screen->cursorRow < screen->topRow) {
@@ -572,7 +603,13 @@ int screenInput(ScreenData* screen, int isKeyDown, int keys, int tapCount) {
   // Discard key up events unless no buttons are pressed (for existing logic that expects keys == 0)
   if (!isKeyDown && keys != 0) return 0;
 
-  return (screen->selectMode == 1) ? inputSelectMode(screen, keys, tapCount) : inputNormalMode(screen, keys, tapCount);
+  int handled = (screen->selectMode == 1) ? inputSelectMode(screen, keys, tapCount) : inputNormalMode(screen, keys, tapCount);
+
+  // Any handled input may have changed screen content; mark the cached UI
+  // layer dirty so the next frame re-renders it.
+  if (handled) screenInvalidate();
+
+  return handled;
 }
 
 

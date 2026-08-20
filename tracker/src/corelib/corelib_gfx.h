@@ -98,6 +98,26 @@ void gfxDrawLineAlpha(int x1, int y1, int x2, int y2, int alpha);
 void gfxSetTransparentText(int enabled);
 
 /**
+ * @brief Begin rendering into the offscreen UI layer (a transparent full-screen
+ * texture). Subsequent gfx drawing calls render into this layer instead of the
+ * screen. The layer is cleared to transparent (alpha 0) first.
+ */
+void gfxBeginLayer(void);
+
+/**
+ * @brief End rendering into the UI layer and switch back to the screen.
+ */
+void gfxEndLayer(void);
+
+/**
+ * @brief Composite the cached UI layer onto the screen with alpha blending.
+ *
+ * The layer's transparent pixels let the background (cleared screen + any
+ * full-bleed visuals like the oscilloscope) show through.
+ */
+void gfxCompositeLayer(void);
+
+/**
  * @brief Create a bitmap with specified size in characters
  *
  * @param widthChars Width in characters

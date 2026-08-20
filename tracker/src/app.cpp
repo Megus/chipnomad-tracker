@@ -402,13 +402,9 @@ void appOnEvent(MainLoopEventData eventData) {
     audio.resume();
     break;
   case MainLoopEvent::fullRedraw:
-    // Force full screen redraw
-    gfxSetBgColor(appSettings.colorScheme.background);
-    gfxClear();
-    if (currentScreen) {
-      currentScreen->fullRedraw();
-      drawScreenMap();
-    }
+    // Force full screen redraw: mark the cached UI layer dirty so the next
+    // frame re-renders everything.
+    screenInvalidate();
     break;
   }
 }

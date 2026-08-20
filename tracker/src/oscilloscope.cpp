@@ -11,6 +11,8 @@
 #define OSC_RING_SIZE    4096  // Samples per track (power of two)
 #define OSC_PIXEL_SCALE  2     // Horizontal pixels per waveform column
 #define OSC_FADE_STEP    4     // Vertical pixels per fade sub-segment (smaller = smoother)
+#define OSC_TOP_MARGIN   2     // Pixels inset from the top of the strip
+#define OSC_SILENCE_THRESHOLD 0.0001f  // DAC values at or below this count as silence
 
 static std::atomic<uint32_t> gWriteIndex{0};
 static float gRing[PROJECT_MAX_TRACKS][OSC_RING_SIZE];
@@ -83,6 +85,17 @@ static void drawFadedLine(int x1, int y1, int x2, int y2) {
   }
 }
 
+// A track is "silent" (and must not be drawn) when none of its visible samples
+// rise above the threshold. The AY DAC outputs exactly 0.0 for silence
+// (volume 0 / tone off), so this suppresses the flat baseline line at the
+// bottom of the strip.
+static int trackHasSignal(const float* ring, uint32_t start, int cols, uint32_t mask) {
+  for (int x = 0; x < cols; x++) {
+    if (ring[(start + x) & mask] > OSC_SILENCE_THRESHOLD) return 1;
+  }
+  return 0;
+}
+
 void oscilloscopeDraw(void) {
   if (gW <= 0 || gH <= 0 || !chipnomadState) return;
 
@@ -97,15 +110,26 @@ void oscilloscopeDraw(void) {
   uint32_t start = end - cols;
 
   for (int t = 0; t < trackCount; t++) {
-    gfxSetFgColor(appSettings.colorScheme.oscColors[t]);
     float* ring = gRing[t];
+
+    // Skip silent tracks so no flat baseline line appears at the bottom.
+    if (!trackHasSignal(ring, start, cols, mask)) continue;
+
+    gfxSetFgColor(appSettings.colorScheme.oscColors[t]);
 
     int prevX = 0;
     int prevY = -1;
+    // The trace rises from the bottom edge of the screen: silence (s=0) maps
+    // to the very bottom pixel row (silent tracks are skipped above).
+    int topY = gTopY + OSC_TOP_MARGIN;
+    int bottomY = gTopY + gH - 1;
+    int range = bottomY - topY;
+    if (range < 1) range = 1;
+
     for (int x = 0; x < cols; x++) {
       float s = ring[(start + x) & mask];
       // s is the AY DAC value in [0, 1]; map 0 -> bottom, 1 -> top.
-      int y = gTopY + gH - 1 - (int)(s * (float)(gH - 1));
+      int y = bottomY - (int)(s * (float)range);
       int cx = x * OSC_PIXEL_SCALE;
       if (prevY >= 0) {
         drawFadedLine(prevX, prevY, cx, y);

@@ -13,7 +13,7 @@ static int oscColorsOnEdit(int col, int row, CellEditAction action);
 static void fullRedraw(void);
 
 static ScreenData screenOscColorsData = {
-  .rows = 8,
+  .rows = 9,
   .cursorRow = 0,
   .cursorCol = 0,
   .topRow = 0,
@@ -45,11 +45,12 @@ static const char* oscColorNames[] = {
   "Voice 5",
   "Voice 6",
   "Voice 7",
-  "Voice 8"
+  "Voice 8",
+  "Voice 9"
 };
 
 static int* getColorPtr(int row) {
-  if (row >= 0 && row < 8) return &appSettings.colorScheme.oscColors[row];
+  if (row >= 0 && row < 9) return &appSettings.colorScheme.oscColors[row];
   return NULL;
 }
 

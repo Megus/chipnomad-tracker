@@ -8,7 +8,7 @@ extern "C" {
 // Number of bottom table rows the oscilloscope strip overlaps. These rows are
 // drawn transparently (glyphs only) so the oscilloscope shows through behind
 // the symbols. The strip itself starts at grid row (19 - OVERLAP_ROWS).
-#define OSCILLOSCOPE_OVERLAP_ROWS 3
+#define OSCILLOSCOPE_OVERLAP_ROWS 5
 
 /**
  * @brief Initialize the oscilloscope system.

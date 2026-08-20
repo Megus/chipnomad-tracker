@@ -53,6 +53,9 @@ static int buttonPressed[8] = {0};
 static SDL_Texture* fontTexture = NULL;
 static SDL_Rect charRects[95]; // ASCII 32-126
 
+// Offscreen UI layer (cached UI content, composited over the oscilloscope)
+static SDL_Texture* uiLayerTexture = NULL;
+
 static void createFontTexture(void) {
   if (!currentResolution || !currentResolution->data) return;
 
@@ -176,6 +179,12 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
   createFontTexture();
   isDirty = 1;
 
+  // Create the offscreen UI layer texture (full-screen, transparent background)
+  uiLayerTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, screenW, screenH);
+  if (uiLayerTexture) {
+    SDL_SetTextureBlendMode(uiLayerTexture, SDL_BLENDMODE_BLEND);
+  }
+
 #ifdef TOUCH_INPUT
   // Setup virtual gamepad layout using window coordinates
   extern int vpadEnabled;
@@ -221,6 +230,7 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
 
 void gfxCleanup(void) {
   if (fontTexture) SDL_DestroyTexture(fontTexture);
+  if (uiLayerTexture) SDL_DestroyTexture(uiLayerTexture);
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
 }
@@ -279,6 +289,23 @@ static int transparentText = 0;
 
 void gfxSetTransparentText(int enabled) {
   transparentText = enabled;
+}
+
+void gfxBeginLayer(void) {
+  if (!uiLayerTexture) return;
+  SDL_SetRenderTarget(renderer, uiLayerTexture);
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+  SDL_RenderClear(renderer);
+}
+
+void gfxEndLayer(void) {
+  SDL_SetRenderTarget(renderer, NULL);
+}
+
+void gfxCompositeLayer(void) {
+  if (!uiLayerTexture) return;
+  SDL_RenderCopy(renderer, uiLayerTexture, NULL, NULL);
+  isDirty = 1;
 }
 
 void gfxPrint(int x, int y, const char* text) {

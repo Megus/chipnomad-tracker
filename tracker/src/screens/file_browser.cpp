@@ -359,6 +359,8 @@ static void fileBrowserDrawEntry(int itemIndex) {
 }
 
 static void fileBrowserDraw(void) {
+  if (!screenInLayerRender()) { screenInvalidate(); return; }
+
   gfxSetBgColor(appSettings.colorScheme.background);
   gfxClear();
 
@@ -386,9 +388,6 @@ static int fileBrowserInput(int keys, int tapCount) {
   if (isFolderMode) maxIndex += 2;
 
   if (keys == keyUp || keys == keyDown || keys == keyLeft || keys == keyRight) {
-    int oldSelectedIndex = selectedIndex;
-    int oldTopIndex = topIndex;
-
     if (keys == keyUp) {
       if (selectedIndex > 0) selectedIndex--;
       else { selectedIndex = maxIndex; }
@@ -410,12 +409,8 @@ static int fileBrowserInput(int keys, int tapCount) {
 
     resetScrollStateOnSelectionChange();
 
-    if (topIndex != oldTopIndex) {
-      fileBrowserDraw();
-    } else {
-      fileBrowserDrawEntry(oldSelectedIndex);
-      fileBrowserDrawEntry(selectedIndex);
-    }
+    // Content changed: mark the cached layer dirty (rendered next frame).
+    screenInvalidate();
     return 1;
   } else if (keys == keyEdit) {
     // Handle "Save to" option in folder mode
