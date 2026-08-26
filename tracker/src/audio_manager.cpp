@@ -4,6 +4,7 @@
 
 #include "chipnomad_lib.h"
 #include "corelib_file.h"
+#include "import/wav_file.h"
 
 static AudioManager *self = NULL; // Used to point to the current AudioManager instance for callback function
 
@@ -21,22 +22,49 @@ void audioCallback(int16_t* buffer, int stereoSamples) {
 
   chipnomadRender(self->chipnomadState, self->renderBuffer, stereoSamples);
 
-  // Convert float to int16_t
-  for (int i = 0; i < stereoSamples * 2; i++) {
-    int sample = self->renderBuffer[i] * 32767;
-    if (sample > 32767) sample = 32767;
-    if (sample < -32768) sample = -32768;
-    buffer[i] = sample;
+  // WAV preview: resample and mix into render buffer (as float, before final conversion)
+  if (self->wavPreview && !self->wavPreview->isFinished()) {
+    for (int i = 0; i < stereoSamples; i++) {
+      // Refill read buffer if needed
+      if (self->wavPreviewBufPos >= self->wavPreviewBufCount) {
+        self->wavPreviewBufCount = self->wavPreview->readSamples16(
+          self->wavPreviewBuf, AudioManager::WAV_PREVIEW_BUF_SIZE);
+        self->wavPreviewBufPos = 0;
+        if (self->wavPreviewBufCount == 0) break;
+      }
+
+      // Mix current source sample into both channels (mono -> stereo)
+      float wavSample = self->wavPreviewBuf[self->wavPreviewBufPos] * (0.5f / 32768.0f); // Scale down to reduce volume
+      self->renderBuffer[i * 2] += wavSample;
+      self->renderBuffer[i * 2 + 1] += wavSample;
+
+      // Advance fractional position and consume source samples
+      self->wavPreviewPosition += self->wavPreviewRateRatio;
+      while (self->wavPreviewPosition >= 1.0) {
+        self->wavPreviewPosition -= 1.0;
+        self->wavPreviewBufPos++;
+      }
+    }
   }
 
-  // WAV player rendering:
-
+  // Final conversion: float to int16_t with clamp
+  for (int i = 0; i < stereoSamples * 2; i++) {
+    int sample = (int)(self->renderBuffer[i] * 32767.0f);
+    if (sample > 32767) sample = 32767;
+    if (sample < -32768) sample = -32768;
+    buffer[i] = (int16_t)sample;
+  }
 }
 
 
 AudioManager::AudioManager(ChipNomadState *state) {
   chipnomadState = state;
   pendingReinitChips = 0;
+  wavPreview = NULL;
+  wavPreviewPosition = 0.0;
+  wavPreviewRateRatio = 1.0;
+  wavPreviewBufPos = 0;
+  wavPreviewBufCount = 0;
 
   // Initialize track states
   for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
@@ -47,6 +75,7 @@ AudioManager::AudioManager(ChipNomadState *state) {
 
 AudioManager::~AudioManager() {
   stop();
+  stopWavPreview();
   free(renderBuffer);
   self = NULL; // Clear the static pointer
 }
@@ -129,11 +158,27 @@ void AudioManager::reinitChips() {
 }
 
 int AudioManager::startWavPreview(const char* path) {
-  return 0;
+  stopWavPreview();
+
+  WavFile* wav = new WavFile(path);
+  if (wav->getResult() != WAV_OK) {
+    delete wav;
+    return 0;
+  }
+
+  wavPreview = wav;
+  wavPreviewPosition = 0.0;
+  wavPreviewRateRatio = (double)wav->getSampleRate() / (double)sampleRate;
+  wavPreviewBufPos = 0;
+  wavPreviewBufCount = 0;
+  return 1;
 }
 
 void AudioManager::stopWavPreview() {
-
+  if (wavPreview) {
+    delete wavPreview;
+    wavPreview = NULL;
+  }
 }
 
 // Singleton instance of AudioManager

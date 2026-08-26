@@ -1,13 +1,13 @@
 #include "doctest.h"
 
-#include "import_wav.h"
+#include "wav_file.h"
 #include "project_constants.h"
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
-TEST_SUITE("import_wav") {
+TEST_SUITE("wav_file") {
 
 // Helper: Create a simple 8-bit mono WAV file for testing
 static void createTestWav8Bit(const char* path, uint16_t sampleRate,
@@ -85,22 +85,26 @@ static void createTestWav16Bit(const char* path, uint16_t sampleRate,
   std::fclose(f);
 }
 
-TEST_CASE("load wav 8bit mono") {
+TEST_CASE("WavFile load 8bit mono") {
   const char* testFile = "test_8bit.wav";
   uint8_t testSamples[] = {0, 64, 128, 192, 255};
   createTestWav8Bit(testFile, 8000, testSamples, 5);
 
-  uint16_t length, sampleRate;
-  WavLoadResult result;
-  uint8_t* data = loadWavFile(testFile, PROJECT_MAX_SAMPLE_SIZE,
-                               &length, &sampleRate, &result, false);
+  WavFile wav(testFile);
+  CHECK(wav.getResult() == WAV_OK);
+  CHECK(wav.isOpen());
+  CHECK(wav.getSampleRate() == 8000);
+  CHECK(wav.getTotalSamples() == 5);
+  CHECK(wav.getBitsPerSample() == 8);
+  CHECK(wav.getNumChannels() == 1);
 
-  CHECK(result == WAV_SUCCESS);
+  uint16_t length;
+  uint8_t* data = wav.loadTruncated(PROJECT_MAX_SAMPLE_SIZE, &length, false);
+
   CHECK(data != nullptr);
   CHECK(length == 5);
-  CHECK(sampleRate == 8000);
 
-  // Verify samples
+  // Verify samples (8-bit unsigned stays the same)
   for (int i = 0; i < 5; i++) {
     CHECK(data[i] == testSamples[i]);
   }
@@ -109,20 +113,21 @@ TEST_CASE("load wav 8bit mono") {
   std::remove(testFile);
 }
 
-TEST_CASE("load wav 16bit mono") {
+TEST_CASE("WavFile load 16bit mono") {
   const char* testFile = "test_16bit.wav";
   int16_t testSamples[] = {-32768, -16384, 0, 16384, 32767};
   createTestWav16Bit(testFile, 16000, testSamples, 5);
 
-  uint16_t length, sampleRate;
-  WavLoadResult result;
-  uint8_t* data = loadWavFile(testFile, PROJECT_MAX_SAMPLE_SIZE,
-                               &length, &sampleRate, &result, false);
+  WavFile wav(testFile);
+  CHECK(wav.getResult() == WAV_OK);
+  CHECK(wav.getSampleRate() == 16000);
+  CHECK(wav.getTotalSamples() == 5);
 
-  CHECK(result == WAV_SUCCESS);
+  uint16_t length;
+  uint8_t* data = wav.loadTruncated(PROJECT_MAX_SAMPLE_SIZE, &length, false);
+
   CHECK(data != nullptr);
   CHECK(length == 5);
-  CHECK(sampleRate == 16000);
 
   // Verify conversion (16-bit signed to 8-bit unsigned)
   // -32768 -> 0, -16384 -> 64, 0 -> 128, 16384 -> 192, 32767 -> 255
@@ -136,34 +141,26 @@ TEST_CASE("load wav 16bit mono") {
   std::remove(testFile);
 }
 
-TEST_CASE("load wav file not found") {
-  uint16_t length, sampleRate;
-  WavLoadResult result;
-  uint8_t* data = loadWavFile("nonexistent.wav", PROJECT_MAX_SAMPLE_SIZE,
-                               &length, &sampleRate, &result, false);
-
-  CHECK(data == nullptr);
-  CHECK(result == WAV_ERROR_FILE_NOT_FOUND);
+TEST_CASE("WavFile file not found") {
+  WavFile wav("nonexistent.wav");
+  CHECK(wav.getResult() == WAV_ERR_FILE_NOT_FOUND);
+  CHECK(!wav.isOpen());
 }
 
-TEST_CASE("load wav invalid file") {
+TEST_CASE("WavFile invalid file") {
   const char* testFile = "test_invalid.wav";
   FILE* f = std::fopen(testFile, "wb");
   std::fwrite("NOT A WAV FILE", 14, 1, f);
   std::fclose(f);
 
-  uint16_t length, sampleRate;
-  WavLoadResult result;
-  uint8_t* data = loadWavFile(testFile, PROJECT_MAX_SAMPLE_SIZE,
-                               &length, &sampleRate, &result, false);
-
-  CHECK(data == nullptr);
-  CHECK(result == WAV_ERROR_NOT_WAV);
+  WavFile wav(testFile);
+  CHECK(wav.getResult() == WAV_ERR_NOT_WAV);
+  CHECK(!wav.isOpen());
 
   std::remove(testFile);
 }
 
-TEST_CASE("load wav size limit") {
+TEST_CASE("WavFile truncation") {
   const char* testFile = "test_large.wav";
   uint8_t testSamples[1000];
   for (int i = 0; i < 1000; i++) {
@@ -171,26 +168,78 @@ TEST_CASE("load wav size limit") {
   }
   createTestWav8Bit(testFile, 8000, testSamples, 1000);
 
-  uint16_t length, sampleRate;
-  WavLoadResult result;
-  // Limit to 100 samples
-  uint8_t* data = loadWavFile(testFile, 100, &length, &sampleRate, &result, false);
+  WavFile wav(testFile);
+  CHECK(wav.getResult() == WAV_OK);
+  CHECK(wav.getTotalSamples() == 1000);
 
-  CHECK(result == WAV_SUCCESS);
+  uint16_t length;
+  uint8_t* data = wav.loadTruncated(100, &length, false);
+
   CHECK(data != nullptr);
-  CHECK(length == 100); // Should be limited
-  CHECK(sampleRate == 8000);
+  CHECK(length == 100);
 
   std::free(data);
   std::remove(testFile);
 }
 
-TEST_CASE("wav error messages") {
-  CHECK(std::strcmp(getWavLoadErrorMessage(WAV_SUCCESS), "Success") == 0);
-  CHECK(std::strcmp(getWavLoadErrorMessage(WAV_ERROR_FILE_NOT_FOUND),
+TEST_CASE("WavFile streaming read") {
+  const char* testFile = "test_stream.wav";
+  int16_t testSamples[] = {-32768, -16384, 0, 16384, 32767};
+  createTestWav16Bit(testFile, 44100, testSamples, 5);
+
+  WavFile wav(testFile);
+  CHECK(wav.getResult() == WAV_OK);
+
+  // Read samples in streaming mode
+  int16_t buffer[3];
+  uint32_t read = wav.readSamples16(buffer, 3);
+  CHECK(read == 3);
+  CHECK(buffer[0] == -32768);
+  CHECK(buffer[1] == -16384);
+  CHECK(buffer[2] == 0);
+
+  // Read remaining
+  read = wav.readSamples16(buffer, 3);
+  CHECK(read == 2);  // Only 2 left
+  CHECK(buffer[0] == 16384);
+  CHECK(buffer[1] == 32767);
+
+  CHECK(wav.isFinished());
+
+  std::remove(testFile);
+}
+
+TEST_CASE("WavFile seek") {
+  const char* testFile = "test_seek.wav";
+  int16_t testSamples[] = {100, 200, 300, 400, 500};
+  createTestWav16Bit(testFile, 22050, testSamples, 5);
+
+  WavFile wav(testFile);
+  CHECK(wav.getResult() == WAV_OK);
+
+  // Seek to sample 3
+  wav.seek(3);
+  int16_t buffer[2];
+  uint32_t read = wav.readSamples16(buffer, 2);
+  CHECK(read == 2);
+  CHECK(buffer[0] == 400);
+  CHECK(buffer[1] == 500);
+
+  // Seek back to start
+  wav.seek(0);
+  read = wav.readSamples16(buffer, 1);
+  CHECK(read == 1);
+  CHECK(buffer[0] == 100);
+
+  std::remove(testFile);
+}
+
+TEST_CASE("WavFile error messages") {
+  CHECK(std::strcmp(WavFile::getErrorMessage(WAV_OK), "Success") == 0);
+  CHECK(std::strcmp(WavFile::getErrorMessage(WAV_ERR_FILE_NOT_FOUND),
                     "File not found or cannot be opened") == 0);
-  CHECK(std::strcmp(getWavLoadErrorMessage(WAV_ERROR_NOT_WAV),
+  CHECK(std::strcmp(WavFile::getErrorMessage(WAV_ERR_NOT_WAV),
                     "Not a valid WAV file") == 0);
 }
 
-} // TEST_SUITE("import_wav")
+} // TEST_SUITE("wav_file")

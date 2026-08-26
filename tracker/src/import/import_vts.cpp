@@ -77,9 +77,9 @@ static inline int clampToInt8(int value) {
   return value;
 }
 
-static void setPitEffect(TableRow* row, int pitValue) {
-  row->fx[FX_SLOT_PITCH][0] = fxPIT;
-  row->fx[FX_SLOT_PITCH][1] = (uint8_t)pitValue;
+static void setPrdEffect(TableRow* row, int prdValue) {
+  row->fx[FX_SLOT_PITCH][0] = fxPRD;
+  row->fx[FX_SLOT_PITCH][1] = (uint8_t)prdValue;
 }
 
 static int findReferenceNote() {
@@ -129,17 +129,17 @@ static void convertVTSPitchOffsets(Table* table, int* vtsOffsets, int* vtsOffset
     int delta = currentVTSOffset - prevOffset;
 
     if (vtsOffsetTypes[i] == 1) {
-      // Accumulating PIT offset (^pitch) - use PIT directly
+      // Accumulating PRD offset (^pitch) - use PRD directly
       if (delta != 0) {
-        int pitValue = clampToInt8(-delta);
-        setPitEffect(&table->rows[i], pitValue);
+        int prdValue = clampToInt8(-delta);
+        setPrdEffect(&table->rows[i], prdValue);
       }
     } else {
-      // Regular semitone offset (+pitch) - convert to semitones + PIT
+      // Regular semitone offset (+pitch) - convert to semitones + PRD
       if (abs(currentVTSOffset) < VTS_PITCH_THRESHOLD) {
         if (delta != 0) {
-          int pitValue = clampToInt8(-delta);
-          setPitEffect(&table->rows[i], pitValue);
+          int prdValue = clampToInt8(-delta);
+          setPrdEffect(&table->rows[i], prdValue);
         }
       } else {
         int currentAccumulated = 0;
@@ -151,11 +151,11 @@ static void convertVTSPitchOffsets(Table* table, int* vtsOffsets, int* vtsOffset
         table->rows[i].pitchOffset = (int8_t)clampToInt8(semitones);
 
         int semitoneDelta = currentAccumulated - prevAccumulated;
-        int pitDelta = delta - semitoneDelta;
+        int prdDelta = delta - semitoneDelta;
 
-        if (pitDelta != 0) {
-          int pitValue = clampToInt8(-pitDelta);
-          setPitEffect(&table->rows[i], pitValue);
+        if (prdDelta != 0) {
+          int prdValue = clampToInt8(-prdDelta);
+          setPrdEffect(&table->rows[i], prdValue);
         }
       }
     }

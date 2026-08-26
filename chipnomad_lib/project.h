@@ -215,7 +215,7 @@ struct Project {
   Chain chains[PROJECT_MAX_CHAINS];
   Phrase phrases[PROJECT_MAX_PHRASES];
   Groove grooves[PROJECT_MAX_GROOVES];
-  Instrument instruments[PROJECT_MAX_INSTRUMENTS + 1]; // +1 for instrument preview
+  Instrument instruments[PROJECT_MAX_INSTRUMENTS + 1]; // +1 for instrument preview slot
   Table tables[PROJECT_MAX_TABLES];
 
   // Additional data for different chips

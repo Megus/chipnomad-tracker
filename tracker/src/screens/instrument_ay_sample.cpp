@@ -5,7 +5,8 @@
 #include "corelib/corelib_file.h"
 #include "utils.h"
 #include "file_browser.h"
-#include "import/import_wav.h"
+#include "import/wav_file.h"
+#include "audio_manager.h"
 #include <string.h>
 
 // Preview configuration
@@ -90,14 +91,18 @@ static void onSampleLoaded(const char* path) {
   InstrumentAYSample* smp = &chipnomadState->project.instruments[cInstrument].chip.aySample;
 
   // Load the WAV file
+  WavFile wav(path);
+  if (wav.getResult() != WAV_OK) {
+    screenMessage(MESSAGE_TIME, "Error: %s", WavFile::getErrorMessage(wav.getResult()));
+    screenSetup(&screenInstrument, cInstrument);
+    return;
+  }
+
   uint16_t sampleLength;
-  uint16_t sampleRate;
-  WavLoadResult result;
-  uint8_t* sampleData = loadWavFile(path, PROJECT_MAX_SAMPLE_SIZE, &sampleLength, &sampleRate, &result, true);
+  uint8_t* sampleData = wav.loadTruncated(PROJECT_MAX_SAMPLE_SIZE, &sampleLength, true);
 
   if (sampleData == NULL) {
-    // Show error message
-    screenMessage(MESSAGE_TIME, "Error: %s", getWavLoadErrorMessage(result));
+    screenMessage(MESSAGE_TIME, "Error: %s", WavFile::getErrorMessage(wav.getResult()));
     screenSetup(&screenInstrument, cInstrument);
     return;
   }
@@ -107,9 +112,9 @@ static void onSampleLoaded(const char* path) {
     free(smp->sampleData);
   }
   smp->sampleData = sampleData;
-  smp->fileLength = sampleLength;      // Size of data in file
-  smp->sampleLength = sampleLength;    // Playback length (initially same as file length)
-  smp->sampleRate = sampleRate;
+  smp->fileLength = sampleLength;
+  smp->sampleLength = sampleLength;
+  smp->sampleRate = (uint16_t)wav.getSampleRate();
 
   // Auto-lift: shift waveform so troughs sit at zero (expected by AY playback)
   sampleLiftToZero(smp->sampleData, smp->fileLength, smp->sampleRate);
@@ -139,13 +144,21 @@ static void onSampleLoaded(const char* path) {
   }
 
   projectModified = 1;
-  screenMessage(MESSAGE_TIME, "Sample loaded: %d bytes @ %d Hz", sampleLength, sampleRate);
+  screenMessage(MESSAGE_TIME, "Sample loaded: %d bytes @ %d Hz", smp->fileLength, smp->sampleRate);
   updateSamplePreview();
   screenSetup(&screenInstrument, cInstrument);
 }
 
 static void onSampleCancelled(void) {
   screenSetup(&screenInstrument, cInstrument);
+}
+
+static int onSamplePreviewStart(const char* path) {
+  return audio.startWavPreview(path);
+}
+
+static void onSamplePreviewStop(void) {
+  audio.stopWavPreview();
 }
 
 static int getColumnCount(int row) {
@@ -331,7 +344,7 @@ static int onEdit(int col, int row, CellEditAction action) {
   if (row == 3) {
     if (col == 0) {
       // Load sample
-      fileBrowserSetup("LOAD SAMPLE", ".wav", appSettings.samplePath, onSampleLoaded, onSampleCancelled);
+      fileBrowserSetup("LOAD SAMPLE", ".wav", appSettings.samplePath, onSampleLoaded, onSampleCancelled, onSamplePreviewStart, onSamplePreviewStop);
       screenSetup(&screenFileBrowser, 0);
     }
     return 0;

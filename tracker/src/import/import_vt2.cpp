@@ -996,6 +996,7 @@ int projectLoadVT2(const char* path) {
 
   Project p;
   projectInitAY(&p);
+  p.linearPitch = 0;
 
   Project* project = &p;
 

@@ -30,10 +30,23 @@ static char browserTitle[32];
 static char saveFilename[256];
 static char saveExtension[8];
 static int isFolderMode = 0;
+
+// Callbacks. TODO: Wrap all callbacks into an interface
 static void (*onFileSelected)(const char* path);
 static void (*onCancelled)(void);
+static int (*onPreviewStartCallback)(const char* path);
+static void (*onPreviewStopCallback)(void);
+
 static char pendingSavePath[2048];
 static ScrollState scrollState = {-1, 0, 0, 1};
+
+// Browser interaction state (for EDIT/preview handling)
+enum BrowserState {
+  BROWSER_NORMAL,
+  BROWSER_EDIT_PRESSED,
+  BROWSER_PREVIEWING,
+};
+static BrowserState browserState = BROWSER_NORMAL;
 
 static void fileBrowserRefreshWithSelection(const char* selectName);
 static void fileBrowserRefresh(void);
@@ -124,7 +137,15 @@ static void fileBrowserRefresh(void) {
   resetScrollStateOnSelectionChange();
 }
 
-void fileBrowserSetup(const char* title, const char* extension, const char* startPath, void (*fileCallback)(const char*), void (*cancelCallback)(void)) {
+void fileBrowserSetup(
+  const char* title,
+  const char* extension,
+  const char* startPath,
+  void (*fileCallback)(const char*),
+  void (*cancelCallback)(void),
+  int (*previewStartCb)(const char* path),
+  void (*previewStopCb)(void)
+) {
   strncpy(browserTitle, title, 31);
   browserTitle[31] = 0;
   strncpy(fileExtension, extension, 31);
@@ -132,6 +153,8 @@ void fileBrowserSetup(const char* title, const char* extension, const char* star
   isFolderMode = 0;
   onFileSelected = fileCallback;
   onCancelled = cancelCallback;
+  onPreviewStartCallback = previewStartCb;
+  onPreviewStopCallback = previewStopCb;
 
   if (startPath && strlen(startPath) > 0 && fileDirectoryExists(startPath)) {
     strncpy(currentPath, startPath, sizeof(currentPath) - 1);
@@ -142,7 +165,14 @@ void fileBrowserSetup(const char* title, const char* extension, const char* star
   fileBrowserRefresh();
 }
 
-void fileBrowserSetupFolderMode(const char* title, const char* startPath, const char* filename, const char* extension, void (*folderCallback)(const char*), void (*cancelCallback)(void)) {
+void fileBrowserSetupFolderMode(
+  const char* title,
+  const char* startPath,
+  const char* filename,
+  const char* extension,
+  void (*folderCallback)(const char*),
+  void (*cancelCallback)(void)
+) {
   strncpy(browserTitle, title, 31);
   browserTitle[31] = 0;
   strncpy(saveFilename, filename ? filename : "", sizeof(saveFilename) - 1);
@@ -381,6 +411,94 @@ static void fileBrowserDraw(void) {
   }
 }
 
+static void stopPreview(void) {
+  if (onPreviewStopCallback) {
+    onPreviewStopCallback();
+  }
+}
+
+static void startPreview(void) {
+  int entryIdx = getEntryIndex();
+  if (entryIdx < 0 || entryIdx >= entryCount) return;
+  if (entries[entryIdx].isDirectory) return;
+  if (!onPreviewStartCallback) return;
+
+  char fullPath[2048];
+  snprintf(fullPath, sizeof(fullPath), "%s%s%s", currentPath, PATH_SEPARATOR_STR, entries[entryIdx].name);
+  onPreviewStartCallback(fullPath);
+}
+
+// Perform the EDIT action (file select / directory enter / save)
+static int performEditAction(void) {
+  // Handle "Save to" option in folder mode
+  if (isFolderMode && selectedIndex == 0) {
+    if (onFileSelected) {
+      // Construct full path for overwrite check
+      snprintf(pendingSavePath, sizeof(pendingSavePath), "%s%s%s%s", currentPath, PATH_SEPARATOR_STR, saveFilename, saveExtension);
+
+      // Check if file exists
+      FILE* file = fopen(pendingSavePath, "r");
+      if (file != NULL) {
+        // File exists, ask for confirmation
+        fclose(file);
+        confirmSetup("Overwrite existing file?", doSave, cancelSave);
+        screenSetup(&screenConfirm, 0);
+      } else {
+        // File doesn't exist, save directly
+        onFileSelected(currentPath);
+      }
+      return 0;
+    }
+  }
+
+  // Handle "Create Folder" option in folder mode
+  if (isFolderMode && selectedIndex == 1) {
+    createFolderSetup(currentPath, onFolderCreated, onCreateFolderCancelled);
+    screenSetup(&screenCreateFolder, 0);
+    return 0;
+  }
+
+  int entryIdx = getEntryIndex();
+  if (entryIdx >= 0 && entryIdx < entryCount && entries[entryIdx].isDirectory) {
+    // Enter directory
+    if (strcmp(entries[entryIdx].name, "..") == 0) {
+      // Go up one level - stay on [..] entry
+      char* lastSeparator = strrchr(currentPath, PATH_SEPARATOR);
+      if (lastSeparator && lastSeparator != currentPath) {
+        *lastSeparator = 0;
+        fileBrowserRefreshWithSelection("..");
+        fileBrowserDraw();
+        return 1;
+      } else if (strlen(currentPath) > 1) {
+        // Go to root
+        strcpy(currentPath, PATH_SEPARATOR_STR);
+        fileBrowserRefreshWithSelection("..");
+        fileBrowserDraw();
+        return 1;
+      }
+    } else {
+      // Enter subdirectory
+      int len = strlen(currentPath);
+      if (len > 0 && currentPath[len-1] != PATH_SEPARATOR) {
+        strcat(currentPath, PATH_SEPARATOR_STR);
+      }
+      strcat(currentPath, entries[entryIdx].name);
+    }
+    fileBrowserRefresh();
+    fileBrowserDraw();
+  } else if (!isFolderMode && entryIdx >= 0) {
+    // Select file (only in file mode)
+    stopPreview();
+    char fullPath[2048];
+    snprintf(fullPath, sizeof(fullPath), "%s%s%s", currentPath, PATH_SEPARATOR_STR, entries[entryIdx].name);
+    if (onFileSelected) {
+      onFileSelected(fullPath);
+      return 0;
+    }
+  }
+  return 1;
+}
+
 static int fileBrowserInput(int keys, int tapCount) {
   int maxIndex = entryCount - 1;
   if (isFolderMode) maxIndex += 2;
@@ -417,74 +535,18 @@ static int fileBrowserInput(int keys, int tapCount) {
       fileBrowserDrawEntry(selectedIndex);
     }
     return 1;
+  } else if (keys == (keyEdit | keyPlay)) {
+    // Preview file under cursor
+    browserState = BROWSER_PREVIEWING;
+    startPreview();
+    return 1;
   } else if (keys == keyEdit) {
-    // Handle "Save to" option in folder mode
-    if (isFolderMode && selectedIndex == 0) {
-      if (onFileSelected) {
-        // Construct full path for overwrite check
-        snprintf(pendingSavePath, sizeof(pendingSavePath), "%s%s%s%s", currentPath, PATH_SEPARATOR_STR, saveFilename, saveExtension);
-
-        // Check if file exists
-        FILE* file = fopen(pendingSavePath, "r");
-        if (file != NULL) {
-          // File exists, ask for confirmation
-          fclose(file);
-          confirmSetup("Overwrite existing file?", doSave, cancelSave);
-          screenSetup(&screenConfirm, 0);
-        } else {
-          // File doesn't exist, save directly
-          onFileSelected(currentPath);
-        }
-        return 0;
-      }
-    }
-
-    // Handle "Create Folder" option in folder mode
-    if (isFolderMode && selectedIndex == 1) {
-      createFolderSetup(currentPath, onFolderCreated, onCreateFolderCancelled);
-      screenSetup(&screenCreateFolder, 0);
-      return 0;
-    }
-
-    int entryIdx = getEntryIndex();
-    if (entryIdx >= 0 && entryIdx < entryCount && entries[entryIdx].isDirectory) {
-      // Enter directory
-      if (strcmp(entries[entryIdx].name, "..") == 0) {
-        // Go up one level - stay on [..] entry
-        char* lastSeparator = strrchr(currentPath, PATH_SEPARATOR);
-        if (lastSeparator && lastSeparator != currentPath) {
-          *lastSeparator = 0;
-          fileBrowserRefreshWithSelection("..");
-          fileBrowserDraw();
-          return 1;
-        } else if (strlen(currentPath) > 1) {
-          // Go to root
-          strcpy(currentPath, PATH_SEPARATOR_STR);
-          fileBrowserRefreshWithSelection("..");
-          fileBrowserDraw();
-          return 1;
-        }
-      } else {
-        // Enter subdirectory
-        int len = strlen(currentPath);
-        if (len > 0 && currentPath[len-1] != PATH_SEPARATOR) {
-          strcat(currentPath, PATH_SEPARATOR_STR);
-        }
-        strcat(currentPath, entries[entryIdx].name);
-      }
-      fileBrowserRefresh();
-      fileBrowserDraw();
-    } else if (!isFolderMode && entryIdx >= 0) {
-      // Select file (only in file mode)
-      char fullPath[2048];
-      snprintf(fullPath, sizeof(fullPath), "%s%s%s", currentPath, PATH_SEPARATOR_STR, entries[entryIdx].name);
-      if (onFileSelected) {
-        onFileSelected(fullPath);
-        return 0;
-      }
+    if (browserState == BROWSER_NORMAL) {
+      browserState = BROWSER_EDIT_PRESSED;
     }
     return 1;
   } else if (keys == keyOpt) {
+    stopPreview();
     if (onCancelled) {
       onCancelled();
       return 0;
@@ -517,6 +579,21 @@ static void draw(void) {
 }
 
 static int onInput(int isKeyDown, int keys, int tapCount) {
+  // Handle key-up: release state
+  if (!isKeyDown && keys == 0) {
+    if (browserState == BROWSER_EDIT_PRESSED) {
+      // EDIT was pressed and released alone — perform file select action
+      browserState = BROWSER_NORMAL;
+      return performEditAction();
+    } else if (browserState == BROWSER_PREVIEWING) {
+      // Preview key combo released — stop preview
+      browserState = BROWSER_NORMAL;
+      stopPreview();
+    }
+    return 0;
+  }
+  if (!isKeyDown) return 0;
+
   return fileBrowserInput(keys, tapCount);
 }
 

@@ -4,6 +4,8 @@
 #include "common.h"
 #include "chipnomad_lib.h"
 
+class WavFile;
+
 enum class TrackState: uint8_t {
   normal = 0,
   solo = 1,
@@ -41,6 +43,17 @@ class AudioManager {
     int bufferSize;
     int pendingReinitChips;
     float* renderBuffer;
+
+    // WAV preview state
+    WavFile* wavPreview;
+    double wavPreviewPosition;  // Fractional accumulator for resampling (0.0 to 1.0)
+    double wavPreviewRateRatio; // sourceSampleRate / outputSampleRate
+
+    // WAV preview read buffer (persists across audio callbacks)
+    static const int WAV_PREVIEW_BUF_SIZE = 256;
+    int16_t wavPreviewBuf[WAV_PREVIEW_BUF_SIZE];
+    int wavPreviewBufPos;
+    int wavPreviewBufCount;
 
     void updatePlaybackMuteFlags(void);
 

@@ -101,6 +101,51 @@ static void onInstrumentCancelled(void) {
   screenSetup(&screenInstrument, cInstrument);
 }
 
+static Table instrumentPreviewTableBackup;
+static bool instrumentPreviewing = false;
+
+static void onInstrumentPreviewStop(void) {
+  if (!instrumentPreviewing || !chipnomadState) return;
+
+  int previewIdx = PROJECT_MAX_INSTRUMENTS;
+  int tableIdx = PROJECT_MAX_INSTRUMENTS;
+  Project* p = &chipnomadState->project;
+
+  // Stop preview playback
+  playbackStopPreview(&chipnomadState->playbackState, *pSongTrack);
+
+  // Free preview instrument data (handles AYSample sampleData)
+  getInstrumentFunctions(p->instruments[previewIdx].type).free(&p->instruments[previewIdx]);
+
+  // Restore the table
+  p->tables[tableIdx] = instrumentPreviewTableBackup;
+
+  instrumentPreviewing = false;
+}
+
+static int onInstrumentPreviewStart(const char* path) {
+  onInstrumentPreviewStop();
+
+  int previewIdx = PROJECT_MAX_INSTRUMENTS;
+  int tableIdx = PROJECT_MAX_INSTRUMENTS;
+  Project* p = &chipnomadState->project;
+
+  // Back up the table that will be overwritten
+  instrumentPreviewTableBackup = p->tables[tableIdx];
+
+  // Load instrument into preview slot
+  if (!instrumentLoad(p, path, previewIdx)) {
+    return 0;
+  }
+
+  instrumentPreviewing = true;
+
+  // Preview on current track with C-4
+  uint8_t note = p->pitchTable.octaveSize * 4;
+  playbackPreviewNote(&chipnomadState->playbackState, *pSongTrack, note, previewIdx);
+  return 1;
+}
+
 static void drawRowHeader(int row, CellState state);
 static void drawColHeader(int col, CellState state);
 
@@ -274,7 +319,7 @@ int instrumentCommonOnEdit(int col, int row, enum CellEditAction action) {
     }
   } else if (row == 0 && col == 1) {
     // Load instrument (supports .cni and .vts formats)
-    fileBrowserSetup("LOAD INSTRUMENT", ".cni,.vts", appSettings.instrumentPath, onInstrumentLoaded, onInstrumentCancelled);
+    fileBrowserSetup("LOAD INSTRUMENT", ".cni,.vts", appSettings.instrumentPath, onInstrumentLoaded, onInstrumentCancelled, onInstrumentPreviewStart, onInstrumentPreviewStop);
     screenSetup(&screenFileBrowser, 0);
   } else if (row == 0 && col == 2) {
     // Save instrument
