@@ -7,6 +7,7 @@
 #include "corelib_file.h"
 #include "utils.h"
 #include "copy_paste.h"
+#include "oscilloscope.h"
 
 const AppScreen* currentScreen = NULL;
 
@@ -16,13 +17,26 @@ static char messageBuffer[42] = "";
 static AppScreen const* pendingScreen;
 static int pendingScreenInput;
 
+// Cached UI layer state
+static int uiDirty = 1;       // UI layer needs re-render
+static int inLayerRender = 0; // currently rendering into the cached layer
+
+void screenInvalidate(void) {
+  uiDirty = 1;
+}
+
+int screenInLayerRender(void) {
+  return inLayerRender;
+}
+
 void drawScreenMap() {
   const static int smY = 15;
 
   const ColorScheme cs = appSettings.colorScheme;
   gfxSetBgColor(cs.background);
   gfxSetFgColor(cs.textInfo);
-  gfxClearRect(35, smY, 5, 5);
+  // Draw the map transparently (glyphs only) so it doesn't cover the oscilloscope.
+  gfxSetTransparentText(1);
 
   // Core screens
   gfxPrint(35, smY + 1, "SCPIT");
@@ -71,6 +85,8 @@ void drawScreenMap() {
   } else if (currentScreen == &screenSettings) {
     gfxPrint(35, smY + 2, "S");
   }
+
+  gfxSetTransparentText(0);
 }
 
 void screenSetup(const AppScreen* screen, int input) {
@@ -82,15 +98,37 @@ void screenDraw() {
   if (pendingScreen != NULL) {
     currentScreen = pendingScreen;
     currentScreen->setup(pendingScreenInput);
-    gfxSetBgColor(appSettings.colorScheme.background);
-    gfxSetCursorColor(appSettings.colorScheme.cursor);
-    gfxClearRect(0, 0, 40, 20);
-    currentScreen->fullRedraw();
-    drawScreenMap();
-
     pendingScreen = NULL;
+    uiDirty = 1;
   }
 
+  // Clear the full screen (including the letterbox margins around the text
+  // grid), then draw layers back-to-front: oscilloscope (dynamic back layer)
+  // -> cached UI layer (static, re-rendered only when dirty) -> dynamic
+  // overlays. A full clear is required because the oscilloscope is drawn
+  // full-bleed into the margins with an alpha blend, and transparent pixels
+  // don't erase the previous frame.
+  gfxSetBgColor(appSettings.colorScheme.background);
+  gfxSetCursorColor(appSettings.colorScheme.cursor);
+  gfxClear();
+
+  // Back layer: oscilloscope (overlaid per-track waveform lines).
+  oscilloscopeDraw();
+
+  // Front layer: cached UI content (screen full redraw + screen map). Only
+  // re-rendered when dirty; composited over the oscilloscope every frame.
+  if (uiDirty) {
+    gfxBeginLayer();
+    inLayerRender = 1;
+    currentScreen->fullRedraw();
+    drawScreenMap();
+    inLayerRender = 0;
+    gfxEndLayer();
+    uiDirty = 0;
+  }
+  gfxCompositeLayer();
+
+  // Dynamic overlays (play markers etc.), drawn every frame on top of the layer.
   currentScreen->draw();
 
   // Draw cached message
@@ -176,6 +214,13 @@ static void validateCursorBounds(ScreenData* screen) {
 }
 
 void screenFullRedraw(ScreenData* screen) {
+  // When called outside the layer render (e.g. from an input handler after
+  // content changed), just mark the layer dirty and let screenDraw re-render it.
+  if (!inLayerRender) {
+    uiDirty = 1;
+    return;
+  }
+
   validateCursorBounds(screen);
 
   if (screen->cursorRow < screen->topRow) {
@@ -185,7 +230,7 @@ void screenFullRedraw(ScreenData* screen) {
   }
 
   gfxSetBgColor(appSettings.colorScheme.background);
-  gfxClearRect(0, 0, 40, 20);
+  gfxClearRect(0, 0, 40, 19 - OSCILLOSCOPE_OVERLAP_ROWS);   // keep the bottom oscilloscope strip intact
   drawScreenMap();
 
   // Static content
@@ -200,7 +245,11 @@ void screenFullRedraw(ScreenData* screen) {
   int maxRow = screen->topRow + 16;
   if (maxRow > screen->rows) maxRow = screen->rows;
 
+  // The bottom three visible rows overlap the oscilloscope, so draw them
+  // transparently (glyphs only) so the symbols stay on top while the
+  // oscilloscope shows through.
   for (int row = screen->topRow; row < maxRow; row++) {
+    gfxSetTransparentText(row >= maxRow - OSCILLOSCOPE_OVERLAP_ROWS);
     for (int col = 0; col < screen->getColumnCount(row); col++) {
       CellState state = CellState::normal;
       if (screen->selectMode == 1 && col >= selCol1 && col <= selCol2 && row >= selRow1 && row <= selRow2) {
@@ -212,11 +261,14 @@ void screenFullRedraw(ScreenData* screen) {
       screen->drawField(col, row, state);
     }
   }
+  gfxSetTransparentText(0);
 
   // Row headers
   for (int row = screen->topRow; row < maxRow; row++) {
+    gfxSetTransparentText(row >= maxRow - OSCILLOSCOPE_OVERLAP_ROWS);
     screen->drawRowHeader(row, (screen->cursorRow == row) ? CellState::focus : CellState::normal);
   }
+  gfxSetTransparentText(0);
 
   // Column headers make sense only for spreadsheet-like screens, so we get the number of columns of the first row
   for (int col = 0; col < screen->getColumnCount(0); col++) {
@@ -551,7 +603,13 @@ int screenInput(ScreenData* screen, int isKeyDown, int keys, int tapCount) {
   // Discard key up events unless no buttons are pressed (for existing logic that expects keys == 0)
   if (!isKeyDown && keys != 0) return 0;
 
-  return (screen->selectMode == 1) ? inputSelectMode(screen, keys, tapCount) : inputNormalMode(screen, keys, tapCount);
+  int handled = (screen->selectMode == 1) ? inputSelectMode(screen, keys, tapCount) : inputNormalMode(screen, keys, tapCount);
+
+  // Any handled input may have changed screen content; mark the cached UI
+  // layer dirty so the next frame re-renders it.
+  if (handled) screenInvalidate();
+
+  return handled;
 }
 
 

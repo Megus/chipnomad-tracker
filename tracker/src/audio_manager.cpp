@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "audio_manager.h"
 #include "corelib_audio.h"
+#include "oscilloscope.h"
 
 #include "chipnomad_lib.h"
 #include "corelib_file.h"
@@ -20,7 +21,10 @@ void audioCallback(int16_t* buffer, int stereoSamples) {
     self->pendingReinitChips = 0;
   }
 
-  chipnomadRender(self->chipnomadState, self->renderBuffer, stereoSamples);
+  chipnomadRenderTracks(self->chipnomadState, self->renderBuffer, stereoSamples, self->trackRenderBuffer, self->chipnomadState->project.tracksCount);
+
+  // Feed per-track samples to the oscilloscope visualization
+  oscilloscopePushSamples(self->trackRenderBuffer, self->chipnomadState->project.tracksCount, stereoSamples);
 
   // WAV preview: resample and mix into render buffer (as float, before final conversion)
   if (self->wavPreview && !self->wavPreview->isFinished()) {
@@ -77,6 +81,9 @@ AudioManager::~AudioManager() {
   stop();
   stopWavPreview();
   free(renderBuffer);
+  for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
+    free(trackRenderBuffer[i]);
+  }
   self = NULL; // Clear the static pointer
 }
 
@@ -85,6 +92,9 @@ int AudioManager::start(int sampleRate, int bufferSize) {
   this->sampleRate = sampleRate;
   this->bufferSize = bufferSize;
   renderBuffer = (float*)malloc(bufferSize * 2 * sizeof(float));
+  for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
+    trackRenderBuffer[i] = (float*)malloc(bufferSize * sizeof(float));
+  }
 
   audioSetup(audioCallback, sampleRate, bufferSize);
 

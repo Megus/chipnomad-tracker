@@ -171,11 +171,12 @@ void colorThemeDrawRowHeader(int row, CellState state) {
     gfxSetFgColor(appSettings.colorScheme.textDefault);
     gfxPrint(0, row + 2, colorNames[row]);
 
-    // Draw color preview as part of row header
+    // Draw color preview as part of row header (gfxClearRect ignores the
+    // transparent-text flag, so the swatch stays visible on the bottom rows)
     int* colorPtr = getColorPtr(row);
     if (colorPtr) {
       gfxSetBgColor(*colorPtr);
-      gfxPrint(26, row + 2, "   ");
+      gfxClearRect(26, row + 2, 3, 1);
       gfxSetBgColor(appSettings.colorScheme.background);
     }
   }
@@ -259,7 +260,7 @@ int colorThemeOnEdit(int col, int row, CellEditAction action) {
     } else if (res > 1) {
       return 1;
     }
-  } else if (row == 11 && action == CellEditAction::tap) {
+  } else if (row == 16 && action == CellEditAction::tap) {
     // Buttons
     if (col == 0) {
       // Save

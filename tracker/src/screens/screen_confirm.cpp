@@ -19,6 +19,8 @@ static void setup(int input) {
 }
 
 static void fullRedraw(void) {
+  if (!screenInLayerRender()) { screenInvalidate(); return; }
+
   gfxSetBgColor(appSettings.colorScheme.background);
   gfxClear();
 

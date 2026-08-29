@@ -137,8 +137,9 @@ static void update_mixer(struct ayumi* ay) {
   for (i = 0; i < TONE_CHANNELS; i += 1) {
     out = (update_tone(ay, i) | ay->channels[i].t_off) & (noise | ay->channels[i].n_off);
     out *= ay->channels[i].e_on ? envelope : ay->channels[i].volume * 2 + 1;
-    ay->left += ay->dac_table[out] * ay->channels[i].pan_left;
-    ay->right += ay->dac_table[out] * ay->channels[i].pan_right;
+    ay->channel[i] = ay->dac_table[out];
+    ay->left += ay->channel[i] * ay->channels[i].pan_left;
+    ay->right += ay->channel[i] * ay->channels[i].pan_right;
   }
 }
 

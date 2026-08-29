@@ -169,6 +169,12 @@ void gfxClearRect(int x, int y, int w, int h) {
   isDirty = 1;
 }
 
+static int transparentText = 0;
+
+void gfxSetTransparentText(int enabled) {
+  transparentText = enabled;
+}
+
 void gfxPrint(int x, int y, const char* text) {
   if (text == NULL) return;
 
@@ -176,24 +182,26 @@ void gfxPrint(int x, int y, const char* text) {
   int cy = CHAR_Y(y);
   int len = (int)strlen(text);
 
-  // Draw background rectangles first
-  for (int i = 0; i < len; i++) {
-    if (text[i] == '\r' && text[i + 1] == '\n') {
-      i++;
-      cx = CHAR_X(x);
-      cy += fontH;
-      continue;
-    }
-    SDL_Rect bgRect = {cx, cy, fontW * 8, fontH};
+  // Draw background rectangles first (skipped when transparent text is enabled)
+  if (!transparentText) {
+    for (int i = 0; i < len; i++) {
+      if (text[i] == '\r' && text[i + 1] == '\n') {
+        i++;
+        cx = CHAR_X(x);
+        cy += fontH;
+        continue;
+      }
+      SDL_Rect bgRect = {cx, cy, fontW * 8, fontH};
 #ifdef MIYOOPORTS_BUILD
-    SDL_FillRect(offscreenSurface, &bgRect, bgColor);
+      SDL_FillRect(offscreenSurface, &bgRect, bgColor);
 #else
-    SDL_FillRect(sdlScreen, &bgRect, bgColor);
+      SDL_FillRect(sdlScreen, &bgRect, bgColor);
 #endif
-    cx += fontW * 8;
-    if (cx > WINDOW_WIDTH) {
-      cx = CHAR_X(x);
-      cy += fontH;
+      cx += fontW * 8;
+      if (cx > WINDOW_WIDTH) {
+        cx = CHAR_X(x);
+        cy += fontH;
+      }
     }
   }
 
@@ -411,12 +419,56 @@ void gfxDrawBitmap(Bitmap* bitmap, int col, int row) {
   isDirty = 1;
 }
 
+void gfxDrawLineAlpha(int x1, int y1, int x2, int y2, int alpha) {
+  if (alpha <= 0) return;
+  if (alpha > 255) alpha = 255;
+
+  uint8_t r = bgR + ((fgR - bgR) * alpha) / 255;
+  uint8_t g = bgG + ((fgG - bgG) * alpha) / 255;
+  uint8_t b = bgB + ((fgB - bgB) * alpha) / 255;
+
+  int dx = abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
+  int dy = -abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
+  int err = dx + dy;
+  while (1) {
+#ifdef MIYOOPORTS_BUILD
+    if (x1 >= 0 && x1 < offscreenSurface->w && y1 >= 0 && y1 < offscreenSurface->h) {
+      uint32_t color = SDL_MapRGB(offscreenSurface->format, r, g, b);
+      ((Uint32 *)offscreenSurface->pixels)[y1 * offscreenSurface->w + x1] = color;
+    }
+#else
+    if (x1 >= 0 && x1 < sdlScreen->w && y1 >= 0 && y1 < sdlScreen->h) {
+      uint32_t color = SDL_MapRGB(sdlScreen->format, r, g, b);
+      ((Uint32 *)sdlScreen->pixels)[y1 * sdlScreen->w + x1] = color;
+    }
+#endif
+    if (x1 == x2 && y1 == y2) break;
+    int e2 = 2 * err;
+    if (e2 >= dy) { err += dy; x1 += sx; }
+    if (e2 <= dx) { err += dx; y1 += sy; }
+  }
+  isDirty = 1;
+}
+
 int gfxGetCharWidth(void) {
   return fontW * 8;
 }
 
 int gfxGetCharHeight(void) {
   return fontH;
+}
+
+int gfxGetOffsetY(void) {
+  // SDL1.2 renders a fixed 640x480 grid with no centering offset
+  return 0;
+}
+
+int gfxGetScreenWidth(void) {
+  return WINDOW_WIDTH;
+}
+
+int gfxGetScreenHeight(void) {
+  return WINDOW_HEIGHT;
 }
 
 void gfxReloadFont(void) {

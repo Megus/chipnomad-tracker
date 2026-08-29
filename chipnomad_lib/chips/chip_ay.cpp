@@ -104,11 +104,20 @@ void SoundChipAY::updateClock(int clockRate) {
 }
 
 void SoundChipAY::render(float* buffer, int samples) {
+  renderChannels(buffer, NULL, samples);
+}
+
+void SoundChipAY::renderChannels(float* buffer, float** channels, int samples) {
   for (int c = 0; c < samples; c++) {
     ayumi_process(ay);
     ayumi_remove_dc(ay);
     *buffer++ = ay->left * ayVolumeScale;
     *buffer++ = ay->right * ayVolumeScale;
+    if (channels) {
+      channels[0][c] = ay->channel[0];
+      channels[1][c] = ay->channel[1];
+      channels[2][c] = ay->channel[2];
+    }
   }
 }
 

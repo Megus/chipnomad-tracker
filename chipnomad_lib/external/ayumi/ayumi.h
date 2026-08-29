@@ -58,6 +58,7 @@ struct ayumi {
   int dc_index;
   float left;
   float right;
+  float channel[TONE_CHANNELS];  // per-channel DAC output (before panning/mixing)
   ayumi_filter_func filter_func;
   int (*timer_func)(struct ayumi* ay, void* userdata);
   void* timer_func_userdata;

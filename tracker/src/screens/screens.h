@@ -95,6 +95,7 @@ extern const AppScreen screenExport;
 extern const AppScreen screenManage;
 extern const AppScreen screenSettings;
 extern const AppScreen screenColorTheme;
+extern const AppScreen screenOscColors;
 extern const AppScreen screenKeyMapping;
 
 extern const AppScreen* currentScreen;
@@ -105,6 +106,15 @@ void screenMessage(int time, const char* format, ...);
 void screensInitAll(void);
 void drawScreenMap(void);
 enum ScreenPlaybackLevel screenGetPlaybackLevel(const AppScreen* screen);
+
+// Cached UI layer: mark the layer dirty so the next screenDraw re-renders it.
+// Call this whenever UI content changes (edit, scroll, cursor move, screen switch).
+void screenInvalidate(void);
+
+// Returns 1 while screenDraw is rendering into the cached layer. Custom screen
+// fullRedraw() implementations use this to distinguish "render now" (inside the
+// layer) from "content changed, mark dirty" (input-triggered).
+int screenInLayerRender(void);
 
 // Spreadsheet functions
 void screenFullRedraw(ScreenData* screen);

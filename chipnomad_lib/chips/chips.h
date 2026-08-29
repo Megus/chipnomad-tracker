@@ -34,6 +34,17 @@ class SoundChip {
     virtual uint8_t getRegister(uint16_t reg) { return 0; };
     virtual void setQuality(ChipNomadQuality quality) {};
     virtual void render(float* buffer, int samples) {};
+    /**
+     * @brief Render the chip and optionally capture per-channel output
+     *
+     * @param buffer Interleaved stereo output (left, right, ...)
+     * @param channels Per-channel float buffers, or NULL to skip capture
+     * @param samples Number of stereo sample pairs to render
+     */
+    virtual void renderChannels(float* buffer, float** channels, int samples) {
+      render(buffer, samples);
+      (void)channels;
+    }
 };
 
 class SoundChipAY : public SoundChip {
@@ -55,6 +66,7 @@ class SoundChipAY : public SoundChip {
 
     void setTimerFunc(int (*timerFunc)(SoundChip* self, void* userdata), void* timerUserdata) override;
     void render(float* buffer, int samples) override;
+    void renderChannels(float* buffer, float** channels, int samples) override;
     void setQuality(ChipNomadQuality quality) override;
 };
 

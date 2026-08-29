@@ -29,6 +29,7 @@ struct ColorScheme {
   int cursor;
   int selection;
   int warning;
+  int oscColors[PROJECT_MAX_TRACKS];  // Oscilloscope line colors (one per track/voice)
 };
 
 // Key mapping: 8 buttons × 3 keys each

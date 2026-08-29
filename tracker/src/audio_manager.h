@@ -43,6 +43,7 @@ class AudioManager {
     int bufferSize;
     int pendingReinitChips;
     float* renderBuffer;
+    float* trackRenderBuffer[PROJECT_MAX_TRACKS];  // per-track capture buffers
 
     // WAV preview state
     WavFile* wavPreview;
