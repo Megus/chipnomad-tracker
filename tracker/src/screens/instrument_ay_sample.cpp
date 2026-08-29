@@ -158,7 +158,7 @@ static int onSamplePreviewStart(const char* path) {
 }
 
 static void onSamplePreviewStop(void) {
-  audio.stopWavPreview();
+  audio.stopPreview();
 }
 
 static int getColumnCount(int row) {

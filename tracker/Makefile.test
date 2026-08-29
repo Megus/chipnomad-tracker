@@ -62,6 +62,39 @@ build:
 	@$(CXX) $(CFLAGS) $(INCLUDES) $(ALL_SOURCES) $(LDFLAGS) -o $(TEST_EXECUTABLE)
 	@echo "Built: $(TEST_EXECUTABLE)"
 
+# --- Coverage ---
+# Uses clang source-based coverage (llvm-cov). On macOS the tools are reached
+# via xcrun; override LLVM_COV / LLVM_PROFDATA if you have them on PATH.
+LLVM_COV ?= xcrun llvm-cov
+LLVM_PROFDATA ?= xcrun llvm-profdata
+COV_FLAGS = -fprofile-instr-generate -fcoverage-mapping
+COV_EXECUTABLE = $(BUILD_DIR)/run_tests_cov
+COV_DIR = $(BUILD_DIR)/coverage
+
+# Build instrumented binary, run it, and generate coverage reports
+.PHONY: coverage
+coverage:
+	@mkdir -p $(COV_DIR)
+	@echo "Building instrumented test executable..."
+	@$(CXX) $(CFLAGS) $(COV_FLAGS) $(INCLUDES) $(ALL_SOURCES) $(LDFLAGS) -o $(COV_EXECUTABLE)
+	@echo "Running tests to collect coverage..."
+	@LLVM_PROFILE_FILE=$(COV_DIR)/tests.profraw $(COV_EXECUTABLE) > /dev/null || true
+	@$(LLVM_PROFDATA) merge -sparse $(COV_DIR)/tests.profraw -o $(COV_DIR)/tests.profdata
+	@echo ""
+	@echo "Coverage summary (project sources only):"
+	@$(LLVM_COV) report $(COV_EXECUTABLE) -instr-profile=$(COV_DIR)/tests.profdata \
+		$(ALL_SOURCES) -ignore-filename-regex='(tests/|external/|doctest)' 2>/dev/null
+	@$(LLVM_COV) show $(COV_EXECUTABLE) -instr-profile=$(COV_DIR)/tests.profdata \
+		-format=html -output-dir=$(COV_DIR)/html \
+		-ignore-filename-regex='(tests/|external/|doctest)' 2>/dev/null
+	@echo "Exporting lcov.info for editor coverage gutters..."
+	@$(LLVM_COV) export $(COV_EXECUTABLE) -instr-profile=$(COV_DIR)/tests.profdata \
+		-format=lcov -ignore-filename-regex='(tests/|external/|doctest)' \
+		> $(COV_DIR)/lcov.info 2>/dev/null
+	@echo ""
+	@echo "HTML report:  $(COV_DIR)/html/index.html"
+	@echo "lcov report:  $(COV_DIR)/lcov.info"
+
 # Clean build artifacts
 clean:
 	@rm -rf $(BUILD_DIR)

@@ -4,7 +4,7 @@
 #include "common.h"
 #include "chipnomad_lib.h"
 
-class WavFile;
+class AudioSource;
 
 enum class TrackState: uint8_t {
   normal = 0,
@@ -33,9 +33,14 @@ class AudioManager {
     // Chip reinitialization function
     void reinitChips();
 
-    // WAV preview functions
+    // Preview functions. The AudioManager takes ownership of the source and
+    // deletes it when the preview stops.
+    virtual void startPreview(AudioSource* source);
+    virtual void stopPreview();
+
+    // Convenience helpers for specific source types
     virtual int startWavPreview(const char* path);
-    virtual void stopWavPreview();
+    virtual int startWavetablePreview(const char* path, bool isYM);
 
   private:
     ChipNomadState *chipnomadState;
@@ -44,16 +49,16 @@ class AudioManager {
     int pendingReinitChips;
     float* renderBuffer;
 
-    // WAV preview state
-    WavFile* wavPreview;
-    double wavPreviewPosition;  // Fractional accumulator for resampling (0.0 to 1.0)
-    double wavPreviewRateRatio; // sourceSampleRate / outputSampleRate
+    // Preview state (generic audio source: WAV, wavetable, etc.)
+    AudioSource* previewSource;
+    double previewPosition;   // Fractional accumulator for resampling (0.0 to 1.0)
+    double previewRateRatio;  // sourceSampleRate / outputSampleRate
 
-    // WAV preview read buffer (persists across audio callbacks)
-    static const int WAV_PREVIEW_BUF_SIZE = 256;
-    int16_t wavPreviewBuf[WAV_PREVIEW_BUF_SIZE];
-    int wavPreviewBufPos;
-    int wavPreviewBufCount;
+    // Preview read buffer (persists across audio callbacks)
+    static const int PREVIEW_BUF_SIZE = 256;
+    int16_t previewBuf[PREVIEW_BUF_SIZE];
+    int previewBufPos;
+    int previewBufCount;
 
     void updatePlaybackMuteFlags(void);
 

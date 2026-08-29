@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include "audio_source.h"
 
 // Result codes for WAV operations
 enum WavResult {
@@ -16,7 +17,7 @@ enum WavResult {
 
 // WAV file class: opens a WAV file, provides metadata, supports both
 // truncated loading (for instruments) and streaming playback (for preview).
-class WavFile {
+class WavFile : public AudioSource {
 public:
   // Open and parse a WAV file. Check getResult() after construction.
   WavFile(const char* path);
@@ -28,7 +29,7 @@ public:
   static const char* getErrorMessage(WavResult r);
 
   // Metadata (valid after successful open)
-  uint32_t getSampleRate() const { return sampleRate; }
+  uint32_t getSampleRate() const override { return sampleRate; }
   uint16_t getNumChannels() const { return numChannels; }
   uint16_t getBitsPerSample() const { return bitsPerSample; }
   uint32_t getTotalSamples() const { return totalSamples; }
@@ -40,13 +41,13 @@ public:
 
   // Streaming: read next N sample frames as signed 16-bit mono.
   // Returns actual number of samples read (0 = end of file).
-  uint32_t readSamples16(int16_t* buffer, uint32_t count);
+  uint32_t readSamples16(int16_t* buffer, uint32_t count) override;
 
   // Streaming: seek to a sample position (0 = start of audio data)
   void seek(uint32_t samplePosition);
 
   // Streaming: check if all samples have been read
-  bool isFinished() const { return streamPosition >= totalSamples; }
+  bool isFinished() const override { return streamPosition >= totalSamples; }
 
 private:
   FILE* file;

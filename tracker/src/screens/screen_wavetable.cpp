@@ -9,6 +9,7 @@
 #include "file_browser.h"
 #include "screen_enter_name.h"
 #include "copy_paste.h"
+#include "audio_manager.h"
 #include <string.h>
 
 // Wavetable preview dimensions (in characters)
@@ -337,6 +338,15 @@ static void onLoadCancelled(void) {
   screenSetup(&screenWavetable, wavetableIdx);
 }
 
+static int onWavetablePreviewStart(const char* path) {
+  int isYM = chipnomadState->project.chipSetup.ay.isYM;
+  return audio.startWavetablePreview(path, isYM);
+}
+
+static void onWavetablePreviewStop(void) {
+  audio.stopPreview();
+}
+
 static void onSaveFolderSelected(const char* folderPath) {
   // Store the selected folder and show the filename entry screen
   strncpy(selectedSaveFolder, folderPath, sizeof(selectedSaveFolder) - 1);
@@ -376,7 +386,7 @@ static int onEdit(int col, int row, CellEditAction action) {
       if (action == CellEditAction::tap) {
         if (col == 0) {
           // Load button - open file browser to select .aywave file
-          fileBrowserSetup("LOAD WAVETABLES", ".aywave", appSettings.wavetablePath, onLoadFileSelected, onLoadCancelled);
+          fileBrowserSetup("LOAD WAVETABLES", ".aywave", appSettings.wavetablePath, onLoadFileSelected, onLoadCancelled, onWavetablePreviewStart, onWavetablePreviewStop);
           screenSetup(&screenFileBrowser, 0);
           return 1;
         } else if (col == 1) {

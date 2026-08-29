@@ -3,8 +3,11 @@
 ## v1.0.5 (not yet released)
 
 - AY Sample instrument automatically normalizes samples and makes them unipolar (for better playback quality on AY)
+- Preview instrument, samples, and AY wavetables in the file browser by pressing **EDIT**+**PLAY**.
 - *FIX*: Hint at Modulation screen showed "Sustain XX ticks"
 - *FIX*: Sample copy didn't create a copy of the sample data
+- *FIX*: Editing background color could leave a border with old color on some devices.
+- *FIX*: PortMaster build didn't work on TrimUI Brick with NextUI.
 
 ## v1.0.4 (July 12, 2026)
 

@@ -4,7 +4,9 @@
 
 #include "chipnomad_lib.h"
 #include "corelib_file.h"
+#include "audio_source.h"
 #include "import/wav_file.h"
+#include "import/wavetable_source.h"
 
 static AudioManager *self = NULL; // Used to point to the current AudioManager instance for callback function
 
@@ -22,28 +24,27 @@ void audioCallback(int16_t* buffer, int stereoSamples) {
 
   chipnomadRender(self->chipnomadState, self->renderBuffer, stereoSamples);
 
-  // WAV preview: resample and mix into render buffer (as float, before final conversion)
-  if (self->wavPreview && !self->wavPreview->isFinished()) {
+  // Preview: resample and mix into render buffer (as float, before final conversion)
+  if (self->previewSource && !self->previewSource->isFinished()) {
     for (int i = 0; i < stereoSamples; i++) {
       // Refill read buffer if needed
-      if (self->wavPreviewBufPos >= self->wavPreviewBufCount) {
-        self->wavPreviewBufCount = self->wavPreview->readSamples16(
-          self->wavPreviewBuf, AudioManager::WAV_PREVIEW_BUF_SIZE);
-        self->wavPreviewBufPos = 0;
-        if (self->wavPreviewBufCount == 0) break;
+      if (self->previewBufPos >= self->previewBufCount) {
+        self->previewBufCount = self->previewSource->readSamples16(
+          self->previewBuf, AudioManager::PREVIEW_BUF_SIZE);
+        self->previewBufPos = 0;
+        if (self->previewBufCount == 0) break;
       }
 
       // Mix current source sample into both channels (mono -> stereo)
-      float wavSample = self->wavPreviewBuf[self->wavPreviewBufPos] * (0.5f / 32768.0f); // Scale down to reduce volume
-      self->renderBuffer[i * 2] += wavSample;
-      self->renderBuffer[i * 2 + 1] += wavSample;
+      float previewSample = self->previewBuf[self->previewBufPos] * (0.5f / 32768.0f); // Scale down to reduce volume
+      self->renderBuffer[i * 2] += previewSample;
+      self->renderBuffer[i * 2 + 1] += previewSample;
 
-      // Advance fractional position and consume source samples
-      self->wavPreviewPosition += self->wavPreviewRateRatio;
-      while (self->wavPreviewPosition >= 1.0) {
-        self->wavPreviewPosition -= 1.0;
-        self->wavPreviewBufPos++;
-      }
+      // Advance fractional position; consume whole source samples in one step
+      self->previewPosition += self->previewRateRatio;
+      int wholeSamples = (int)self->previewPosition;
+      self->previewBufPos += wholeSamples;
+      self->previewPosition -= wholeSamples;
     }
   }
 
@@ -60,11 +61,11 @@ void audioCallback(int16_t* buffer, int stereoSamples) {
 AudioManager::AudioManager(ChipNomadState *state) {
   chipnomadState = state;
   pendingReinitChips = 0;
-  wavPreview = NULL;
-  wavPreviewPosition = 0.0;
-  wavPreviewRateRatio = 1.0;
-  wavPreviewBufPos = 0;
-  wavPreviewBufCount = 0;
+  previewSource = NULL;
+  previewPosition = 0.0;
+  previewRateRatio = 1.0;
+  previewBufPos = 0;
+  previewBufCount = 0;
 
   // Initialize track states
   for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
@@ -75,7 +76,7 @@ AudioManager::AudioManager(ChipNomadState *state) {
 
 AudioManager::~AudioManager() {
   stop();
-  stopWavPreview();
+  stopPreview();
   free(renderBuffer);
   self = NULL; // Clear the static pointer
 }
@@ -157,28 +158,41 @@ void AudioManager::reinitChips() {
   pendingReinitChips = 1; // Request chip reinitialization in the next audio callback
 }
 
-int AudioManager::startWavPreview(const char* path) {
-  stopWavPreview();
+void AudioManager::startPreview(AudioSource* source) {
+  stopPreview();
 
+  previewSource = source;
+  previewPosition = 0.0;
+  previewRateRatio = (double)source->getSampleRate() / (double)sampleRate;
+  previewBufPos = 0;
+  previewBufCount = 0;
+}
+
+void AudioManager::stopPreview() {
+  if (previewSource) {
+    delete previewSource;
+    previewSource = NULL;
+  }
+}
+
+int AudioManager::startWavPreview(const char* path) {
   WavFile* wav = new WavFile(path);
   if (wav->getResult() != WAV_OK) {
     delete wav;
     return 0;
   }
-
-  wavPreview = wav;
-  wavPreviewPosition = 0.0;
-  wavPreviewRateRatio = (double)wav->getSampleRate() / (double)sampleRate;
-  wavPreviewBufPos = 0;
-  wavPreviewBufCount = 0;
+  startPreview(wav);
   return 1;
 }
 
-void AudioManager::stopWavPreview() {
-  if (wavPreview) {
-    delete wavPreview;
-    wavPreview = NULL;
+int AudioManager::startWavetablePreview(const char* path, bool isYM) {
+  WavetableSource* wt = new WavetableSource(path, isYM);
+  if (!wt->isValid()) {
+    delete wt;
+    return 0;
   }
+  startPreview(wt);
+  return 1;
 }
 
 // Singleton instance of AudioManager

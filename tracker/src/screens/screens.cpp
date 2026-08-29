@@ -185,7 +185,7 @@ void screenFullRedraw(ScreenData* screen) {
   }
 
   gfxSetBgColor(appSettings.colorScheme.background);
-  gfxClearRect(0, 0, 40, 20);
+  gfxClear();
   drawScreenMap();
 
   // Static content
