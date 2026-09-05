@@ -28,7 +28,7 @@ static void resetNoteFX(PlaybackState* state, int trackIdx) {
   }
 }
 
-static void resetTrack(PlaybackState* state, int trackIdx) {
+static void resetTrack(PlaybackState* state, int trackIdx, bool resetGroove) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
 
   // Set specific values that shouldn't be zero
@@ -36,9 +36,11 @@ static void resetTrack(PlaybackState* state, int trackIdx) {
   track->chainRow = 0;
   track->phraseRow = 0;
   track->frameCounter = 0;
-  track->grooveIdx = 0;
+  if (resetGroove) {
+    track->grooveIdx = 0;
+    track->pendingGrooveIdx = 0;
+  }
   track->grooveRow = 0;
-  track->pendingGrooveIdx = 0;
 
   track->note.pitchBase = EMPTY_VALUE_8;
   track->note.pitchFinal = EMPTY_VALUE_8;
@@ -426,7 +428,7 @@ void readPhraseRow(PlaybackState* state, int trackIdx, int skipDelCheck) {
 
             // Check if jump is negative and loop is disabled
             if (offset < 0 && !track->loop) {
-              resetTrack(state, trackIdx);
+              resetTrack(state, trackIdx, false);
               return;
             }
 
@@ -459,7 +461,7 @@ void readPhraseRow(PlaybackState* state, int trackIdx, int skipDelCheck) {
 
           // 0xFF = stop track
           if (hopValue == 0xFF) {
-            resetTrack(state, trackIdx);
+            resetTrack(state, trackIdx, false);
             return;
           }
 
@@ -497,11 +499,11 @@ void readPhraseRow(PlaybackState* state, int trackIdx, int skipDelCheck) {
       readPhraseRowDirect(state, trackIdx, currentRow, skipDelCheck);
     } else {
       // Safeguard for phrase in chain
-      resetTrack(state, trackIdx);
+      resetTrack(state, trackIdx, false);
     }
   } else {
     // Safeguard for chain in song
-    resetTrack(state, trackIdx);
+    resetTrack(state, trackIdx, false);
   }
 }
 
@@ -688,7 +690,7 @@ static int moveToNextPhraseRow(PlaybackState* state, int trackIdx) {
             }
           }
           if (songRow < 0 || p->song[songRow][trackIdx] == EMPTY_VALUE_16) {
-            resetTrack(state, trackIdx);
+            resetTrack(state, trackIdx, false);
             stopped = 1;
           } else {
             track->songRow = songRow;
@@ -697,7 +699,7 @@ static int moveToNextPhraseRow(PlaybackState* state, int trackIdx) {
           track->chainRow = chainRow;
         }
       } else {
-        resetTrack(state, trackIdx);
+        resetTrack(state, trackIdx, false);
       }
     }
     // Chain playback
@@ -708,7 +710,7 @@ static int moveToNextPhraseRow(PlaybackState* state, int trackIdx) {
         chainRow = track->loop ? 0 : -1;
       }
       if (chainRow < 0 || p->chains[chain].rows[chainRow].phrase == EMPTY_VALUE_16) {
-        resetTrack(state, trackIdx);
+        resetTrack(state, trackIdx, false);
         stopped = 1;
       } else {
         track->chainRow = chainRow;
@@ -719,7 +721,7 @@ static int moveToNextPhraseRow(PlaybackState* state, int trackIdx) {
       if (track->loop) {
         track->chainRow = track->queue.chainRow;
       } else {
-        resetTrack(state, trackIdx);
+        resetTrack(state, trackIdx, false);
         stopped = 1;
       }
     }
@@ -743,7 +745,7 @@ static int skipZeroGrooveRows(PlaybackState* state, int trackIdx) {
     }
     if (track->grooveRow == curGrooveRow) {
       // All rows are zero, stop playback
-      resetTrack(state, trackIdx);
+      resetTrack(state, trackIdx, true);
       return 0;
     }
   }
@@ -764,7 +766,7 @@ void playbackInit(PlaybackState* state, Project* project) {
   initAYSampleTables();
 
   for (int c = 0; c < PROJECT_MAX_TRACKS; c++) {
-    resetTrack(state, c);
+    resetTrack(state, c, true);
     state->tracks[c].queue.mode = PlaybackMode::none;
     state->tracks[c].queue.loop = 0;
     state->trackEnabled[c] = 1;
@@ -840,7 +842,7 @@ void playbackStartPhrase(PlaybackState* state, int trackIdx, int songRow, int ch
 }
 
 void playbackStartPhraseRow(PlaybackState* state, int trackIdx, PhraseRow* phraseRow) {
-  resetTrack(state, trackIdx);
+  resetTrack(state, trackIdx, false);
 
   PlaybackTrackState* track = &state->tracks[trackIdx];
 
@@ -868,7 +870,7 @@ void playbackPreviewNote(PlaybackState* state, int trackIdx, uint8_t note, uint8
   PhraseRow phraseRow = {0};
   phraseRow.note = note;
   phraseRow.instrument = instrument;
-  phraseRow.volume = 15;
+  phraseRow.volume = 15; // TODO: Use max volume for the chip
 
   // Set up empty FX
   for (int i = 0; i < 3; i++) {
@@ -882,7 +884,7 @@ void playbackPreviewNote(PlaybackState* state, int trackIdx, uint8_t note, uint8
 
 void playbackStop(PlaybackState* state) {
   for (int c = 0; c < PROJECT_MAX_TRACKS; c++) {
-    resetTrack(state, c);
+    resetTrack(state, c, false);
     state->tracks[c].queue.mode = PlaybackMode::none;
   }
   // TODO: Move to AY-specific code when other chip types are added
@@ -894,7 +896,7 @@ void playbackStop(PlaybackState* state) {
 
 void playbackStopPreview(PlaybackState* state, int trackIdx) {
   if (state->tracks[trackIdx].mode == PlaybackMode::phraseRow) {
-    resetTrack(state, trackIdx);
+    resetTrack(state, trackIdx, false);
   }
 }
 
@@ -944,7 +946,7 @@ int playbackNextFrame(ChipNomadState* chipNomadState) {
 
         if (grooveValue == EMPTY_VALUE_8) {
           // The current groove row doesn't have a value, stop playback
-          resetTrack(state, trackIdx);
+          resetTrack(state, trackIdx, false);
         } else {
           track->frameCounter++;
 

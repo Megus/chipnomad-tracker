@@ -17,3 +17,4 @@ File browser is used to load/save projects, instruments, etc. The UI of this scr
 - **DIRECTION**: navigate the file list
 - **EDIT**: select the list item
 - **OPT**: exit the screen
+- **EDIT**+**PLAY**: preview item (instrument, sample, AY wavetable)

@@ -21,7 +21,7 @@ The macOS buils is not signed so you will need to bypass macOS security checks:
 
 This build works on a wide variety of Linux-based handheld consoles. Ths list of [supported devices](https://portmaster.games/supported-devices.html).
 
-As ChipNomad is not currently published to [PortMaster](https://portmaster.games) repository, you will need to manually install it. PortMaster website gives [the following instructions](https://portmaster.games/faq.html#do-i-have-to-use-portmaster-to-install-ports):
+As ChipNomad is not yet published to [PortMaster](https://portmaster.games) repository, you will need to manually install it. PortMaster website gives [the following instructions](https://portmaster.games/faq.html#do-i-have-to-use-portmaster-to-install-ports):
 
 > ...Copy the zip file into the PortMaster Autoinstall folder. Then you just run the PortMaster Application and PortMaster will install the Port for you.
 >
@@ -38,6 +38,8 @@ As ChipNomad is not currently published to [PortMaster](https://portmaster.games
 > - muOS: `/mmc/ports/` for the folders and `/mnt/mmc/ROMS/Ports/` for the .sh files
 > - ArkOS: `/roms/tools/PortMaster/autoinstall/`
 > - Knulli: `/userdata/system/.local/share/PortMaster/autoinstall`
+
+PortMaster auto-install feature foesn't seem to work on [NextUI](https://github.com/LoveRetro/NextUI) (a popular firmware for TrimUI Brick), so you will need to manually copy files to the right folders.
 
 ## Pre-2024 Anbernic RG35xx build
 

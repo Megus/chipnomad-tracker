@@ -8,6 +8,7 @@
 - *FIX*: Sample copy didn't create a copy of the sample data
 - *FIX*: Editing background color could leave a border with old color on some devices.
 - *FIX*: PortMaster build didn't work on TrimUI Brick with NextUI.
+- *FIX*: Groove was always reset to the defult one when stopping playback.
 
 ## v1.0.4 (July 12, 2026)
 
