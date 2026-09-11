@@ -10,25 +10,27 @@
 // Exporter base class
 class Exporter {
   protected:
-    ChipNomadState* chipnomadState;
+    // The engine is owned by the exporter. The caller owns the Project and
+    // must keep it alive for the lifetime of the exporter.
+    chipnomad::Engine engine;
     int renderedSeconds;
 
+    // Deferred start: subclasses call this after they've set up their chip
+    // factory state (e.g. output files) so the factory runs at the right time.
+    void startExport(Project* project, int startRow) {
+      engine.setProject(project);
+      engine.player.playSong(startRow, 0, 0);
+    }
+
   public:
-    Exporter(Project* project, int startRow) {
-      this->chipnomadState = chipnomadCreate();
-      this->chipnomadState->project = *project;
-      this->renderedSeconds = 0;
-      playbackInit(&this->chipnomadState->playbackState, &this->chipnomadState->project);
-      playbackStartSong(&this->chipnomadState->playbackState, startRow, 0, 0);
-    };
+    // factory: chip factory to use for this export (nullptr = default AY chip).
+    // sampleRate: render sample rate for the engine.
+    Exporter(chipnomad::ChipFactory factory, int sampleRate)
+      : engine(factory, sampleRate), renderedSeconds(0) {}
 
-    virtual ~Exporter() {
-      if (this->chipnomadState) {
-        chipnomadDestroy(this->chipnomadState);
-      }
-    };
+    virtual ~Exporter() {}
 
-    void setMixVolume(float volume) { chipnomadState->mixVolume = volume; }
+    void setMixVolume(float volume) { engine.mixVolume = volume; }
 
     virtual int next() = 0; // Returns seconds rendered, -1 if done
     virtual int finish() = 0;

@@ -1,21 +1,20 @@
 #include "playback.h"
-#include "playback_internal.h"
 #include <stdio.h>
 #include <string.h>
 
-PlaybackFXHandler fxHandlers[fxTotalCount] = {};
+namespace chipnomad {
 
 static int iabs(int v) {
   return (v < 0) ? -v : v;
 }
 
-int vibratoCommonLogic(PlaybackFXState *fx, int scale) {
+int Player::vibratoCommonLogic(PlaybackFXState *fx, int scale) {
   int speed = (fx->fxValue & 0xf0) >> 4;
-  int p = 32 - speed * 2;
-  int step = 0x1000000 / p; // using 16.16 fixed point
+  int period = 32 - speed * 2;
+  int step = 0x1000000 / period; // using 16.16 fixed point
   int a = (fx->fxValue & 0xf) * scale;
-  int x = ((fx->acc * p / 0x1000000) + p / 4) % p;
-  int value = a - (4 * a * iabs(x - p / 2)) / p;
+  int x = ((fx->acc * period / 0x1000000) + period / 4) % period;
+  int value = a - (4 * a * iabs(x - period / 2)) / period;
 
   fx->acc += step;
   if (fx->acc >= 0x1000000) fx->acc = 0; // Stabilize vibrato and prefent overflow
@@ -115,43 +114,43 @@ static int8_t calculateArpModeOffset(uint8_t arp[3], const uint8_t period, const
 //
 
 // PBN - pitch bend
-static void initFX_PBN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
+static void initFX_PBN(Player* player, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
   // Calculate per-frame change
   int speed = 1;
   if (tableFXColumn >= 0) {
     speed = tableState->speed[tableFXColumn];
   } else {
-    speed = state->p->grooves[track->grooveIdx].speed[track->grooveRow];
+    speed = player->p->grooves[track->grooveIdx].speed[track->grooveRow];
   }
   if (speed == 0) speed = 1;
   int value = (int8_t)(fx->fxValue) << 8; // Use 24.8 fixed point math
-  if (state->p->linearPitch) {
+  if (player->p->linearPitch) {
     // Linear pitch mode: multiply by 25 for cents
     value *= 25;
   }
   fx->d.bend.speed = value / speed;
 }
 
-static void handleFX_PBN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+static void handleFX_PBN(Player* player, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   fx->acc += fx->d.bend.speed;
   track->note.fineOffset += fx->acc >> 8;
 }
 
 // ARP - arpeggio
-static void handleFX_ARP(struct PlaybackState *state, PlaybackTrackState *track, int trackIdx, int chipIdx, PlaybackFXState *fx) {
+static void handleFX_ARP(Player* player, PlaybackTrackState *track, int trackIdx, int chipIdx, PlaybackFXState *fx) {
   if (fx->d.arpeggio.speed == 0) fx->d.arpeggio.speed = 1;
   uint8_t arp[3] = {(uint8_t)0, (uint8_t)((fx->fxValue & 0xF0) >> 4), (uint8_t)(fx->fxValue & 0x0F)};
   const uint8_t period = fx->counter / fx->d.arpeggio.speed % 3;
   const uint8_t cycles = fx->counter / fx->d.arpeggio.speed / 3;
-  track->note.pitchOffset += calculateArpModeOffset(arp, period, cycles, fx->d.arpeggio.type, state->p->pitchTable.octaveSize);
+  track->note.pitchOffset += calculateArpModeOffset(arp, period, cycles, fx->d.arpeggio.type, player->p->pitchTable.octaveSize);
 }
 
-static void restartFX_ARP(struct PlaybackState *state, PlaybackTrackState *track, int trackIdx, PlaybackFXState *fx) {
+static void restartFX_ARP(Player* player, PlaybackTrackState *track, int trackIdx, PlaybackFXState *fx) {
   // Do nothing for ARP - it should continue uninterrupted
 }
 
 // ARC - Arp settings
-static void initFX_ARC(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
+static void initFX_ARC(Player* player, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
   int speed = fx->fxValue & 0x0F;
   if (speed == 0) speed = 1;
   track->note.fx[fxARP].d.arpeggio.speed = speed;
@@ -159,46 +158,46 @@ static void initFX_ARC(PlaybackState* state, PlaybackTrackState* track, int trac
 }
 
 // PIT - Pitch offset (semitones)
-static void initFX_PIT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
+static void initFX_PIT(Player* player, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
   fx->acc += fx->fxValue;
 }
 
-static void restartFX_PIT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
+static void restartFX_PIT(Player* player, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
   // Do nothing - PIT should kepp the accumulated offset
 }
 
-static void handleFX_PIT(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+static void handleFX_PIT(Player* player, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   track->note.pitchOffset += fx->acc;
 }
 
 // FIN - Fine pitch offset
-static void initFX_FIN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
+static void initFX_FIN(Player* player, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
   fx->acc += (int8_t)fx->fxValue;
 }
 
-static void restartFX_FIN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
+static void restartFX_FIN(Player* player, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
   // Do nothing - FIN should keep the accumulated offset
 }
 
-static void handleFX_FIN(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+static void handleFX_FIN(Player* player, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   track->note.fineOffset += fx->acc;
 }
 
 // PRD - Period offset
-static void initFX_PRD(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
+static void initFX_PRD(Player* player, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
   fx->acc += (int8_t)fx->fxValue;
 }
 
-static void restartFX_PRD(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
+static void restartFX_PRD(Player* player, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
   // Do nothing - PRD should keep the accumulated offset
 }
 
-static void handleFX_PRD(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+static void handleFX_PRD(Player* player, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   track->note.periodOffset += fx->acc;
 }
 
 // TIC - Table speed
-static void initFX_TIC(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
+static void initFX_TIC(Player* player, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
   fx->isOn = 0;
   if (tableState == NULL) {
     // TIC in Phrase - set TIC speed for all FX lanes in both instrument and aux tables
@@ -219,39 +218,39 @@ static void initFX_TIC(PlaybackState* state, PlaybackTrackState* track, int trac
 }
 
 // VOL - Volume offset
-static void initFX_VOL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
+static void initFX_VOL(Player* player, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
   fx->acc += (int8_t)fx->fxValue;
 }
 
-static void restartFX_VOL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
+static void restartFX_VOL(Player* player, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
   // Do nothing - VOL should keep the accumulated offset
 }
 
-static void handleFX_VOL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+static void handleFX_VOL(Player* player, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   track->note.volumeOffset += fx->acc;
 }
 
 // VSL - Volume slide
-static void initFX_VSL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
+static void initFX_VSL(Player* player, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
   // Calculate per-frame change (similar to PBN)
   int speed = 1;
   if (tableFXColumn >= 0) {
     speed = tableState->speed[tableFXColumn];
   } else {
-    speed = state->p->grooves[track->grooveIdx].speed[track->grooveRow];
+    speed = player->p->grooves[track->grooveIdx].speed[track->grooveRow];
   }
   if (speed == 0) speed = 1;
   int value = (int8_t)(fx->fxValue) << 8; // Use 24.8 fixed point math
   fx->d.bend.speed = value / speed;
 }
 
-static void handleFX_VSL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+static void handleFX_VSL(Player* player, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   fx->acc += fx->d.bend.speed;
   track->note.volumeOffset += fx->acc >> 8;
 }
 
 // GRV - Track groove
-static void handleFX_GRV(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+static void handleFX_GRV(Player* player, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   fx->isOn = 0;
   track->grooveIdx = fx->fxValue & (PROJECT_MAX_GROOVES - 1);
   track->pendingGrooveIdx = track->grooveIdx;
@@ -259,7 +258,7 @@ static void handleFX_GRV(PlaybackState* state, PlaybackTrackState* track, int tr
 }
 
 // GGR - Global groove
-static void handleFX_GGR(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+static void handleFX_GGR(Player* player, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   fx->isOn = 0;
   uint8_t grooveIdx = fx->fxValue & (PROJECT_MAX_GROOVES - 1);
   // Current track changes immediately
@@ -268,32 +267,32 @@ static void handleFX_GGR(PlaybackState* state, PlaybackTrackState* track, int tr
   track->grooveRow = 0;
   track->frameCounter = 0;
   // Handle all other tracks
-  for (int c = 0; c < state->p->tracksCount; c++) {
+  for (int c = 0; c < player->p->tracksCount; c++) {
     if (c != trackIdx) {
       if (c < trackIdx) {
         // Previous tracks: change immediately (already processed this frame)
-        state->tracks[c].grooveIdx = grooveIdx;
-        state->tracks[c].pendingGrooveIdx = grooveIdx;
-        state->tracks[c].grooveRow = 0;
+        player->tracks[c].grooveIdx = grooveIdx;
+        player->tracks[c].pendingGrooveIdx = grooveIdx;
+        player->tracks[c].grooveRow = 0;
         // Don't touch frameCounter - it was already incremented
       } else {
         // Later tracks: use pending groove
-        state->tracks[c].pendingGrooveIdx = grooveIdx;
+        player->tracks[c].pendingGrooveIdx = grooveIdx;
       }
     }
   }
 }
 
 // OFF - Note off
-static void handleFX_OFF(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+static void handleFX_OFF(Player* player, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   if (fx->counter >= fx->fxValue) {
     fx->isOn = 0;
-    handleNoteOff(state, trackIdx);
+    player->handleNoteOff(trackIdx);
   }
 }
 
 // KIL - Kill note
-static void handleFX_KIL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+static void handleFX_KIL(Player* player, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   if (fx->counter >= fx->fxValue) {
     fx->isOn = 0;
     track->note.pitchBase = EMPTY_VALUE_8;
@@ -301,25 +300,25 @@ static void handleFX_KIL(PlaybackState* state, PlaybackTrackState* track, int tr
 }
 
 // DEL - Delay note
-static void initFX_DEL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
+static void initFX_DEL(Player* player, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
   if (tableState != NULL) {
     fx->isOn = 0;
   }
 }
 
-static void handleFX_DEL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+static void handleFX_DEL(Player* player, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   if (fx->counter >= fx->fxValue) {
     fx->isOn = 0;
-    readPhraseRow(state, trackIdx, 1);
+    player->readPhraseRow(trackIdx, 1);
   }
 }
 
 // RET - Note retrigger
-static void restartFX_RET(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
+static void restartFX_RET(Player* player, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
   fx->counter = 0;
 }
 
-static void handleFX_RET(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+static void handleFX_RET(Player* player, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   uint8_t delay = fx->fxValue & 0xf;
   int8_t volumeOffset = (fx->fxValue & 0xf0) >> 4;
 
@@ -341,45 +340,45 @@ static void handleFX_RET(PlaybackState* state, PlaybackTrackState* track, int tr
   }
 
   if (fx->counter % delay == 0) {
-    setupInstrument(state, trackIdx);
-    tableInit(state, trackIdx, &track->note.instrumentTable, track->note.instrumentTable.tableIdx, 0, 1);
-    tableInit(state, trackIdx, &track->note.auxTable, track->note.auxTable.tableIdx, 0, 1);
-    restartFX(state, trackIdx);
+    player->setupInstrument(trackIdx);
+    player->tableInit(trackIdx, &track->note.instrumentTable, track->note.instrumentTable.tableIdx, 0, 1);
+    player->tableInit(trackIdx, &track->note.auxTable, track->note.auxTable.tableIdx, 0, 1);
+    player->restartFX(trackIdx);
     fx->acc += volumeOffset;
   }
   track->note.volumeOffset += fx->acc;
 }
 
 // PVB - Pitch vibrato
-static void restartFX_PVB(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
+static void restartFX_PVB(Player* player, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx) {
   // Do nothing - PVB should continue uninterrupted
 }
 
-static void handleFX_PVB(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
-  int scale = state->p->linearPitch ? 10 : 1;
-  track->note.fineOffset += vibratoCommonLogic(fx, scale);
+static void handleFX_PVB(Player* player, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+  int scale = player->p->linearPitch ? 10 : 1;
+  track->note.fineOffset += player->vibratoCommonLogic(fx, scale);
 }
 
 
 // PSL - Pitch slide (portamento)
-static void initFX_PSL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
+static void initFX_PSL(Player* player, PlaybackTrackState* track, int trackIdx, PlaybackFXState* fx, PlaybackTableState *tableState, int tableFXColumn) {
   if (track->note.pitchBase != NOTE_OFF && track->note.pitchBase != EMPTY_VALUE_8) {
-    fx->d.slide.startPeriod = state->p->pitchTable.values[track->note.pitchBase];
+    fx->d.slide.startPeriod = player->p->pitchTable.values[track->note.pitchBase];
   } else {
     fx->isOn = 0;
   }
 }
 
-static void handleFX_PSL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
+static void handleFX_PSL(Player* player, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   if (fx->d.slide.startPeriod == 0 || fx->counter >= fx->fxValue) {
     fx->isOn = 0;
     return;
   } else if (fx->counter == 0) {
-    fx->d.slide.endPeriod = state->p->pitchTable.values[track->note.pitchBase];
+    fx->d.slide.endPeriod = player->p->pitchTable.values[track->note.pitchBase];
   }
   int distance = fx->d.slide.endPeriod - fx->d.slide.startPeriod;
   int offset = (distance * fx->counter) / fx->fxValue;
-  track->note.fineOffset += state->p->linearPitch ? offset - distance : distance - offset;
+  track->note.fineOffset += player->p->linearPitch ? offset - distance : distance - offset;
 }
 
 
@@ -389,10 +388,10 @@ static void handleFX_PSL(PlaybackState* state, PlaybackTrackState* track, int tr
 // General FX handling functions
 //
 
-void initFX(PlaybackState* state, int trackIdx, uint8_t* fx, PlaybackTableState* tableState, int tableFXColumn) {
+void Player::initFX(int trackIdx, uint8_t* fx, PlaybackTableState* tableState, int tableFXColumn) {
   if (fx[0] == EMPTY_VALUE_8 || fx[0] >= fxTotalCount) return;
 
-  PlaybackTrackState* track = &state->tracks[trackIdx];
+  PlaybackTrackState* track = &tracks[trackIdx];
   uint8_t fxIdx = fx[0];
   PlaybackFXState* fxState = &track->note.fx[fxIdx];
 
@@ -400,11 +399,11 @@ void initFX(PlaybackState* state, int trackIdx, uint8_t* fx, PlaybackTableState*
   fxState->fxValue = fx[1];
 
   if (fxHandlers[fxIdx].init) {
-    fxHandlers[fxIdx].init(state, track, trackIdx, fxState, tableState, tableFXColumn);
+    fxHandlers[fxIdx].init(this, track, trackIdx, fxState, tableState, tableFXColumn);
   }
 }
 
-void initFXHandlers(void) {
+void Player::initFXHandlers(void) {
   memset(fxHandlers, 0, sizeof(fxHandlers));
   fxHandlers[fxARP] = (PlaybackFXHandler){NULL, handleFX_ARP, restartFX_ARP};
   fxHandlers[fxARC] = (PlaybackFXHandler){initFX_ARC, NULL, NULL};
@@ -427,13 +426,13 @@ void initFXHandlers(void) {
   registerFXHandlers_AY();
 }
 
-int handleFX(PlaybackState* state, int trackIdx, int chipIdx) {
-  PlaybackTrackState* track = &state->tracks[trackIdx];
+int Player::handleFX(int trackIdx, int chipIdx) {
+  PlaybackTrackState* track = &tracks[trackIdx];
 
   // All FX on this note
   for (int i = 0; i < fxTotalCount; i++) {
     if (track->note.fx[i].isOn && fxHandlers[i].handle) {
-      fxHandlers[i].handle(state, track, trackIdx, chipIdx, &track->note.fx[i]);
+      fxHandlers[i].handle(this, track, trackIdx, chipIdx, &track->note.fx[i]);
       track->note.fx[i].counter++;
     }
   }
@@ -441,13 +440,13 @@ int handleFX(PlaybackState* state, int trackIdx, int chipIdx) {
   return 1;
 }
 
-int restartFX(PlaybackState* state, int trackIdx) {
-  PlaybackTrackState* track = &state->tracks[trackIdx];
+int Player::restartFX(int trackIdx) {
+  PlaybackTrackState* track = &tracks[trackIdx];
 
   for (int i = 0; i < fxTotalCount; i++) {
     if (track->note.fx[i].isOn) {
       if (fxHandlers[i].restart) {
-        fxHandlers[i].restart(state, track, trackIdx, &track->note.fx[i]);
+        fxHandlers[i].restart(this, track, trackIdx, &track->note.fx[i]);
       } else {
         track->note.fx[i].counter = 0;
         track->note.fx[i].acc = 0;
@@ -457,3 +456,5 @@ int restartFX(PlaybackState* state, int trackIdx) {
 
   return 1;
 }
+
+}; // namespace chipnomad

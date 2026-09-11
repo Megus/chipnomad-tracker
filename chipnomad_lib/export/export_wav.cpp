@@ -47,7 +47,7 @@ static void writeWAVHeader(FILE* file, int sampleRate, int channels, int bitDept
 ///////////////////////////////////////////////////////////////////////////////
 
 ExporterWAV::ExporterWAV(const char* path, Project* project, int startRow, int sampleRate, int bitDepth, float mixVolume, bool stems)
-  : Exporter(project, startRow) {
+  : Exporter(nullptr, sampleRate) {
   this->sampleRate = sampleRate;
   this->bitDepth = bitDepth;
   this->stems = stems;
@@ -80,19 +80,20 @@ ExporterWAV::ExporterWAV(const char* path, Project* project, int startRow, int s
 
   renderBuffer = (float*)malloc(sizeof(float) * sampleRate * channels);
 
-  chipnomadInitChips(chipnomadState, sampleRate, NULL);
-  chipnomadSetQuality(chipnomadState, ChipNomadQuality::best);
-  chipnomadState->mixVolume = mixVolume;
+  // Engine was constructed with the default AY factory at the given sample rate.
+  startExport(project, startRow);
+  engine.setQuality(ChipNomadQuality::best);
+  engine.mixVolume = mixVolume;
 
   if (stems) {
     for (int t = 0; t < PROJECT_MAX_TRACKS; t++) {
-      chipnomadState->playbackState.trackEnabled[t] = (t == 0) ? 1 : 0;
+      engine.player.trackEnabled[t] = (t == 0) ? 1 : 0;
     }
   }
 }
 
 int ExporterWAV::next() {
-  int samplesRendered = chipnomadRender(chipnomadState, renderBuffer, sampleRate);
+  int samplesRendered = engine.render(renderBuffer, sampleRate);
 
   if (samplesRendered > 0 && files[currentTrack]) {
     writeSamples(files[currentTrack], renderBuffer, samplesRendered);
@@ -104,9 +105,9 @@ int ExporterWAV::next() {
       if (currentTrack >= fileCount) {
         return -1;
       }
-      playbackStartSong(&chipnomadState->playbackState, 0, 0, 0);
+      engine.player.playSong(0, 0, 0);
       for (int t = 0; t < PROJECT_MAX_TRACKS; t++) {
-        chipnomadState->playbackState.trackEnabled[t] = (t == currentTrack) ? 1 : 0;
+        engine.player.trackEnabled[t] = (t == currentTrack) ? 1 : 0;
       }
       totalSamples = 0;
     } else {

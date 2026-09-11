@@ -4,7 +4,7 @@
 #include "chipnomad_lib.h"
 
 struct AudioState {
-  ChipNomadState* chipnomadState;
+  chipnomad::Engine* engine;
   int* isPlaying;
 };
 

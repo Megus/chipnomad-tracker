@@ -57,7 +57,7 @@ static SoundChip* psgChipFactory(int chipIndex, int sampleRate, ChipSetup setup)
 ///////////////////////////////////////////////////////////////////////////////
 
 ExporterPSG::ExporterPSG(const char* filename, Project* project, int startRow)
-  : Exporter(project, startRow) {
+  : Exporter(psgChipFactory, 44100) {
   numChips = project->chipsCount;
 
   // Extract base filename (remove .psg extension if present)
@@ -80,15 +80,16 @@ ExporterPSG::ExporterPSG(const char* filename, Project* project, int startRow)
     }
   }
 
-  // Set up PSG chip factory
+  // Set up PSG chip factory file targets, then start (this triggers initChips
+  // via setProject, which calls psgChipFactory using the file pointers above).
   for (int i = 0; i < numChips; i++) {
     psgFiles[i] = files[i];
   }
-  chipnomadInitChips(chipnomadState, 44100, psgChipFactory);
+  startExport(project, startRow);
 }
 
 int ExporterPSG::next() {
-  int framesPerChunk = (int)(chipnomadState->project.tickRate * 10 + 0.5f); // 10 seconds
+  int framesPerChunk = (int)(engine.project->tickRate * 10 + 0.5f); // 10 seconds
   int framesRendered = 0;
   int done = 0;
 
@@ -98,7 +99,7 @@ int ExporterPSG::next() {
       fwrite(&frameMarker, 1, 1, files[i]);
     }
 
-    done = playbackNextFrame(chipnomadState);
+    done = engine.player.nextFrame(&engine);
     framesRendered++;
   }
 

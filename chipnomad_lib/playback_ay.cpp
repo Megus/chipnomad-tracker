@@ -1,5 +1,4 @@
 #include "chipnomad_lib.h"
-#include "playback_internal.h"
 #include "playback_modulation.h"
 #include "playback_instruments.h"
 #include "project_constants.h"
@@ -50,19 +49,22 @@ static float dacTableYMfloat[32] = {
   0.879926756695, 1.0
 };
 
+// Global lookup tables (declared in playback_chips.h, outside any namespace)
 uint8_t cnDACTableAY[16];
 uint8_t cnDACTableYM[16];
 uint8_t cnSampleLookupAY[256];
 uint8_t cnSampleLookupYM[256];
+
+namespace chipnomad {
 
 // ========================================
 // Timer functions for software oscillators
 // =======================================
 
 // Pulse
-static void timerFunctionPulse(ChipNomadState *chipNomadState, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
-  PlaybackState* state = &chipNomadState->playbackState;
-  Instrument *instrument = &state->p->instruments[track->note.instrument];
+static void timerFunctionPulse(Engine* engine, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+  Project* p = engine->project;
+  Instrument *instrument = &p->instruments[track->note.instrument];
   if (instrument->type != InstrumentType::AY2) return;
 
   // Avoid zero pulse width which can happen when there's no cached pulse width
@@ -77,7 +79,7 @@ static void timerFunctionPulse(ChipNomadState *chipNomadState, SoundChip* chip, 
 
   // Second phase - low volume
   int pulseWidth = track->note.chip.ay.pulseWidthCurrent;
-  if (!state->p->chipSetup.ay.pwmFullRange) {
+  if (!p->chipSetup.ay.pwmFullRange) {
     pulseWidth = pulseWidth & 0xf0;
     if (pulseWidth == 0) pulseWidth = 16; // Avoid zero pulse width in 16-step mode
   }
@@ -91,9 +93,9 @@ static void timerFunctionPulse(ChipNomadState *chipNomadState, SoundChip* chip, 
 }
 
 // Sync Tone
-static void timerFunctionSyncTone(ChipNomadState *chipNomadState, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
-  PlaybackState* state = &chipNomadState->playbackState;
-  Instrument *instrument = &state->p->instruments[track->note.instrument];
+static void timerFunctionSyncTone(Engine* engine, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+  Project* p = engine->project;
+  Instrument *instrument = &p->instruments[track->note.instrument];
   if (instrument->type != InstrumentType::AY2) return;
 
   // Reset tone phase
@@ -110,9 +112,9 @@ static void timerFunctionSyncTone(ChipNomadState *chipNomadState, SoundChip* chi
 }
 
 // Sync Envelope
-static void timerFunctionSyncEnv(ChipNomadState *chipNomadState, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
-  PlaybackState* state = &chipNomadState->playbackState;
-  Instrument *instrument = &state->p->instruments[track->note.instrument];
+static void timerFunctionSyncEnv(Engine* engine, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+  Project* p = engine->project;
+  Instrument *instrument = &p->instruments[track->note.instrument];
   if (instrument->type != InstrumentType::AY2) return;
 
   // Avoid zero pulse width which can happen when there's no cached pulse width
@@ -129,7 +131,7 @@ static void timerFunctionSyncEnv(ChipNomadState *chipNomadState, SoundChip* chip
 
   // Second phase
   int pulseWidth = track->note.chip.ay.pulseWidthCurrent;
-  if (!state->p->chipSetup.ay.pwmFullRange) {
+  if (!p->chipSetup.ay.pwmFullRange) {
     pulseWidth = pulseWidth & 0xf0;
     if (pulseWidth == 0) pulseWidth = 16; // Avoid zero pulse width in 16-step mode
   }
@@ -141,9 +143,9 @@ static void timerFunctionSyncEnv(ChipNomadState *chipNomadState, SoundChip* chip
 }
 
 // Samples
-static void timerFunctionSample(ChipNomadState *chipNomadState, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
-  PlaybackState* state = &chipNomadState->playbackState;
-  Instrument *instrument = &state->p->instruments[track->note.instrument];
+static void timerFunctionSample(Engine* engine, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+  Project* p = engine->project;
+  Instrument *instrument = &p->instruments[track->note.instrument];
   if (instrument->type != InstrumentType::AYSample) return;
   if (instrument->chip.aySample.sampleData == NULL) return;
 
@@ -185,7 +187,7 @@ static void timerFunctionSample(ChipNomadState *chipNomadState, SoundChip* chip,
   uint8_t sampleValue = instrument->chip.aySample.sampleData[sampleIndex];
 
   // Apply volume
-  if (state->p->chipType == ChipType::AY) {
+  if (p->chipType == ChipType::AY) {
     dacTable = cnDACTableAY;
     dacLUT = cnSampleLookupAY;
   } else {
@@ -197,7 +199,7 @@ static void timerFunctionSample(ChipNomadState *chipNomadState, SoundChip* chip,
   int16_t scaledSample = (uint16_t)(sampleValue * dacTable[track->note.chip.ay.outVolume]) / 255;
 
   // Apply error diffusion dithering if enabled
-  if (chipNomadState->aySampleDithering) {
+  if (engine->aySampleDithering) {
     // Add accumulated error from previous sample
     scaledSample += track->note.chip.ay.sampleDitherError;
 
@@ -225,23 +227,23 @@ static void timerFunctionSample(ChipNomadState *chipNomadState, SoundChip* chip,
 }
 
 
-void timerFunctionWavetable(ChipNomadState *chipNomadState, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
-  PlaybackState* state = &chipNomadState->playbackState;
-  Instrument *instrument = &state->p->instruments[track->note.instrument];
+static void timerFunctionWavetable(Engine* engine, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+  Project* p = engine->project;
+  Instrument *instrument = &p->instruments[track->note.instrument];
   if (instrument->type != InstrumentType::AY2) return;
 
   int counter = track->note.chip.ay.softPeriodCounter;
 
   int position = (counter * 32 / period) & 0x1f; // 32 is wavetable size
   int16_t wavetableIndex = clampInt16(instrument->chip.ay2.oscSoftware.wavetableIndex + track->note.chip.ay.wavetableIndexOffset, 0, 255);
-  uint8_t value = state->p->ayWavetables[wavetableIndex][position];
+  uint8_t value = p->ayWavetables[wavetableIndex][position];
   uint8_t volume = (value * track->note.chip.ay.outVolume) / 15;
   chip->setRegister(channel + 8, volume);
 }
 
-void timerFunctionToneFM(ChipNomadState *chipNomadState, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
-  PlaybackState* state = &chipNomadState->playbackState;
-  Instrument *instrument = &state->p->instruments[track->note.instrument];
+static void timerFunctionToneFM(Engine* engine, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+  Project* p = engine->project;
+  Instrument *instrument = &p->instruments[track->note.instrument];
   if (instrument->type != InstrumentType::AY2) return;
 
   int16_t tonePeriod = track->note.chip.ay.outTonePeriod;
@@ -253,9 +255,9 @@ void timerFunctionToneFM(ChipNomadState *chipNomadState, SoundChip* chip, int ch
   chip->setRegister(channel * 2 + 1, (tonePeriod >> 8) & 0xff);
 }
 
-void timerFunctionEnvFM(ChipNomadState *chipNomadState, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
-  PlaybackState* state = &chipNomadState->playbackState;
-  Instrument *instrument = &state->p->instruments[track->note.instrument];
+static void timerFunctionEnvFM(Engine* engine, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+  Project* p = engine->project;
+  Instrument *instrument = &p->instruments[track->note.instrument];
   if (instrument->type != InstrumentType::AY2) return;
 
   int16_t envPeriod = track->note.chip.ay.outEnvPeriod;
@@ -268,14 +270,14 @@ void timerFunctionEnvFM(ChipNomadState *chipNomadState, SoundChip* chip, int cha
 }
 
 int timerFunctionAY(SoundChip* chipBase, void* userdata) {
-  ChipNomadState* chipNomadState = (ChipNomadState*)userdata;
+  Engine* engine = (Engine*)userdata;
   SoundChip* chip = chipBase;
-  PlaybackState* state = &chipNomadState->playbackState;
+  Player* player = &engine->player;
 
   // Find chip index by scanning the chips array
   int chipIdx = -1;
   for (int i = 0; i < PROJECT_MAX_CHIPS; i++) {
-    if (chipNomadState->chips[i] == chipBase) {
+    if (engine->chips[i] == chipBase) {
       chipIdx = i;
       break;
     }
@@ -285,10 +287,10 @@ int timerFunctionAY(SoundChip* chipBase, void* userdata) {
   int firstTrack = chipIdx * 3;
 
   for (int ch = 0; ch < 3; ch++) {
-    PlaybackTrackState* track = &state->tracks[firstTrack + ch];
+    PlaybackTrackState* track = &player->tracks[firstTrack + ch];
     if (track->note.instrument == EMPTY_VALUE_8) continue; // No instrument, skip
 
-    Instrument *instrument = &state->p->instruments[track->note.instrument];
+    Instrument *instrument = &player->p->instruments[track->note.instrument];
     uint16_t baseSoftOscPeriod = clampInt16(track->note.chip.ay.outSoftPeriod, 1, 32767);
 
     if (track->note.chip.ay.softType == AYSoftwareOscType::syncEnvelope) {
@@ -327,25 +329,25 @@ int timerFunctionAY(SoundChip* chipBase, void* userdata) {
 
     switch (track->note.chip.ay.softType) {
       case AYSoftwareOscType::pulse:
-        timerFunctionPulse(chipNomadState, chip, ch, softOscPeriod, track);
+        timerFunctionPulse(engine, chip, ch, softOscPeriod, track);
         break;
       case AYSoftwareOscType::syncTone:
-        timerFunctionSyncTone(chipNomadState, chip, ch, softOscPeriod, track);
+        timerFunctionSyncTone(engine, chip, ch, softOscPeriod, track);
         break;
       case AYSoftwareOscType::syncEnvelope:
-        timerFunctionSyncEnv(chipNomadState, chip, ch, softOscPeriod, track);
+        timerFunctionSyncEnv(engine, chip, ch, softOscPeriod, track);
         break;
       case AYSoftwareOscType::wavetable:
-        timerFunctionWavetable(chipNomadState, chip, ch, softOscPeriod, track);
+        timerFunctionWavetable(engine, chip, ch, softOscPeriod, track);
         break;
       case AYSoftwareOscType::toneFM:
-        timerFunctionToneFM(chipNomadState, chip, ch, softOscPeriod, track);
+        timerFunctionToneFM(engine, chip, ch, softOscPeriod, track);
         break;
       case AYSoftwareOscType::envFM:
-        timerFunctionEnvFM(chipNomadState, chip, ch, softOscPeriod, track);
+        timerFunctionEnvFM(engine, chip, ch, softOscPeriod, track);
         break;
       case AYSoftwareOscType::sample:
-        timerFunctionSample(chipNomadState, chip, ch, softOscPeriod, track);
+        timerFunctionSample(engine, chip, ch, softOscPeriod, track);
         break;
       default:
         break;
@@ -355,7 +357,7 @@ int timerFunctionAY(SoundChip* chipBase, void* userdata) {
     track->note.chip.ay.softPeriodCounter++;
 
     // If track is disabled, force output to 0
-    if (state->trackEnabled[firstTrack + ch] == 0) {
+    if (player->trackEnabled[firstTrack + ch] == 0) {
       chip->setRegister(ch + 8, 0);
     }
   }
@@ -367,8 +369,8 @@ int timerFunctionAY(SoundChip* chipBase, void* userdata) {
 
 // Core AY playback logic
 
-void resetTrackAY(PlaybackState* state, int trackIdx) {
-  PlaybackTrackState* track = &state->tracks[trackIdx];
+void Player::resetTrackAY(int trackIdx) {
+  PlaybackTrackState* track = &tracks[trackIdx];
 
   // Clear all AY playback state
   // This function is generic and works for all AY instrument types (AY1, AY2, AYSample, AYWavetable)
@@ -383,8 +385,8 @@ void resetTrackAY(PlaybackState* state, int trackIdx) {
   track->note.chip.ay.softFixedPitch = EMPTY_VALUE_8;
 }
 
-void resetOffsetsAY(PlaybackState* state, int trackIdx) {
-  PlaybackTrackState* track = &state->tracks[trackIdx];
+void Player::resetOffsetsAY(int trackIdx) {
+  PlaybackTrackState* track = &tracks[trackIdx];
 
   // Reset AY-specific offsets
   track->note.chip.ay.envPeriodOffset = 0;
@@ -402,9 +404,8 @@ void resetOffsetsAY(PlaybackState* state, int trackIdx) {
   track->note.chip.ay.volumeOffset = 0;
 }
 
-void setupInstrumentAY1(PlaybackState* state, int trackIdx) {
-  PlaybackTrackState* track = &state->tracks[trackIdx];
-  Project* p = state->p;
+void Player::setupInstrumentAY1(int trackIdx) {
+  PlaybackTrackState* track = &tracks[trackIdx];
 
   // Mixer
   uint8_t defaultMixer = p->instruments[track->note.instrument].chip.ay.defaultMixer;
@@ -439,9 +440,8 @@ void setupInstrumentAY1(PlaybackState* state, int trackIdx) {
   track->note.chip.ay.softType = AYSoftwareOscType::none;
 }
 
-void setupInstrumentAY2(PlaybackState* state, int trackIdx) {
-  PlaybackTrackState* track = &state->tracks[trackIdx];
-  Project* p = state->p;
+void Player::setupInstrumentAY2(int trackIdx) {
+  PlaybackTrackState* track = &tracks[trackIdx];
   InstrumentAY2* ay2 = &p->instruments[track->note.instrument].chip.ay2;
 
   // Mixer
@@ -473,9 +473,8 @@ void setupInstrumentAY2(PlaybackState* state, int trackIdx) {
   track->note.chip.ay.softType = ay2->oscSoftware.type;
 }
 
-void setupInstrumentAYSample(PlaybackState* state, int trackIdx) {
-  PlaybackTrackState* track = &state->tracks[trackIdx];
-  Project* p = state->p;
+void Player::setupInstrumentAYSample(int trackIdx) {
+  PlaybackTrackState* track = &tracks[trackIdx];
   InstrumentAYSample* aySample = &p->instruments[track->note.instrument].chip.aySample;
 
   // Mixer
@@ -505,9 +504,8 @@ void setupInstrumentAYSample(PlaybackState* state, int trackIdx) {
   track->note.chip.ay.sampleDitherError = 0;
 }
 
-void setupInstrument(PlaybackState* state, int trackIdx) {
-  PlaybackTrackState* track = &state->tracks[trackIdx];
-  Project* p = state->p;
+void Player::setupInstrument(int trackIdx) {
+  PlaybackTrackState* track = &tracks[trackIdx];
 
   if (track->note.instrument == EMPTY_VALUE_8) return;
 
@@ -515,13 +513,13 @@ void setupInstrument(PlaybackState* state, int trackIdx) {
 
   switch (instType) {
     case InstrumentType::AY1:
-      setupInstrumentAY1(state, trackIdx);
+      setupInstrumentAY1(trackIdx);
       break;
     case InstrumentType::AY2:
-      setupInstrumentAY2(state, trackIdx);
+      setupInstrumentAY2(trackIdx);
       break;
     case InstrumentType::AYSample:
-      setupInstrumentAYSample(state, trackIdx);
+      setupInstrumentAYSample(trackIdx);
       break;
     case InstrumentType::none:
       // No setup needed
@@ -529,9 +527,8 @@ void setupInstrument(PlaybackState* state, int trackIdx) {
   }
 }
 
-void handleInstrumentAY1(PlaybackState* state, int trackIdx) {
-  PlaybackTrackState* track = &state->tracks[trackIdx];
-  Project* p = state->p;
+void Player::handleInstrumentAY1(int trackIdx) {
+  PlaybackTrackState* track = &tracks[trackIdx];
 
   // Process AY1 legacy volume modulation (backward compatibility)
   if (track->note.chip.ay.volumeModulation.modulation) {
@@ -582,9 +579,8 @@ void handleInstrumentAY1(PlaybackState* state, int trackIdx) {
 
 }
 
-void handleInstrumentAY2(PlaybackState* state, int trackIdx) {
-  PlaybackTrackState* track = &state->tracks[trackIdx];
-  Project* p = state->p;
+void Player::handleInstrumentAY2(int trackIdx) {
+  PlaybackTrackState* track = &tracks[trackIdx];
 
   // Initialize volume to full (15) before applying modulations
   track->note.chip.ay.volume = 15;
@@ -650,9 +646,8 @@ void handleInstrumentAY2(PlaybackState* state, int trackIdx) {
   track->note.chip.ay.softFineOffset += p->instruments[track->note.instrument].chip.ay2.oscSoftware.fineTune;
 }
 
-void handleInstrumentAYSample(PlaybackState* state, int trackIdx) {
-  PlaybackTrackState* track = &state->tracks[trackIdx];
-  Project* p = state->p;
+void Player::handleInstrumentAYSample(int trackIdx) {
+  PlaybackTrackState* track = &tracks[trackIdx];
 
   // Initialize volume to full (15) before applying modulations
   track->note.chip.ay.volume = 15;
@@ -697,10 +692,8 @@ void handleInstrumentAYSample(PlaybackState* state, int trackIdx) {
   track->note.chip.ay.softFineOffset += aySample->fineTune;
 }
 
-void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx) {
-  PlaybackState* state = &chipNomadState->playbackState;
-  Project* p = &chipNomadState->project;
-  SoundChip* chip = chipNomadState->chips[chipIdx];
+void Player::outputRegistersAY(Engine* engine, int trackIdx, int chipIdx) {
+  SoundChip* chip = engine->chips[chipIdx];
   int ayChannel = 0;
 
   // Tracking chip-wide reg values
@@ -720,7 +713,7 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
     int shouldWriteTonePeriod = 0;
     int shouldWriteVolume = 0;
 
-    PlaybackTrackState* track = &state->tracks[t];
+    PlaybackTrackState* track = &tracks[t];
 
     if (track->note.pitchFinal == EMPTY_VALUE_8 || p->instruments[track->note.instrument].type == InstrumentType::none) {
       // Silence channel
@@ -879,7 +872,7 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
       chip->setRegister(ayChannel * 2 + 1, (track->note.chip.ay.outTonePeriod & 0xf00) >> 8);
     }
     if (shouldWriteVolume) {
-      chip->setRegister(8 + ayChannel, state->trackEnabled[t] ? track->note.chip.ay.outVolume : 0);
+      chip->setRegister(8 + ayChannel, trackEnabled[t] ? track->note.chip.ay.outVolume : 0);
     }
 
     ayChannel++;
@@ -889,9 +882,9 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
 
   // Env register write
   if (envShape != 0) {
-    if (envShape != state->chips[chipIdx].ay.envShape) {
+    if (envShape != chips[chipIdx].ay.envShape) {
       chip->setRegister(13, envShape);
-      state->chips[chipIdx].ay.envShape = envShape;
+      chips[chipIdx].ay.envShape = envShape;
     }
     if (shouldWriteEnvPeriod) {
       chip->setRegister(11, envPeriod & 0xff);
@@ -909,7 +902,7 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
   }
   // Soft osc
   if (hasSoftOsc) {
-    chip->setTimerFunc(timerFunctionAY, chipNomadState);
+    chip->setTimerFunc(timerFunctionAY, engine);
   } else {
     chip->setTimerFunc(NULL, NULL);
   }
@@ -966,7 +959,7 @@ int16_t calculateAYPeriod(Project* p, uint8_t basePitch, int8_t pitchOffset, int
 }
 
 // Initialize additional tables for sample playback
-void initAYSampleTables(void) {
+void Player::initAYSampleTables(void) {
   // Fill 8-bit DAC tables
   for (int i = 0; i < 16; i++) {
     cnDACTableAY[i] = (uint8_t)(dacTableAYfloat[i * 2 + 1] * 255);
@@ -984,3 +977,5 @@ void initAYSampleTables(void) {
     cnSampleLookupYM[i] = volumeYM;
   }
 }
+
+}; // namespace chipnomad

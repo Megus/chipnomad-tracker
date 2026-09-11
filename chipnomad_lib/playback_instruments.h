@@ -4,12 +4,6 @@
 #include "playback.h"
 #include "playback_modulation.h"
 
-struct PlaybackInstrument {
-  void (*init)(PlaybackState* state, int trackIdx);
-  void (*handle)(PlaybackState* state, int trackIdx);
-
-};
-
 // Apply ADSR/AHD volume modulation and return the resulting volume (0-maxVolume)
 // Returns -1 if the modulation is not ADSR/AHD (e.g., LFO)
 // maxVolume: maximum volume value (e.g., 15 for AY chips)

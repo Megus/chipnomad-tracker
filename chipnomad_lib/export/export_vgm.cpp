@@ -89,7 +89,7 @@ static SoundChip* regDumpChipFactory(int chipIndex, int sampleRate, ChipSetup se
 ///////////////////////////////////////////////////////////////////////////////
 
 ExporterVGM::ExporterVGM(const char* filename, Project* project, int startRow)
-  : Exporter(project, startRow) {
+  : Exporter(regDumpChipFactory, 44100) {
   waitSamples = 0;
   totalSamples = 0;
   strncpy(baseFilename, filename, sizeof(baseFilename) - 1);
@@ -103,19 +103,20 @@ ExporterVGM::ExporterVGM(const char* filename, Project* project, int startRow)
     fwrite(header, 1, VGM_HEADER_SIZE, file);
   }
 
-  chipnomadInitChips(chipnomadState, 44100, regDumpChipFactory);
+  // Engine was constructed with regDumpChipFactory at 44100; start playback.
+  startExport(project, startRow);
 }
 
 int ExporterVGM::next() {
   if (!file) return -1;
 
-  int chipCount = chipnomadState->project.chipsCount;
+  int chipCount = engine.project->chipsCount;
   if (chipCount > 2) chipCount = 2;
 
   float dummyBuffer[2];
 
   for (int s = 0; s < 44100 * 10; s++) {
-    int rendered = chipnomadRender(chipnomadState, dummyBuffer, 1);
+    int rendered = engine.render(dummyBuffer, 1);
 
     if (rendered < 1) {
       // Playback ended
@@ -130,7 +131,7 @@ int ExporterVGM::next() {
     // Check for register changes across all chips
     bool hasChanges = false;
     for (int c = 0; c < chipCount && !hasChanges; c++) {
-      SoundChipRegDump* chip = static_cast<SoundChipRegDump*>(chipnomadState->chips[c]);
+      SoundChipRegDump* chip = static_cast<SoundChipRegDump*>(engine.chips[c]);
       for (int r = 0; r < 14; r++) {
         if (chip->getLastRegister(r) != chip->getRegister(r)) {
           hasChanges = true;
@@ -145,7 +146,7 @@ int ExporterVGM::next() {
       }
 
       for (int c = 0; c < chipCount; c++) {
-        SoundChipRegDump* chip = static_cast<SoundChipRegDump*>(chipnomadState->chips[c]);
+        SoundChipRegDump* chip = static_cast<SoundChipRegDump*>(engine.chips[c]);
         for (int r = 0; r < 14; r++) {
           if (chip->getLastRegister(r) != chip->getRegister(r)) {
             uint8_t regData[3] = { 0xa0, (uint8_t)(r + c * 0x80), chip->getRegister(r) };
@@ -190,7 +191,7 @@ int ExporterVGM::finish() {
   memcpy(&header[VGM_TOTAL_SAMPLES], &samples, 4);
 
   // Rate (tick rate in Hz)
-  uint32_t rate = (uint32_t)(chipnomadState->project.tickRate + 0.5f);
+  uint32_t rate = (uint32_t)(engine.project->tickRate + 0.5f);
   memcpy(&header[VGM_RATE], &rate, 4);
 
   // VGM data offset (relative to 0x34) - data starts at VGM_HEADER_SIZE
@@ -198,14 +199,14 @@ int ExporterVGM::finish() {
   memcpy(&header[VGM_DATA_OFFSET], &dataOffset, 4);
 
   // AY8910 clock (bit 30 set = dual chip)
-  uint32_t ayClock = (uint32_t)chipnomadState->project.chipSetup.ay.clock;
-  if (chipnomadState->project.chipsCount > 1) {
+  uint32_t ayClock = (uint32_t)engine.project->chipSetup.ay.clock;
+  if (engine.project->chipsCount > 1) {
     ayClock |= 0x40000000; // Dual chip flag
   }
   memcpy(&header[VGM_AY_CLOCK], &ayClock, 4);
 
   // AY8910 chip type: 0x00 = AY8910, 0x01 = AY8912, 0x02 = AY8913, 0x03 = YM2149
-  header[VGM_AY_TYPE] = chipnomadState->project.chipSetup.ay.isYM ? 0x03 : 0x00;
+  header[VGM_AY_TYPE] = engine.project->chipSetup.ay.isYM ? 0x03 : 0x00;
 
   // AY8910 flags: 0x01 = legacy output
   header[VGM_AY_FLAGS] = 0x01;

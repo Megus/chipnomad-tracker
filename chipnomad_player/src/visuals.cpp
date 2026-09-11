@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 
+using namespace chipnomad;
+
 #define GLYPH_CACHE_SIZE 128
 
 struct GlyphCache {

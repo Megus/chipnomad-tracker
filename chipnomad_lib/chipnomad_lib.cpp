@@ -4,16 +4,13 @@
 #include <string.h>
 
 namespace chipnomad {
-  static void detectAYPitchConflicts(ChipNomadState* state);
-
   static SoundChip* defaultChipFactory(int chipIndex, int sampleRate, ChipSetup setup) {
     return new SoundChipAY(sampleRate, setup);
   }
 
-  Player::Player(ChipFactory factory, int sampleRate) {
+  Engine::Engine(ChipFactory factory, int sampleRate) {
     chipFactory = factory ? factory : defaultChipFactory;
     project = nullptr;
-    memset(&playbackState, 0, sizeof(PlaybackState));
     memset(chips, 0, sizeof(chips));
     memset(trackWarnings, 0, sizeof(trackWarnings));
 
@@ -30,7 +27,7 @@ namespace chipnomad {
     fillFXNames();
   }
 
-  Player::~Player() {
+  Engine::~Engine() {
     // Cleanup chips
     for (int i = 0; i < PROJECT_MAX_CHIPS; i++) {
       if (chips[i]) {
@@ -43,7 +40,13 @@ namespace chipnomad {
     free(mixBuffer);
   }
 
-  void Player::initChips() {
+  void Engine::setProject(Project* project) {
+    this->project = project;
+    player.init(project);
+    initChips();
+  }
+
+  void Engine::initChips() {
     // Cleanup existing chips if already initialized
     for (int i = 0; i < PROJECT_MAX_CHIPS; i++) {
       if (chips[i]) {
@@ -61,14 +64,14 @@ namespace chipnomad {
     }
   }
 
-  int Player::render(float* buffer, int samples) {
+  int Engine::render(float* buffer, int samples) {
     int samplesLeft = samples;
     int allTracksStopped = 0;
 
     while (samplesLeft > 0 && !allTracksStopped) {
       if ((int)frameSampleCounter == 0) {
         frameSampleCounter += sampleRate / project->tickRate;
-        allTracksStopped = nextFrame();
+        allTracksStopped = player.nextFrame(this);
         // Decrease audio overload cooldown each frame
         if (audioOverload > 0) {
           audioOverload--;
@@ -134,7 +137,15 @@ namespace chipnomad {
     return samples - samplesLeft;
   }
 
-  void Player::detectAYPitchConflicts() {
+  void Engine::setQuality(ChipNomadQuality quality) {
+    for (int i = 0; i < PROJECT_MAX_CHIPS; i++) {
+      if (chips[i]) {
+        chips[i]->setQuality(quality);
+      }
+    }
+  }
+
+  void Engine::detectAYPitchConflicts() {
     if (project->chipType != ChipType::AY) return;
 
     // Decrease existing warning cooldowns
@@ -176,14 +187,6 @@ namespace chipnomad {
           trackWarnings[i] = PITCH_CONFLICT_COOLDOWN_FRAMES;
           trackWarnings[j] = PITCH_CONFLICT_COOLDOWN_FRAMES;
         }
-      }
-    }
-  }
-
-  void Player::setQuality(ChipNomadQuality quality) {
-    for (int i = 0; i < PROJECT_MAX_CHIPS; i++) {
-      if (chips[i]) {
-        chips[i]->setQuality(quality);
       }
     }
   }

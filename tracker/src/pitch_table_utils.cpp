@@ -144,7 +144,7 @@ void calculatePitchTableAY(Project* p) {
 
       int midiNote = startMidiNote + o * 12 + c;
       float freq = centsToFrequency(midiNote * 100);
-      int period = frequencyToAYPeriod(freq, (int)clock);
+      int period = chipnomad::frequencyToAYPeriod(freq, (int)clock);
 
       p->pitchTable.values[o * 12 + c] = period;
       strcpy(p->pitchTable.noteNames[o * 12 + c], noteStrings[c]);

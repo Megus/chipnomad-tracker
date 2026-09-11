@@ -16,7 +16,8 @@
 struct PlayerState {
   SDL_Window* window;
   SDL_Renderer* renderer;
-  ChipNomadState* chipnomadState;
+  Project project;
+  chipnomad::Engine* engine;
   int isPlaying;
   int quit;
   AudioState audioState;
@@ -27,25 +28,15 @@ struct PlayerState {
 static struct PlayerState player;
 
 int loadTrack(const char* filename) {
-  // Create ChipNomad state
-  player.chipnomadState = chipnomadCreate();
-  if (!player.chipnomadState) {
-    fprintf(stderr, "Failed to create ChipNomad state\n");
-    return -1;
-  }
-
-  // Load project
-  if (projectLoad(&player.chipnomadState->project, filename) != 0) {
+  // Load project (caller owns the Project). projectLoad returns 1 on success.
+  if (!projectLoad(&player.project, filename)) {
     fprintf(stderr, "Failed to load track: %s\n", filename);
-    chipnomadDestroy(player.chipnomadState);
     return -1;
   }
 
-  // Initialize playback with the loaded project
-  playbackInit(&player.chipnomadState->playbackState, &player.chipnomadState->project);
-
-  // Initialize chips
-  chipnomadInitChips(player.chipnomadState, SAMPLE_RATE, NULL);
+  // Create the engine and give it the project (initializes playback + chips)
+  player.engine = new chipnomad::Engine(nullptr, SAMPLE_RATE);
+  player.engine->setProject(&player.project);
 
   return 0;
 }
@@ -139,7 +130,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Initialize audio module
-    player.audioState.chipnomadState = player.chipnomadState;
+    player.audioState.engine = player.engine;
     player.audioState.isPlaying = &player.isPlaying;
 
     if (audioInit(&player.audioState) != 0) {
@@ -151,8 +142,8 @@ int main(int argc, char* argv[]) {
 
     // Initialize visual module
     player.visualState.renderer = player.renderer;
-    player.visualState.project = &player.chipnomadState->project;
-    player.visualState.playback = &player.chipnomadState->playbackState;
+    player.visualState.project = &player.project;
+    player.visualState.playback = &player.engine->player;
     player.visualState.isPlaying = &player.isPlaying;
     player.visualState.config = &player.visualConfig;
 
@@ -170,7 +161,7 @@ int main(int argc, char* argv[]) {
     }
 
     visualsCleanup(&player.visualState);
-    chipnomadDestroy(player.chipnomadState);
+    delete player.engine;
     SDL_DestroyRenderer(player.renderer);
     SDL_DestroyWindow(player.window);
     SDL_Quit();

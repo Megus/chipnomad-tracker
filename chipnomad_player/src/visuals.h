@@ -26,7 +26,7 @@ struct TrackHistory {
 struct VisualState {
   SDL_Renderer* renderer;
   Project* project;
-  PlaybackState* playback;
+  chipnomad::Player* playback;
   int* isPlaying;
   FT_Library ftLibrary;
   FT_Face ftFace;

@@ -20,7 +20,7 @@ void audioCallback(void* userdata, Uint8* stream, int len) {
   int stereoSamples = len / sizeof(int16_t) / 2;
   int16_t* output = (int16_t*)stream;
 
-  int samplesRendered = chipnomadRender(audioState->chipnomadState, floatBuffer, stereoSamples);
+  int samplesRendered = audioState->engine->render(floatBuffer, stereoSamples);
   if (samplesRendered < stereoSamples) {
     *audioState->isPlaying = 0;
     // Fill remaining buffer with silence
@@ -61,6 +61,6 @@ int audioInit(AudioState* state) {
 }
 
 void audioStart(AudioState* state) {
-  playbackStartSong(&state->chipnomadState->playbackState, 0, 0, 1);
+  state->engine->player.playSong(0, 0, 1);
   *state->isPlaying = 1;
 }
