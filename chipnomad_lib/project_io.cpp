@@ -630,6 +630,10 @@ static void projectLoadAYWavetables(FILE* file, Project* p) {
 int projectLoad(Project* project, const char* path) {
   static const char* formatError = "Incorrect file format";
 
+  // Ensure the FX name table + group counts are initialized before parsing FX,
+  // regardless of whether an Engine has been created yet. Idempotent.
+  fillFXNames();
+
   resetPeekConsume();
   chipnomad::Error::clear();
 
@@ -1036,6 +1040,9 @@ static int projectSaveInternal(FILE* file, Project* project) {
 }
 
 int projectSave(Project* p, const char* path) {
+  // Ensure FX names are initialized before serializing FX columns. Idempotent.
+  fillFXNames();
+
   chipnomad::Error::clear();
 
   FILE* file = fopen(path, "wb");

@@ -56,7 +56,7 @@ void initDefaultAppSettings(void) {
 int* pSongRow;
 int* pSongTrack;
 int* pChainRow;
-ChipNomadState* chipnomadState;
+TrackerState* chipnomadState;
 int projectModified = 0;
 
 int settingsSave(void) {

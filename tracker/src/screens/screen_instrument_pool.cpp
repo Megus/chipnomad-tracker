@@ -84,7 +84,7 @@ static void draw(void) {
 
   // Draw playback markers for currently playing instruments
   for (int track = 0; track < chipnomadState->project.tracksCount; track++) {
-    PlaybackTrackState* trackState = &chipnomadState->playbackState.tracks[track];
+    PlaybackTrackState* trackState = &chipnomadState->engine->player.tracks[track];
     if (trackState->mode != PlaybackMode::stopped && trackState->note.instrument < PROJECT_MAX_INSTRUMENTS) {
       int instrument = trackState->note.instrument;
       if (instrument >= topRow && instrument < topRow + 16) {
@@ -116,7 +116,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
 
   // Handle key-up
   if (!isKeyDown && keys == 0) {
-    playbackStopPreview(&chipnomadState->playbackState, *pSongTrack);
+    chipnomadState->engine->player.stopPreview(*pSongTrack);
     if (poolState == POOL_EDIT_PRESSED) {
       poolState = POOL_NORMAL;
       screenSetup(&screenInstrument, cursorRow);
@@ -174,7 +174,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
     // Move instrument up
     if (cursorRow > 0) {
       poolState = POOL_MOVING;
-      playbackStop(&chipnomadState->playbackState);
+      chipnomadState->engine->player.stop();
       instrumentSwap(&chipnomadState->project, cursorRow, cursorRow - 1);
       projectModified = 1;
       cursorRow--;
@@ -188,7 +188,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
     // Move instrument down
     if (cursorRow < PROJECT_MAX_INSTRUMENTS - 1) {
       poolState = POOL_MOVING;
-      playbackStop(&chipnomadState->playbackState);
+      chipnomadState->engine->player.stop();
       instrumentSwap(&chipnomadState->project, cursorRow, cursorRow + 1);
       projectModified = 1;
       cursorRow++;
@@ -201,9 +201,9 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   } else if (keys == (keyEdit | keyPlay)) {
     // Preview instrument
     poolState = POOL_PREVIEWING;
-    if (!instrumentIsEmpty(&chipnomadState->project, cursorRow) && !playbackIsPlaying(&chipnomadState->playbackState)) {
+    if (!instrumentIsEmpty(&chipnomadState->project, cursorRow) && !chipnomadState->engine->player.isPlaying()) {
       uint8_t note = instrumentFirstNote(&chipnomadState->project, cursorRow);
-      playbackPreviewNote(&chipnomadState->playbackState, *pSongTrack, note, cursorRow);
+      chipnomadState->engine->player.previewNote(*pSongTrack, note, cursorRow);
     }
     return 1;
   } else if (keys == (keyShift | keyOpt)) {
@@ -221,7 +221,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
 
   // Stop preview when cursor moves
   if (oldCursorRow != cursorRow) {
-    playbackStopPreview(&chipnomadState->playbackState, *pSongTrack);
+    chipnomadState->engine->player.stopPreview(*pSongTrack);
   }
 
   // Redraw only cursor if position changed

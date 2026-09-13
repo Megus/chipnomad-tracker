@@ -377,7 +377,7 @@ static void fullRedraw(void) {
 
 static int onInput(int isKeyDown, int keys, int tapCount) {
   if (keys == 0) {
-    playbackStopPreview(&chipnomadState->playbackState, *pSongTrack);
+    chipnomadState->engine->player.stopPreview(*pSongTrack);
   }
 
   if (keys == (keyDown | keyShift)) {
@@ -387,33 +387,33 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   } else if (keys == (keyOpt | keyLeft)) {
     if (cInstrument != 0) {
       cInstrument--;
-      playbackStopPreview(&chipnomadState->playbackState, *pSongTrack);
+      chipnomadState->engine->player.stopPreview(*pSongTrack);
       fullRedraw();
     }
     return 1;
   } else if (keys == (keyOpt | keyRight)) {
     if (cInstrument != PROJECT_MAX_INSTRUMENTS - 1) {
       cInstrument++;
-      playbackStopPreview(&chipnomadState->playbackState, *pSongTrack);
+      chipnomadState->engine->player.stopPreview(*pSongTrack);
       fullRedraw();
     }
     return 1;
   } else if (keys == (keyOpt | keyUp)) {
     cInstrument += 16;
     if (cInstrument >= PROJECT_MAX_INSTRUMENTS) cInstrument = PROJECT_MAX_INSTRUMENTS - 1;
-    playbackStopPreview(&chipnomadState->playbackState, *pSongTrack);
+    chipnomadState->engine->player.stopPreview(*pSongTrack);
     fullRedraw();
     return 1;
   } else if (keys == (keyOpt | keyDown)) {
     cInstrument -= 16;
     if (cInstrument < 0) cInstrument = 0;
-    playbackStopPreview(&chipnomadState->playbackState, *pSongTrack);
+    chipnomadState->engine->player.stopPreview(*pSongTrack);
     fullRedraw();
     return 1;
   } else if (keys == (keyEdit | keyPlay)) {
-    if (!instrumentIsEmpty(&chipnomadState->project, cInstrument) && !playbackIsPlaying(&chipnomadState->playbackState)) {
+    if (!instrumentIsEmpty(&chipnomadState->project, cInstrument) && !chipnomadState->engine->player.isPlaying()) {
       uint8_t note = instrumentFirstNote(&chipnomadState->project, cInstrument);
-      playbackPreviewNote(&chipnomadState->playbackState, *pSongTrack, note, cInstrument);
+      chipnomadState->engine->player.previewNote(*pSongTrack, note, cInstrument);
     }
     return 1;
   }

@@ -3,6 +3,7 @@
 #include "corelib_font.h"
 #include "corelib_file.h"
 #include "common.h"
+#include "tracker_state.h"
 #include "audio_manager.h"
 #include "app.h"
 #include "screens.h"
@@ -58,9 +59,9 @@ static int inputCodeToKey(InputCode input) {
 static void applyLoopRange(void) {
   LoopRange range = screenGetLoopRange(currentScreen);
   if (range.enabled) {
-    playbackSetLoopRange(&chipnomadState->playbackState, range);
+    chipnomadState->engine->player.setLoopRange(range);
   } else {
-    playbackClearLoopRange(&chipnomadState->playbackState);
+    chipnomadState->engine->player.clearLoopRange();
   }
 }
 
@@ -74,7 +75,8 @@ static void applyLoopRange(void) {
 static int inputPlayback(int keys, int tapCount) {
   if (!chipnomadState) return 0;
 
-  int isPlaying = playbackIsPlaying(&chipnomadState->playbackState);
+  Player& player = chipnomadState->engine->player;
+  int isPlaying = player.isPlaying();
   ScreenPlaybackLevel playbackLevel = screenGetPlaybackLevel(currentScreen);
 
   // Play song/chain/phrase depending on the screen's playback level
@@ -83,19 +85,19 @@ static int inputPlayback(int keys, int tapCount) {
       return 0; // This screen doesn't support playback
     }
 
-    playbackStop(&chipnomadState->playbackState);
+    player.stop();
     LoopRange range = screenGetLoopRange(currentScreen);
 
     if (playbackLevel == ScreenPlaybackLevel::song) {
       int startRow = range.enabled ? range.startSongRow : *pSongRow;
-      playbackStartSong(&chipnomadState->playbackState, startRow, 0, 1);
+      player.playSong(startRow, 0, 1);
       applyLoopRange();
     } else if (playbackLevel == ScreenPlaybackLevel::chain) {
       int startRow = range.enabled ? range.startChainRow : *pChainRow;
-      playbackStartChain(&chipnomadState->playbackState, *pSongTrack, *pSongRow, startRow, 1);
+      player.playChain(*pSongTrack, *pSongRow, startRow, 1);
       applyLoopRange();
     } else if (playbackLevel == ScreenPlaybackLevel::phrase) {
-      playbackStartPhrase(&chipnomadState->playbackState, *pSongTrack, *pSongRow, *pChainRow, 1);
+      player.playPhrase(*pSongTrack, *pSongRow, *pChainRow, 1);
       applyLoopRange();
     }
     return 1;
@@ -106,23 +108,23 @@ static int inputPlayback(int keys, int tapCount) {
       return 0; // This screen doesn't support playback
     }
 
-    playbackStop(&chipnomadState->playbackState);
+    player.stop();
     LoopRange range = screenGetLoopRange(currentScreen);
 
     if (playbackLevel == ScreenPlaybackLevel::song) {
       int startRow = range.enabled ? range.startSongRow : *pSongRow;
-      playbackStartSong(&chipnomadState->playbackState, startRow, 0, 1);
+      player.playSong(startRow, 0, 1);
       applyLoopRange();
     } else if (playbackLevel == ScreenPlaybackLevel::chain || playbackLevel == ScreenPlaybackLevel::phrase) {
       int startChainRow = range.enabled ? range.startChainRow : *pChainRow;
-      playbackStartSong(&chipnomadState->playbackState, *pSongRow, startChainRow, 1);
+      player.playSong(*pSongRow, startChainRow, 1);
       applyLoopRange();
     }
     return 1;
   }
   // Stop playback
   else if (isPlaying && keys == keyPlay) {
-    playbackStop(&chipnomadState->playbackState);
+    player.stop();
     return 1;
   }
   return 0;
@@ -137,8 +139,8 @@ static int inputPlayback(int keys, int tapCount) {
 */
 static void appInput(int isKeyDown, int keys, int tapCount) {
   // Stop phrase row and preview
-  if (chipnomadState->playbackState.tracks[*pSongTrack].mode == PlaybackMode::phraseRow && keys == 0) {
-    playbackStop(&chipnomadState->playbackState);
+  if (chipnomadState->engine->player.tracks[*pSongTrack].mode == PlaybackMode::phraseRow && keys == 0) {
+    chipnomadState->engine->player.stop();
   }
   // Let screen handle input first, then try global playback if not handled
   if (!currentScreen->onInput(isKeyDown, keys, tapCount)) {
@@ -180,15 +182,10 @@ void appSetup(void) {
   // Initialize waveform display
   waveformDisplayInit();
 
-  // Create ChipNomad state
-  chipnomadState = chipnomadCreate();
-  audio = *new AudioManager(chipnomadState); // Create the AudioManager instance
-  if (!chipnomadState) {
-    // Handle error - for now just exit
-    return;
-  }
+  // Create tracker state (owns the Project and the playback Engine)
+  chipnomadState = new TrackerState();
 
-  // Try to load an auto-saved project
+  // Try to load an auto-saved project into our owned Project
   if (!projectLoad(&chipnomadState->project, getAutosavePath())) {
     // Failed to load autosave, initialize empty project
     projectInitAY(&chipnomadState->project);
@@ -197,15 +194,19 @@ void appSetup(void) {
   // Initialize all screen states
   screensInitAll();
 
-  playbackInit(&chipnomadState->playbackState, &chipnomadState->project);
+  // Create the engine and bind it to the loaded project. This also inits chips
+  // and playback state (replaces the old chipnomadInitChips + playbackInit).
+  chipnomadState->initEngine(appSettings.audioSampleRate, NULL);
 
-  // Set mix volume from settings
-  chipnomadState->mixVolume = appSettings.mixVolume;
-  chipnomadState->aySampleDithering = appSettings.aySampleDithering;
+  // Set mix volume and dithering from settings
+  chipnomadState->engine->mixVolume = appSettings.mixVolume;
+  chipnomadState->engine->aySampleDithering = appSettings.aySampleDithering;
+  chipnomadState->engine->setQuality((ChipNomadQuality)appSettings.quality);
 
-  // Initialize audio system
-  chipnomadInitChips(chipnomadState, appSettings.audioSampleRate, NULL);
-  chipnomadSetQuality(chipnomadState, (ChipNomadQuality)appSettings.quality);
+  // Create the AudioManager now that the engine exists
+  audio = *new AudioManager(chipnomadState);
+
+  // Start the audio system
   audio.start(appSettings.audioSampleRate, appSettings.audioBufferSize);
   audio.resume();
 
@@ -217,7 +218,7 @@ void appSetup(void) {
 */
 void appCleanup(void) {
   audio.stop();
-  chipnomadDestroy(chipnomadState);
+  delete chipnomadState;
   chipnomadState = NULL;
 }
 
@@ -245,7 +246,7 @@ void appDraw(void) {
     }
 
     // Use warning color for track numbers if audio overload is active
-    int useOverloadColor = (chipnomadState->audioOverload > 0);
+    int useOverloadColor = (chipnomadState->engine->audioOverload > 0);
     gfxSetFgColor(useOverloadColor ? cs.warning :
       (*pSongTrack == c ? cs.textDefault : cs.textInfo));
     digit[0] = c + 49;
@@ -258,11 +259,11 @@ void appDraw(void) {
       gfxDrawBitmap(waveformBitmap, 36, 3 + c);
     }
 
-    uint8_t note = chipnomadState->playbackState.tracks[c].note.pitchFinal;
+    uint8_t note = chipnomadState->engine->player.tracks[c].note.pitchFinal;
     const char* noteStr = noteName(&chipnomadState->project, note);
 
     // Use warning color if track warning is active
-    int useWarningColor = (appSettings.pitchConflictWarning && chipnomadState->trackWarnings[c] > 0);
+    int useWarningColor = (appSettings.pitchConflictWarning && chipnomadState->engine->trackWarnings[c] > 0);
 
     gfxSetFgColor(useWarningColor ? cs.warning :
       (noteStr[0] == '-' ? cs.textEmpty : cs.textValue));
@@ -386,7 +387,7 @@ void appOnEvent(MainLoopEventData eventData) {
     audio.pause();
     if (chipnomadState) {
       // Stop playback to avoid state issues
-      playbackStop(&chipnomadState->playbackState);
+      chipnomadState->engine->player.stop();
       // Auto-save project
       projectSave(&chipnomadState->project, getAutosavePath());
     }

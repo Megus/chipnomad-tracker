@@ -73,7 +73,17 @@ FXGroup fxGroups[] = {
 int fxGroupCount = sizeof(fxGroups) / sizeof(FXGroup);
 
 // Fill FX names
+//
+// Idempotent: safe to call multiple times and from multiple entry points
+// (Engine construction, projectLoad, tests). The first call populates the
+// global fxNames[] lookup and the per-group counts in fxGroups[]; subsequent
+// calls are no-ops. This decouples the FX-name table from the Engine lifecycle
+// so project loading always has valid FX names/counts regardless of ordering.
 void fillFXNames() {
+  static bool initialized = false;
+  if (initialized) return;
+  initialized = true;
+
   // Initialize all FX names to "---"
   for (int c = 0; c < 256; c++) {
     strcpy(fxNames[c].name, "---");

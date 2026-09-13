@@ -3,9 +3,12 @@
 #include "chipnomad_lib.h"
 #include "playback_chips.h"
 #include "common.h"
+#include "tracker_state.h"
 #include <string.h>
 #include <stdlib.h>
 #include <functional>
+
+using namespace chipnomad;
 
 #define ENVELOPE_DIM_BRIGHTNESS 160
 
@@ -125,7 +128,7 @@ static int getAYEnvelopeHeight(int x, int envShape) {
 }
 
 Bitmap* waveformDisplayGetBitmap(int trackIdx) {
-  PlaybackTrackState* track = &chipnomadState->playbackState.tracks[trackIdx];
+  PlaybackTrackState* track = &chipnomadState->engine->player.tracks[trackIdx];
 
   // Check if track is playing
   if (track->note.pitchFinal == EMPTY_VALUE_8) {
@@ -139,7 +142,7 @@ Bitmap* waveformDisplayGetBitmap(int trackIdx) {
   int chipIdx = trackIdx / 3;
   int ayChannel = trackIdx % 3;
 
-  SoundChipAY* chip = static_cast<SoundChipAY*>(chipnomadState->chips[chipIdx]);
+  SoundChipAY* chip = static_cast<SoundChipAY*>(chipnomadState->engine->chips[chipIdx]);
 
   // Read mixer register (reg 7)
   uint8_t mixerReg = chip->getRegister(7);

@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "chipnomad_lib.h"
+#include "tracker_state.h"
 
 class AudioSource;
 
@@ -14,7 +15,7 @@ enum class TrackState: uint8_t {
 
 class AudioManager {
   public:
-    AudioManager(ChipNomadState *state);
+    AudioManager(TrackerState *state);
     ~AudioManager();
 
     // Track solo/mute states
@@ -43,7 +44,7 @@ class AudioManager {
     virtual int startWavetablePreview(const char* path, bool isYM);
 
   private:
-    ChipNomadState *chipnomadState;
+    TrackerState *trackerState;
     int sampleRate;
     int bufferSize;
     int pendingReinitChips;

@@ -170,7 +170,7 @@ int settingsOnEdit(int col, int row, CellEditAction action) {
     if (handled) {
       appSettings.mixVolume = (float)mixVolumePercentU8 / 100.0f;
       if (chipnomadState) {
-        chipnomadState->mixVolume = appSettings.mixVolume;
+        chipnomadState->engine->mixVolume = appSettings.mixVolume;
       }
     }
     return handled;
@@ -178,14 +178,14 @@ int settingsOnEdit(int col, int row, CellEditAction action) {
     // Quality (0-3)
     int handled = edit8noLast(action, (uint8_t*)&appSettings.quality, 1, 0, 3);
     if (handled) {
-      chipnomadSetQuality(chipnomadState, (ChipNomadQuality)appSettings.quality);
+      chipnomadState->engine->setQuality((ChipNomadQuality)appSettings.quality);
     }
     return handled;
   } else if (row == 3 && col == 0) {
     // Sample dithering (0/1)
     int handled = edit8noLast(action, (uint8_t*)&appSettings.aySampleDithering, 1, 0, 1);
     if (handled && chipnomadState) {
-      chipnomadState->aySampleDithering = appSettings.aySampleDithering;
+      chipnomadState->engine->aySampleDithering = appSettings.aySampleDithering;
     }
     return handled;
   } else if (row == 4 && col == 0 && action == CellEditAction::tap) {

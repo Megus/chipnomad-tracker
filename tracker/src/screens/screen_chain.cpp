@@ -146,8 +146,8 @@ static void fullRedraw(void) {
 
 static void draw(void) {
   gfxClearRect(2, 3, 1, 16);
-  if (chipnomadState && chipnomadState->playbackState.tracks[*pSongTrack].songRow == *pSongRow) {
-    int chainRow = chipnomadState->playbackState.tracks[*pSongTrack].chainRow;
+  if (chipnomadState && chipnomadState->engine->player.tracks[*pSongTrack].songRow == *pSongRow) {
+    int chainRow = chipnomadState->engine->player.tracks[*pSongTrack].chainRow;
     if (chainRow >= 0 && chainRow < 16) {
       gfxSetFgColor(appSettings.colorScheme.playMarkers);
       gfxPrint(2, 3 + chainRow, ">");

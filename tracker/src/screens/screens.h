@@ -2,7 +2,14 @@
 #define __SCREENS_H__
 
 #include "common.h"
+#include "tracker_state.h"
 #include "../chipnomad_lib/playback.h"
+
+// Bridge: the playback types (LoopRange, PlaybackMode, PlaybackTrackState, ...)
+// now live in namespace chipnomad. The tracker still references them unqualified
+// throughout the screens, so pull the namespace in here. This will be tightened
+// up as the tracker is migrated to explicit qualification / DI.
+using namespace chipnomad;
 
 #define MESSAGE_TIME (60)
 

@@ -182,7 +182,7 @@ static void draw(void) {
   gfxPrint(0, 3 + *pChainRow, "<");
 
   gfxClearRect(2, 3, 1, 16);
-  PlaybackTrackState* track = &chipnomadState->playbackState.tracks[*pSongTrack];
+  PlaybackTrackState* track = &chipnomadState->engine->player.tracks[*pSongTrack];
   if (track->mode != PlaybackMode::stopped && track->mode != PlaybackMode::phraseRow && track->songRow != EMPTY_VALUE_16) {
     // Chain row
     if (*pSongRow == track->songRow) {
@@ -280,14 +280,14 @@ static int editCell(int col, int row, CellEditAction action) {
     }
   }
 
-  if (handled && (!playbackIsPlaying(&chipnomadState->playbackState) || chipnomadState->playbackState.tracks[*pSongTrack].mode == PlaybackMode::phraseRow)) {
+  if (handled && (!chipnomadState->engine->player.isPlaying() || chipnomadState->engine->player.tracks[*pSongTrack].mode == PlaybackMode::phraseRow)) {
     PhraseRow* row = &phraseRows[screen.cursorRow];
     if (row->note != EMPTY_VALUE_8 && row->note != NOTE_OFF && row->instrument == EMPTY_VALUE_8) {
       PhraseRow previewRow = *row;
       previewRow.instrument = lookupInstrument(&chipnomadState->project, *pSongRow, *pChainRow, screen.cursorRow, *pSongTrack);
-      playbackStartPhraseRow(&chipnomadState->playbackState, *pSongTrack, &previewRow);
+      chipnomadState->engine->player.playPhraseRow(*pSongTrack, &previewRow);
     } else {
-      playbackStartPhraseRow(&chipnomadState->playbackState, *pSongTrack, row);
+      chipnomadState->engine->player.playPhraseRow(*pSongTrack, row);
     }
   }
 
@@ -440,7 +440,7 @@ static int inputScreenNavigation(int keys, int tapCount) {
       *pChainRow -= 1;
       if (keys == keyUp) screen.cursorRow = 15;
       setup(-1);
-      playbackQueuePhrase(&chipnomadState->playbackState, *pSongTrack, *pSongRow, *pChainRow);
+      chipnomadState->engine->player.queuePhrase(*pSongTrack, *pSongRow, *pChainRow);
       fullRedraw();
     }
     return 1;
@@ -451,7 +451,7 @@ static int inputScreenNavigation(int keys, int tapCount) {
       *pChainRow += 1;
       if (keys == keyDown) screen.cursorRow = 0;
       setup(-1);
-      playbackQueuePhrase(&chipnomadState->playbackState, *pSongTrack, *pSongRow, *pChainRow);
+      chipnomadState->engine->player.queuePhrase(*pSongTrack, *pSongRow, *pChainRow);
       fullRedraw();
     }
     return 1;

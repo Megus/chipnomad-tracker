@@ -5,6 +5,13 @@
 #include "corelib/corelib_input.h"
 #include "corelib_mainloop.h"
 
+// TrackerState is a C++ class (see tracker_state.h). Include its full definition
+// (C++ only) so consumers of common.h can dereference the `chipnomadState`
+// global below. A pointer to it is also valid inside the extern "C" block.
+#ifdef __cplusplus
+#include "tracker_state.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -74,7 +81,7 @@ extern int* pSongRow;
 extern int* pSongTrack;
 extern int* pChainRow;
 
-extern ChipNomadState* chipnomadState;
+extern TrackerState* chipnomadState;
 
 extern int projectModified; // Flag to track if the project has unsaved changes
 

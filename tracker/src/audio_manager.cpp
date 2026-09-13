@@ -18,11 +18,11 @@ void audioCallback(int16_t* buffer, int stereoSamples) {
 
   // Synchronous reinitialization of chips if requested
   if (self->pendingReinitChips) {
-    chipnomadInitChips(self->chipnomadState, self->sampleRate, NULL);
+    self->trackerState->engine->initChips();
     self->pendingReinitChips = 0;
   }
 
-  chipnomadRender(self->chipnomadState, self->renderBuffer, stereoSamples);
+  self->trackerState->engine->render(self->renderBuffer, stereoSamples);
 
   // Preview: resample and mix into render buffer (as float, before final conversion)
   if (self->previewSource && !self->previewSource->isFinished()) {
@@ -58,8 +58,8 @@ void audioCallback(int16_t* buffer, int stereoSamples) {
 }
 
 
-AudioManager::AudioManager(ChipNomadState *state) {
-  chipnomadState = state;
+AudioManager::AudioManager(TrackerState *state) {
+  trackerState = state;
   pendingReinitChips = 0;
   previewSource = NULL;
   previewPosition = 0.0;
@@ -71,7 +71,7 @@ AudioManager::AudioManager(ChipNomadState *state) {
   for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
     trackStates[i] = TrackState::normal;
   }
-  if (chipnomadState != nullptr) updatePlaybackMuteFlags();
+  if (trackerState != nullptr && trackerState->engine != nullptr) updatePlaybackMuteFlags();
 }
 
 AudioManager::~AudioManager() {
@@ -124,10 +124,10 @@ void AudioManager::updatePlaybackMuteFlags(void) {
   for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
     if (hasSolo) {
       // Solo mode: only solo tracks are enabled
-      chipnomadState->playbackState.trackEnabled[i] = (trackStates[i] == TrackState::solo) ? 1 : 0;
+      trackerState->engine->player.trackEnabled[i] = (trackStates[i] == TrackState::solo) ? 1 : 0;
     } else {
       // Mute mode: muted tracks are disabled, others enabled
-      chipnomadState->playbackState.trackEnabled[i] = (trackStates[i] == TrackState::muted) ? 0 : 1;
+      trackerState->engine->player.trackEnabled[i] = (trackStates[i] == TrackState::muted) ? 0 : 1;
     }
   }
 }

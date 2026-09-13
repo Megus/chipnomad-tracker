@@ -38,7 +38,7 @@ static void onProjectLoaded(const char* path) {
     appSettings.projectPath[0] = '\0';
   }
 
-  playbackStop(&chipnomadState->playbackState);
+  chipnomadState->engine->player.stop();
 
   // Check file extension to determine loader
   const char* ext = strrchr(path, '.');
@@ -64,7 +64,7 @@ static void onProjectLoaded(const char* path) {
     // Clear FX states for all tracks
     // TODO: Make it a cleaner solution and have it somewhere in chipnomad_lib
     for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
-      memset(&chipnomadState->playbackState.tracks[i].note.fx, 0, sizeof(chipnomadState->playbackState.tracks[i].note.fx));
+      memset(&chipnomadState->engine->player.tracks[i].note.fx, 0, sizeof(chipnomadState->engine->player.tracks[i].note.fx));
     }
   } else {
     screenMessage(MESSAGE_TIME, "%s", chipnomad::Error::message);
@@ -360,7 +360,7 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
     handled = edit8noLast(action, &chipnomadState->project.linearPitch, 1, 0, 1);
     if (handled) {
       projectModified = 1;
-      playbackStop(&chipnomadState->playbackState);
+      chipnomadState->engine->player.stop();
       reinitializePitchTable(&chipnomadState->project);
     }
   } else if (row == 5) {
@@ -387,7 +387,7 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
     // Chips count (1-3 for AY)
     handled = edit8noLast(action, (uint8_t*)&chipnomadState->project.chipsCount, 1, 1, 3);
     if (handled) {
-      playbackStop(&chipnomadState->playbackState);
+      chipnomadState->engine->player.stop();
       clearNotePreview();
       chipnomadState->project.tracksCount = projectGetTotalTracks(&chipnomadState->project);
       audio.reinitChips();

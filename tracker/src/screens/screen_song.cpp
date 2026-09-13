@@ -147,8 +147,8 @@ static void fullRedraw(void) {
 static void draw(void) {
   for (int c = 0; c < chipnomadState->project.tracksCount; c++) {
     gfxClearRect(2 + c * 3, 3, 1, 16);
-    if (chipnomadState->playbackState.tracks[c].songRow != EMPTY_VALUE_16) {
-      int row = chipnomadState->playbackState.tracks[c].songRow - screen.topRow;
+    if (chipnomadState->engine->player.tracks[c].songRow != EMPTY_VALUE_16) {
+      int row = chipnomadState->engine->player.tracks[c].songRow - screen.topRow;
       if (row >= 0 && row < 16) {
         gfxSetFgColor(appSettings.colorScheme.playMarkers);
         gfxPrint(2 + c * 3, 3 + row, ">");

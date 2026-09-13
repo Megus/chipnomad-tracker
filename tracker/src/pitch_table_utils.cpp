@@ -1,7 +1,7 @@
 #include "pitch_table_utils.h"
 #include "corelib/corelib_file.h"
 #include "chipnomad_lib.h"
-#include "playback_internal.h"
+#include "playback.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>

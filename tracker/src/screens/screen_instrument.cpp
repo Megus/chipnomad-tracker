@@ -112,7 +112,7 @@ static void onInstrumentPreviewStop(void) {
   Project* p = &chipnomadState->project;
 
   // Stop preview playback
-  playbackStopPreview(&chipnomadState->playbackState, *pSongTrack);
+  chipnomadState->engine->player.stopPreview(*pSongTrack);
 
   // Free preview instrument data (handles AYSample sampleData)
   getInstrumentFunctions(p->instruments[previewIdx].type).free(&p->instruments[previewIdx]);
@@ -142,7 +142,7 @@ static int onInstrumentPreviewStart(const char* path) {
 
   // Preview on current track with C-4
   uint8_t note = p->pitchTable.octaveSize * 4;
-  playbackPreviewNote(&chipnomadState->playbackState, *pSongTrack, note, previewIdx);
+  chipnomadState->engine->player.previewNote(*pSongTrack, note, previewIdx);
   return 1;
 }
 
@@ -379,7 +379,7 @@ static int inputScreenNavigation(int keys, int tapCount) {
     // To the previous instrument
     if (cInstrument != 0) {
       cInstrument--;
-      playbackStopPreview(&chipnomadState->playbackState, *pSongTrack);
+      chipnomadState->engine->player.stopPreview(*pSongTrack);
       fullRedraw();
     }
     return 1;
@@ -387,7 +387,7 @@ static int inputScreenNavigation(int keys, int tapCount) {
     // To the next instrument
     if (cInstrument != PROJECT_MAX_INSTRUMENTS - 1) {
       cInstrument++;
-      playbackStopPreview(&chipnomadState->playbackState, *pSongTrack);
+      chipnomadState->engine->player.stopPreview(*pSongTrack);
       fullRedraw();
     }
     return 1;
@@ -395,21 +395,21 @@ static int inputScreenNavigation(int keys, int tapCount) {
     // +16 instruments
     cInstrument += 16;
     if (cInstrument >= PROJECT_MAX_INSTRUMENTS) cInstrument = PROJECT_MAX_INSTRUMENTS - 1;
-    playbackStopPreview(&chipnomadState->playbackState, *pSongTrack);
+    chipnomadState->engine->player.stopPreview(*pSongTrack);
     fullRedraw();
     return 1;
   } else if (keys == (keyOpt | keyDown)) {
     // -16 instruments
     cInstrument -= 16;
     if (cInstrument < 0) cInstrument = 0;
-    playbackStopPreview(&chipnomadState->playbackState, *pSongTrack);
+    chipnomadState->engine->player.stopPreview(*pSongTrack);
     fullRedraw();
     return 1;
   } else if (keys == (keyEdit | keyPlay)) {
     // Preview instrument
-    if (!instrumentIsEmpty(&chipnomadState->project, cInstrument) && !playbackIsPlaying(&chipnomadState->playbackState)) {
+    if (!instrumentIsEmpty(&chipnomadState->project, cInstrument) && !chipnomadState->engine->player.isPlaying()) {
       uint8_t note = instrumentFirstNote(&chipnomadState->project, cInstrument);
-      playbackPreviewNote(&chipnomadState->playbackState, *pSongTrack, note, cInstrument);
+      chipnomadState->engine->player.previewNote(*pSongTrack, note, cInstrument);
     }
     return 1;
   } else if (keys == (keyShift | keyOpt)) {
@@ -429,7 +429,7 @@ static int inputScreenNavigation(int keys, int tapCount) {
 static int onInput(int isKeyDown, int keys, int tapCount) {
   // Stop preview when keys are released
   if (keys == 0) {
-    playbackStopPreview(&chipnomadState->playbackState, *pSongTrack);
+    chipnomadState->engine->player.stopPreview(*pSongTrack);
   }
 
   if (isCharEdit) {
