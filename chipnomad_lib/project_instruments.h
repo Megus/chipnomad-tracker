@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include "project_constants.h"
 
+namespace chipnomad {
+
 // Forward declarations
 struct Project;
 
@@ -154,5 +156,7 @@ struct InstrumentFunctions {
 };
 
 InstrumentFunctions getInstrumentFunctions(InstrumentType type);
+
+}; // namespace chipnomad
 
 #endif // __CHIPNOMAD_LIB__PROJECT_INSTRUMENTS_H__

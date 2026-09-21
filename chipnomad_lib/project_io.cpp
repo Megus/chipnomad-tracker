@@ -8,6 +8,8 @@
 #include "utils.h"
 #include "error.h"
 
+namespace chipnomad {
+
 // Shared state
 int projectFileVersion = 2;  // Default to current version
 static char chipNames[][16] = { "AY8910" };
@@ -1131,3 +1133,5 @@ int instrumentLoad(Project* project, const char* path, int instrumentIdx) {
   fclose(file);
   return 1;
 }
+
+};

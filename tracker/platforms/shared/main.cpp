@@ -2,33 +2,63 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "corelib_gfx.h"
-#include "corelib_font.h"
-#include "corelib_mainloop.h"
+#include "gfx.h"
+#include "font_manager.h"
+#include "mainloop.h"
 #include "app.h"
 #include "common.h"
+#include "file_system.h"
+#include "font_manager.h"
+
+#if defined(SDL12_BUILD)
+// SDL1.2 includes
+#include "audio_device_sdl12.h"
+#include "gfx_sdl12.h"
+#include "input_utils_sdl12.h"
+#include "mainloop_sdl12.h"
+#include "assets_sdl12.h"
+#else
+// SDL2 includes
+#include "audio_device_sdl2.h"
+#include "gfx_sdl2.h"
+#include "input_utils_sdl2.h"
+#include "mainloop_sdl2.h"
+#if defined(ANDROID_BUILD)
+#include "assets_android.h"
+#else
+#include "assets_sdl2.h"
+#endif
+#endif
 
 int main(int argv, char** args) {
-  settingsLoad();
+  // Initialize platform-specific implementations of the core library
+  // There are only SDL1.2 and SDL2 currently, with SDL2 being the default.
+  FontManager fontManager = FontManager();
+  FileSystem fileSystem = FileSystem();
 
-  // Load custom font before gfxSetup so it uses the correct font
-  if (appSettings.fontPath[0] != '\0') {
-    Font* font = fontLoad(appSettings.fontPath);
-    if (font) {
-      fontSetCurrent(font);
-    } else {
-      appSettings.fontPath[0] = '\0';
-      fontSetCurrent(NULL);
-    }
-  }
+#if defined(SDL12_BUILD)
+  AudioDeviceSDL12 audioDevice = AudioDeviceSDL12();
+  GfxSDL12 gfx = GfxSDL12();
+  InputUtilsSDL12 inputUtils = InputUtilsSDL12();
+  MainLoopSDL12 mainLoop = MainLoopSDL12(gfx);
+  AssetsSDL12 assets = AssetsSDL12();
+#else
+  AudioDeviceSDL2 audioDevice = AudioDeviceSDL2();
+  GfxSDL2 gfx = GfxSDL2(fontManager);
+  InputUtilsSDL2 inputUtils = InputUtilsSDL2();
+  MainLoopSDL2 mainLoop = MainLoopSDL2(gfx);
+#if defined(ANDROID_BUILD)
+  AssetsAndroid assets = AssetsAndroid();
+#else
+  AssetsSDL2 assets = AssetsSDL2();
+#endif
+#endif
 
-  if (!gfxSetup(&appSettings.screenWidth, &appSettings.screenHeight)) return 1;
+  TrackerApp app = TrackerApp(gfx, fontManager, audioDevice, fileSystem, assets, inputUtils);
 
-  appSetup();
-  mainLoopRun(appDraw, appOnEvent);
-  appCleanup();
-  gfxCleanup();
-  mainLoopQuit();
+  app.setup();
+  mainLoop.run(app);
+  mainLoop.quit();
 
   return 0;
 }

@@ -1,7 +1,8 @@
-#include "chipnomad_lib.h"
-#include "playback.h"
 #include <stdlib.h>
 #include <string.h>
+#include "chipnomad_lib.h"
+#include "playback.h"
+#include "chip_ay.h"
 
 namespace chipnomad {
   static SoundChip* defaultChipFactory(int chipIndex, int sampleRate, ChipSetup setup) {
@@ -137,7 +138,7 @@ namespace chipnomad {
     return samples - samplesLeft;
   }
 
-  void Engine::setQuality(ChipNomadQuality quality) {
+  void Engine::setQuality(EmulationQuality quality) {
     for (int i = 0; i < PROJECT_MAX_CHIPS; i++) {
       if (chips[i]) {
         chips[i]->setQuality(quality);

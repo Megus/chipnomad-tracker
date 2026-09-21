@@ -1,6 +1,8 @@
 #ifndef __CHIPNOMAD_LIB__PLAYBACK_FX_H__
 #define __CHIPNOMAD_LIB__PLAYBACK_FX_H__
 
+namespace chipnomad {
+
 enum class PlaybackArpType {
   up,
   down,
@@ -52,5 +54,7 @@ struct PlaybackFXState {
     PlaybackFXData_Retrigger retrigger;
   } d;
 };
+
+}; // namespace chipnomad
 
 #endif // __CHIPNOMAD_LIB__PLAYBACK_FX_H__

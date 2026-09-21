@@ -1,37 +1,20 @@
-#ifndef BUTTON_ICONS_H
-#define BUTTON_ICONS_H
+#ifndef __BUTTON_ICONS_H__
+#define __BUTTON_ICONS_H__
 
 #include <stdint.h>
 
 // Icon dimensions (32x8 pixels, 1 bit per pixel)
-#define ICON_WIDTH 32
-#define ICON_HEIGHT 8
-#define ICON_BYTES_PER_ROW 4  // 32 bits = 4 bytes per row
+constexpr int kIconWidth = 32;
+constexpr int kIconHeight = 8;
+constexpr int kIconBytesPerRow = kIconWidth / 8;
 
-// Button icon bitmaps (1 = white pixel, 0 = transparent)
+extern const uint8_t iconArrowUp[kIconHeight * kIconBytesPerRow];
+extern const uint8_t iconArrowDown[kIconHeight * kIconBytesPerRow];
+extern const uint8_t iconArrowLeft[kIconHeight * kIconBytesPerRow];
+extern const uint8_t iconArrowRight[kIconHeight * kIconBytesPerRow];
+extern const uint8_t iconEdit[kIconHeight * kIconBytesPerRow];
+extern const uint8_t iconOpt[kIconHeight * kIconBytesPerRow];
+extern const uint8_t iconShift[kIconHeight * kIconBytesPerRow];
+extern const uint8_t iconPlay[kIconHeight * kIconBytesPerRow];
 
-// Arrow Up (^)
-extern const uint8_t icon_arrow_up[ICON_HEIGHT * ICON_BYTES_PER_ROW];
-
-// Arrow Down (v)
-extern const uint8_t icon_arrow_down[ICON_HEIGHT * ICON_BYTES_PER_ROW];
-
-// Arrow Left (<)
-extern const uint8_t icon_arrow_left[ICON_HEIGHT * ICON_BYTES_PER_ROW];
-
-// Arrow Right (>)
-extern const uint8_t icon_arrow_right[ICON_HEIGHT * ICON_BYTES_PER_ROW];
-
-// EDIT text
-extern const uint8_t icon_edit[ICON_HEIGHT * ICON_BYTES_PER_ROW];
-
-// OPT text
-extern const uint8_t icon_opt[ICON_HEIGHT * ICON_BYTES_PER_ROW];
-
-// SHIFT text
-extern const uint8_t icon_shift[ICON_HEIGHT * ICON_BYTES_PER_ROW];
-
-// PLAY text
-extern const uint8_t icon_play[ICON_HEIGHT * ICON_BYTES_PER_ROW];
-
-#endif // BUTTON_ICONS_H
+#endif // __BUTTON_ICONS_H__

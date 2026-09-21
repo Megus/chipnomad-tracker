@@ -11,6 +11,8 @@
 #define PITCH_MOD_RANGE_CENTS (2400)
 #define PITCH_MOD_RANGE_PERIOD (1024)
 
+namespace chipnomad {
+
 // DAC levels for AY/YM chips. Taken from Ayumi.
 static float dacTableAYfloat[32] = {
   0.0, 0.0,
@@ -49,13 +51,11 @@ static float dacTableYMfloat[32] = {
   0.879926756695, 1.0
 };
 
-// Global lookup tables (declared in playback_chips.h, outside any namespace)
+// Global lookup tables (declared in playback_chips.h)
 uint8_t cnDACTableAY[16];
 uint8_t cnDACTableYM[16];
 uint8_t cnSampleLookupAY[256];
 uint8_t cnSampleLookupYM[256];
-
-namespace chipnomad {
 
 // ========================================
 // Timer functions for software oscillators

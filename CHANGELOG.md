@@ -1,6 +1,6 @@
 # ChipNomad changelog
 
-## v1.0.5 (not yet released)
+## v1.0.5 (August 29, 2026)
 
 - AY Sample instrument automatically normalizes samples and makes them unipolar (for better playback quality on AY)
 - Preview instrument, samples, and AY wavetables in the file browser by pressing **EDIT**+**PLAY**.

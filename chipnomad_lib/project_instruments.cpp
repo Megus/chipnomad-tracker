@@ -2,6 +2,8 @@
 #include "project_instruments.h"
 #include "project.h"
 
+namespace chipnomad {
+
 // Convention: the first modulation destination should be volume
 
 static void initCommon(Instrument* instrument) {
@@ -132,3 +134,4 @@ InstrumentFunctions getInstrumentFunctions(InstrumentType type) {
   }
 }
 
+}; // namespace chipnomad

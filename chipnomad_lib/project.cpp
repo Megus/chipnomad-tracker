@@ -4,6 +4,8 @@
 #include "project_instruments.h"
 #include "utils.h"
 
+namespace chipnomad {
+
 FXName fxNames[256];
 
 // FX Names organized by groups (in the order as they appear in FX select screen)
@@ -283,3 +285,5 @@ void tableClear(Table* table) {
     }
   }
 }
+
+};

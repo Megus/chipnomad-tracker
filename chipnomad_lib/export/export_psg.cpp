@@ -5,6 +5,9 @@
 #include <stdint.h>
 
 #include "playback.h"
+#include "chips.h"
+
+namespace chipnomad {
 
 static void writePSGHeader(FILE* file) {
   const char header[17] = "PSG\x1a\0\0\0\0\0\0\0\0\0\0\0\0";
@@ -135,3 +138,5 @@ void ExporterPSG::cancel() {
     }
   }
 }
+
+} // namespace chipnomad

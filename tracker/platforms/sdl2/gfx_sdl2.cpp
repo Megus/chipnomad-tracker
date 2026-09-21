@@ -1,11 +1,11 @@
-#include <SDL2/SDL.h>
 #include <stdint.h>
-#include "version.h"
-#include "corelib_gfx.h"
-#include "corelib_font.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <SDL2/SDL.h>
+#include "version.h"
+#include "gfx_sdl2.h"
+#include "font_manager.h"
 
 #ifdef TOUCH_INPUT
 #include "button_icons.h"
@@ -98,7 +98,7 @@ static void createFontTexture(void) {
 #define SDL_INIT_FLAGS (SDL_INIT_EVERYTHING)
 #endif
 
-int gfxSetup(int *screenWidth, int *screenHeight) {
+int GfxSDL2::setup(int *screenWidth, int *screenHeight) {
   if (SDL_Init(SDL_INIT_FLAGS) != 0) {
     fprintf(stderr, "SDL2 Initialization Error: %s\n", SDL_GetError());
     return 0;
@@ -153,7 +153,7 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
     screenH = drawableH;
   }
 
-  currentResolution = fontSelectResolution(fontGetCurrent(), screenW, screenH);
+  currentResolution = fontManager.selectResolution(fontManager.getCurrent(), screenW, screenH);
   if (currentResolution) {
     charW = currentResolution->charWidth;
     charH = currentResolution->charHeight;
@@ -219,21 +219,21 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
   return 1;
 }
 
-void gfxCleanup(void) {
+GfxSDL2::~GfxSDL2() {
   if (fontTexture) SDL_DestroyTexture(fontTexture);
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
 }
 
-void gfxSetFgColor(int rgb) {
+void GfxSDL2::setFgColor(int rgb) {
   fgColor = rgb;
 }
 
-void gfxSetBgColor(int rgb) {
+void GfxSDL2::setBgColor(int rgb) {
   bgColor = rgb;
 }
 
-void gfxSetCursorColor(int rgb) {
+void GfxSDL2::setCursorColor(int rgb) {
   cursorColor = rgb;
 }
 
@@ -241,26 +241,26 @@ static void setColor(int rgb) {
   SDL_SetRenderDrawColor(renderer, (rgb & 0xff0000) >> 16, (rgb & 0xff00) >> 8, rgb & 0xff, 255);
 }
 
-void gfxClear(void) {
+void GfxSDL2::clear() {
   setColor(bgColor);
   SDL_RenderClear(renderer);
   isDirty = 1;
 }
 
-void gfxPoint(int x, int y, uint32_t color) {
+void GfxSDL2::point(int x, int y, uint32_t color) {
   setColor(color);
   SDL_RenderDrawPoint(renderer, x, y);
   isDirty = 1;
 }
 
-void gfxClearRect(int x, int y, int w, int h) {
+void GfxSDL2::clearRect(int x, int y, int w, int h) {
   SDL_Rect rect = { CHAR_X(x), CHAR_Y(y), w * charW, h * charH };
   setColor(bgColor);
   SDL_RenderFillRect(renderer, &rect);
   isDirty = 1;
 }
 
-void gfxPrint(int x, int y, const char* text) {
+void GfxSDL2::print(int x, int y, const char* text) {
   if (text == NULL) return;
 
   int cx = CHAR_X(x);
@@ -316,22 +316,19 @@ void gfxPrint(int x, int y, const char* text) {
   isDirty = 1;
 }
 
-void gfxPrintf(int x, int y, const char* format, ...) {
-  va_list args;
-  va_start(args, format);
+void GfxSDL2::printf(int x, int y, const char* format, va_list args) {
   vsnprintf(printBuffer, PRINT_BUFFER_SIZE, format, args);
-  va_end(args);
-  gfxPrint(x, y, printBuffer);
+  print(x, y, printBuffer);
 }
 
-void gfxCursor(int x, int y, int w) {
+void GfxSDL2::cursor(int x, int y, int w) {
   SDL_Rect rect = { CHAR_X(x), CHAR_Y(y) + charH - 1, w * charW, 1 };
   setColor(cursorColor);
   SDL_RenderFillRect(renderer, &rect);
   isDirty = 1;
 }
 
-void gfxRect(int x, int y, int w, int h) {
+void GfxSDL2::rect(int x, int y, int w, int h) {
   int cx = CHAR_X(x);
   int cy = CHAR_Y(y);
   int cw = w * charW;
@@ -348,15 +345,15 @@ void gfxRect(int x, int y, int w, int h) {
   isDirty = 1;
 }
 
-void gfxUpdateScreen(void) {
+void GfxSDL2::updateScreen() {
   if (isDirty) {
-    gfxDrawHUD();
+    drawHUD();
     SDL_RenderPresent(renderer);
   }
   isDirty = 0;
 }
 
-void gfxDrawCharBitmap(uint8_t* bitmap, int col, int row) {
+void GfxSDL2::drawCharBitmap(uint8_t* bitmap, int col, int row) {
   int cx = CHAR_X(col);
   int cy = CHAR_Y(row);
 
@@ -380,7 +377,7 @@ void gfxDrawCharBitmap(uint8_t* bitmap, int col, int row) {
   isDirty = 1;
 }
 
-Bitmap* gfxBitmapCreate(int widthChars, int heightChars) {
+Bitmap* GfxSDL2::bitmapCreate(int widthChars, int heightChars) {
   Bitmap* bitmap = (Bitmap*)malloc(sizeof(Bitmap));
   if (!bitmap) return NULL;
 
@@ -414,11 +411,11 @@ Bitmap* gfxBitmapCreate(int widthChars, int heightChars) {
   return bitmap;
 }
 
-void gfxBitmapClear(Bitmap* bitmap) {
+void GfxSDL2::bitmapClear(Bitmap* bitmap) {
   memset(bitmap->data, 0, bitmap->widthPixels * bitmap->heightPixels);
 }
 
-void gfxBitmapFree(Bitmap* bitmap) {
+void GfxSDL2::bitmapFree(Bitmap* bitmap) {
   if (!bitmap) return;
 
   if (bitmap->userdata) {
@@ -430,7 +427,7 @@ void gfxBitmapFree(Bitmap* bitmap) {
   free(bitmap);
 }
 
-void gfxDrawBitmap(Bitmap* bitmap, int col, int row) {
+void GfxSDL2::drawBitmap(Bitmap* bitmap, int col, int row) {
   if (!bitmap || !bitmap->data) return;
 
   SDL_Texture* texture = (SDL_Texture*)bitmap->userdata;
@@ -477,21 +474,21 @@ void gfxDrawBitmap(Bitmap* bitmap, int col, int row) {
   isDirty = 1;
 }
 
-int gfxGetCharWidth(void) {
+int GfxSDL2::getCharWidth() {
   return charW;
 }
 
-int gfxGetCharHeight(void) {
+int GfxSDL2::getCharHeight() {
   return charH;
 }
 
-void gfxReloadFont(void) {
+void GfxSDL2::reloadFont() {
   if (fontTexture) {
     SDL_DestroyTexture(fontTexture);
     fontTexture = NULL;
   }
 
-  currentResolution = fontSelectResolution(fontGetCurrent(), screenW, screenH);
+  currentResolution = fontManager.selectResolution(fontManager.getCurrent(), screenW, screenH);
   if (currentResolution) {
     charW = currentResolution->charWidth;
     charH = currentResolution->charHeight;
@@ -535,7 +532,7 @@ static void drawButton(SDL_Rect* rect, const uint8_t* iconData, int btnIndex) {
 }
 #endif
 
-void gfxDrawHUD(void) {
+void GfxSDL2::drawHUD() {
 #ifdef TOUCH_INPUT
   extern int vpadEnabled;
   extern SDL_Rect dpadUpRect, dpadDownRect, dpadLeftRect, dpadRightRect;
@@ -543,18 +540,18 @@ void gfxDrawHUD(void) {
 
   if (!vpadEnabled) return;
 
-  drawButton(&dpadUpRect, icon_arrow_up, 0);
-  drawButton(&dpadDownRect, icon_arrow_down, 1);
-  drawButton(&dpadLeftRect, icon_arrow_left, 2);
-  drawButton(&dpadRightRect, icon_arrow_right, 3);
-  drawButton(&aButtonRect, icon_edit, 4);
-  drawButton(&bButtonRect, icon_opt, 5);
-  drawButton(&startButtonRect, icon_play, 6);
-  drawButton(&selectButtonRect, icon_shift, 7);
+  drawButton(&dpadUpRect, iconArrowUp, 0);
+  drawButton(&dpadDownRect, iconArrowDown, 1);
+  drawButton(&dpadLeftRect, iconArrowLeft, 2);
+  drawButton(&dpadRightRect, iconArrowRight, 3);
+  drawButton(&aButtonRect, iconEdit, 4);
+  drawButton(&bButtonRect, iconOpt, 5);
+  drawButton(&startButtonRect, iconPlay, 6);
+  drawButton(&selectButtonRect, iconShift, 7);
 #endif
 }
 
-void gfxSetButtonPressed(int buttonIndex, int pressed) {
+void GfxSDL2::setButtonPressed(int buttonIndex, int pressed) {
 #ifdef TOUCH_INPUT
   if (buttonIndex >= 0 && buttonIndex < 8) {
     buttonPressed[buttonIndex] = pressed;

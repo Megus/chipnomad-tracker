@@ -1,9 +1,6 @@
 #include "button_icons.h"
 
-// 32x8 bitmap icons - simple text labels
-// Format: 1 bit per pixel, 4 bytes per row, MSB first
-
-const uint8_t icon_arrow_up[ICON_HEIGHT * ICON_BYTES_PER_ROW] = {
+const uint8_t iconArrowUp[kIconHeight * kIconBytesPerRow] = {
     0x00, 0x01, 0x80, 0x00,
     0x00, 0x03, 0xc0, 0x00,
     0x00, 0x07, 0xe0, 0x00,
@@ -14,7 +11,7 @@ const uint8_t icon_arrow_up[ICON_HEIGHT * ICON_BYTES_PER_ROW] = {
     0x00, 0x01, 0x80, 0x00
 };
 
-const uint8_t icon_arrow_down[ICON_HEIGHT * ICON_BYTES_PER_ROW] = {
+const uint8_t iconArrowDown[kIconHeight * kIconBytesPerRow] = {
     0x00, 0x01, 0x80, 0x00,
     0x00, 0x01, 0x80, 0x00,
     0x00, 0x01, 0x80, 0x00,
@@ -25,7 +22,7 @@ const uint8_t icon_arrow_down[ICON_HEIGHT * ICON_BYTES_PER_ROW] = {
     0x00, 0x01, 0x80, 0x00
 };
 
-const uint8_t icon_arrow_left[ICON_HEIGHT * ICON_BYTES_PER_ROW] = {
+const uint8_t iconArrowLeft[kIconHeight * kIconBytesPerRow] = {
     0x00, 0x01, 0x00, 0x00,
     0x00, 0x03, 0x00, 0x00,
     0x00, 0x07, 0x00, 0x00,
@@ -36,7 +33,7 @@ const uint8_t icon_arrow_left[ICON_HEIGHT * ICON_BYTES_PER_ROW] = {
     0x00, 0x01, 0x00, 0x00
 };
 
-const uint8_t icon_arrow_right[ICON_HEIGHT * ICON_BYTES_PER_ROW] = {
+const uint8_t iconArrowRight[kIconHeight * kIconBytesPerRow] = {
     0x00, 0x00, 0x80, 0x00,
     0x00, 0x00, 0xc0, 0x00,
     0x00, 0x00, 0xe0, 0x00,
@@ -47,7 +44,7 @@ const uint8_t icon_arrow_right[ICON_HEIGHT * ICON_BYTES_PER_ROW] = {
     0x00, 0x00, 0x80, 0x00
 };
 
-const uint8_t icon_edit[ICON_HEIGHT * ICON_BYTES_PER_ROW] = {
+const uint8_t iconEdit[kIconHeight * kIconBytesPerRow] = {
     0x07, 0xef, 0x9b, 0xf0,
     0x06, 0x0c, 0xd8, 0xc0,
     0x06, 0x0c, 0xd8, 0xc0,
@@ -58,7 +55,7 @@ const uint8_t icon_edit[ICON_HEIGHT * ICON_BYTES_PER_ROW] = {
     0x07, 0xec, 0x98, 0xc0
 };
 
-const uint8_t icon_opt[ICON_HEIGHT * ICON_BYTES_PER_ROW] = {
+const uint8_t iconOpt[kIconHeight * kIconBytesPerRow] = {
     0x01, 0xe7, 0xcf, 0xc0,
     0x03, 0x36, 0x63, 0x00,
     0x03, 0x36, 0x63, 0x00,
@@ -69,7 +66,7 @@ const uint8_t icon_opt[ICON_HEIGHT * ICON_BYTES_PER_ROW] = {
     0x01, 0xe6, 0x03, 0x00
 };
 
-const uint8_t icon_shift[ICON_HEIGHT * ICON_BYTES_PER_ROW] = {
+const uint8_t iconShift[kIconHeight * kIconBytesPerRow] = {
     0x3c, 0xcd, 0xbf, 0x7e,
     0x66, 0xcd, 0xb0, 0x18,
     0x60, 0xcd, 0xb0, 0x18,
@@ -80,7 +77,7 @@ const uint8_t icon_shift[ICON_HEIGHT * ICON_BYTES_PER_ROW] = {
     0x3c, 0xcd, 0xb0, 0x18
 };
 
-const uint8_t icon_play[ICON_HEIGHT * ICON_BYTES_PER_ROW] = {
+const uint8_t iconPlay[kIconHeight * kIconBytesPerRow] = {
     0x3e, 0x60, 0x31, 0x98,
     0x33, 0x60, 0x79, 0x98,
     0x33, 0x60, 0xcd, 0x98,

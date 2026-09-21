@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include "project_instruments.h"
 
+namespace chipnomad {
+
 struct PlaybackModState {
   const Modulation* modulation; // Pointer to the source Modulation struct
   int16_t amountOffset;
@@ -31,5 +33,7 @@ void playbackModNoteOff(PlaybackModState* state);
 // maxAmplitude: maximum value for the target parameter (e.g., 15 for AY volume)
 // Returns scaled value in range [-maxAmplitude, maxAmplitude] with rounding
 int16_t playbackModScaleToRange(int16_t modValue, int16_t maxAmplitude);
+
+}; // namespace chipnomad
 
 #endif // __CHIPNOMAD_LIB__PLAYBACK_MODULATION_H__

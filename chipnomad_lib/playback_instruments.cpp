@@ -2,6 +2,8 @@
 #include "playback_modulation.h"
 #include "utils.h"
 
+namespace chipnomad {
+
 // Apply ADSR/AHD volume modulation and return the resulting volume
 // Takes a single modulation state and returns the calculated volume (0-maxVolume)
 // Returns -1 if the modulation is not ADSR/AHD (e.g., LFO)
@@ -52,3 +54,5 @@ int playbackApplyVolumeModulation(PlaybackModState* mod, int8_t* volumeOffset, u
 
   return stopNote;
 }
+
+}; // namespace chipnomad

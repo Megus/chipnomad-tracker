@@ -7,7 +7,7 @@ include Makefile.common
 
 # Android-specific settings - use common libs + sdl2 platform with mobile features
 LIBS = $(COMMON_LIBS) platforms/sdl2
-ANDROID_SOURCES = platforms/android/corelib_assets.cpp
+ANDROID_SOURCES = platforms/android/assets_android.cpp
 OUTPUT_EXT =
 
 # NDK settings
@@ -35,7 +35,7 @@ AR = $(TOOLCHAIN)/bin/llvm-ar
 STRIP = $(TOOLCHAIN)/bin/llvm-strip
 
 # Android-specific flags
-XTRA_CFLAGS = -DANDROID_BUILD -DMOBILE_BUILD -DMOBILE_LIFECYCLE -DTOUCH_INPUT -DGAMEPAD_SUPPORT -fPIC -I$(SDL2_INCLUDE)
+XTRA_CFLAGS = -DSDL2_BUILD -DANDROID_BUILD -DMOBILE_BUILD -DMOBILE_LIFECYCLE -DTOUCH_INPUT -DGAMEPAD_SUPPORT -fPIC -I$(SDL2_INCLUDE)
 XTRA_LIBS = -static-libstdc++ -L$(SDL2_LIB)/$(ARCH) -lSDL2 -lm -llog -landroid
 
 CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(ANDROID_SOURCES) $(XTRA_CFLAGS)

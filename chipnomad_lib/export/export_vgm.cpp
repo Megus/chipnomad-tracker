@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "playback.h"
+#include "chips.h"
 
 // VGM header size (version 1.51+, AY uses offset 0x74)
 #define VGM_HEADER_SIZE 0x80
@@ -18,6 +19,8 @@
 #define VGM_TOTAL_SAMPLES     0x18  // Total # samples (at 44100Hz)
 #define VGM_RATE              0x24  // Recording rate (Hz)
 #define VGM_DATA_OFFSET       0x34  // VGM data offset (relative to 0x34)
+
+namespace chipnomad {
 
 // Register dump chip implementation for VGM export
 // Simulates chip clock to call timer function at correct rate
@@ -77,7 +80,7 @@ class SoundChipRegDump : public SoundChip {
       }
     }
 
-    void setQuality(ChipNomadQuality quality) override {}
+    void setQuality(EmulationQuality quality) override {}
 };
 
 static SoundChip* regDumpChipFactory(int chipIndex, int sampleRate, ChipSetup setup) {
@@ -256,3 +259,5 @@ void ExporterVGM::writeWait() {
     }
   }
 }
+
+} // namespace chipnomad

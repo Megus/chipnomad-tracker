@@ -1,10 +1,10 @@
-#include "corelib_mainloop.h"
 #include <stdint.h>
 #include <SDL2/SDL.h>
-#include "corelib_gfx.h"
-#include "corelib_keymap.h"
-#include "corelib_input.h"
-#include "../../src/corelib/corelib_assets.h"
+#include "mainloop.h"
+#include "mainloop_sdl2.h"
+#include "gfx.h"
+#include "keymap.h"
+#include "input_utils.h"
 
 #define FPS 60
 
@@ -70,7 +70,7 @@ static int getTouchButton(int x, int y) {
 }
 #endif
 
-void mainLoopRun(void (*draw)(void), void (*onEvent)(MainLoopEventData eventData)) {
+void MainLoopSDL2::run(App& app) {
   uint32_t delay = 1000 / FPS;
   uint32_t start;
   uint32_t busytime = 0;
@@ -81,9 +81,6 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(MainLoopEventData eventData
 #ifdef MOBILE_LIFECYCLE
   int wakeRedrawFrames = 0;
 #endif
-
-  // Initialize bundled assets
-  assetsInit();
 
 #ifdef TOUCH_INPUT
   struct FingerButton {
@@ -110,7 +107,7 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(MainLoopEventData eventData
         (menu && event.key.keysym.sym == BTN_X)))) {
         eventData.type = MainLoopEvent::exit;
         eventData.data.value = 0;
-        onEvent(eventData);
+        app.onEvent(eventData);
 #ifdef GAMEPAD_SUPPORT
         if (gameController) {
           SDL_GameControllerClose(gameController);
@@ -131,12 +128,12 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(MainLoopEventData eventData
       else if (event.type == SDL_APP_WILLENTERBACKGROUND) {
         eventData.type = MainLoopEvent::sleep;
         eventData.data.value = 0;
-        onEvent(eventData);
+        app.onEvent(eventData);
       }
       else if (event.type == SDL_APP_DIDENTERFOREGROUND) {
         eventData.type = MainLoopEvent::wake;
         eventData.data.value = 0;
-        onEvent(eventData);
+        app.onEvent(eventData);
         wakeRedrawFrames = FPS;
 #ifdef GAMEPAD_SUPPORT
         if (gameController && !SDL_GameControllerGetAttached(gameController)) {
@@ -165,7 +162,7 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(MainLoopEventData eventData
         } else {
           eventData.type = event.type == SDL_KEYDOWN ? MainLoopEvent::keyDown : MainLoopEvent::keyUp;
           eventData.data.input = (InputCode){InputDeviceType::keyboard, event.key.keysym.sym};
-          onEvent(eventData);
+          app.onEvent(eventData);
         }
       }
 #ifdef GAMEPAD_SUPPORT
@@ -211,7 +208,7 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(MainLoopEventData eventData
           gfxSetButtonPressed(buttonIndex, 1);
           eventData.type = MainLoopEvent::keyDown;
           eventData.data.input = (InputCode){InputDeviceType::logical, buttons[buttonIndex].key};
-          onEvent(eventData);
+          app.onEvent(eventData);
         }
       }
       else if (event.type == SDL_FINGERUP) {
@@ -220,7 +217,7 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(MainLoopEventData eventData
             gfxSetButtonPressed(activeFingers[i].buttonIndex, 0);
             eventData.type = MainLoopEvent::keyUp;
             eventData.data.input = (InputCode){InputDeviceType::logical, buttons[activeFingers[i].buttonIndex].key};
-            onEvent(eventData);
+            app.onEvent(eventData);
             for (int j = i; j < numActiveFingers - 1; j++) {
               activeFingers[j] = activeFingers[j + 1];
             }
@@ -243,10 +240,10 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(MainLoopEventData eventData
 
     eventData.type = MainLoopEvent::tick;
     eventData.data.value = 0;
-    onEvent(eventData);
+    app.onEvent(eventData);
 
-    draw();
-    gfxUpdateScreen();
+    app.draw();
+    gfx.updateScreen();
 
     busytime = SDL_GetTicks() - start;
     if (delay > busytime) {
@@ -255,15 +252,11 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(MainLoopEventData eventData
   }
 }
 
-void mainLoopDelay(int ms) {
-  SDL_Delay(ms);
-}
-
-void mainLoopQuit(void) {
+void MainLoopSDL2::quit() {
   SDL_Quit();
 }
 
-void mainLoopTriggerQuit(void) {
+void MainLoopSDL2::triggerQuit() {
   SDL_Event quitEvent;
   quitEvent.type = SDL_QUIT;
   SDL_PushEvent(&quitEvent);

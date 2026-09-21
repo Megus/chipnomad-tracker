@@ -3,6 +3,8 @@
 #include <math.h>
 #include <stdint.h>
 
+namespace chipnomad {
+
 // Modulation range: 255 * 127 = 32385
 // This allows exact division by 255 (sustain range) and 127 (max amount)
 // Using 127 instead of 128 ensures that max amount (127) reaches full range
@@ -393,3 +395,5 @@ int16_t playbackModScaleToRange(int16_t modValue, int16_t maxAmplitude) {
 
   return (int16_t)scaled;
 }
+
+};

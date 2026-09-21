@@ -3,8 +3,8 @@
 #include <string.h>
 #include <stdarg.h>
 #include "version.h"
-#include "corelib_gfx.h"
-#include "corelib_font.h"
+#include "gfx_sdl12.h"
+#include "font_manager.h"
 
 #define WINDOW_WIDTH (640)
 #define WINDOW_HEIGHT (480)
@@ -22,7 +22,8 @@ static uint32_t cursorColor = 0;
 static int fgR = 255, fgG = 255, fgB = 255;
 static int bgR = 0, bgG = 0, bgB = 0;
 static int cursorR = 255, cursorG = 255, cursorB = 255;
-static uint8_t* font = NULL;
+// Renamed from `font` to avoid clashing with the global IFont* font (i_font.h).
+static uint8_t* fontData = NULL;
 static char printBuffer[PRINT_BUFFER_SIZE];
 static int fontH;
 static int fontW;
@@ -37,7 +38,7 @@ static char charBuffer[80];
 static void createCharSurfaces(void) {
   if (!currentResolution || !currentResolution->data) return;
 
-  font = (uint8_t*)currentResolution->data;
+  fontData = (uint8_t*)currentResolution->data;
   fontW = (currentResolution->charWidth + 7) / 8;
   fontH = currentResolution->charHeight;
 
@@ -48,7 +49,7 @@ static void createCharSurfaces(void) {
 
     for (int l = 0; l < fontH; l++) {
       for (int c = 0; c < fontW; c++) {
-        uint8_t fontByte = font[ch * fontW * fontH + l * fontW + c];
+        uint8_t fontByte = fontData[ch * fontW * fontH + l * fontW + c];
         uint8_t mask = 0x80;
 
         for (int b = 0; b < 8; b++) {
@@ -64,30 +65,30 @@ static void createCharSurfaces(void) {
 static SDL_Surface* offscreenSurface = NULL;
 #endif
 
-int gfxSetup(int *screenWidth, int *screenHeight) {
+int GfxSDL12::setup(int *screenWidth, int *screenHeight) {
   if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
-    printf("SDL2 Initialization Error: %s\n", SDL_GetError());
+    fprintf(stderr, "SDL1.2 Initialization Error: %s\n", SDL_GetError());
     return 0;
   }
 
 #ifdef MIYOOPORTS_BUILD
   sdlScreen = SDL_SetVideoMode(WINDOW_WIDTH, WINDOW_HEIGHT, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
   if (!sdlScreen) {
-    printf("SDL1.2 Set Video Mode Error: %s\n", SDL_GetError());
+    fprintf(stderr, "SDL1.2 Set Video Mode Error: %s\n", SDL_GetError());
     SDL_Quit();
     return 0;
   }
   offscreenSurface = SDL_CreateRGBSurface(SDL_SWSURFACE, WINDOW_WIDTH, WINDOW_HEIGHT, 32,
     sdlScreen->format->Rmask, sdlScreen->format->Gmask, sdlScreen->format->Bmask, sdlScreen->format->Amask);
   if (!offscreenSurface) {
-    printf("Failed to create offscreen surface: %s\n", SDL_GetError());
+    fprintf(stderr, "Failed to create offscreen surface: %s\n", SDL_GetError());
     SDL_Quit();
     return 0;
   }
 #else
   sdlScreen = SDL_SetVideoMode(WINDOW_WIDTH, WINDOW_HEIGHT, 32, SDL_HWSURFACE);
   if (!sdlScreen) {
-    printf("SDL1.2 Set Video Mode Error: %s\n", SDL_GetError());
+    fprintf(stderr, "SDL1.2 Set Video Mode Error: %s\n", SDL_GetError());
     SDL_Quit();
     return 0;
   }
@@ -96,9 +97,9 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
   sprintf(charBuffer, "%s v%s (%s)", appTitle, appVersion, appBuild);
   SDL_WM_SetCaption(charBuffer, NULL);
 
-  currentResolution = fontSelectResolution(fontGetCurrent(), WINDOW_WIDTH, WINDOW_HEIGHT);
+  currentResolution = fontManager.selectResolution(fontManager.getCurrent(), WINDOW_WIDTH, WINDOW_HEIGHT);
   if (!currentResolution) {
-    currentResolution = &fontGetDefault()->resolutions[1]; // Use 16x24
+    currentResolution = &fontManager.getDefault()->resolutions[1]; // Use 16x24
   }
 
   createCharSurfaces();
@@ -107,7 +108,7 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
   return 1;
 }
 
-void gfxCleanup(void) {
+GfxSDL12::~GfxSDL12() {
   for (int i = 0; i < 95; i++) {
     if (charSurfaces[i]) SDL_FreeSurface(charSurfaces[i]);
   }
@@ -120,28 +121,28 @@ void gfxCleanup(void) {
 #endif
 }
 
-void gfxSetFgColor(int rgb) {
+void GfxSDL12::setFgColor(int rgb) {
   fgR = (rgb & 0xff0000) >> 16;
   fgG = (rgb & 0xff00) >> 8;
   fgB = rgb & 0xff;
   fgColor = SDL_MapRGB(sdlScreen->format, fgR, fgG, fgB);
 }
 
-void gfxSetBgColor(int rgb) {
+void GfxSDL12::setBgColor(int rgb) {
   bgR = (rgb & 0xff0000) >> 16;
   bgG = (rgb & 0xff00) >> 8;
   bgB = rgb & 0xff;
   bgColor = SDL_MapRGB(sdlScreen->format, bgR, bgG, bgB);
 }
 
-void gfxSetCursorColor(int rgb) {
+void GfxSDL12::setCursorColor(int rgb) {
   cursorR = (rgb & 0xff0000) >> 16;
   cursorG = (rgb & 0xff00) >> 8;
   cursorB = rgb & 0xff;
   cursorColor = SDL_MapRGB(sdlScreen->format, cursorR, cursorG, cursorB);
 }
 
-void gfxClear(void) {
+void GfxSDL12::clear() {
 #ifdef MIYOOPORTS_BUILD
   SDL_FillRect(offscreenSurface, NULL, bgColor);
 #else
@@ -150,7 +151,7 @@ void gfxClear(void) {
   isDirty = 1;
 }
 
-void gfxPoint(int x, int y, uint32_t color) {
+void GfxSDL12::point(int x, int y, uint32_t color) {
 #ifdef MIYOOPORTS_BUILD
   ((Uint32 *)offscreenSurface->pixels)[y * offscreenSurface->w + x] = color;
 #else
@@ -159,7 +160,7 @@ void gfxPoint(int x, int y, uint32_t color) {
   isDirty = 1;
 }
 
-void gfxClearRect(int x, int y, int w, int h) {
+void GfxSDL12::clearRect(int x, int y, int w, int h) {
   SDL_Rect rect = { CHAR_X(x), CHAR_Y(y), CHAR_X(w), CHAR_Y(h) };
 #ifdef MIYOOPORTS_BUILD
   SDL_FillRect(offscreenSurface, &rect, bgColor);
@@ -169,7 +170,7 @@ void gfxClearRect(int x, int y, int w, int h) {
   isDirty = 1;
 }
 
-void gfxPrint(int x, int y, const char* text) {
+void GfxSDL12::print(int x, int y, const char* text) {
   if (text == NULL) return;
 
   int cx = CHAR_X(x);
@@ -216,7 +217,7 @@ void gfxPrint(int x, int y, const char* text) {
     if (C >= 32 && C <= 126) {
       SDL_Color colors[2] = {
         {0, 0, 0, 0},  // Index 0: transparent
-        {fgR, fgG, fgB, 255}  // Index 1: foreground
+        {(Uint8)fgR, (Uint8)fgG, (Uint8)fgB, 255}  // Index 1: foreground
       };
       SDL_SetColors(charSurfaces[C - 32], colors, 0, 2);
 
@@ -237,15 +238,12 @@ void gfxPrint(int x, int y, const char* text) {
   isDirty = 1;
 }
 
-void gfxPrintf(int x, int y, const char* format, ...) {
-  va_list args;
-  va_start(args, format);
-  vsnprintf(printBuffer, 256, format, args);
-  va_end(args);
-  gfxPrint(x, y, printBuffer);
+void GfxSDL12::printf(int x, int y, const char* format, va_list args) {
+  vsnprintf(printBuffer, PRINT_BUFFER_SIZE, format, args);
+  print(x, y, printBuffer);
 }
 
-void gfxCursor(int x, int y, int w) {
+void GfxSDL12::cursor(int x, int y, int w) {
   SDL_Rect rect = { CHAR_X(x), CHAR_Y(y) + fontH - 1, CHAR_X(w), 1 };
 #ifdef MIYOOPORTS_BUILD
   SDL_FillRect(offscreenSurface, &rect, cursorColor);
@@ -255,7 +253,7 @@ void gfxCursor(int x, int y, int w) {
   isDirty = 1;
 }
 
-void gfxRect(int x, int y, int w, int h) {
+void GfxSDL12::rect(int x, int y, int w, int h) {
   int cx = CHAR_X(x);
   int cy = CHAR_Y(y);
   int cw = CHAR_X(w);
@@ -280,7 +278,7 @@ void gfxRect(int x, int y, int w, int h) {
   isDirty = 1;
 }
 
-void gfxUpdateScreen(void) {
+void GfxSDL12::updateScreen() {
 #ifdef MIYOOPORTS_BUILD
   if (isDirty && offscreenSurface) {
     SDL_LockSurface(offscreenSurface);
@@ -307,7 +305,7 @@ void gfxUpdateScreen(void) {
 #endif
 }
 
-void gfxDrawCharBitmap(uint8_t* bitmap, int col, int row) {
+void GfxSDL12::drawCharBitmap(uint8_t* bitmap, int col, int row) {
   int cx = CHAR_X(col);
   int cy = CHAR_Y(row);
   int charW = fontW * 8;
@@ -337,7 +335,7 @@ void gfxDrawCharBitmap(uint8_t* bitmap, int col, int row) {
   isDirty = 1;
 }
 
-Bitmap* gfxBitmapCreate(int widthChars, int heightChars) {
+Bitmap* GfxSDL12::bitmapCreate(int widthChars, int heightChars) {
   Bitmap* bitmap = (Bitmap*)malloc(sizeof(Bitmap));
   if (!bitmap) return NULL;
 
@@ -359,11 +357,11 @@ Bitmap* gfxBitmapCreate(int widthChars, int heightChars) {
   return bitmap;
 }
 
-void gfxBitmapClear(Bitmap* bitmap) {
+void GfxSDL12::bitmapClear(Bitmap* bitmap) {
   memset(bitmap->data, 0, bitmap->widthPixels * bitmap->heightPixels);
 }
 
-void gfxBitmapFree(Bitmap* bitmap) {
+void GfxSDL12::bitmapFree(Bitmap* bitmap) {
   if (!bitmap) return;
   if (bitmap->data) {
     free(bitmap->data);
@@ -371,7 +369,7 @@ void gfxBitmapFree(Bitmap* bitmap) {
   free(bitmap);
 }
 
-void gfxDrawBitmap(Bitmap* bitmap, int col, int row) {
+void GfxSDL12::drawBitmap(Bitmap* bitmap, int col, int row) {
   if (!bitmap || !bitmap->data) return;
 
   int cx = CHAR_X(col);
@@ -411,15 +409,15 @@ void gfxDrawBitmap(Bitmap* bitmap, int col, int row) {
   isDirty = 1;
 }
 
-int gfxGetCharWidth(void) {
+int GfxSDL12::getCharWidth() {
   return fontW * 8;
 }
 
-int gfxGetCharHeight(void) {
+int GfxSDL12::getCharHeight() {
   return fontH;
 }
 
-void gfxReloadFont(void) {
+void GfxSDL12::reloadFont() {
   for (int i = 0; i < 95; i++) {
     if (charSurfaces[i]) {
       SDL_FreeSurface(charSurfaces[i]);
@@ -427,18 +425,18 @@ void gfxReloadFont(void) {
     }
   }
 
-  currentResolution = fontSelectResolution(fontGetCurrent(), WINDOW_WIDTH, WINDOW_HEIGHT);
+  currentResolution = fontManager.selectResolution(fontManager.getCurrent(), WINDOW_WIDTH, WINDOW_HEIGHT);
   if (!currentResolution) {
-    currentResolution = &fontGetDefault()->resolutions[1];
+    currentResolution = &fontManager.getDefault()->resolutions[1];
   }
 
   createCharSurfaces();
   isDirty = 1;
 }
 
-void gfxDrawHUD(void) {}
+void GfxSDL12::drawHUD() {}
 
-void gfxSetButtonPressed(int buttonIndex, int pressed) {
+void GfxSDL12::setButtonPressed(int buttonIndex, int pressed) {
   (void)buttonIndex;
   (void)pressed;
 }

@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+namespace chipnomad {
+
 const char* byteToHex(uint8_t byte);
 const char* byteToHexOrEmpty(uint8_t byte);
 
@@ -16,10 +18,12 @@ int16_t clampInt16(int value, int16_t min, int16_t max);
 uint16_t clampUInt16(int value, uint16_t min, uint16_t max);
 int clampInt(int value, int min, int max);
 
-// Convert cents value to frequency in Hz (with safeguards)
+// Convert cents value to frequency in Hz
 float centsToFrequency(int cents);
 
-// Simple pseudo-random number generator. Returns a value in range [0, 65535]
+// Simple PRNG. Returns a value in range [0, 65535]
 uint16_t utilsRandom(void);
+
+}; // namespace chipnomad
 
 #endif // __CHIPNOMAD_LIB__UTILS_H__

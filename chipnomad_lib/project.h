@@ -6,6 +6,8 @@
 #include "project_instruments.h"
 #include "project_constants.h"
 
+namespace chipnomad {
+
 // Song data structures
 
 // FX
@@ -262,5 +264,7 @@ void chainClear(Chain* chain);
 void instrumentClear(Instrument* instrument);
 // Clear a single table with proper initialization
 void tableClear(Table* table);
+
+}; // namespace chipnomad
 
 #endif // __CHIPNOMAD_LIB__PROJECT_H__

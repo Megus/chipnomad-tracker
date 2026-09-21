@@ -12,7 +12,7 @@ DOCKER64 = docker run --privileged --platform=linux/arm64 --rm --user $$(id -u):
 DOCKER32 = docker run --privileged --platform=linux/armhf --rm --user $$(id -u):$$(id -g) -v`pwd`/..:/src -w/src/tracker
 
 # PortMaster build settings (placeholder - to be implemented)
-XTRA_CFLAGS = -DPORTMASTER_BUILD -I${SYSROOT}/usr/include -L${SYSROOT}/usr/lib
+XTRA_CFLAGS = -DSDL2_BUILD -DPORTMASTER_BUILD -I${SYSROOT}/usr/include -L${SYSROOT}/usr/lib
 XTRA_LIBS = -lSDL2 -lm
 CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(XTRA_CFLAGS)
 

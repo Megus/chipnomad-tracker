@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 
+namespace chipnomad {
+
 // Load AY1 instrument data (legacy format - version 1.0)
 static int loadInstrumentAY1Legacy(FILE* file, Instrument* instrument) {
   while (1) {
@@ -409,3 +411,5 @@ int instrumentSaveData(FILE* file, int idx, Instrument* instrument) {
 
   return 1;
 }
+
+}; // namespace chipnomad

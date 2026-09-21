@@ -1,6 +1,7 @@
 #ifndef __CHIPNOMAD_LIB_H__
 #define __CHIPNOMAD_LIB_H__
 
+#include "chipnomad_constants.h"
 #include "chips/chips.h"
 #include "project.h"
 #include "playback.h"
@@ -39,7 +40,7 @@ namespace chipnomad {
       void initChips();
 
       // Set quality
-      void setQuality(ChipNomadQuality quality);
+      void setQuality(EmulationQuality quality);
 
       /**
        * Render audio samples

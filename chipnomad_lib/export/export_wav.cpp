@@ -6,6 +6,8 @@
 
 #include "playback.h"
 
+namespace chipnomad {
+
 struct WAVHeader {
   char riff[4];
   uint32_t fileSize;
@@ -82,7 +84,7 @@ ExporterWAV::ExporterWAV(const char* path, Project* project, int startRow, int s
 
   // Engine was constructed with the default AY factory at the given sample rate.
   startExport(project, startRow);
-  engine.setQuality(ChipNomadQuality::best);
+  engine.setQuality(EmulationQuality::best);
   engine.mixVolume = mixVolume;
 
   if (stems) {
@@ -186,3 +188,5 @@ void ExporterWAV::writeSamples(FILE* f, float* buffer, int samples) {
   }
   totalSamples += samples;
 }
+
+} // namespace chipnomad

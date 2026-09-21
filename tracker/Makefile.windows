@@ -14,7 +14,7 @@ ifndef SDL_PATH
 SDL_PATH = C:\SDL\x86_64-w64-mingw32
 endif
 
-XTRA_CFLAGS = -I"$(SDL_PATH)\include" -L"$(SDL_PATH)\lib" -DDESKTOP_BUILD -D__USE_MINGW_ANSI_STDIO=1
+XTRA_CFLAGS = -I"$(SDL_PATH)\include" -L"$(SDL_PATH)\lib" -DSDL2_BUILD -DDESKTOP_BUILD -D__USE_MINGW_ANSI_STDIO=1
 XTRA_LIBS = -lmingw32 -lSDL2main -lSDL2 -static-libgcc -static-libstdc++
 CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(XTRA_CFLAGS)
 OUTPUT = -o $(BUILD)/chipnomad$(OUTPUT_EXT)
