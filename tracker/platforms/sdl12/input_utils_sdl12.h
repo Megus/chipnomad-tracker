@@ -5,7 +5,7 @@
 
 class InputUtilsSDL12 : public InputUtils {
   public:
-    void initDefaultKeyMapping(AppSettings* settings) override;
+    void initDefaultKeyMapping(AppSettings& settings) override;
     const char* getKeyName(InputCode input) override;
 };
 

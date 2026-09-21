@@ -1,38 +1,38 @@
 #include <stdio.h>
 #include "input_utils_sdl12.h"
 #include "keymap.h"
-#include "common.h"
+#include "app_settings.h"
 
-void InputUtilsSDL12::initDefaultKeyMapping(AppSettings* settings) {
-  settings->keyMapping.keyUp[0] = (InputCode){InputDeviceType::keyboard, BTN_UP};
-  settings->keyMapping.keyDown[0] = (InputCode){InputDeviceType::keyboard, BTN_DOWN};
-  settings->keyMapping.keyLeft[0] = (InputCode){InputDeviceType::keyboard, BTN_LEFT};
-  settings->keyMapping.keyRight[0] = (InputCode){InputDeviceType::keyboard, BTN_RIGHT};
-  settings->keyMapping.keyEdit[0] = (InputCode){InputDeviceType::keyboard, BTN_A};
-  settings->keyMapping.keyOpt[0] = (InputCode){InputDeviceType::keyboard, BTN_B};
-  settings->keyMapping.keyPlay[0] = (InputCode){InputDeviceType::keyboard, BTN_START};
-  settings->keyMapping.keyShift[0] = (InputCode){InputDeviceType::keyboard, BTN_SELECT};
+void InputUtilsSDL12::initDefaultKeyMapping(AppSettings& settings) {
+  settings.keyMapping.keyUp[0] = (InputCode){InputDeviceType::keyboard, BTN_UP};
+  settings.keyMapping.keyDown[0] = (InputCode){InputDeviceType::keyboard, BTN_DOWN};
+  settings.keyMapping.keyLeft[0] = (InputCode){InputDeviceType::keyboard, BTN_LEFT};
+  settings.keyMapping.keyRight[0] = (InputCode){InputDeviceType::keyboard, BTN_RIGHT};
+  settings.keyMapping.keyEdit[0] = (InputCode){InputDeviceType::keyboard, BTN_A};
+  settings.keyMapping.keyOpt[0] = (InputCode){InputDeviceType::keyboard, BTN_B};
+  settings.keyMapping.keyPlay[0] = (InputCode){InputDeviceType::keyboard, BTN_START};
+  settings.keyMapping.keyShift[0] = (InputCode){InputDeviceType::keyboard, BTN_SELECT};
 
   // Alternate mappings
-  settings->keyMapping.keyOpt[1] = (InputCode){InputDeviceType::keyboard, BTN_Y};
-  settings->keyMapping.keyShift[1] = (InputCode){InputDeviceType::keyboard, BTN_R1};
+  settings.keyMapping.keyOpt[1] = (InputCode){InputDeviceType::keyboard, BTN_Y};
+  settings.keyMapping.keyShift[1] = (InputCode){InputDeviceType::keyboard, BTN_R1};
 
   // Clear remaining slots
-  settings->keyMapping.keyUp[1] = (InputCode){InputDeviceType::none, 0};
-  settings->keyMapping.keyDown[1] = (InputCode){InputDeviceType::none, 0};
-  settings->keyMapping.keyLeft[1] = (InputCode){InputDeviceType::none, 0};
-  settings->keyMapping.keyRight[1] = (InputCode){InputDeviceType::none, 0};
-  settings->keyMapping.keyEdit[1] = (InputCode){InputDeviceType::none, 0};
-  settings->keyMapping.keyPlay[1] = (InputCode){InputDeviceType::none, 0};
+  settings.keyMapping.keyUp[1] = (InputCode){InputDeviceType::none, 0};
+  settings.keyMapping.keyDown[1] = (InputCode){InputDeviceType::none, 0};
+  settings.keyMapping.keyLeft[1] = (InputCode){InputDeviceType::none, 0};
+  settings.keyMapping.keyRight[1] = (InputCode){InputDeviceType::none, 0};
+  settings.keyMapping.keyEdit[1] = (InputCode){InputDeviceType::none, 0};
+  settings.keyMapping.keyPlay[1] = (InputCode){InputDeviceType::none, 0};
 
-  settings->keyMapping.keyUp[2] = (InputCode){InputDeviceType::none, 0};
-  settings->keyMapping.keyDown[2] = (InputCode){InputDeviceType::none, 0};
-  settings->keyMapping.keyLeft[2] = (InputCode){InputDeviceType::none, 0};
-  settings->keyMapping.keyRight[2] = (InputCode){InputDeviceType::none, 0};
-  settings->keyMapping.keyEdit[2] = (InputCode){InputDeviceType::none, 0};
-  settings->keyMapping.keyOpt[2] = (InputCode){InputDeviceType::none, 0};
-  settings->keyMapping.keyPlay[2] = (InputCode){InputDeviceType::none, 0};
-  settings->keyMapping.keyShift[2] = (InputCode){InputDeviceType::none, 0};
+  settings.keyMapping.keyUp[2] = (InputCode){InputDeviceType::none, 0};
+  settings.keyMapping.keyDown[2] = (InputCode){InputDeviceType::none, 0};
+  settings.keyMapping.keyLeft[2] = (InputCode){InputDeviceType::none, 0};
+  settings.keyMapping.keyRight[2] = (InputCode){InputDeviceType::none, 0};
+  settings.keyMapping.keyEdit[2] = (InputCode){InputDeviceType::none, 0};
+  settings.keyMapping.keyOpt[2] = (InputCode){InputDeviceType::none, 0};
+  settings.keyMapping.keyPlay[2] = (InputCode){InputDeviceType::none, 0};
+  settings.keyMapping.keyShift[2] = (InputCode){InputDeviceType::none, 0};
 }
 
 const char* InputUtilsSDL12::getKeyName(InputCode input) {

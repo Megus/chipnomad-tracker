@@ -5,7 +5,7 @@
 namespace chipnomad {
   char Error::message[41] = {0};
 
-  void Error::clear(void) {
+  void Error::clear() {
     message[0] = '\0';
   }
 

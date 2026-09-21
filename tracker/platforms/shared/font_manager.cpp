@@ -54,7 +54,7 @@ const FontResolution* FontManager::selectResolution(const Font* f, int screenWid
 }
 
 Font* FontManager::load(const char* path) {
-  static char lineBuffer[1024];
+  char lineBuffer[1024];
 
   FILE* fp = fopen(path, "r");
   if (fp == NULL) return NULL;

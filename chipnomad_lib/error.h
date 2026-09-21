@@ -7,7 +7,7 @@ namespace chipnomad {
       // Error message buffer (40 chars + null terminator)
       static char message[41];
       // Reset error message
-      static void clear(void);
+      static void clear();
       // Set error message with format string
       static void set(const char* format, ...);
   };
