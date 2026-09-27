@@ -7,7 +7,7 @@ class AudioDeviceSDL12 : public AudioDevice {
   public:
     bool setup(AudioCallbacks* callbacks, int sampleRate, int bufferSize) override;
     void pause(bool isPaused) override;
-    void cleanup() override;
+    void teardown() override;
 };
 
 #endif // __AUDIO_SDL12_H__

@@ -30,6 +30,6 @@ void AudioDeviceSDL2::pause(bool isPaused) {
   SDL_PauseAudio(isPaused ? 1 : 0);
 }
 
-void AudioDeviceSDL2::cleanup() {
+void AudioDeviceSDL2::teardown() {
   SDL_CloseAudio();
 }

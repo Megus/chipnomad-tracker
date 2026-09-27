@@ -24,7 +24,7 @@ class AudioDevice {
     virtual void pause(bool isPaused) = 0;
 
     // Close the audio device
-    virtual void cleanup() = 0;
+    virtual void teardown() = 0;
 };
 
 #endif // __AUDIO_DEVICE_H__

@@ -26,7 +26,8 @@ class App {
   public:
     virtual ~App() = default;
 
-    virtual void setup() = 0;
+    virtual bool setup() = 0;
+    virtual void teardown() = 0;
     virtual void draw() = 0;
     virtual void onEvent(MainLoopEventData eventData) = 0;
     virtual void onRawInput(InputCode input, int isDown) = 0;

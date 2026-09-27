@@ -23,6 +23,7 @@ class Gfx {
     virtual ~Gfx() = default;
 
     virtual int setup(int* screenWidth, int* screenHeight) = 0;
+    virtual void teardown() = 0;
 
     // Colors
     virtual void setFgColor(int rgb) = 0;

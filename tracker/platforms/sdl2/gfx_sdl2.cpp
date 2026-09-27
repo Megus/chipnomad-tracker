@@ -219,7 +219,7 @@ int GfxSDL2::setup(int *screenWidth, int *screenHeight) {
   return 1;
 }
 
-GfxSDL2::~GfxSDL2() {
+void GfxSDL2::teardown() {
   if (fontTexture) SDL_DestroyTexture(fontTexture);
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);

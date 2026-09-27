@@ -108,7 +108,7 @@ int GfxSDL12::setup(int *screenWidth, int *screenHeight) {
   return 1;
 }
 
-GfxSDL12::~GfxSDL12() {
+void GfxSDL12::teardown() {
   for (int i = 0; i < 95; i++) {
     if (charSurfaces[i]) SDL_FreeSurface(charSurfaces[i]);
   }

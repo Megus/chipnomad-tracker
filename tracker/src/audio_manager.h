@@ -1,11 +1,9 @@
 #ifndef __AUDIOMANAGER_H__
 #define __AUDIOMANAGER_H__
 
-#include "common.h"
 #include "chipnomad_lib.h"
-#include "tracker_state.h"
-
-class AudioSource;
+#include "audio_source.h"
+#include "audio_device.h"
 
 enum class TrackState: uint8_t {
   normal = 0,
@@ -13,19 +11,17 @@ enum class TrackState: uint8_t {
   muted = 2
 };
 
-class AudioManager {
+class AudioManager : public AudioCallbacks {
   public:
-    AudioManager(TrackerState *state);
+    AudioManager(AudioDevice& audioDevice, int sampleRate, int audioBufferSize, chipnomad::ChipFactory factory);
     ~AudioManager();
 
-    // Track solo/mute states
-    TrackState trackStates[PROJECT_MAX_TRACKS];
+    chipnomad::Engine engine; // ChipNomad Engine
+    TrackState trackStates[PROJECT_MAX_TRACKS]; // Track solo/mute states
 
-    // Audio manager lifecycle functions
-    virtual int start(int sampleRate, int audioBufferSize);
-    virtual void pause(void);
-    virtual void resume(void);
-    virtual void stop();
+    // Audio manager lifecycle
+    void pause();
+    void resume();
 
     // Track mute/solo functions
     void toggleTrackMute(int trackIdx);
@@ -34,40 +30,38 @@ class AudioManager {
     // Chip reinitialization function
     void reinitChips();
 
-    // Preview functions. The AudioManager takes ownership of the source and
-    // deletes it when the preview stops.
-    virtual void startPreview(AudioSource* source);
-    virtual void stopPreview();
+    // Preview functions. The AudioManager takes ownership of the source and deletes it when the preview stops.
+    // TODO: Rename to something like a secondary source
+    void startPreview(AudioSource* source);
+    void stopPreview();
 
     // Convenience helpers for specific source types
-    virtual int startWavPreview(const char* path);
-    virtual int startWavetablePreview(const char* path, bool isYM);
+    // TODO: Move them to corresponding AudioSource classes for better encapsulation
+    int startWavPreview(const char* path);
+    int startWavetablePreview(const char* path, bool isYM);
 
-  private:
-    TrackerState *trackerState;
+    // AudioCallbacks implementation
+    void onAudioOutput(int16_t* buffer, int stereoSamples) override;
+
+  protected:
+    AudioDevice& device;
     int sampleRate;
     int bufferSize;
-    int pendingReinitChips;
     float* renderBuffer;
+    int pendingReinitChips;
 
     // Preview state (generic audio source: WAV, wavetable, etc.)
     AudioSource* previewSource;
-    double previewPosition;   // Fractional accumulator for resampling (0.0 to 1.0)
-    double previewRateRatio;  // sourceSampleRate / outputSampleRate
+    float previewPosition;   // Fractional accumulator for resampling (0.0 to 1.0)
+    float previewRateRatio;  // sourceSampleRate / outputSampleRate
 
-    // Preview read buffer (persists across audio callbacks)
+    // Preview read buffer
     static const int PREVIEW_BUF_SIZE = 256;
     int16_t previewBuf[PREVIEW_BUF_SIZE];
     int previewBufPos;
     int previewBufCount;
 
     void updatePlaybackMuteFlags(void);
-
-    friend void audioCallback(int16_t* buffer, int stereoSamples);
 };
 
-// Singleton AudioManager instance
-// TODO: Avoid the global variable and use dependency injection instead
-extern AudioManager& audio;
-
-#endif
+#endif // __AUDIO_MANAGER_H__

@@ -9,6 +9,7 @@ class GfxSDL12 : public Gfx {
     ~GfxSDL12() override;
 
     int setup(int* screenWidth, int* screenHeight) override;
+    void teardown() override;
     void setFgColor(int rgb) override;
     void setCursorColor(int rgb) override;
     void setBgColor(int rgb) override;

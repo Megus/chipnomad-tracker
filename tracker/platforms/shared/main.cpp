@@ -6,7 +6,6 @@
 #include "font_manager.h"
 #include "mainloop.h"
 #include "app.h"
-#include "common.h"
 #include "file_system.h"
 #include "font_manager.h"
 
@@ -38,7 +37,7 @@ int main(int argv, char** args) {
 
 #if defined(SDL12_BUILD)
   AudioDeviceSDL12 audioDevice = AudioDeviceSDL12();
-  GfxSDL12 gfx = GfxSDL12();
+  GfxSDL12 gfx = GfxSDL12(fontManager);
   InputUtilsSDL12 inputUtils = InputUtilsSDL12();
   MainLoopSDL12 mainLoop = MainLoopSDL12(gfx);
   AssetsSDL12 assets = AssetsSDL12();
@@ -59,6 +58,7 @@ int main(int argv, char** args) {
   app.setup();
   mainLoop.run(app);
   mainLoop.quit();
+  app.teardown();
 
   return 0;
 }
