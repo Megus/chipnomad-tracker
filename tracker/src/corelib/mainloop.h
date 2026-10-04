@@ -3,7 +3,7 @@
 
 struct InputCode;
 
-enum class MainLoopEvent {
+enum class MainLoopEventType {
   tick,
   keyDown,
   keyUp,
@@ -13,8 +13,8 @@ enum class MainLoopEvent {
   fullRedraw,
 };
 
-struct MainLoopEventData {
-  MainLoopEvent type;
+struct MainLoopEvent {
+  MainLoopEventType type;
   union {
     int value;
     InputCode input;
@@ -29,8 +29,7 @@ class App {
     virtual bool setup() = 0;
     virtual void teardown() = 0;
     virtual void draw() = 0;
-    virtual void onEvent(MainLoopEventData eventData) = 0;
-    virtual void onRawInput(InputCode input, int isDown) = 0;
+    virtual void onMainLoopEvent(MainLoopEvent event) = 0;
 };
 
 // Main platform loop interface

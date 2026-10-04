@@ -1,10 +1,10 @@
 #include "screen_color_theme.h"
 #include "common.h"
-#include "corelib_gfx.h"
-#include "corelib_mainloop.h"
+#include "gfx.h"
+#include "mainloop.h"
 #include "screens.h"
 #include "file_browser.h"
-#include "corelib/corelib_file.h"
+#include "file_system.h"
 #include <string.h>
 
 static int colorThemeColumnCount(int row);

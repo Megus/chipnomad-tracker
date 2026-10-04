@@ -1,7 +1,7 @@
 #include "screens.h"
 #include "screen_create_folder.h"
-#include "corelib/corelib_file.h"
-#include "corelib_gfx.h"
+#include "file_system.h"
+#include "gfx.h"
 #include <string.h>
 
 static char folderName[17] = "";
@@ -148,7 +148,7 @@ static void createFolder(void) {
   char fullPath[2048];
   snprintf(fullPath, sizeof(fullPath), "%s%s%s", currentPath, PATH_SEPARATOR_STR, folderName);
 
-  if (fileCreateDirectory(fullPath)) {
+  if (file->createDirectory(fullPath)) {
     if (onFolderCreated) {
       onFolderCreated();
     }

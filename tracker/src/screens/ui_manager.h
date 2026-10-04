@@ -1,85 +1,10 @@
 #ifndef __SCREENS_H__
 #define __SCREENS_H__
 
-#include "common.h"
 #include "tracker_state.h"
-#include "../chipnomad_lib/playback.h"
-
-// Bridge: the playback types (LoopRange, PlaybackMode, PlaybackTrackState, ...)
-// now live in namespace chipnomad. The tracker still references them unqualified
-// throughout the screens, so pull the namespace in here. This will be tightened
-// up as the tracker is migrated to explicit qualification / DI.
-using namespace chipnomad;
+#include "chipnomad_lib.h"
 
 #define MESSAGE_TIME (60)
-
-enum class CellState : int {
-  normal = 0,
-  focus = 1,
-  selected = 2,
-};
-
-enum class CellEditAction : int {
-  clear,
-  tap,
-  doubleTap,
-  increase,
-  decrease,
-  increaseBig,
-  decreaseBig,
-  shallowClone,
-  deepClone,
-  copy,
-  cut,
-  paste,
-  switchSelection,
-  multiIncrease,
-  multiDecrease,
-  multiIncreaseBig,
-  multiDecreaseBig
-};
-
-enum class ScreenPlaybackLevel : int {
-  none,
-  song,
-  chain,
-  phrase,
-};
-
-struct AppScreen {
-  void (*init)(void);
-  void (*setup)(int input);
-  void (*fullRedraw)(void);
-  void (*draw)(void);
-  int (*onInput)(int isKeyDown, int keys, int tapCount); // Return 1 if handled, 0 if not
-  ScreenPlaybackLevel (*getPlaybackLevel)(void); // Return playback level for this screen
-};
-
-struct ScreenData {
-  //int cols;
-  int rows;
-  int cursorRow;
-  int cursorCol;
-  int topRow; // For scrollable screens
-  int selectMode; // 0 - edit, 1 - select, -1 - select is disabled for this screen (e.g. Instrument screen)
-  int selectStartRow;
-  int selectStartCol;
-  int selectAnchorRow; // Original cell where selection mode was entered
-  int selectAnchorCol; // Original cell where selection mode was entered
-  ScreenPlaybackLevel playbackLevel; // Playback level for this screen (None, Song, Chain, Phrase)
-  int (*getColumnCount)(int row);
-  void (*drawStatic)(void);
-  void (*drawCursor)(int col, int row);
-  void (*drawSelection)(int col1, int row1, int col2, int row2);
-  void (*drawRowHeader)(int row, CellState state);
-  void (*drawColHeader)(int col, CellState state);
-  void (*drawField)(int col, int row, CellState state);
-  int (*onEdit)(int col, int row, CellEditAction action);
-  int (*onInput)(int isKeyDown, int keys, int tapCount);  // Optional: handle input before standard processing (return 1 if handled completely, 0 to continue)
-  int (*onRawInput)(int keyCode, int isKeyboard, int isDown);  // Optional: capture raw SDL input
-  int (*isCellValid)(int col, int row);  // Optional: return 0 for dead cells that cursor should skip
-  LoopRange (*getLoopRange)(void);  // Optional: return loop range for ranged playback
-};
 
 extern const AppScreen screenProject;
 extern const AppScreen screenProjectLoad;
@@ -111,18 +36,9 @@ void screenDraw(void);
 void screenMessage(int time, const char* format, ...);
 void screensInitAll(void);
 void drawScreenMap(void);
-enum ScreenPlaybackLevel screenGetPlaybackLevel(const AppScreen* screen);
 
 // Spreadsheet functions
-void screenFullRedraw(ScreenData* screen);
-void screenDrawOverlays(ScreenData* screen);
 int screenInput(ScreenData* screen, int isKeyDown, int keys, int tapCount);
-
-// Utility functions
-void setCellColor(CellState state, int isEmpty, int hasContent);
-void getSelectionBounds(ScreenData* screen, int* startCol, int* startRow, int* endCol, int* endRow);
-int isSingleColumnSelection(ScreenData* screen);
-LoopRange screenGetLoopRange(const AppScreen* screen);
 
 // Confirmation dialog
 void confirmSetup(const char* message, void (*confirmCallback)(void), void (*cancelCallback)(void));
@@ -152,13 +68,5 @@ int editFX(CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable, uin
 int editFXValue(CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable, uint8_t instrumentIdx);
 int fxEditInput(int keys, int tapCount, uint8_t* fx, uint8_t* lastFX);
 void fxEditFullDraw(uint8_t currentFX, uint8_t instrumentIdx);
-
-// Manage screen functions
-// TODO: Remove this
-int manageColumnCount(int row);
-void manageDrawStatic(void);
-void manageDrawCursor(int col, int row);
-void manageDrawField(int col, int row, CellState state);
-int manageOnEdit(int col, int row, CellEditAction action);
 
 #endif

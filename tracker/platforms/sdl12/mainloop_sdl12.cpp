@@ -13,14 +13,14 @@ void MainLoopSDL12::run(App& app) {
   uint32_t busytime = 0;
   SDL_Event event;
   int menu = 0;
-  MainLoopEventData eventData;
+  MainLoopEvent eventData;
 
   while (1) {
     start = SDL_GetTicks();
 
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT) {
-        eventData.type = MainLoopEvent::exit;
+        eventData.type = MainLoopEventType::exit;
         eventData.data.value = 0;
         app.onEvent(eventData);
         return;
@@ -28,19 +28,19 @@ void MainLoopSDL12::run(App& app) {
         if (event.key.keysym.sym == BTN_MENU) {
           menu = event.type == SDL_KEYDOWN;
         } else if (menu && event.type == SDL_KEYDOWN && event.key.keysym.sym == BTN_X) {
-          eventData.type = MainLoopEvent::exit;
+          eventData.type = MainLoopEventType::exit;
           eventData.data.value = 0;
           app.onEvent(eventData);
           return;
         } else {
-          eventData.type = event.type == SDL_KEYDOWN ? MainLoopEvent::keyDown : MainLoopEvent::keyUp;
+          eventData.type = event.type == SDL_KEYDOWN ? MainLoopEventType::keyDown : MainLoopEventType::keyUp;
           eventData.data.input = (InputCode){InputDeviceType::keyboard, event.key.keysym.sym};
           app.onEvent(eventData);
         }
       }
     }
 
-    eventData.type = MainLoopEvent::tick;
+    eventData.type = MainLoopEventType::tick;
     eventData.data.value = 0;
     app.onEvent(eventData);
 

@@ -1,6 +1,6 @@
 #include "screens.h"
 #include "common.h"
-#include "corelib_gfx.h"
+#include "gfx.h"
 #include "utils.h"
 #include "chipnomad_lib.h"
 #include "project_utils.h"
@@ -196,7 +196,7 @@ static int onEdit(int col, int row, enum CellEditAction action) {
   int handled = 0;
 
   int startCol, startRow, endCol, endRow;
-  getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+  getSelectionRange(&screen, &startCol, &startRow, &endCol, &endRow);
 
   if (action == CellEditAction::switchSelection) {
     return switchChainSelectionMode(&screen);
@@ -219,12 +219,12 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     }
   } else if (action == CellEditAction::copy) {
     int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    getSelectionRange(&screen, &startCol, &startRow, &endCol, &endRow);
     copyChain(chain, startCol, startRow, endCol, endRow, 0);
     handled = 1;
   } else if (action == CellEditAction::cut) {
     int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    getSelectionRange(&screen, &startCol, &startRow, &endCol, &endRow);
     copyChain(chain, startCol, startRow, endCol, endRow, 1);
     handled = 1;
   } else if (action == CellEditAction::paste) {
@@ -307,7 +307,7 @@ static LoopRange getLoopRange(void) {
   LoopRange range = {0};
   if (screen.selectMode == 1) {
     int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    getSelectionRange(&screen, &startCol, &startRow, &endCol, &endRow);
     range.enabled = 1;
     range.level = 1;
     range.startSongRow = *pSongRow;

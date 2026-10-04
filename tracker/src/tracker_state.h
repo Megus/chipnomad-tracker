@@ -6,17 +6,18 @@
 
 class TrackerState {
   public:
-    TrackerState();
+    TrackerState():
+      projectModified(false), songRow(0), songTrack(0), chainRow(0) {};
     ~TrackerState() = default;
 
-    AppSettings settings;
+    AppSettings settings; // Application settings
 
-    chipnomad::Project project;
-    bool projectModified;
+    chipnomad::Project project; // Current project
+    bool projectModified; // Is project modified?
 
-    int* pSongRow;
-    int* pSongTrack;
-    int* pChainRow;
+    int songRow; // Selected song row
+    int songTrack; // Selected track
+    int chainRow; // Selected chain row
 };
 
 #endif // __TRACKER_STATE_H__

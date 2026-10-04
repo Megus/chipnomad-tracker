@@ -1,6 +1,6 @@
 #include "screens.h"
 #include "common.h"
-#include "corelib_gfx.h"
+#include "gfx.h"
 #include "utils.h"
 #include "chipnomad_lib.h"
 #include "copy_paste.h"
@@ -121,7 +121,7 @@ static int onEdit(int col, int row, CellEditAction action) {
   int handled = 0;
 
   int startCol, startRow, endCol, endRow;
-  getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+  getSelectionRange(&screen, &startCol, &startRow, &endCol, &endRow);
 
   if (action == CellEditAction::switchSelection) {
     return switchGrooveSelectionMode(&screen);

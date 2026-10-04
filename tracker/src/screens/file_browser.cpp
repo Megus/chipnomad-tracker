@@ -1,7 +1,7 @@
 #include "screens.h"
 #include "file_browser.h"
-#include "corelib/corelib_file.h"
-#include "corelib_gfx.h"
+#include "file_system.h"
+#include "gfx.h"
 #include "screen_create_folder.h"
 #include <string.h>
 #include <stdlib.h>
@@ -110,7 +110,7 @@ static void fileBrowserRefreshWithSelection(const char* selectName) {
     entries = NULL;
   }
 
-  entries = fileListDirectory(currentPath, fileExtension, &entryCount);
+  entries = file->listDirectory(currentPath, fileExtension, &entryCount);
   if (entries && entryCount > 0) {
     qsort(entries, entryCount, sizeof(FileEntry), compareEntries);
   }
@@ -156,11 +156,11 @@ void fileBrowserSetup(
   onPreviewStartCallback = previewStartCb;
   onPreviewStopCallback = previewStopCb;
 
-  if (startPath && strlen(startPath) > 0 && fileDirectoryExists(startPath)) {
+  if (startPath && strlen(startPath) > 0 && file->directoryExists(startPath)) {
     strncpy(currentPath, startPath, sizeof(currentPath) - 1);
     currentPath[sizeof(currentPath) - 1] = 0;
   } else {
-    fileGetDefaultDirectory(currentPath, sizeof(currentPath));
+    file->getDefaultDirectory(currentPath, sizeof(currentPath));
   }
   fileBrowserRefresh();
 }
@@ -188,11 +188,11 @@ void fileBrowserSetupFolderMode(
   onFileSelected = folderCallback;
   onCancelled = cancelCallback;
 
-  if (startPath && strlen(startPath) > 0 && fileDirectoryExists(startPath)) {
+  if (startPath && strlen(startPath) > 0 && file->directoryExists(startPath)) {
     strncpy(currentPath, startPath, sizeof(currentPath) - 1);
     currentPath[sizeof(currentPath) - 1] = 0;
   } else {
-    fileGetDefaultDirectory(currentPath, sizeof(currentPath));
+    file->getDefaultDirectory(currentPath, sizeof(currentPath));
   }
   fileBrowserRefresh();
 }

@@ -1,15 +1,17 @@
 #include "doctest.h"
 #include "chipnomad_lib.h"
+#include "tracker_state.h"
 #include "screens.h"
 
 #include <cstring>
 
-// Reference the global chipnomadState from app.cpp
-extern ChipNomadState* chipnomadState;
+// The global tracker state (defined in common.cpp). These tests only touch
+// its Project; no Engine is created.
+extern TrackerState* chipnomadState;
 
 TEST_SUITE("edit_common") {
 
-static ChipNomadState testState;
+static TrackerState testState;
 
 #define S(r, c) chipnomadState->project.song[r][c]
 #define H(r, c) chipnomadState->project.songHighlight[r][c]
@@ -17,12 +19,13 @@ static ChipNomadState testState;
 // Test fixture for common setup/teardown
 struct EditCommonFixture {
   EditCommonFixture() {
-    std::memset(&testState, 0, sizeof(testState));
     chipnomadState = &testState;
     projectInit(&chipnomadState->project);
     chipnomadState->project.tracksCount = 3;
   }
-  ~EditCommonFixture() = default;
+  ~EditCommonFixture() {
+    chipnomadState = nullptr;
+  }
 };
 
 // applySongMoveDown tests

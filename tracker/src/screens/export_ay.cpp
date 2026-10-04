@@ -1,6 +1,6 @@
 #include "screen_export.h"
-#include "corelib_gfx.h"
-#include "corelib/corelib_file.h"
+#include "gfx.h"
+#include "file_system.h"
 #include "common.h"
 #include "screens.h"
 #include "export/export.h"

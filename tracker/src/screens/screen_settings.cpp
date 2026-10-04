@@ -3,10 +3,10 @@
 #include "screen_keymapping.h"
 #include "file_browser.h"
 #include "common.h"
-#include "corelib_gfx.h"
-#include "corelib_mainloop.h"
-#include "corelib_font.h"
-#include "corelib_file.h"
+#include "gfx.h"
+#include "mainloop.h"
+#include "font_manager.h"
+#include "file_system.h"
 #include "screens.h"
 #include <string.h>
 
@@ -48,9 +48,9 @@ static void setup(int input) {
 }
 
 static void fontLoadCallback(const char* path) {
-  Font* font = fontLoad(path);
-  if (font) {
-    fontSetCurrent(font);
+  Font* loaded = font->load(path);
+  if (loaded) {
+    font->setCurrent(loaded);
     gfxReloadFont();
     strncpy(appSettings.fontPath, path, PATH_LENGTH);
     appSettings.fontPath[PATH_LENGTH] = 0;
@@ -65,7 +65,7 @@ static void fontLoadCallback(const char* path) {
       }
     }
 
-    screenMessage(MESSAGE_TIME, "Loaded: %s", font->name);
+    screenMessage(MESSAGE_TIME, "Loaded: %s", loaded->name);
   } else {
     screenMessage(MESSAGE_TIME, "Failed to load font");
   }
@@ -178,7 +178,7 @@ int settingsOnEdit(int col, int row, CellEditAction action) {
     // Quality (0-3)
     int handled = edit8noLast(action, (uint8_t*)&appSettings.quality, 1, 0, 3);
     if (handled) {
-      chipnomadState->engine->setQuality((ChipNomadQuality)appSettings.quality);
+      chipnomadState->engine->setQuality(appSettings.quality);
     }
     return handled;
   } else if (row == 3 && col == 0) {
@@ -202,7 +202,7 @@ int settingsOnEdit(int col, int row, CellEditAction action) {
     return 0;
   } else if (row == 7 && col == 0 && action == CellEditAction::tap) {
     // Trigger exit event
-    mainLoopTriggerQuit();
+    mainLoop->triggerQuit();
     return 1;
   }
   return 0;

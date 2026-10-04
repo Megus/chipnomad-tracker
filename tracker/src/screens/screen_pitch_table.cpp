@@ -1,6 +1,6 @@
 #include "screens.h"
-#include "corelib/corelib_file.h"
-#include "corelib_gfx.h"
+#include "file_system.h"
+#include "gfx.h"
 #include "file_browser.h"
 #include "chipnomad_lib.h"
 #include <string.h>

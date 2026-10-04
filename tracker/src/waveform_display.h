@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include "corelib_gfx.h"
+#include "gfx.h"
 
 /**
  * @brief Initialize waveform display system

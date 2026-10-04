@@ -1,5 +1,5 @@
 #include "screens.h"
-#include "corelib_gfx.h"
+#include "gfx.h"
 #include "help.h"
 
 // State for FX selection screen

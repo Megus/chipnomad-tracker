@@ -1,5 +1,5 @@
 #include "screens.h"
-#include "corelib_gfx.h"
+#include "gfx.h"
 #include "string_utils.h"
 #include <string.h>
 

@@ -1,25 +1,38 @@
 #ifndef __APP_H__
 #define __APP_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "mainloop.h"
+#include "tracker_state.h"
 
-#include "common.h"
-#include "corelib/corelib_mainloop.h"
-#include "corelib/corelib_input.h"
+// Forward declarations
+class Gfx;
+class FontManager;
+class AudioDevice;
+class FileSystem;
+class Assets;
+class InputUtils;
 
-void appSetup(void);
-void appCleanup(void);
-void appDraw(void);
-void appOnEvent(MainLoopEventData eventData);
+class TrackerApp: public App {
+  public:
+    TrackerApp(Gfx& gfx, FontManager& fontManager, AudioDevice& audio, FileSystem& file, Assets& assets, InputUtils& inputUtils)
+      : gfx(gfx), fontManager(fontManager), audioDevice(audio), file(file), assets(assets), input(inputUtils), state() {};
+    ~TrackerApp() = default;
 
-// Raw input callback for key mapping screen
-extern void (*inputRawCallback)(InputCode input, int isDown);
+    bool setup() override;
+    void teardown() override;
+    void draw() override;
+    void onMainLoopEvent(MainLoopEvent event) override;
 
+  protected:
+    Gfx& gfx;
+    FontManager& fontManager;
+    AudioDevice& audioDevice;
+    FileSystem& file;
+    Assets& assets;
+    InputUtils& input;
 
-#ifdef __cplusplus
-}
-#endif
+    TrackerState state;
+    AudioManager* audio;
+};
 
 #endif

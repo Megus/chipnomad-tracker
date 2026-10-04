@@ -1,7 +1,10 @@
+#include <string.h>
+#include <strings.h>
+
 #include "screens.h"
 #include "common.h"
-#include "corelib_gfx.h"
-#include "corelib/corelib_file.h"
+#include "gfx.h"
+#include "file_system.h"
 #include "utils.h"
 #include "chipnomad_lib.h"
 #include "project_utils.h"
@@ -9,8 +12,6 @@
 #include "copy_paste.h"
 #include "file_browser.h"
 #include "import_vts.h"
-#include <string.h>
-#include <strings.h>
 #include "error.h"
 
 extern const AppScreen screenInstrumentPool;

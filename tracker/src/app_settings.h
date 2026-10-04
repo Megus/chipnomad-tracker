@@ -20,18 +20,6 @@ struct ColorTheme {
   int warning;
 };
 
-// Key mapping: 8 buttons x 3 keys each
-struct KeyMapping {
-  InputCode keyUp[3];
-  InputCode keyDown[3];
-  InputCode keyLeft[3];
-  InputCode keyRight[3];
-  InputCode keyEdit[3];
-  InputCode keyOpt[3];
-  InputCode keyPlay[3];
-  InputCode keyShift[3];
-};
-
 class AppSettings {
   public:
     // Graphic settings

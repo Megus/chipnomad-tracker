@@ -3,8 +3,6 @@
 
 #include <stdint.h>
 
-struct AppSettings;
-
 enum class InputDeviceType : int {
   none = 0,
   logical = 1,
@@ -29,16 +27,31 @@ enum Key {
   keyUnmapped = 0x400,
 };
 
+// Key mapping: 8 buttons x 3 keys each
+struct KeyMapping {
+  InputCode keyUp[3];
+  InputCode keyDown[3];
+  InputCode keyLeft[3];
+  InputCode keyRight[3];
+  InputCode keyEdit[3];
+  InputCode keyOpt[3];
+  InputCode keyPlay[3];
+  InputCode keyShift[3];
+};
+
 // Input utilities
 class InputUtils {
   public:
     virtual ~InputUtils() = default;
 
     // Initialize default key mappings into the provided settings, based on platform/keyboard layout
-    virtual void initDefaultKeyMapping(AppSettings& settings) = 0;
+    virtual void initDefaultKeyMapping(KeyMapping& mapping) = 0;
 
     // Convert an input code to a human-readable name
     virtual const char* getKeyName(InputCode input) = 0;
+
+    // Convert input code to a key following a mapping
+    int inputCodeToKey(InputCode input, KeyMapping& mapping);
 };
 
 #endif // __INPUT_UTILS_H__

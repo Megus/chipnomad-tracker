@@ -247,12 +247,6 @@ void GfxSDL2::clear() {
   isDirty = 1;
 }
 
-void GfxSDL2::point(int x, int y, uint32_t color) {
-  setColor(color);
-  SDL_RenderDrawPoint(renderer, x, y);
-  isDirty = 1;
-}
-
 void GfxSDL2::clearRect(int x, int y, int w, int h) {
   SDL_Rect rect = { CHAR_X(x), CHAR_Y(y), w * charW, h * charH };
   setColor(bgColor);
@@ -351,30 +345,6 @@ void GfxSDL2::updateScreen() {
     SDL_RenderPresent(renderer);
   }
   isDirty = 0;
-}
-
-void GfxSDL2::drawCharBitmap(uint8_t* bitmap, int col, int row) {
-  int cx = CHAR_X(col);
-  int cy = CHAR_Y(row);
-
-  uint8_t fgR = (fgColor >> 16) & 0xFF;
-  uint8_t fgG = (fgColor >> 8) & 0xFF;
-  uint8_t fgB = fgColor & 0xFF;
-  uint8_t bgR = (bgColor >> 16) & 0xFF;
-  uint8_t bgG = (bgColor >> 8) & 0xFF;
-  uint8_t bgB = bgColor & 0xFF;
-
-  for (int y = 0; y < charH; y++) {
-    for (int x = 0; x < charW; x++) {
-      uint8_t alpha = bitmap[y * charW + x];
-      uint8_t r = bgR + ((fgR - bgR) * alpha) / 255;
-      uint8_t g = bgG + ((fgG - bgG) * alpha) / 255;
-      uint8_t b = bgB + ((fgB - bgB) * alpha) / 255;
-      SDL_SetRenderDrawColor(renderer, r, g, b, 255);
-      SDL_RenderDrawPoint(renderer, cx + x, cy + y);
-    }
-  }
-  isDirty = 1;
 }
 
 Bitmap* GfxSDL2::bitmapCreate(int widthChars, int heightChars) {

@@ -3,7 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <chipnomad_lib.h>
-#include <corelib/corelib_file.h>
+#include <file_system.h>
 #include <common.h>
 #include <project_utils.h>
 #include "import_vt2.h"

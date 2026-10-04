@@ -14,6 +14,13 @@ struct Bitmap {
   void* userdata;      // Platform-specific data (e.g., SDL_Texture*)
 };
 
+struct Rect {
+  int x;
+  int y;
+  int w;
+  int h;
+};
+
 class FontManager;
 
 // Graphics functions
@@ -36,20 +43,18 @@ class Gfx {
 
     // Character-grid drawing (coordinates in characters on a 40x20 grid)
     virtual void clearRect(int x, int y, int w, int h) = 0;
+    void clearRect(Rect& r) { clearRect(r.x, r.y, r.w, r.h); };
     virtual void cursor(int x, int y, int w) = 0;
     virtual void rect(int x, int y, int w, int h) = 0;
+    void rect(Rect& r) { rect(r.x, r.y, r.w, r.h); };
     virtual void print(int x, int y, const char* text) = 0;
     virtual void printf(int x, int y, const char* format, va_list args) = 0;
-
-    // Pixel-level draw (screen pixel coordinates)
-    virtual void point(int x, int y, uint32_t color) = 0;
 
     // Bitmaps
     virtual Bitmap* bitmapCreate(int widthChars, int heightChars) = 0;
     virtual void bitmapClear(Bitmap* bitmap) = 0;
     virtual void bitmapFree(Bitmap* bitmap) = 0;
-    virtual void drawBitmap(Bitmap* bitmap, int col, int row) = 0;
-    virtual void drawCharBitmap(uint8_t* bitmap, int col, int row) = 0;
+    virtual void drawBitmap(Bitmap* bitmap, int x, int y) = 0;
 
     // Font
     virtual int getCharWidth() = 0;

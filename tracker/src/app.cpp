@@ -1,8 +1,8 @@
 #include <string.h>
-#include "corelib_gfx.h"
-#include "corelib_font.h"
-#include "corelib_file.h"
-#include "common.h"
+#include "assets.h"
+#include "gfx.h"
+#include "font_manager.h"
+#include "file_system.h"
 #include "tracker_state.h"
 #include "audio_manager.h"
 #include "app.h"
@@ -10,7 +10,7 @@
 #include "chipnomad_lib.h"
 #include "project_utils.h"
 #include "waveform_display.h"
-#include "corelib_input.h"
+#include "input_utils.h"
 
 // Raw input callback for key mapping screen
 void (*inputRawCallback)(InputCode input, int isDown) = NULL;
@@ -28,33 +28,6 @@ static int tapCount;
 /** Frame counter for key repeats */
 static int keyRepeatCount;
 
-/**
-* @brief Convert InputCode to Key enum value
-*
-* @param input Input code
-* @return Key value or 0 if not recognized
-*/
-static int inputCodeToKey(InputCode input) {
-  // Logical buttons are not remappable
-  if (input.deviceType == InputDeviceType::logical) {
-    return input.code;
-  }
-
-  // Check key mapping for keyboard and gamepad inputs
-  for (int i = 0; i < 3; i++) {
-    if (appSettings.keyMapping.keyUp[i].deviceType == input.deviceType && appSettings.keyMapping.keyUp[i].code == input.code) return keyUp;
-    if (appSettings.keyMapping.keyDown[i].deviceType == input.deviceType && appSettings.keyMapping.keyDown[i].code == input.code) return keyDown;
-    if (appSettings.keyMapping.keyLeft[i].deviceType == input.deviceType && appSettings.keyMapping.keyLeft[i].code == input.code) return keyLeft;
-    if (appSettings.keyMapping.keyRight[i].deviceType == input.deviceType && appSettings.keyMapping.keyRight[i].code == input.code) return keyRight;
-    if (appSettings.keyMapping.keyEdit[i].deviceType == input.deviceType && appSettings.keyMapping.keyEdit[i].code == input.code) return keyEdit;
-    if (appSettings.keyMapping.keyOpt[i].deviceType == input.deviceType && appSettings.keyMapping.keyOpt[i].code == input.code) return keyOpt;
-    if (appSettings.keyMapping.keyPlay[i].deviceType == input.deviceType && appSettings.keyMapping.keyPlay[i].code == input.code) return keyPlay;
-    if (appSettings.keyMapping.keyShift[i].deviceType == input.deviceType && appSettings.keyMapping.keyShift[i].code == input.code) return keyShift;
-  }
-
-  // Return keyUnmapped for any input that doesn't match a mapping
-  return keyUnmapped;
-}
 
 static void applyLoopRange(void) {
   LoopRange range = screenGetLoopRange(currentScreen);
@@ -155,18 +128,30 @@ static void appInput(int isKeyDown, int keys, int tapCount) {
 
 static int autosaveCounter = 0;
 
-///////////////////////////////////////////////////////////////////////////////
-//
 
-/**
-* @brief Initialize the application: setup audio system, load auto-saved project, show the first screen
-*/
-void appSetup(void) {
-  // LOGD("--- ChipNomad started ---");
-  // Initialize default key mappings if not loaded from settings
-  if (appSettings.keyMapping.keyUp[0].deviceType == InputDeviceType::none) {
-    inputInitDefaultKeyMapping();
+// Initialize the application: setup audio system, load auto-saved project, show the first screen
+bool TrackerApp::setup() {
+  // Copy bundled assets (mobile builds only)
+  assets.copyAssets();
+
+  // Load settings
+  input.initDefaultKeyMapping(state.settings.keyMapping);
+  state.settings.loadSettings(file.getSettingsPath());
+
+  // Load custom font before gfx.setup so it uses the correct font
+  if (state.settings.fontPath[0] != '\0') {
+    Font* font = fontManager.load(state.settings.fontPath);
+    if (font) {
+      fontManager.setCurrent(font);
+    } else {
+      state.settings.fontPath[0] = '\0';
+      fontManager.setCurrent(nullptr);
+    }
   }
+
+  if (!gfx.setup(&state.settings.screenWidth, &state.settings.screenHeight)) return false;
+
+  // LOGD("--- ChipNomad started ---");
 
   // Keyboard input reset
   pressedButtons = 0;
@@ -176,119 +161,100 @@ void appSetup(void) {
   keyRepeatCount = 0;
 
   // Clear screen
-  gfxSetBgColor(appSettings.colorScheme.background);
-  gfxClear();
+  gfx.setBgColor(state.settings.colorTheme.background);
+  gfx.clear();
 
   // Initialize waveform display
   waveformDisplayInit();
 
-  // Create tracker state (owns the Project and the playback Engine)
-  chipnomadState = new TrackerState();
-
-  // Try to load an auto-saved project into our owned Project
-  if (!projectLoad(&chipnomadState->project, getAutosavePath())) {
+  // Try to load an auto-saved project
+  if (!projectLoad(&state.project, file.getAutosavePath())) {
     // Failed to load autosave, initialize empty project
-    projectInitAY(&chipnomadState->project);
+    projectInitAY(&state.project);
   }
 
   // Initialize all screen states
   screensInitAll();
 
-  // Create the engine and bind it to the loaded project. This also inits chips
-  // and playback state (replaces the old chipnomadInitChips + playbackInit).
-  chipnomadState->initEngine(appSettings.audioSampleRate, NULL);
+  // Create and configure the audio system
+  audio = new AudioManager(audioDevice, state.settings.audioSampleRate, state.settings.audioBufferSize, nullptr);
+  audio->engine.setProject(&state.project);
 
   // Set mix volume and dithering from settings
-  chipnomadState->engine->mixVolume = appSettings.mixVolume;
-  chipnomadState->engine->aySampleDithering = appSettings.aySampleDithering;
-  chipnomadState->engine->setQuality((ChipNomadQuality)appSettings.quality);
+  audio->engine.mixVolume = state.settings.mixVolume;
+  audio->engine.aySampleDithering = state.settings.aySampleDithering;
+  audio->engine.setQuality(state.settings.quality);
 
-  // Create the AudioManager now that the engine exists
-  audio = *new AudioManager(chipnomadState);
-
-  // Start the audio system
-  audio.start(appSettings.audioSampleRate, appSettings.audioBufferSize);
-  audio.resume();
+  audio->resume();
 
   screenSetup(&screenSong, 0);
+
+  return true;
 }
 
-/**
-* @brief Release all resources before closing the application
-*/
-void appCleanup(void) {
-  audio.stop();
-  delete chipnomadState;
-  chipnomadState = NULL;
+// Release all resources before closing the application
+void TrackerApp::teardown() {
+  gfx.teardown();
+  delete audio;
 }
 
-/**
-* @brief Main draw function. Draws playback status
-*/
-void appDraw(void) {
-  const ColorScheme cs = appSettings.colorScheme;
+// Main draw function. Draws playback status
+void TrackerApp::draw() {
+  const ColorTheme cs = state.settings.colorTheme;
 
   screenDraw();
 
-  if (!chipnomadState) return;
-
   // Tracks
   char digit[2] = "0";
-  for (int c = 0; c < chipnomadState->project.tracksCount; c++) {
+  for (int c = 0; c < state.project.tracksCount; c++) {
     // Draw mute/solo indicator to the left of track number
-    gfxSetFgColor(cs.textTitles);
-    if (audio.trackStates[c] == TrackState::muted) {
-      gfxPrint(34, 3 + c, "M");
-    } else if (audio.trackStates[c] == TrackState::solo) {
-      gfxPrint(34, 3 + c, "S");
+    gfx.setFgColor(cs.textTitles);
+    if (audio->trackStates[c] == TrackState::muted) {
+      gfx.print(34, 3 + c, "M");
+    } else if (audio->trackStates[c] == TrackState::solo) {
+      gfx.print(34, 3 + c, "S");
     } else {
-      gfxPrint(34, 3 + c, " "); // Clear indicator
+      gfx.print(34, 3 + c, " "); // Clear indicator
     }
 
     // Use warning color for track numbers if audio overload is active
-    int useOverloadColor = (chipnomadState->engine->audioOverload > 0);
-    gfxSetFgColor(useOverloadColor ? cs.warning :
-      (*pSongTrack == c ? cs.textDefault : cs.textInfo));
+    int useOverloadColor = (audio->engine.audioOverload > 0);
+    gfx.setFgColor(useOverloadColor ? cs.warning :
+      (*state.pSongTrack == c ? cs.textDefault : cs.textInfo));
     digit[0] = c + 49;
-    gfxPrint(35, 3 + c, digit);
+    gfx.print(35, 3 + c, digit);
 
     // Draw waveform between track number and note
-    gfxSetFgColor(cs.textInfo);
+    gfx.setFgColor(cs.textInfo);
     Bitmap* waveformBitmap = waveformDisplayGetBitmap(c);
     if (waveformBitmap) {
-      gfxDrawBitmap(waveformBitmap, 36, 3 + c);
+      gfx.drawBitmap(waveformBitmap, 36, 3 + c);
     }
 
-    uint8_t note = chipnomadState->engine->player.tracks[c].note.pitchFinal;
-    const char* noteStr = noteName(&chipnomadState->project, note);
+    uint8_t note = audio->engine.player.tracks[c].note.pitchFinal;
+    const char* noteStr = noteName(&state.project, note);
 
     // Use warning color if track warning is active
-    int useWarningColor = (appSettings.pitchConflictWarning && chipnomadState->engine->trackWarnings[c] > 0);
+    int useWarningColor = (state.settings.pitchConflictWarning && audio->engine.trackWarnings[c] > 0);
 
-    gfxSetFgColor(useWarningColor ? cs.warning :
+    gfx.setFgColor(useWarningColor ? cs.warning :
       (noteStr[0] == '-' ? cs.textEmpty : cs.textValue));
-      gfxPrint(37, 3 + c, noteStr);
+      gfx.print(37, 3 + c, noteStr);
   }
 }
 
-/**
-* @brief Main event handler
-*
-* @param event Event
-* @param value Event value
-* @param userdata Arbitraty event data
-*/
-void appOnEvent(MainLoopEventData eventData) {
+// Event handler
+void TrackerApp::onMainLoopEvent(MainLoopEvent event) {
   static int dPadMask = keyLeft | keyRight | keyUp | keyDown;
   static int doubleTapMask = keyEdit | keyOpt | keyUnmapped;
 
-  switch (eventData.type) {
-  case MainLoopEvent::keyDown: {
-    int value = inputCodeToKey(eventData.data.input);
+  switch (event.type) {
+  case MainLoopEventType::keyDown: {
+    int value = input.inputCodeToKey(event.data.input, state.settings.keyMapping);
 
     // Call raw input callback if set (for key mapping screen)
     if (inputRawCallback) {
-      inputRawCallback(eventData.data.input, 1);
+      inputRawCallback(event.data.input, 1);
     }
 
     if (value == keyEdit || value == keyOpt || value == keyShift) {
@@ -326,7 +292,7 @@ void appOnEvent(MainLoopEventData eventData) {
 
     break;
   }
-  case MainLoopEvent::keyUp: {
+  case MainLoopEventType::keyUp: {
     int value = inputCodeToKey(eventData.data.input);
 
     // Call raw input callback if set (for key mapping screen)
@@ -345,7 +311,7 @@ void appOnEvent(MainLoopEventData eventData) {
 
     break;
   }
-  case MainLoopEvent::tick:
+  case MainLoopEventType::tick:
     // Autosave
     if (++autosaveCounter >= AUTOSAVE_INTERVAL_FRAMES) {
       autosaveCounter = 0;
@@ -377,12 +343,12 @@ void appOnEvent(MainLoopEventData eventData) {
       }
     }
     break;
-  case MainLoopEvent::exit:
+  case MainLoopEventType::exit:
     // Auto-save the current project and settings on exit
     projectSave(&chipnomadState->project, getAutosavePath());
     settingsSave();
     break;
-  case MainLoopEvent::sleep:
+  case MainLoopEventType::sleep:
     // Pause audio when app goes to background
     audio.pause();
     if (chipnomadState) {
@@ -394,11 +360,11 @@ void appOnEvent(MainLoopEventData eventData) {
     // Save settings
     settingsSave();
     break;
-  case MainLoopEvent::wake:
+  case MainLoopEventType::wake:
     // Resume audio when app comes back to foreground
     audio.resume();
     break;
-  case MainLoopEvent::fullRedraw:
+  case MainLoopEventType::fullRedraw:
     // Force full screen redraw
     gfxSetBgColor(appSettings.colorScheme.background);
     gfxClear();
@@ -408,4 +374,10 @@ void appOnEvent(MainLoopEventData eventData) {
     }
     break;
   }
+}
+
+
+void clearNotePreview(void) {
+  // Clear the note preview area for all tracks (right side of screen)
+  gfxClearRect(35, 3, 5, PROJECT_MAX_TRACKS);
 }

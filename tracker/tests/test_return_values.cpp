@@ -1,5 +1,6 @@
 #include "doctest.h"
 #include "chipnomad_lib.h"
+#include "tracker_state.h"
 #include "project.h"
 #include "project_instruments.h"
 #include "project_utils.h"
@@ -16,15 +17,16 @@ extern "C" {
 extern int cInstrument;
 }
 
-extern ChipNomadState* chipnomadState;
+extern TrackerState* chipnomadState;
 
 TEST_SUITE("return_values") {
 
 struct ReturnValueFixture {
-  ChipNomadState* state;
+  TrackerState* state;
 
   ReturnValueFixture() {
-    state = chipnomadCreate();
+    // Project save/load + VTS import operate on the Project only; no Engine.
+    state = new TrackerState();
     projectInit(&state->project);
     chipnomadState = state;
     cInstrument = 0;
@@ -32,7 +34,7 @@ struct ReturnValueFixture {
   }
 
   ~ReturnValueFixture() {
-    chipnomadDestroy(state);
+    delete state;
     chipnomadState = nullptr;
   }
 };

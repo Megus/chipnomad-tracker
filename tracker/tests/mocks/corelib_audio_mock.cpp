@@ -1,11 +1,15 @@
-#include "corelib_audio.h"
 #include "chipnomad_lib.h"
+#include "tracker_state.h"
+#include "audio_mock.h"
 
-// NOTE: The old `chipnomadState` global (type ChipNomadState*) was removed here
-// as part of the Engine/Player refactor. Tests that needed it (copy_paste,
-// return_values, edit_common) are excluded until the main-app Project-ownership
-// migration re-homes that global.
+// The tracker global state. In the real app this lives in common.cpp (not part
+// of the test build), so the test binary provides its own definition here.
+// Tests that use it (copy_paste, return_values, edit_common) assign their own
+// TrackerState instance to it.
+TrackerState* chipnomadState = nullptr;
 
-int audioSetup(AudioCallback* audioCallback, int sampleRate, int bufferSize) { return 0; }
-void audioPause(int isPaused) {}
-void audioCleanup(void) {}
+// The audio device global. In the real app this is defined by the compiled
+// platform source (platforms/<platform>/corelib_audio.cpp), which is not part
+// of the test build, so the test binary provides its own mock instance.
+static AudioMock defaultAudioMock;
+IAudio* audioDevice = &defaultAudioMock;

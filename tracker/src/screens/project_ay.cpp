@@ -1,5 +1,5 @@
 #include "screen_project.h"
-#include "corelib_gfx.h"
+#include "gfx.h"
 #include <string.h>
 #include "audio_manager.h"
 #include "chipnomad_lib.h"

@@ -305,36 +305,6 @@ void GfxSDL12::updateScreen() {
 #endif
 }
 
-void GfxSDL12::drawCharBitmap(uint8_t* bitmap, int col, int row) {
-  int cx = CHAR_X(col);
-  int cy = CHAR_Y(row);
-  int charW = fontW * 8;
-#ifdef MIYOOPORTS_BUILD
-  for (int y = 0; y < fontH; y++) {
-    for (int x = 0; x < charW; x++) {
-      uint8_t alpha = bitmap[y * charW + x];
-      uint8_t r = bgR + ((fgR - bgR) * alpha) / 255;
-      uint8_t g = bgG + ((fgG - bgG) * alpha) / 255;
-      uint8_t b = bgB + ((fgB - bgB) * alpha) / 255;
-      uint32_t color = SDL_MapRGB(offscreenSurface->format, r, g, b);
-      ((Uint32 *)offscreenSurface->pixels)[(cy + y) * offscreenSurface->w + (cx + x)] = color;
-    }
-  }
-#else
-  for (int y = 0; y < fontH; y++) {
-    for (int x = 0; x < charW; x++) {
-      uint8_t alpha = bitmap[y * charW + x];
-      uint8_t r = bgR + ((fgR - bgR) * alpha) / 255;
-      uint8_t g = bgG + ((fgG - bgG) * alpha) / 255;
-      uint8_t b = bgB + ((fgB - bgB) * alpha) / 255;
-      uint32_t color = SDL_MapRGB(sdlScreen->format, r, g, b);
-      ((Uint32 *)sdlScreen->pixels)[(cy + y) * sdlScreen->w + (cx + x)] = color;
-    }
-  }
-#endif
-  isDirty = 1;
-}
-
 Bitmap* GfxSDL12::bitmapCreate(int widthChars, int heightChars) {
   Bitmap* bitmap = (Bitmap*)malloc(sizeof(Bitmap));
   if (!bitmap) return NULL;

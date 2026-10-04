@@ -1,6 +1,6 @@
 #include "screens.h"
 #include "common.h"
-#include "corelib_gfx.h"
+#include "gfx.h"
 #include "utils.h"
 #include "chipnomad_lib.h"
 #include "project_utils.h"
@@ -298,7 +298,7 @@ static int onEdit(int col, int row, CellEditAction action) {
   int handled = 0;
 
   int startCol, startRow, endCol, endRow;
-  getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+  getSelectionRange(&screen, &startCol, &startRow, &endCol, &endRow);
 
   if (action == CellEditAction::switchSelection) {
     return switchPhraseSelectionMode(&screen);
@@ -469,7 +469,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
       // If in selection mode and on FX type column, fill selection with selected FX
       if (screen.selectMode == 1 && (screen.cursorCol == 3 || screen.cursorCol == 5 || screen.cursorCol == 7)) {
         int startCol, startRow, endCol, endRow;
-        getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+        getSelectionRange(&screen, &startCol, &startRow, &endCol, &endRow);
 
         if (isSingleColumnSelection(&screen)) {
           uint8_t selectedFX = phraseRows[screen.cursorRow].fx[fxIdx][0];
@@ -492,7 +492,7 @@ static LoopRange getLoopRange(void) {
   LoopRange range = {0};
   if (screen.selectMode == 1) {
     int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    getSelectionRange(&screen, &startCol, &startRow, &endCol, &endRow);
     range.enabled = 1;
     range.level = 2;
     range.startSongRow = *pSongRow;

@@ -3,8 +3,8 @@
 #include "screens.h"
 #include "screen_settings.h"
 #include "chipnomad_lib.h"
-#include "corelib_gfx.h"
-#include "corelib_file.h"
+#include "gfx.h"
+#include "file_system.h"
 #include "utils.h"
 #include "copy_paste.h"
 
@@ -146,105 +146,6 @@ void screensInitAll(void) {
 // Spreadsheet screen functions
 //
 
-static void screenDrawSelection(ScreenData* screen, int drawOrErase, int col1, int row1, int col2, int row2) {
-  if (drawOrErase) {
-    gfxSetFgColor(appSettings.colorScheme.selection);
-  } else {
-    gfxSetFgColor(appSettings.colorScheme.background);
-  }
-
-  screen->drawSelection(col1, row1, col2, row2);
-}
-
-static void validateCursorBounds(ScreenData* screen) {
-  // Validate row bounds
-  if (screen->cursorRow >= screen->rows) {
-    screen->cursorRow = screen->rows - 1;
-  }
-  if (screen->cursorRow < 0) {
-    screen->cursorRow = 0;
-  }
-
-  // Validate column bounds for current row
-  int maxCol = screen->getColumnCount(screen->cursorRow) - 1;
-  if (screen->cursorCol > maxCol) {
-    screen->cursorCol = maxCol;
-  }
-  if (screen->cursorCol < 0) {
-    screen->cursorCol = 0;
-  }
-}
-
-void screenFullRedraw(ScreenData* screen) {
-  validateCursorBounds(screen);
-
-  if (screen->cursorRow < screen->topRow) {
-    screen->topRow = screen->cursorRow;
-  } else if (screen->cursorRow >= screen->topRow + 16) {
-    screen->topRow = screen->cursorRow - 15;
-  }
-
-  gfxSetBgColor(appSettings.colorScheme.background);
-  gfxClear();
-  drawScreenMap();
-
-  // Static content
-  screen->drawStatic();
-
-  // Cells
-  int selCol1 = 0, selCol2 = 0, selRow1 = 0, selRow2 = 0;
-  if (screen->selectMode == 1) {
-    getSelectionBounds(screen, &selCol1, &selRow1, &selCol2, &selRow2);
-  }
-
-  int maxRow = screen->topRow + 16;
-  if (maxRow > screen->rows) maxRow = screen->rows;
-
-  for (int row = screen->topRow; row < maxRow; row++) {
-    for (int col = 0; col < screen->getColumnCount(row); col++) {
-      CellState state = CellState::normal;
-      if (screen->selectMode == 1 && col >= selCol1 && col <= selCol2 && row >= selRow1 && row <= selRow2) {
-        state = CellState::selected;
-      } else if (screen->cursorCol == col && screen->cursorRow == row) {
-        state = CellState::focus;
-      }
-
-      screen->drawField(col, row, state);
-    }
-  }
-
-  // Row headers
-  for (int row = screen->topRow; row < maxRow; row++) {
-    screen->drawRowHeader(row, (screen->cursorRow == row) ? CellState::focus : CellState::normal);
-  }
-
-  // Column headers make sense only for spreadsheet-like screens, so we get the number of columns of the first row
-  for (int col = 0; col < screen->getColumnCount(0); col++) {
-    screen->drawColHeader(col, (screen->cursorCol == col) ? CellState::focus : CellState::normal);
-  }
-
-  // Cursor/selection
-  if (screen->selectMode == 1) {
-    screenDrawSelection(screen, 1, selCol1, selRow1, selCol2, selRow2);
-  } else {
-    screen->drawCursor(screen->cursorCol, screen->cursorRow);
-  }
-}
-
-void screenDrawOverlays(ScreenData* screen) {
-  if (screen->selectMode == 1) {
-    int selCol1, selRow1, selCol2, selRow2;
-    getSelectionBounds(screen, &selCol1, &selRow1, &selCol2, &selRow2);
-    screenDrawSelection(screen, 1, selCol1, selRow1, selCol2, selRow2);
-  }
-}
-
-
-// Cursor navigation within a spreadhseet-like page
-static int isCellValid(ScreenData* screen, int col, int row) {
-  if (screen->isCellValid) return screen->isCellValid(col, row);
-  return 1;
-}
 
 static void inputCursorCommon(ScreenData* screen, int keys, int* handled, int* redrawn) {
   if (keys == keyLeft) {
@@ -397,14 +298,14 @@ static int shallowClonePressed = 0;
 
 static void moveCursorToSelectionStart(ScreenData* screen) {
   int startCol, startRow, endCol, endRow;
-  getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
+  getSelectionRange(screen, &startCol, &startRow, &endCol, &endRow);
   screen->cursorCol = startCol;
   screen->cursorRow = startRow;
 }
 
 static void moveCursorBelowSelection(ScreenData* screen) {
   int startCol, startRow, endCol, endRow;
-  getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
+  getSelectionRange(screen, &startCol, &startRow, &endCol, &endRow);
   screen->cursorCol = startCol;
   // Move below selection, unless last row is in selection
   if (endRow < screen->rows - 1) {
@@ -416,7 +317,7 @@ static void moveCursorBelowSelection(ScreenData* screen) {
 
 static void redrawSelection(ScreenData* screen) {
   int startCol, startRow, endCol, endRow;
-  getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
+  getSelectionRange(screen, &startCol, &startRow, &endCol, &endRow);
   for (int r = startRow; r <= endRow; r++) {
     for (int c = startCol; c <= endCol; c++) {
       screen->drawField(c, r, CellState::selected);
@@ -511,7 +412,7 @@ static int inputSelectMode(ScreenData* screen, int keys, int tapCount) {
       int oldSelRow2 = max(screen->selectStartRow, oldCursorRow);
 
       int newSelCol1, newSelRow1, newSelCol2, newSelRow2;
-      getSelectionBounds(screen, &newSelCol1, &newSelRow1, &newSelCol2, &newSelRow2);
+      getSelectionRange(screen, &newSelCol1, &newSelRow1, &newSelCol2, &newSelRow2);
 
       // Erase old selection rectangle
       screenDrawSelection(screen, 0, oldSelCol1, oldSelRow1, oldSelCol2, oldSelRow2);
@@ -540,7 +441,7 @@ static int inputSelectMode(ScreenData* screen, int keys, int tapCount) {
     }
     // Draw new selection rectangle
     int selCol1, selRow1, selCol2, selRow2;
-    getSelectionBounds(screen, &selCol1, &selRow1, &selCol2, &selRow2);
+    getSelectionRange(screen, &selCol1, &selRow1, &selCol2, &selRow2);
     screenDrawSelection(screen, 1, selCol1, selRow1, selCol2, selRow2);
   }
 
@@ -578,41 +479,4 @@ void setCellColor(CellState state, int isEmpty, int hasContent) {
   } else {
     gfxSetFgColor(cs.textInfo);
   }
-}
-
-void getSelectionBounds(ScreenData* screen, int* startCol, int* startRow, int* endCol, int* endRow) {
-  *startCol = min(screen->selectStartCol, screen->cursorCol);
-  *endCol = max(screen->selectStartCol, screen->cursorCol);
-  *startRow = min(screen->selectStartRow, screen->cursorRow);
-  *endRow = max(screen->selectStartRow, screen->cursorRow);
-}
-
-int isSingleColumnSelection(ScreenData* screen) {
-  int startCol, startRow, endCol, endRow;
-  getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
-  return startCol == endCol;
-}
-
-LoopRange screenGetLoopRange(const AppScreen* screen) {
-  extern LoopRange songScreenGetLoopRange(void);
-  extern LoopRange chainScreenGetLoopRange(void);
-  extern LoopRange phraseScreenGetLoopRange(void);
-
-  if (screen == &screenSong) {
-    return songScreenGetLoopRange();
-  } else if (screen == &screenChain) {
-    return chainScreenGetLoopRange();
-  } else if (screen == &screenPhrase) {
-    return phraseScreenGetLoopRange();
-  }
-
-  LoopRange range = {0};
-  return range;
-}
-
-ScreenPlaybackLevel screenGetPlaybackLevel(const AppScreen* screen) {
-  if (screen && screen->getPlaybackLevel) {
-    return (ScreenPlaybackLevel)screen->getPlaybackLevel();
-  }
-  return ScreenPlaybackLevel::none;
 }

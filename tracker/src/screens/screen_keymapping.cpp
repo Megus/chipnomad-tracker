@@ -1,12 +1,12 @@
+#include <string.h>
+
 #include "screen_keymapping.h"
 #include "screen_settings.h"
-#include "corelib_gfx.h"
-#include "corelib_file.h"
-#include "common.h"
+#include "gfx.h"
+#include "file_system.h"
 #include "screens.h"
-#include "corelib_input.h"
+#include "input_utils.h"
 #include "app.h"
-#include <string.h>
 
 typedef enum {
   STATE_NAVIGATION,
@@ -81,7 +81,7 @@ static void drawStatic(void) {
 static void drawCursor(int col, int row) {
   if (row < 8) {
     InputCode* slot = getKeySlot(row, col);
-    int width = slot ? strlen(inputGetKeyName(*slot)) : 3;
+    int width = slot ? strlen(input->getKeyName(*slot)) : 3;
     gfxCursor(11 + col * 8, row + 2, width);
   } else if (row == 8) {
     gfxCursor(0, 11, 4);
@@ -101,7 +101,7 @@ static void drawField(int col, int row, CellState state) {
       } else {
         gfxSetFgColor(appSettings.colorScheme.textDefault);
       }
-      const char* keyName = inputGetKeyName(*slot);
+      const char* keyName = input->getKeyName(*slot);
       char trimmed[8];
       strncpy(trimmed, keyName, 7);
       trimmed[7] = '\0';
@@ -218,7 +218,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
 
   // 5 taps on any unmapped key resets to defaults
   if (isKeyDown && keys == keyUnmapped && tapCount >= 5) {
-    inputInitDefaultKeyMapping();
+    input->initDefaultKeyMapping(&appSettings);
     fullRedraw();
     return 1;
   }

@@ -1,6 +1,6 @@
 #include "screens.h"
 #include "common.h"
-#include "corelib_gfx.h"
+#include "gfx.h"
 #include "utils.h"
 #include "chipnomad_lib.h"
 #include "project_utils.h"

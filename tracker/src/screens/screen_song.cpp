@@ -1,7 +1,7 @@
 #include "screens.h"
 #include "screen_settings.h"
 #include "common.h"
-#include "corelib_gfx.h"
+#include "gfx.h"
 #include "utils.h"
 #include "chipnomad_lib.h"
 #include "project_utils.h"
@@ -254,7 +254,7 @@ static int editCell(int col, int row, CellEditAction action) {
 static int onEdit(int col, int row, CellEditAction action) {
   int handled = 0;
   int startCol, startRow, endCol, endRow;
-  getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+  getSelectionRange(&screen, &startCol, &startRow, &endCol, &endRow);
 
   if (action == CellEditAction::switchSelection) {
     return switchSongSelectionMode(&screen);
@@ -442,6 +442,15 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
     return screenInput(&screen, isKeyDown, keys, tapCount);
   }
 
+  // Moved from the global screen handling because it's the only screen with scrolling
+  /*
+  if (screen->cursorRow < screen->topRow) {
+    screen->topRow = screen->cursorRow;
+  } else if (screen->cursorRow >= screen->topRow + 16) {
+    screen->topRow = screen->cursorRow - 15;
+  }
+  */
+
   return handled;
 }
 
@@ -449,7 +458,7 @@ static LoopRange getLoopRange(void) {
   LoopRange range = {0};
   if (screen.selectMode == 1) {
     int startCol, startRow, endCol, endRow;
-    getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+    getSelectionRange(&screen, &startCol, &startRow, &endCol, &endRow);
     range.enabled = 1;
     range.level = 0;
     range.startSongRow = startRow;

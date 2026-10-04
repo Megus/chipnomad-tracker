@@ -338,7 +338,7 @@ static void selectAll(ScreenData* screen, int maxCol) {
 // Selection mode switching
 int switchPhraseSelectionMode(ScreenData* screen) {
   int startCol, startRow, endCol, endRow;
-  getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
+  getSelectionRange(screen, &startCol, &startRow, &endCol, &endRow);
 
   if (isSingleCell(startCol, startRow, endCol, endRow)) {
     selectColumn(screen);
@@ -357,7 +357,7 @@ int switchPhraseSelectionMode(ScreenData* screen) {
 
 int switchTableSelectionMode(ScreenData* screen) {
   int startCol, startRow, endCol, endRow;
-  getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
+  getSelectionRange(screen, &startCol, &startRow, &endCol, &endRow);
 
   if (isSingleCell(startCol, startRow, endCol, endRow)) {
     selectColumn(screen);
@@ -376,7 +376,7 @@ int switchTableSelectionMode(ScreenData* screen) {
 
 int switchChainSelectionMode(ScreenData* screen) {
   int startCol, startRow, endCol, endRow;
-  getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
+  getSelectionRange(screen, &startCol, &startRow, &endCol, &endRow);
 
   if (isSingleCell(startCol, startRow, endCol, endRow)) {
     selectColumn(screen);
@@ -395,7 +395,7 @@ int switchChainSelectionMode(ScreenData* screen) {
 
 int switchGrooveSelectionMode(ScreenData* screen) {
   int startCol, startRow, endCol, endRow;
-  getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
+  getSelectionRange(screen, &startCol, &startRow, &endCol, &endRow);
 
   if (isSingleCell(startCol, startRow, endCol, endRow)) {
     selectAll(screen, 0);
@@ -406,7 +406,7 @@ int switchGrooveSelectionMode(ScreenData* screen) {
 
 int switchSongSelectionMode(ScreenData* screen) {
   int startCol, startRow, endCol, endRow;
-  getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
+  getSelectionRange(screen, &startCol, &startRow, &endCol, &endRow);
 
   if (isSingleCell(startCol, startRow, endCol, endRow)) {
     selectRow(screen, screen->getColumnCount(screen->selectAnchorRow) - 1);

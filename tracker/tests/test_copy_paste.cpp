@@ -1,5 +1,6 @@
 #include "doctest.h"
 #include "chipnomad_lib.h"
+#include "tracker_state.h"
 #include "copy_paste.h"
 #include "project_instruments.h"
 
@@ -9,15 +10,16 @@
 // Stubs for symbols required by copy_paste.cpp but not used in these tests
 int cInstrument = 0;
 
-void getSelectionBounds(ScreenData*, int*, int*, int*, int*) {}
+void getSelectionRange(ScreenData*, int*, int*, int*, int*) {}
 
 TEST_SUITE("copy_paste") {
 
 struct CopyPasteFixture {
-  ChipNomadState* state;
+  TrackerState* state;
 
   CopyPasteFixture() {
-    state = chipnomadCreate();
+    // These tests exercise copy/paste on the Project only; no Engine needed.
+    state = new TrackerState();
     projectInit(&state->project);
     chipnomadState = state;
     cInstrument = 0;
@@ -31,7 +33,7 @@ struct CopyPasteFixture {
         getInstrumentFunctions(InstrumentType::AYSample).free(&state->project.instruments[i]);
       }
     }
-    chipnomadDestroy(state);
+    delete state;
     chipnomadState = nullptr;
   }
 

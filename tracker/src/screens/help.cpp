@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include "utils.h"
 #include "chipnomad_lib.h"
-#include "corelib_gfx.h"
+#include "gfx.h"
 #include "common.h"
 #include "misc.h"
 

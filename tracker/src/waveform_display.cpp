@@ -1,5 +1,5 @@
 #include "waveform_display.h"
-#include "corelib_gfx.h"
+#include "gfx.h"
 #include "chipnomad_lib.h"
 #include "playback_chips.h"
 #include "common.h"
