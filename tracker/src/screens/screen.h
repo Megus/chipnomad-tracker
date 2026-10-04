@@ -46,14 +46,12 @@ enum class ScreenMode : int {
 };
 
 // Base Screen class. Instances of main screens are created once on app launch.
-class Screen {
+class Screen : EventHandler {
+  ///////////////////////////////////////////////////////////////////////////
+  // Methods to override in sub-classes
   public:
     Screen(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx):
-      state(state), events(dispatcher), gfx(gfx) {};
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Methods to override in sub-classes
-
+      state(state), events(dispatcher), gfx(gfx), optPressed(0), shallowClonePressed(0) {};
     virtual ~Screen() = default;
 
     virtual void setup(int input) {}; // Setup screen before it's displayed
@@ -74,14 +72,26 @@ class Screen {
     virtual void drawColHeader(int col, CellState state) {}; // Draw column header
     virtual void drawCell(int col, int row, CellState state) {}; // Draw a cell
     virtual bool isRowVisible(int row) { return true; }; // Is this row visible on the screen?
+    virtual bool adjustVerticalScroll(bool pageJump) { return false; }; // Adjust vertical scroll, return true if the screen needs to be scrolled
 
     virtual bool onEdit(int col, int row, CellEditAction action) {}; // Handle edit action
     virtual bool onInput(int isKeyDown, int keys, int tapCount) { return false; }; // Screen input handler
     virtual bool onNavigationInput(int isKeyDown, int keys, int tapCount) { return false; }; // Navigation input handler. Convenience function
     virtual bool onRawInput(int isKeyDown, InputCode keyCode) { return false; }; // Raw input handler (used at Key Mapping screen)
 
-    ///////////////////////////////////////////////////////////////////////////
-    // Common screen properties and methods
+    virtual bool onEvent(Event event) override { return false; }; // Handle events from the EventDispatcher
+
+  protected:
+
+  ///////////////////////////////////////////////////////////////////////////
+  // Common screen properties and methods
+  public:
+    void fullRedraw(); // Redraw the whole screen: static, headers, cells, overlay
+
+  protected:
+    TrackerState& state;
+    EventDispatcher& events;
+    Gfx& gfx;
 
     ScreenMode mode; // Edit / Select mode
     int cursorRow; // Cursor row
@@ -91,6 +101,9 @@ class Screen {
     int selectAnchorRow; // Where selection mode was entered
     int selectAnchorCol; // Where selection mode was entered
 
+    int optPressed; // Used for input handling. TODO: Can it be removed/simplified?
+    int shallowClonePressed; // Used for input handling. TODO: Can it be removed/simplified?
+
     inline ColorTheme& theme(); // Convenience function to get color theme from TrackerState
 
     Rect getSelectionRange(); // Get selection range between cursor and selection start cell
@@ -99,12 +112,18 @@ class Screen {
 
     void validateCursorPosition(); // Ensure that cursor is in a valid cell
     void setCellColor(CellState state, int isEmpty, int hasContent); // Set cell color based on state and content
-    void fullRedraw(); // Redraw the whole screen: static, headers, cells, overlay
 
-  protected:
-    TrackerState& state;
-    EventDispatcher& events;
-    Gfx& gfx;
+    bool commonInputHandler(int isKeyDown, int keys, int tapCount); // Common input handler to call from onInput()
+
+    void moveCursorToSelectionStart(); // Move cursor to the start of the selection (top-left corner)
+    void moveCursorBelowSelection(); // Move cursor below the selection (or to the last row if selection is at the bottom)
+    void drawSelectedCells(); // Draw all selected cells
+
+    bool inputEditMode(int keys, int tapCount); // Handles common input in edit mode
+    bool inputSelectMode(int keys, int tapCount);
+    void inputCursor(int keys, bool& handled, bool& needsRedraw); // Handles standard cursor movement (left, right, up, down)
+
+    void showMessage(bool timed, const char* format, ...); // Show screen message (dispatches event)
 };
 
 #endif // __SCREEN_H__

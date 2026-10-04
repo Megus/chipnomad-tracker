@@ -20,11 +20,13 @@ struct Event {
 };
 
 class EventHandler {
-  virtual bool onEvent(Event event) = 0;
+  public:
+    virtual bool onEvent(Event event) = 0;
 };
 
 class EventDispatcher {
-  virtual void dispatch(Event event) = 0;
+  public:
+    virtual void dispatch(Event event) = 0;
 };
 
 #endif // __EVENTS_H__
