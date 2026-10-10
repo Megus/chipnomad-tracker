@@ -3,6 +3,8 @@ title: ChipNomad
 description: ChipNomad - a chiptune tracker for handheld consoles
 ---
 
+{{< youtube hzf-BgJmqYU >}}
+
 **ChipNomad** is a chiptune tracker for handheld consoles ([Anbernic](https://anbernic.com), [TrimUI](https://trimui.net), [Retroid](https://www.goretroid.com), etc) and desktop platforms.
 It is heavily inspired by [LSDJ](https://www.littlesounddj.com) and [Dirtywave M8 tracker](https://dirtywave.com).
 ChipNomad emulates real sound chips and allows making music that can be played on retro platforms such as ZX Spectrum, Amstrad CPC, Atari ST, etc. It also gives more freedom within reasonable limitations inspired by those platforms.
@@ -31,8 +33,6 @@ ChipNomad is available for multiple platforms:
 - macOS
 - Linux (x86 64-bit) — can be run on Steam Deck
 - Android — handhelds like Retroid Pocket 5, smartphones, and tablets
-
-{{< youtube hzf-BgJmqYU >}}
 
 ## GenAI Disclaimer
 
