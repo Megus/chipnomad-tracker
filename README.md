@@ -27,7 +27,7 @@ I stopped and **I will _never_ use any GenAI tools for ChipNomad development aga
 The use was mostly limited to routine tasks such as bootstrapping UI for new screens, unit tests, and file parsers.
 The core of ChipNomad was always written without any AI usage. This was an experiment to explore the possibilities
 of GenAI coding tools, and I have to admit that it went for too long. I'm fully aware of the enviromental impact,
-ethical issues, and the sentiment of creative community towards GenAI. As the project evolves, all AI-assisted
+ethical issues, and the sentiment of the creative community towards GenAI. As the project evolves, all AI-assisted
 code will be eventually removed or rewritten.
 
 ## Acknowledgements
