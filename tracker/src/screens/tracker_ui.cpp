@@ -141,8 +141,6 @@ void screensInitAll(void) {
 }
 
 
-///////////////////////////////////////////////////////////////////////////////
-//
-// Spreadsheet screen functions
-//
-
+bool TrackerUI::onEvent(Event event) {
+  return false;
+}

@@ -6,6 +6,7 @@
 #include "chipnomad_lib.h"
 #include "tracker_state.h"
 #include "events.h"
+#include "edit_common.h"
 
 enum class ScreenPlaybackLevel : int {
   none,
@@ -20,25 +21,6 @@ enum class CellState : int {
   selected = 2,
 };
 
-enum class CellEditAction : int {
-  clear,
-  tap,
-  doubleTap,
-  increase,
-  decrease,
-  increaseBig,
-  decreaseBig,
-  shallowClone,
-  deepClone,
-  copy,
-  cut,
-  paste,
-  switchSelection,
-  multiIncrease,
-  multiDecrease,
-  multiIncreaseBig,
-  multiDecreaseBig
-};
 
 enum class ScreenMode : int {
   edit,
@@ -75,9 +57,7 @@ class Screen : EventHandler {
     virtual bool adjustVerticalScroll(bool pageJump) { return false; }; // Adjust vertical scroll, return true if the screen needs to be scrolled
 
     virtual bool onEdit(int col, int row, CellEditAction action) {}; // Handle edit action
-    virtual bool onInput(int isKeyDown, int keys, int tapCount) { return false; }; // Screen input handler
-    virtual bool onNavigationInput(int isKeyDown, int keys, int tapCount) { return false; }; // Navigation input handler. Convenience function
-    virtual bool onRawInput(int isKeyDown, InputCode keyCode) { return false; }; // Raw input handler (used at Key Mapping screen)
+    virtual bool onNavigationInput(InputEventData eventData) { return false; }; // Navigation input handler. Convenience function
 
     virtual bool onEvent(Event event) override { return false; }; // Handle events from the EventDispatcher
 
@@ -113,7 +93,7 @@ class Screen : EventHandler {
     void validateCursorPosition(); // Ensure that cursor is in a valid cell
     void setCellColor(CellState state, int isEmpty, int hasContent); // Set cell color based on state and content
 
-    bool commonInputHandler(int isKeyDown, int keys, int tapCount); // Common input handler to call from onInput()
+    bool commonInputHandler(InputEventData eventData); // Common input handler to call from onInput()
 
     void moveCursorToSelectionStart(); // Move cursor to the start of the selection (top-left corner)
     void moveCursorBelowSelection(); // Move cursor below the selection (or to the last row if selection is at the bottom)

@@ -1,4 +1,4 @@
-#include "screens.h"
+#include "edit_common.h"
 #include "chipnomad_lib.h"
 
 CellEditAction convertMultiAction(CellEditAction action) {
@@ -248,7 +248,7 @@ int edit16withOverflow(CellEditAction action, uint16_t* value, uint16_t bigStep,
   return 0;
 }
 
-int applyPhraseRotation(int phraseIdx, int startRow, int endRow, int direction) {
+int applyPhraseRotation(Phrase& phrase,int startRow, int endRow, int direction) {
   if (startRow == endRow) return 0;
 
   PhraseRow* rows = chipnomadState->project.phrases[phraseIdx].rows;

@@ -153,7 +153,11 @@ void Screen::drawSelectedCells() {
 }
 
 
-bool Screen::commonInputHandler(int isKeyDown, int keys, int tapCount) {
+bool Screen::commonInputHandler(InputEventData eventData) {
+  bool isKeyDown = eventData.isKeyDown;
+  int keys = eventData.keys;
+  int tapCount = eventData.tapCount;
+
   if (!isKeyDown && keys != 0) return false; // Discard key up events unless no buttons are pressed (for existing logic that expects keys == 0)
   return (mode == ScreenMode::select) ? inputSelectMode(keys, tapCount) : inputEditMode(keys, tapCount);
 }
@@ -428,5 +432,5 @@ void Screen::showMessage(bool timed, const char* format, ...) {
   vsnprintf(messageBuffer, 41, format, args);
   va_end(args);
 
-  // TODO: Dispatch message event
+  events.dispatch({.type = EventType::showMessage, .stringValue = std::string(messageBuffer)});
 }

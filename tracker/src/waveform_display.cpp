@@ -2,7 +2,6 @@
 #include "gfx.h"
 #include "chipnomad_lib.h"
 #include "playback_chips.h"
-#include "common.h"
 #include "tracker_state.h"
 #include <string.h>
 #include <stdlib.h>
