@@ -2,6 +2,13 @@
 
 This directory contains the main ChipNomad tracker application.
 
+ChipNomad is written in C/C++ and can be ported to any platform that satisfies these requirements:
+
+- Display capable of 40x20 characters
+- 8 buttons: LEFT, RIGHT, UP, DOWN, A, B, START, SELECT
+- Stereo 16-bit audio output
+- CPU capable of running chip emulation or a platform with real chips
+
 ## Quick Start
 
 ```bash
@@ -60,7 +67,7 @@ build-windows.bat  # On Windows with MinGW
 make PortMaster-deploy
 ```
 
-#### RG35xx Specific
+#### Old RG35xx with Garlic OS
 ```bash
 make RG35xx-deploy
 ```
