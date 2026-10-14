@@ -123,13 +123,13 @@ static void drawField(int col, int row, CellState state) {
 }
 
 static void drawRowHeader(int row, CellState state) {
-  const ColorScheme cs = appSettings.colorScheme;
+  const ColorTheme cs = appSettings.colorScheme;
   gfxSetFgColor((state == CellState::focus) ? cs.textDefault : ((row & 3) == 0 ? cs.textValue : cs.textInfo));
   gfxPrintf(1, 3 + row, "%X", row);
 }
 
 static void drawColHeader(int col, CellState state) {
-  const ColorScheme cs = appSettings.colorScheme;
+  const ColorTheme cs = appSettings.colorScheme;
   gfxSetFgColor((state == CellState::focus) ? cs.textDefault : cs.textInfo);
 
   switch (col) {
@@ -520,4 +520,25 @@ const AppScreen screenPhrase = {
 
 LoopRange phraseScreenGetLoopRange(void) {
   return getLoopRange();
+}
+
+
+
+int switchPhraseSelectionMode(ScreenData* screen) {
+  int startCol, startRow, endCol, endRow;
+  getSelectionRange(screen, &startCol, &startRow, &endCol, &endRow);
+
+  if (isSingleCell(startCol, startRow, endCol, endRow)) {
+    selectColumn(screen);
+    return 0;
+  }
+  if (isFullColumn(startCol, startRow, endCol, endRow)) {
+    selectRow(screen, 8);
+    return 0;
+  }
+  if (isFullRow(startRow, endRow, startCol, endCol, 8)) {
+    selectAll(screen, 8);
+    return 0;
+  }
+  return 1;
 }

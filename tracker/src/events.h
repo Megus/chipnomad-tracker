@@ -12,6 +12,7 @@ enum class EventType {
   playPhrase,
   playPhraseRow,
   stopPlayback,
+  redrawScreen,
   switchScreen,
   pushScreen,
   popScreen,

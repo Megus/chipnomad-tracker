@@ -22,7 +22,7 @@ void MainLoopSDL12::run(App& app) {
       if (event.type == SDL_QUIT) {
         eventData.type = MainLoopEventType::exit;
         eventData.data.value = 0;
-        app.onEvent(eventData);
+        app.onMainLoopEvent(eventData);
         return;
       } else if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
         if (event.key.keysym.sym == BTN_MENU) {
@@ -30,19 +30,20 @@ void MainLoopSDL12::run(App& app) {
         } else if (menu && event.type == SDL_KEYDOWN && event.key.keysym.sym == BTN_X) {
           eventData.type = MainLoopEventType::exit;
           eventData.data.value = 0;
-          app.onEvent(eventData);
+          app.onMainLoopEvent(eventData);
           return;
         } else {
           eventData.type = event.type == SDL_KEYDOWN ? MainLoopEventType::keyDown : MainLoopEventType::keyUp;
           eventData.data.input = (InputCode){InputDeviceType::keyboard, event.key.keysym.sym};
-          app.onEvent(eventData);
+          app.onMainLoopEvent(eventData);
         }
       }
     }
 
+    // Send frame tick event
     eventData.type = MainLoopEventType::tick;
     eventData.data.value = 0;
-    app.onEvent(eventData);
+    app.onMainLoopEvent(eventData);
 
     app.draw();
     gfx.updateScreen();

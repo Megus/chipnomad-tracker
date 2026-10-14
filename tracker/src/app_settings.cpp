@@ -108,6 +108,7 @@ bool AppSettings::saveSettings(const char* path) {
 
 bool AppSettings::loadSettings(const char* path) {
   char lineBuffer[1024];
+  int tmp;
 
   FILE* file = fopen(path, "r");
   if (file == NULL) return false;
@@ -130,7 +131,8 @@ bool AppSettings::loadSettings(const char* path) {
     } else if (strncmp(line, "audioBufferSize: ", 17) == 0) {
       sscanf(line + 17, "%d", &audioBufferSize);
     } else if (strncmp(line, "aySampleDithering: ", 19) == 0) {
-      sscanf(line + 19, "%d", &aySampleDithering);
+      sscanf(line + 19, "%d", &tmp);
+      aySampleDithering = tmp != 0;
     } else if (strncmp(line, "doubleTapFrames: ", 17) == 0) {
       sscanf(line + 17, "%d", &doubleTapFrames);
     } else if (strncmp(line, "keyRepeatDelay: ", 16) == 0) {
@@ -140,9 +142,10 @@ bool AppSettings::loadSettings(const char* path) {
     } else if (strncmp(line, "mixVolume: ", 11) == 0) {
       sscanf(line + 11, "%f", &mixVolume);
     } else if (strncmp(line, "quality: ", 9) == 0) {
-      sscanf(line + 9, "%d", &quality);
+      sscanf(line + 9, "%d", (int *)&quality);
     } else if (strncmp(line, "pitchConflictWarning: ", 22) == 0) {
-      sscanf(line + 22, "%d", &pitchConflictWarning);
+      sscanf(line + 22, "%d", &tmp);
+      pitchConflictWarning = tmp != 0;
     } else if (strncmp(line, "keyUp: ", 7) == 0) {
       sscanf(line + 7, "%d,%d,%d", &keyMapping.keyUp[0].code, &keyMapping.keyUp[1].code, &keyMapping.keyUp[2].code);
     } else if (strncmp(line, "keyDown: ", 9) == 0) {
@@ -160,21 +163,21 @@ bool AppSettings::loadSettings(const char* path) {
     } else if (strncmp(line, "keyShift: ", 10) == 0) {
       sscanf(line + 10, "%d,%d,%d", &keyMapping.keyShift[0].code, &keyMapping.keyShift[1].code, &keyMapping.keyShift[2].code);
     } else if (strncmp(line, "keyUpType: ", 11) == 0) {
-      sscanf(line + 11, "%d,%d,%d", &keyMapping.keyUp[0].deviceType, &keyMapping.keyUp[1].deviceType, &keyMapping.keyUp[2].deviceType);
+      sscanf(line + 11, "%d,%d,%d", (int *)&keyMapping.keyUp[0].deviceType, (int *)&keyMapping.keyUp[1].deviceType, (int *)&keyMapping.keyUp[2].deviceType);
     } else if (strncmp(line, "keyDownType: ", 13) == 0) {
-      sscanf(line + 13, "%d,%d,%d", &keyMapping.keyDown[0].deviceType, &keyMapping.keyDown[1].deviceType, &keyMapping.keyDown[2].deviceType);
+      sscanf(line + 13, "%d,%d,%d", (int *)&keyMapping.keyDown[0].deviceType, (int *)&keyMapping.keyDown[1].deviceType, (int *)&keyMapping.keyDown[2].deviceType);
     } else if (strncmp(line, "keyLeftType: ", 13) == 0) {
-      sscanf(line + 13, "%d,%d,%d", &keyMapping.keyLeft[0].deviceType, &keyMapping.keyLeft[1].deviceType, &keyMapping.keyLeft[2].deviceType);
+      sscanf(line + 13, "%d,%d,%d", (int *)&keyMapping.keyLeft[0].deviceType, (int *)&keyMapping.keyLeft[1].deviceType, (int *)&keyMapping.keyLeft[2].deviceType);
     } else if (strncmp(line, "keyRightType: ", 14) == 0) {
-      sscanf(line + 14, "%d,%d,%d", &keyMapping.keyRight[0].deviceType, &keyMapping.keyRight[1].deviceType, &keyMapping.keyRight[2].deviceType);
+      sscanf(line + 14, "%d,%d,%d", (int *)&keyMapping.keyRight[0].deviceType, (int *)&keyMapping.keyRight[1].deviceType, (int *)&keyMapping.keyRight[2].deviceType);
     } else if (strncmp(line, "keyEditType: ", 13) == 0) {
-      sscanf(line + 13, "%d,%d,%d", &keyMapping.keyEdit[0].deviceType, &keyMapping.keyEdit[1].deviceType, &keyMapping.keyEdit[2].deviceType);
+      sscanf(line + 13, "%d,%d,%d", (int *)&keyMapping.keyEdit[0].deviceType, (int *)&keyMapping.keyEdit[1].deviceType, (int *)&keyMapping.keyEdit[2].deviceType);
     } else if (strncmp(line, "keyOptType: ", 12) == 0) {
-      sscanf(line + 12, "%d,%d,%d", &keyMapping.keyOpt[0].deviceType, &keyMapping.keyOpt[1].deviceType, &keyMapping.keyOpt[2].deviceType);
+      sscanf(line + 12, "%d,%d,%d", (int *)&keyMapping.keyOpt[0].deviceType, (int *)&keyMapping.keyOpt[1].deviceType, (int *)&keyMapping.keyOpt[2].deviceType);
     } else if (strncmp(line, "keyPlayType: ", 13) == 0) {
-      sscanf(line + 13, "%d,%d,%d", &keyMapping.keyPlay[0].deviceType, &keyMapping.keyPlay[1].deviceType, &keyMapping.keyPlay[2].deviceType);
+      sscanf(line + 13, "%d,%d,%d", (int *)&keyMapping.keyPlay[0].deviceType, (int *)&keyMapping.keyPlay[1].deviceType, (int *)&keyMapping.keyPlay[2].deviceType);
     } else if (strncmp(line, "keyShiftType: ", 14) == 0) {
-      sscanf(line + 14, "%d,%d,%d", &keyMapping.keyShift[0].deviceType, &keyMapping.keyShift[1].deviceType, &keyMapping.keyShift[2].deviceType);
+      sscanf(line + 14, "%d,%d,%d", (int *)&keyMapping.keyShift[0].deviceType, (int *)&keyMapping.keyShift[1].deviceType, (int *)&keyMapping.keyShift[2].deviceType);
     } else if (strncmp(line, "colorBackground: ", 17) == 0) {
       sscanf(line + 17, "0x%x", &colorTheme.background);
     } else if (strncmp(line, "colorTextEmpty: ", 16) == 0) {

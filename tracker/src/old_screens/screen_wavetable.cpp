@@ -158,7 +158,7 @@ static int getColumnCount(int row) {
 }
 
 static void drawStatic(void) {
-  const ColorScheme cs = appSettings.colorScheme;
+  const ColorTheme cs = appSettings.colorScheme;
 
   // Title
   gfxSetFgColor(cs.textTitles);
@@ -281,7 +281,7 @@ static void drawCursor(int col, int row) {
 }
 
 static void drawField(int col, int row, CellState state) {
-  const ColorScheme cs = appSettings.colorScheme;
+  const ColorTheme cs = appSettings.colorScheme;
 
   if (row == 0) {
     // Buttons row - need to redraw to clear cursor
@@ -459,14 +459,14 @@ static int inputScreenNavigation(int keys, int tapCount) {
   } else if (keys == (keyShift | keyOpt)) {
     // Copy wavetable (only when editing wavetable data, not on button row)
     if (screen.cursorRow == 1) {
-      copyWavetable(wavetableIdx);
+      copyAYWavetable(wavetableIdx);
       screenMessage(MESSAGE_TIME, "Copied wavetable");
     }
     return 1;
   } else if (keys == (keyShift | keyEdit)) {
     // Paste wavetable (only when editing wavetable data, not on button row)
     if (screen.cursorRow == 1) {
-      pasteWavetable(wavetableIdx);
+      pasteAYWavetable(wavetableIdx);
       projectModified = 1;
       fullRedraw();
     }

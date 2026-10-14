@@ -2,14 +2,15 @@
 #include "pitch_table_utils.h"
 #include <string.h>
 
-void projectInitAY(Project* project) {
+void projectInitAY(chipnomad::Project* project) {
+  using namespace chipnomad;
   projectInit(project);
 
   project->linearPitch = 1; // Default to linear pitch table
   project->tickRate = 50;
   project->chipType = ChipType::AY;
   project->chipsCount = 1;
-  project->chipSetup.ay = (struct ChipSetupAY){
+  project->chipSetup.ay = {
     .clock = 1773400,
     .isYM = 0,
     .stereoMode = StereoModeAY::ABC,
@@ -24,7 +25,7 @@ void projectInitAY(Project* project) {
 }
 
 // Does chain have notes?
-int8_t chainHasNotes(Project* project, int chain) {
+int8_t chainHasNotes(chipnomad::Project* project, int chain) {
   int8_t v = 0;
   for (int c = 0; c < 16; c++) {
     int phrase = project->chains[chain].rows[c].phrase;
@@ -36,7 +37,7 @@ int8_t chainHasNotes(Project* project, int chain) {
 }
 
 // Does phrase have notes?
-int8_t phraseHasNotes(Project* project, int phrase) {
+int8_t phraseHasNotes(chipnomad::Project* project, int phrase) {
   int8_t v = 0;
   for (int c = 0; c < 16; c++) {
     if (project->phrases[phrase].rows[c].note < PROJECT_MAX_PITCHES) {
@@ -49,7 +50,8 @@ int8_t phraseHasNotes(Project* project, int phrase) {
 }
 
 // Instrument name
-const char* instrumentName(Project* project, uint8_t instrument) {
+const char* instrumentName(chipnomad::Project* project, uint8_t instrument) {
+  using namespace chipnomad;
   if (project->instruments[instrument].type == InstrumentType::none) return "None";
   if (strlen(project->instruments[instrument].name) == 0) {
     return instrumentTypeName(project->instruments[instrument].type);
@@ -59,7 +61,8 @@ const char* instrumentName(Project* project, uint8_t instrument) {
 }
 
 // Instrument type name
-const char* instrumentTypeName(InstrumentType type) {
+const char* instrumentTypeName(chipnomad::InstrumentType type) {
+  using namespace chipnomad;
   switch (type) {
     case InstrumentType::AY1:
       return "AY Classic";
@@ -75,7 +78,7 @@ const char* instrumentTypeName(InstrumentType type) {
 }
 
 // Get first note used with an instrument in the project
-uint8_t instrumentFirstNote(Project* project, uint8_t instrument) {
+uint8_t instrumentFirstNote(chipnomad::Project* project, uint8_t instrument) {
   // Search through all phrases for first use of this instrument
   for (int p = 0; p < PROJECT_MAX_PHRASES; p++) {
     if (phraseIsEmpty(project, p)) continue;
@@ -90,7 +93,7 @@ uint8_t instrumentFirstNote(Project* project, uint8_t instrument) {
 }
 
 // Swap instrument references in all phrases
-static void instrumentSwapReferences(Project* project, uint8_t inst1, uint8_t inst2) {
+static void instrumentSwapReferences(chipnomad::Project* project, uint8_t inst1, uint8_t inst2) {
   for (int p = 0; p < PROJECT_MAX_PHRASES; p++) {
     for (int row = 0; row < 16; row++) {
       uint8_t inst = project->phrases[p].rows[row].instrument;
@@ -104,7 +107,8 @@ static void instrumentSwapReferences(Project* project, uint8_t inst1, uint8_t in
 }
 
 // Swap two instruments and their default tables
-void instrumentSwap(Project* project, uint8_t inst1, uint8_t inst2) {
+void instrumentSwap(chipnomad::Project* project, uint8_t inst1, uint8_t inst2) {
+  using namespace chipnomad;
   if (inst1 >= PROJECT_MAX_INSTRUMENTS || inst2 >= PROJECT_MAX_INSTRUMENTS || inst1 == inst2) {
     return;
   }
@@ -124,7 +128,7 @@ void instrumentSwap(Project* project, uint8_t inst1, uint8_t inst2) {
 }
 
 // Check if chain is used in the song
-static int chainIsUsedInSong(Project* project, int chainIdx) {
+static int chainIsUsedInSong(chipnomad::Project* project, int chainIdx) {
   for (int row = 0; row < PROJECT_MAX_LENGTH; row++) {
     for (int col = 0; col < PROJECT_MAX_TRACKS; col++) {
       if (project->song[row][col] == chainIdx) return 1;
@@ -134,7 +138,7 @@ static int chainIsUsedInSong(Project* project, int chainIdx) {
 }
 
 // Check if phrase is used in any chain
-static int phraseIsUsedInChains(Project* project, int phraseIdx) {
+static int phraseIsUsedInChains(chipnomad::Project* project, int phraseIdx) {
   for (int c = 0; c < PROJECT_MAX_CHAINS; c++) {
     for (int row = 0; row < 16; row++) {
       if (project->chains[c].rows[row].phrase == phraseIdx) return 1;
@@ -144,7 +148,7 @@ static int phraseIsUsedInChains(Project* project, int phraseIdx) {
 }
 
 // Check if instrument is used in any phrase
-static int instrumentIsUsedInPhrases(Project* project, int instrumentIdx) {
+static int instrumentIsUsedInPhrases(chipnomad::Project* project, int instrumentIdx) {
   for (int p = 0; p < PROJECT_MAX_PHRASES; p++) {
     for (int row = 0; row < 16; row++) {
       if (project->phrases[p].rows[row].instrument == instrumentIdx) return 1;
@@ -154,7 +158,7 @@ static int instrumentIsUsedInPhrases(Project* project, int instrumentIdx) {
 }
 
 // Find empty chain slot (empty and not used in project)
-int findEmptyChain(Project* project, int start) {
+int findEmptyChain(chipnomad::Project* project, int start) {
   for (int i = start; i < PROJECT_MAX_CHAINS; i++) {
     if (chainIsEmpty(project, i) && !chainIsUsedInSong(project, i)) return i;
   }
@@ -162,7 +166,7 @@ int findEmptyChain(Project* project, int start) {
 }
 
 // Find empty phrase slot (empty and not used in project)
-int findEmptyPhrase(Project* project, int start) {
+int findEmptyPhrase(chipnomad::Project* project, int start) {
   for (int i = start; i < PROJECT_MAX_PHRASES; i++) {
     if (phraseIsEmpty(project, i) && !phraseIsUsedInChains(project, i)) return i;
   }
@@ -170,7 +174,8 @@ int findEmptyPhrase(Project* project, int start) {
 }
 
 // Find empty instrument slot
-int findEmptyInstrument(Project* project, int start) {
+int findEmptyInstrument(chipnomad::Project* project, int start) {
+  using namespace chipnomad;
   for (int i = start; i < PROJECT_MAX_INSTRUMENTS; i++) {
     if (project->instruments[i].type == InstrumentType::none) return i;
   }
@@ -178,7 +183,7 @@ int findEmptyInstrument(Project* project, int start) {
 }
 
 // Cleanup unused phrases - returns count of cleaned phrases
-int cleanupUnusedPhrases(Project* project) {
+int cleanupUnusedPhrases(chipnomad::Project* project) {
   int cleanedCount = 0;
 
   for (int i = 0; i < PROJECT_MAX_PHRASES; i++) {
@@ -197,7 +202,7 @@ int cleanupUnusedPhrases(Project* project) {
 }
 
 // Cleanup unused chains - returns count of cleaned chains
-int cleanupUnusedChains(Project* project) {
+int cleanupUnusedChains(chipnomad::Project* project) {
   int cleanedCount = 0;
 
   for (int i = 0; i < PROJECT_MAX_CHAINS; i++) {
@@ -216,7 +221,7 @@ int cleanupUnusedChains(Project* project) {
 }
 
 // Cleanup unused instruments - returns count of cleaned instruments
-int cleanupUnusedInstruments(Project* project) {
+int cleanupUnusedInstruments(chipnomad::Project* project) {
   int cleanedCount = 0;
 
   for (int i = 0; i < PROJECT_MAX_INSTRUMENTS; i++) {
@@ -236,7 +241,7 @@ int cleanupUnusedInstruments(Project* project) {
 }
 
 // Update chain references in song
-static void updateChainReferences(Project* project, int oldChain, int newChain) {
+static void updateChainReferences(chipnomad::Project* project, int oldChain, int newChain) {
   for (int row = 0; row < PROJECT_MAX_LENGTH; row++) {
     for (int col = 0; col < PROJECT_MAX_TRACKS; col++) {
       if (project->song[row][col] == oldChain) {
@@ -247,7 +252,8 @@ static void updateChainReferences(Project* project, int oldChain, int newChain) 
 }
 
 // Remove duplicate chains - returns count of removed duplicates
-int removeDuplicateChains(Project* project) {
+int removeDuplicateChains(chipnomad::Project* project) {
+  using namespace chipnomad;
   int removedCount = 0;
 
   for (int i = 0; i < PROJECT_MAX_CHAINS - 1; i++) {
@@ -274,7 +280,7 @@ int removeDuplicateChains(Project* project) {
 }
 
 // Update phrase references in chains
-static void updatePhraseReferences(Project* project, int oldPhrase, int newPhrase) {
+static void updatePhraseReferences(chipnomad::Project* project, int oldPhrase, int newPhrase) {
   for (int c = 0; c < PROJECT_MAX_CHAINS; c++) {
     for (int row = 0; row < 16; row++) {
       if (project->chains[c].rows[row].phrase == oldPhrase) {
@@ -285,7 +291,8 @@ static void updatePhraseReferences(Project* project, int oldPhrase, int newPhras
 }
 
 // Remove duplicate phrases - returns count of removed duplicates
-int removeDuplicatePhrases(Project* project) {
+int removeDuplicatePhrases(chipnomad::Project* project) {
+  using namespace chipnomad;
   int removedCount = 0;
 
   for (int i = 0; i < PROJECT_MAX_PHRASES - 1; i++) {
@@ -312,7 +319,8 @@ int removeDuplicatePhrases(Project* project) {
 }
 
 // Check if table is used in TBL/TBX commands
-static int tableIsUsedInCommands(Project* project, int tableIdx) {
+static int tableIsUsedInCommands(chipnomad::Project* project, int tableIdx) {
+  using namespace chipnomad;
   // Check phrases for TBL/TBX commands
   for (int p = 0; p < PROJECT_MAX_PHRASES; p++) {
     for (int row = 0; row < 16; row++) {
@@ -343,7 +351,7 @@ static int tableIsUsedInCommands(Project* project, int tableIdx) {
 }
 
 // Cleanup unused tables - returns count of cleaned tables
-int cleanupUnusedTables(Project* project) {
+int cleanupUnusedTables(chipnomad::Project* project) {
   int cleanedCount = 0;
 
   for (int i = 0; i < PROJECT_MAX_TABLES; i++) {
@@ -369,19 +377,19 @@ int cleanupUnusedTables(Project* project) {
 // Combined cleanup functions for UI
 
 // Cleanup phrases and chains (unused + duplicates)
-void cleanupPhrasesAndChains(Project* project, int* phrasesFreed, int* chainsFreed) {
+void cleanupPhrasesAndChains(chipnomad::Project* project, int* phrasesFreed, int* chainsFreed) {
   *phrasesFreed = cleanupUnusedPhrases(project) + removeDuplicatePhrases(project);
   *chainsFreed = cleanupUnusedChains(project) + removeDuplicateChains(project);
 }
 
 // Cleanup instruments and tables (unused only)
-void cleanupInstrumentsAndTables(Project* project, int* instrumentsFreed, int* tablesFreed) {
+void cleanupInstrumentsAndTables(chipnomad::Project* project, int* instrumentsFreed, int* tablesFreed) {
   *instrumentsFreed = cleanupUnusedInstruments(project);
   *tablesFreed = cleanupUnusedTables(project);
 }
 
 // Check if chain is used elsewhere in the song (excluding specific position)
-int isChainUsedElsewhere(Project* project, int chainIdx, int excludeTrack, int excludeRow) {
+int isChainUsedElsewhere(chipnomad::Project* project, int chainIdx, int excludeTrack, int excludeRow) {
   for (int row = 0; row < PROJECT_MAX_LENGTH; row++) {
     for (int col = 0; col < PROJECT_MAX_TRACKS; col++) {
       if (row == excludeRow && col == excludeTrack) continue;
@@ -392,7 +400,7 @@ int isChainUsedElsewhere(Project* project, int chainIdx, int excludeTrack, int e
 }
 
 // Check if phrase is used elsewhere in chains (excluding specific position)
-int isPhraseUsedElsewhere(Project* project, int phraseIdx, int excludeChain, int excludeRow) {
+int isPhraseUsedElsewhere(chipnomad::Project* project, int phraseIdx, int excludeChain, int excludeRow) {
   for (int c = 0; c < PROJECT_MAX_CHAINS; c++) {
     for (int row = 0; row < 16; row++) {
       if (c == excludeChain && row == excludeRow) continue;
@@ -407,7 +415,7 @@ int isPhraseUsedElsewhere(Project* project, int phraseIdx, int excludeChain, int
 // Look up instrument value at the given position or by searching upward through the track
 // Parameters: project, song row, chain row, phrase row, track index
 // Returns: instrument number (0-255) or EMPTY_VALUE_8 if not found
-uint8_t lookupInstrument(Project* p, int songRow, int chainRow, int phraseRow, int track) {
+uint8_t lookupInstrument(chipnomad::Project* p, int songRow, int chainRow, int phraseRow, int track) {
   int sr = songRow;
   int cr = chainRow;
   int pr = phraseRow;

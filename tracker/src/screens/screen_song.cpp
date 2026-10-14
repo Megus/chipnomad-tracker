@@ -1,13 +1,10 @@
-#include "screens.h"
-#include "screen_settings.h"
-#include "common.h"
 #include "gfx.h"
 #include "utils.h"
 #include "chipnomad_lib.h"
 #include "project_utils.h"
 #include "audio_manager.h"
 
-#include "copy_paste.h"
+#include "clipboard.h"
 #include <string.h>
 
 // Screen state variables
@@ -107,7 +104,7 @@ static void drawField(int col, int row, CellState state) {
 }
 
 static void drawRowHeader(int row, CellState state) {
-  const ColorScheme cs = appSettings.colorScheme;
+  const ColorTheme cs = appSettings.colorScheme;
 
   gfxSetFgColor((state == CellState::focus) ? cs.textDefault : cs.textInfo);
   gfxPrint(0, 3 + row - screen.topRow, byteToHex(row));
@@ -115,7 +112,7 @@ static void drawRowHeader(int row, CellState state) {
 
 static void drawColHeader(int col, CellState state) {
   static char digit[2] = "0";
-  const ColorScheme cs = appSettings.colorScheme;
+  const ColorTheme cs = appSettings.colorScheme;
 
   gfxSetFgColor((state == CellState::focus) ? cs.textDefault : cs.textInfo);
   digit[0] = col + 49;
@@ -489,3 +486,17 @@ const AppScreen screenSong = {
 LoopRange songScreenGetLoopRange(void) {
   return getLoopRange();
 }
+
+
+
+int switchSongSelectionMode(ScreenData* screen) {
+  int startCol, startRow, endCol, endRow;
+  getSelectionRange(screen, &startCol, &startRow, &endCol, &endRow);
+
+  if (isSingleCell(startCol, startRow, endCol, endRow)) {
+    selectRow(screen, screen->getColumnCount(screen->selectAnchorRow) - 1);
+    return 0;
+  }
+  return 1;
+}
+

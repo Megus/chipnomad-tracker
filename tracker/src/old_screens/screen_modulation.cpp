@@ -182,7 +182,7 @@ static int getColumnCount(int row) {
 }
 
 static void drawStatic(void) {
-  const ColorScheme cs = appSettings.colorScheme;
+  const ColorTheme cs = appSettings.colorScheme;
 
   gfxSetFgColor(cs.textTitles);
   gfxPrintf(0, 0, "MODULATION %02X", cInstrument);

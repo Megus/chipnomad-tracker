@@ -138,7 +138,7 @@ static int getColumnCount(int row) {
 }
 
 static void drawOscillatorHeaders(void) {
-  const ColorScheme cs = appSettings.colorScheme;
+  const ColorTheme cs = appSettings.colorScheme;
   InstrumentAY2* ay2 = &chipnomadState->project.instruments[cInstrument].chip.ay2;
 
   // Determine oscillator on/off states
@@ -171,7 +171,7 @@ static void drawStatic(void) {
     wavetablePreviewBitmap = gfxBitmapCreate(2, 1);
   }
 
-  const ColorScheme cs = appSettings.colorScheme;
+  const ColorTheme cs = appSettings.colorScheme;
   InstrumentAY2* ay2 = &chipnomadState->project.instruments[cInstrument].chip.ay2;
 
   // Draw oscillator headers with dynamic colors

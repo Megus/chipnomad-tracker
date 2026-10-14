@@ -434,3 +434,36 @@ void Screen::showMessage(bool timed, const char* format, ...) {
 
   events.dispatch({.type = EventType::showMessage, .stringValue = std::string(messageBuffer)});
 }
+
+int Screen::isSingleCellSelection(Rect range) {
+  return range.w == 1 && range.h == 1;
+}
+
+int Screen::isFullColumnSelection(Rect range, int maxRow) {
+  return range.w == 1 && range.y == 0 && range.h == maxRow + 1;
+}
+
+int Screen::isFullRowSelection(Rect range, int maxCol) {
+  return range.h == 1 && range.x == 0 && range.w == maxCol + 1;
+}
+
+void Screen::selectColumn(int maxRow) {
+  selectStartRow = 0;
+  selectStartCol = selectAnchorCol;
+  cursorRow = maxRow;
+  cursorCol = selectAnchorCol;
+}
+
+void Screen::selectRow(int maxCol) {
+  selectStartRow = selectAnchorRow;
+  selectStartCol = 0;
+  cursorRow = selectAnchorRow;
+  cursorCol = maxCol;
+}
+
+void Screen::selectAll(int maxCol, int maxRow) {
+  selectStartRow = 0;
+  selectStartCol = 0;
+  cursorRow = maxRow;
+  cursorCol = maxCol;
+}

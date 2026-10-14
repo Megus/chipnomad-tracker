@@ -95,6 +95,13 @@ class Screen : EventHandler {
 
     bool commonInputHandler(InputEventData eventData); // Common input handler to call from onInput()
 
+    int isSingleCellSelection(Rect range);
+    int isFullColumnSelection(Rect range, int maxRow);
+    int isFullRowSelection(Rect range, int maxCol);
+    void selectColumn(int maxRow);
+    void selectRow(int maxCol);
+    void selectAll(int maxCol, int maxRow);
+
     void moveCursorToSelectionStart(); // Move cursor to the start of the selection (top-left corner)
     void moveCursorBelowSelection(); // Move cursor below the selection (or to the last row if selection is at the bottom)
     void drawSelectedCells(); // Draw all selected cells

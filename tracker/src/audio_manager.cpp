@@ -9,10 +9,10 @@
 #include "wavetable_source.h"
 
 AudioManager::AudioManager(AudioDevice& audioDevice, int sampleRate, int audioBufferSize, chipnomad::ChipFactory factory):
+  engine(chipnomad::Engine(factory, sampleRate)),
   device(audioDevice),
   sampleRate(sampleRate),
-  bufferSize(bufferSize),
-  engine(chipnomad::Engine(factory, sampleRate)),
+  bufferSize(audioBufferSize),
   pendingReinitChips(0),
   previewSource(nullptr),
   previewPosition(0.0),

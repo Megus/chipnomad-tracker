@@ -1,133 +1,21 @@
 #include <string.h>
-#include "assets.h"
-#include "gfx.h"
-#include "font_manager.h"
-#include "file_system.h"
-#include "tracker_state.h"
-#include "audio_manager.h"
 #include "app.h"
-#include "screens.h"
+#include "tracker_ui.h"
 #include "chipnomad_lib.h"
 #include "project_utils.h"
-#include "waveform_display.h"
 #include "input_utils.h"
 
-// Raw input callback for key mapping screen
-void (*inputRawCallback)(InputCode input, int isDown) = NULL;
+constexpr int kAutosaveInterval = 60 * 60; // 1 minute at 60 FPS
 
-// Input handling vars:
-
-/** Currently pressed buttons */
-static int pressedButtons;
-/** Frame counter for tap detection */
-static int tapTimerCount;
-/** Button that triggered tap timer */
-static int tapButton;
-/** Number of taps detected */
-static int tapCount;
-/** Frame counter for key repeats */
-static int keyRepeatCount;
-
-
-static void applyLoopRange(void) {
-  LoopRange range = screenGetLoopRange(currentScreen);
-  if (range.enabled) {
-    chipnomadState->engine->player.setLoopRange(range);
-  } else {
-    chipnomadState->engine->player.clearLoopRange();
-  }
-}
-
-/**
-* @brief Handle play/stop key commands
-*
-* @param keys Pressed keys
-* @param tapCount number of taps
-* @return int 0 - input not handled, 1 - input handled
-*/
-static int inputPlayback(int keys, int tapCount) {
-  if (!chipnomadState) return 0;
-
-  Player& player = chipnomadState->engine->player;
-  int isPlaying = player.isPlaying();
-  ScreenPlaybackLevel playbackLevel = screenGetPlaybackLevel(currentScreen);
-
-  // Play song/chain/phrase depending on the screen's playback level
-  if (!isPlaying && keys == keyPlay) {
-    if (playbackLevel == ScreenPlaybackLevel::none) {
-      return 0; // This screen doesn't support playback
-    }
-
-    player.stop();
-    LoopRange range = screenGetLoopRange(currentScreen);
-
-    if (playbackLevel == ScreenPlaybackLevel::song) {
-      int startRow = range.enabled ? range.startSongRow : *pSongRow;
-      player.playSong(startRow, 0, 1);
-      applyLoopRange();
-    } else if (playbackLevel == ScreenPlaybackLevel::chain) {
-      int startRow = range.enabled ? range.startChainRow : *pChainRow;
-      player.playChain(*pSongTrack, *pSongRow, startRow, 1);
-      applyLoopRange();
-    } else if (playbackLevel == ScreenPlaybackLevel::phrase) {
-      player.playPhrase(*pSongTrack, *pSongRow, *pChainRow, 1);
-      applyLoopRange();
-    }
-    return 1;
-  }
-  // Play song from music screens (Shift+Play)
-  else if (!isPlaying && keys == (keyPlay | keyShift)) {
-    if (playbackLevel == ScreenPlaybackLevel::none) {
-      return 0; // This screen doesn't support playback
-    }
-
-    player.stop();
-    LoopRange range = screenGetLoopRange(currentScreen);
-
-    if (playbackLevel == ScreenPlaybackLevel::song) {
-      int startRow = range.enabled ? range.startSongRow : *pSongRow;
-      player.playSong(startRow, 0, 1);
-      applyLoopRange();
-    } else if (playbackLevel == ScreenPlaybackLevel::chain || playbackLevel == ScreenPlaybackLevel::phrase) {
-      int startChainRow = range.enabled ? range.startChainRow : *pChainRow;
-      player.playSong(*pSongRow, startChainRow, 1);
-      applyLoopRange();
-    }
-    return 1;
-  }
-  // Stop playback
-  else if (isPlaying && keys == keyPlay) {
-    player.stop();
-    return 1;
-  }
-  return 0;
-}
-
-/**
-* @brief App input handler. Handles app-wide commands and then forwards the call to the current screen
-*
-* @param isKeyDown whether this is a key press (1) or key release (0)
-* @param keys Pressed buttons
-* @param tapCount number of taps
-*/
-static void appInput(int isKeyDown, int keys, int tapCount) {
-  // Stop phrase row and preview
-  if (chipnomadState->engine->player.tracks[*pSongTrack].mode == PlaybackMode::phraseRow && keys == 0) {
-    chipnomadState->engine->player.stop();
-  }
-  // Let screen handle input first, then try global playback if not handled
-  if (!currentScreen->onInput(isKeyDown, keys, tapCount)) {
-    if (isKeyDown) {
-      inputPlayback(keys, tapCount);
-    }
-  }
-}
-
-
-#define AUTOSAVE_INTERVAL_FRAMES (60 * 60) // 1 minute at 60 FPS
-
-static int autosaveCounter = 0;
-
+TrackerApp::TrackerApp(Gfx& gfx, FontManager& fontManager, AudioDevice& audio, FileSystem& file, Assets& assets, InputUtils& inputUtils):
+  gfx(gfx),
+  fontManager(fontManager),
+  audioDevice(audio),
+  file(file),
+  assets(assets),
+  input(inputUtils),
+  state() {
+};
 
 // Initialize the application: setup audio system, load auto-saved project, show the first screen
 bool TrackerApp::setup() {
@@ -164,17 +52,11 @@ bool TrackerApp::setup() {
   gfx.setBgColor(state.settings.colorTheme.background);
   gfx.clear();
 
-  // Initialize waveform display
-  waveformDisplayInit();
-
   // Try to load an auto-saved project
   if (!projectLoad(&state.project, file.getAutosavePath())) {
     // Failed to load autosave, initialize empty project
     projectInitAY(&state.project);
   }
-
-  // Initialize all screen states
-  screensInitAll();
 
   // Create and configure the audio system
   audio = new AudioManager(audioDevice, state.settings.audioSampleRate, state.settings.audioBufferSize, nullptr);
@@ -187,7 +69,7 @@ bool TrackerApp::setup() {
 
   audio->resume();
 
-  screenSetup(&screenSong, 0);
+  ui = new TrackerUI(gfx, fontManager, *audio, file, input, *this, state);
 
   return true;
 }
@@ -195,52 +77,13 @@ bool TrackerApp::setup() {
 // Release all resources before closing the application
 void TrackerApp::teardown() {
   gfx.teardown();
+  delete ui;
   delete audio;
 }
 
 // Main draw function. Draws playback status
 void TrackerApp::draw() {
-  const ColorTheme cs = state.settings.colorTheme;
-
-  screenDraw();
-
-  // Tracks
-  char digit[2] = "0";
-  for (int c = 0; c < state.project.tracksCount; c++) {
-    // Draw mute/solo indicator to the left of track number
-    gfx.setFgColor(cs.textTitles);
-    if (audio->trackStates[c] == TrackState::muted) {
-      gfx.print(34, 3 + c, "M");
-    } else if (audio->trackStates[c] == TrackState::solo) {
-      gfx.print(34, 3 + c, "S");
-    } else {
-      gfx.print(34, 3 + c, " "); // Clear indicator
-    }
-
-    // Use warning color for track numbers if audio overload is active
-    int useOverloadColor = (audio->engine.audioOverload > 0);
-    gfx.setFgColor(useOverloadColor ? cs.warning :
-      (*state.pSongTrack == c ? cs.textDefault : cs.textInfo));
-    digit[0] = c + 49;
-    gfx.print(35, 3 + c, digit);
-
-    // Draw waveform between track number and note
-    gfx.setFgColor(cs.textInfo);
-    Bitmap* waveformBitmap = waveformDisplayGetBitmap(c);
-    if (waveformBitmap) {
-      gfx.drawBitmap(waveformBitmap, 36, 3 + c);
-    }
-
-    uint8_t note = audio->engine.player.tracks[c].note.pitchFinal;
-    const char* noteStr = noteName(&state.project, note);
-
-    // Use warning color if track warning is active
-    int useWarningColor = (state.settings.pitchConflictWarning && audio->engine.trackWarnings[c] > 0);
-
-    gfx.setFgColor(useWarningColor ? cs.warning :
-      (noteStr[0] == '-' ? cs.textEmpty : cs.textValue));
-      gfx.print(37, 3 + c, noteStr);
-  }
+  ui->draw();
 }
 
 // Event handler
@@ -249,73 +92,11 @@ void TrackerApp::onMainLoopEvent(MainLoopEvent event) {
   static int doubleTapMask = keyEdit | keyOpt | keyUnmapped;
 
   switch (event.type) {
-  case MainLoopEventType::keyDown: {
-    int value = input.inputCodeToKey(event.data.input, state.settings.keyMapping);
-
-    // Call raw input callback if set (for key mapping screen)
-    if (inputRawCallback) {
-      inputRawCallback(event.data.input, 1);
-    }
-
-    if (value == keyEdit || value == keyOpt || value == keyShift) {
-      // Edit/Opt/Shift "override" d-pad buttons
-      pressedButtons = (pressedButtons & (~dPadMask)) | value;
-    } else {
-      pressedButtons |= value;
-    }
-
-    // Multi-tap detection
-    if (value & doubleTapMask) {
-      if (value == tapButton && tapTimerCount > 0) {
-        // Same button pressed again within timer - increment tap count
-        tapCount++;
-      } else {
-        // First tap or different button - start new tap sequence
-        tapButton = value;
-        tapCount = 1;
-      }
-      tapTimerCount = appSettings.doubleTapFrames;
-    } else {
-      // Non-multi-tap button pressed - reset tap state
-      tapButton = 0;
-      tapCount = 1;
-      tapTimerCount = 0;
-    }
-
-    if (value & dPadMask) {
-      // Key repeats are only applicable to d-pad
-      keyRepeatCount = appSettings.keyRepeatDelay;
-      // As we don't support multiple d-pad keys, keep only the last pressed one
-      pressedButtons = (pressedButtons & ~dPadMask) | value;
-    }
-    appInput(1, pressedButtons, tapCount);
-
-    break;
-  }
-  case MainLoopEventType::keyUp: {
-    int value = inputCodeToKey(eventData.data.input);
-
-    // Call raw input callback if set (for key mapping screen)
-    if (inputRawCallback) {
-      inputRawCallback(eventData.data.input, 0);
-    }
-
-    pressedButtons &= ~value;
-
-    appInput(0, pressedButtons, 0);
-
-    if (pressedButtons == 0) {
-      // Clean untimed screen message when all keys are released
-      screenMessage(0, "");
-    }
-
-    break;
-  }
-  case MainLoopEventType::tick:
+  case MainLoopEventType::tick: {
     // Autosave
-    if (++autosaveCounter >= AUTOSAVE_INTERVAL_FRAMES) {
+    if (++autosaveCounter >= kAutosaveInterval) {
       autosaveCounter = 0;
-      projectSave(&chipnomadState->project, getAutosavePath());
+      chipnomad::projectSave(&state.project, file.getAutosavePath());
     }
 
     // Multi-tap timer handling
@@ -335,49 +116,94 @@ void TrackerApp::onMainLoopEvent(MainLoopEvent event) {
       if (maskedButtons == keyLeft || maskedButtons == keyRight || maskedButtons == keyUp || maskedButtons == keyDown) {
         keyRepeatCount--;
         if (keyRepeatCount == 0) {
-          keyRepeatCount = appSettings.keyRepeatSpeed;
-          appInput(1, pressedButtons, 0);
+          keyRepeatCount = state.settings.keyRepeatSpeed;
+          dispatch({.type = EventType::input, .input = {.isKeyDown = true, .keys = pressedButtons, .tapCount = 0}});
         }
       } else {
         keyRepeatCount = 0;
       }
     }
     break;
+
+    // Send all queued events. Currently TrackerUI is the only receiver
+    for (int c = 0; c < eventQueueLength; c++) {
+      ui->onEvent(eventQueue[c]);
+    }
+    eventQueueLength = 0;
+  }
+  case MainLoopEventType::keyDown: {
+    int value = input.inputCodeToKey(event.data.input, state.settings.keyMapping);
+
+    dispatch({.type = EventType::rawInput, .rawInput = {.keyCode = event.data.input, .isKeyDown = true}});
+
+    if (value == keyEdit || value == keyOpt || value == keyShift) {
+      // Edit/Opt/Shift "override" d-pad buttons
+      pressedButtons = (pressedButtons & (~dPadMask)) | value;
+    } else {
+      pressedButtons |= value;
+    }
+
+    // Multi-tap detection
+    if (value & doubleTapMask) {
+      if (value == tapButton && tapTimerCount > 0) {
+        // Same button pressed again within timer - increment tap count
+        tapCount++;
+      } else {
+        // First tap or different button - start new tap sequence
+        tapButton = value;
+        tapCount = 1;
+      }
+      tapTimerCount = state.settings.doubleTapFrames;
+    } else {
+      // Non-multi-tap button pressed - reset tap state
+      tapButton = 0;
+      tapCount = 1;
+      tapTimerCount = 0;
+    }
+
+    if (value & dPadMask) {
+      // Key repeats are only applicable to d-pad
+      keyRepeatCount = state.settings.keyRepeatDelay;
+      // As we don't support multiple d-pad keys, keep only the last pressed one
+      pressedButtons = (pressedButtons & ~dPadMask) | value;
+    }
+    dispatch({.type = EventType::input, .input = {.isKeyDown = true, .keys = pressedButtons, .tapCount = tapCount}});
+
+    break;
+  }
+  case MainLoopEventType::keyUp: {
+    int value = input.inputCodeToKey(event.data.input, state.settings.keyMapping);
+
+    dispatch({.type = EventType::rawInput, .rawInput = {.keyCode = event.data.input, .isKeyDown = false}});
+
+    pressedButtons &= ~value;
+
+    dispatch({.type = EventType::input, .input = {.isKeyDown = false, .keys = pressedButtons, .tapCount = 0}});
+
+    break;
+  }
   case MainLoopEventType::exit:
     // Auto-save the current project and settings on exit
-    projectSave(&chipnomadState->project, getAutosavePath());
-    settingsSave();
+    chipnomad::projectSave(&state.project, file.getAutosavePath());
+    state.settings.saveSettings(file.getSettingsPath());
     break;
   case MainLoopEventType::sleep:
-    // Pause audio when app goes to background
-    audio.pause();
-    if (chipnomadState) {
-      // Stop playback to avoid state issues
-      chipnomadState->engine->player.stop();
-      // Auto-save project
-      projectSave(&chipnomadState->project, getAutosavePath());
-    }
-    // Save settings
-    settingsSave();
+    audio->pause();
+    audio->engine.player.stop();
+    chipnomad::projectSave(&state.project, file.getAutosavePath());
+    state.settings.saveSettings(file.getSettingsPath());
     break;
   case MainLoopEventType::wake:
     // Resume audio when app comes back to foreground
-    audio.resume();
+    audio->resume();
     break;
   case MainLoopEventType::fullRedraw:
-    // Force full screen redraw
-    gfxSetBgColor(appSettings.colorScheme.background);
-    gfxClear();
-    if (currentScreen) {
-      currentScreen->fullRedraw();
-      drawScreenMap();
-    }
+    dispatch({.type = EventType::redrawScreen});
     break;
   }
 }
 
-
-void clearNotePreview(void) {
-  // Clear the note preview area for all tracks (right side of screen)
-  gfxClearRect(35, 3, 5, PROJECT_MAX_TRACKS);
+void TrackerApp::dispatch(Event event) {
+  eventQueue[eventQueueLength] = event;
+  eventQueueLength++;
 }

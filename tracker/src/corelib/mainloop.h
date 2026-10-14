@@ -1,7 +1,8 @@
 #ifndef __MAINLOOP_H__
 #define __MAINLOOP_H__
 
-struct InputCode;
+#include "gfx.h"
+#include "input_utils.h"
 
 enum class MainLoopEventType {
   tick,

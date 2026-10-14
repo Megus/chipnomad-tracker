@@ -162,9 +162,9 @@ FileEntry* FileSystem::listDirectory(const char* path, const char* extension, in
 
 const char* FileSystem::getAutosavePath(void) {
   static const char* autosaveFilename = "autosave.cnm";
+  static char autosavePath[kPathMaxLength];
 
   char defaultDir[kPathMaxLength];
-  char autosavePath[kPathMaxLength];
   if (!getDefaultDirectory(defaultDir, kPathMaxLength)) return autosaveFilename;
   snprintf(autosavePath, sizeof(autosavePath), "%s%s%s", defaultDir, kPathSeparatorStr, autosaveFilename);
   return autosavePath;
@@ -172,9 +172,9 @@ const char* FileSystem::getAutosavePath(void) {
 
 const char* FileSystem::getSettingsPath(void) {
   static const char* settingsFilename = "settings.txt";
+  static char settingsPath[kPathMaxLength];
 
   char defaultDir[kPathMaxLength];
-  char settingsPath[kPathMaxLength];
   if (!getDefaultDirectory(defaultDir, kPathMaxLength)) return settingsFilename;
   snprintf(settingsPath, sizeof(settingsPath), "%s%s%s", defaultDir, kPathSeparatorStr, settingsFilename);
   return settingsPath;

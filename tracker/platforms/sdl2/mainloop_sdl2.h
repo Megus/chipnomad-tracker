@@ -3,8 +3,6 @@
 
 #include "mainloop.h"
 
-class Gfx;
-
 class MainLoopSDL2 : public MainLoop {
   public:
     MainLoopSDL2(Gfx& gfx) : MainLoop(gfx) {}

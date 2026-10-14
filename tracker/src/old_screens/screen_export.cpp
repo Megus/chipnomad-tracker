@@ -131,7 +131,7 @@ int exportCommonColumnCount(int row) {
 }
 
 void exportCommonDrawStatic(void) {
-  const ColorScheme cs = appSettings.colorScheme;
+  const ColorTheme cs = appSettings.colorScheme;
 
   gfxSetFgColor(cs.textTitles);
   gfxPrint(0, 0, "EXPORT");

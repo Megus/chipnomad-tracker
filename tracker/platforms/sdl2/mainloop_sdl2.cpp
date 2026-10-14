@@ -107,7 +107,7 @@ void MainLoopSDL2::run(App& app) {
         (menu && event.key.keysym.sym == BTN_X)))) {
         eventData.type = MainLoopEventType::exit;
         eventData.data.value = 0;
-        app.onEvent(eventData);
+        app.onMainLoopEvent(eventData);
 #ifdef GAMEPAD_SUPPORT
         if (gameController) {
           SDL_GameControllerClose(gameController);
@@ -128,12 +128,12 @@ void MainLoopSDL2::run(App& app) {
       else if (event.type == SDL_APP_WILLENTERBACKGROUND) {
         eventData.type = MainLoopEventType::sleep;
         eventData.data.value = 0;
-        app.onEvent(eventData);
+        app.onMainLoopEvent(eventData);
       }
       else if (event.type == SDL_APP_DIDENTERFOREGROUND) {
         eventData.type = MainLoopEventType::wake;
         eventData.data.value = 0;
-        app.onEvent(eventData);
+        app.onMainLoopEvent(eventData);
         wakeRedrawFrames = FPS;
 #ifdef GAMEPAD_SUPPORT
         if (gameController && !SDL_GameControllerGetAttached(gameController)) {
@@ -162,14 +162,14 @@ void MainLoopSDL2::run(App& app) {
         } else {
           eventData.type = event.type == SDL_KEYDOWN ? MainLoopEventType::keyDown : MainLoopEventType::keyUp;
           eventData.data.input = (InputCode){InputDeviceType::keyboard, event.key.keysym.sym};
-          app.onEvent(eventData);
+          app.onMainLoopEvent(eventData);
         }
       }
 #ifdef GAMEPAD_SUPPORT
       if (event.type == SDL_CONTROLLERBUTTONDOWN || event.type == SDL_CONTROLLERBUTTONUP) {
         eventData.type = event.type == SDL_CONTROLLERBUTTONDOWN ? MainLoopEventType::keyDown : MainLoopEventType::keyUp;
         eventData.data.input = (InputCode){InputDeviceType::gamepad, event.cbutton.button};
-        onEvent(eventData);
+        app.onMainLoopEvent(eventData);
       }
       else if (event.type == SDL_CONTROLLERDEVICEADDED) {
         if (!gameController) {
@@ -208,7 +208,7 @@ void MainLoopSDL2::run(App& app) {
           gfxSetButtonPressed(buttonIndex, 1);
           eventData.type = MainLoopEventType::keyDown;
           eventData.data.input = (InputCode){InputDeviceType::logical, buttons[buttonIndex].key};
-          app.onEvent(eventData);
+          app.onMainLoopEvent(eventData);
         }
       }
       else if (event.type == SDL_FINGERUP) {
@@ -217,7 +217,7 @@ void MainLoopSDL2::run(App& app) {
             gfxSetButtonPressed(activeFingers[i].buttonIndex, 0);
             eventData.type = MainLoopEventType::keyUp;
             eventData.data.input = (InputCode){InputDeviceType::logical, buttons[activeFingers[i].buttonIndex].key};
-            app.onEvent(eventData);
+            app.onMainLoopEvent(eventData);
             for (int j = i; j < numActiveFingers - 1; j++) {
               activeFingers[j] = activeFingers[j + 1];
             }
@@ -233,14 +233,15 @@ void MainLoopSDL2::run(App& app) {
     if (wakeRedrawFrames > 0) {
       eventData.type = MainLoopEventType::fullRedraw;
       eventData.data.value = 0;
-      onEvent(eventData);
+      app.onMainLoopEvent(eventData);
       wakeRedrawFrames--;
     }
 #endif
 
+    // Send frame tick event
     eventData.type = MainLoopEventType::tick;
     eventData.data.value = 0;
-    app.onEvent(eventData);
+    app.onMainLoopEvent(eventData);
 
     app.draw();
     gfx.updateScreen();

@@ -36,15 +36,15 @@ int main(int argv, char** args) {
   FileSystem fileSystem = FileSystem();
 
 #if defined(SDL12_BUILD)
+  InputUtilsSDL12 inputUtils = InputUtilsSDL12();
   AudioDeviceSDL12 audioDevice = AudioDeviceSDL12();
   GfxSDL12 gfx = GfxSDL12(fontManager);
-  InputUtilsSDL12 inputUtils = InputUtilsSDL12();
   MainLoopSDL12 mainLoop = MainLoopSDL12(gfx);
   AssetsSDL12 assets = AssetsSDL12();
 #else
+  InputUtilsSDL2 inputUtils = InputUtilsSDL2();
   AudioDeviceSDL2 audioDevice = AudioDeviceSDL2();
   GfxSDL2 gfx = GfxSDL2(fontManager);
-  InputUtilsSDL2 inputUtils = InputUtilsSDL2();
   MainLoopSDL2 mainLoop = MainLoopSDL2(gfx);
 #if defined(ANDROID_BUILD)
   AssetsAndroid assets = AssetsAndroid();

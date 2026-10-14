@@ -33,7 +33,7 @@ static void setup(int input) {
 }
 
 static void fullRedraw(void) {
-  const ColorScheme cs = appSettings.colorScheme;
+  const ColorTheme cs = appSettings.colorScheme;
 
   gfxSetFgColor(cs.textTitles);
   gfxPrintf(0, 0, "INSTRUMENT POOL");

@@ -174,7 +174,7 @@ static int getColumnCount(int row) {
 }
 
 static void drawOscillatorHeaders(void) {
-  const ColorScheme cs = appSettings.colorScheme;
+  const ColorTheme cs = appSettings.colorScheme;
   InstrumentAYSample* smp = &chipnomadState->project.instruments[cInstrument].chip.aySample;
 
   // Determine oscillator on/off states
@@ -193,7 +193,7 @@ static void drawOscillatorHeaders(void) {
 static void drawStatic(void) {
   instrumentCommonDrawStatic();
 
-  const ColorScheme cs = appSettings.colorScheme;
+  const ColorTheme cs = appSettings.colorScheme;
   InstrumentAYSample* smp = &chipnomadState->project.instruments[cInstrument].chip.aySample;
 
   // Sample label (y 6) - use title color like "Tone" and "Noise" (sample is always on)

@@ -204,7 +204,7 @@ TEST_CASE_FIXTURE(CopyPasteFixture, "wavetable copy and paste") {
     state->project.ayWavetables[0][i] = (uint8_t)(i * 2);
   }
 
-  copyWavetable(0);
+  copyAYWavetable(0);
   pasteWavetable(1);
 
   CHECK(std::memcmp(state->project.ayWavetables[0], state->project.ayWavetables[1], 32) == 0);

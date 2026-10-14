@@ -231,7 +231,7 @@ int instrumentCommonColumnCount(int row) {
 }
 
 void instrumentCommonDrawStatic(void) {
-  const ColorScheme cs = appSettings.colorScheme;
+  const ColorTheme cs = appSettings.colorScheme;
 
   gfxSetFgColor(cs.textTitles);
   gfxPrintf(0, 0, "INSTRUMENT %02X", cInstrument);

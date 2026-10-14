@@ -64,7 +64,7 @@ static int getColumnCount(int row) {
 }
 
 static void drawStatic(void) {
-  const ColorScheme cs = appSettings.colorScheme;
+  const ColorTheme cs = appSettings.colorScheme;
   gfxSetFgColor(cs.textTitles);
   gfxPrintf(0, 0, "GROOVE %02X", groove);
 }
@@ -76,13 +76,13 @@ static void drawField(int col, int row, CellState state) {
 }
 
 static void drawRowHeader(int row, CellState state) {
-  const ColorScheme cs = appSettings.colorScheme;
+  const ColorTheme cs = appSettings.colorScheme;
   gfxSetFgColor((state == CellState::focus) ? cs.textDefault : cs.textInfo);
   gfxPrintf(1, 3 + row, "%X", row);
 }
 
 static void drawColHeader(int col, CellState state) {
-  const ColorScheme cs = appSettings.colorScheme;
+  const ColorTheme cs = appSettings.colorScheme;
   gfxSetFgColor((state == CellState::focus) ? cs.textDefault : cs.textInfo);
   gfxPrint(3, 2, "T");  // T for Timing
 }
@@ -230,3 +230,16 @@ const AppScreen screenGroove = {
   .onInput = onInput,
   .getPlaybackLevel = getPlaybackLevel
 };
+
+
+
+int switchGrooveSelectionMode(ScreenData* screen) {
+  int startCol, startRow, endCol, endRow;
+  getSelectionRange(screen, &startCol, &startRow, &endCol, &endRow);
+
+  if (isSingleCell(startCol, startRow, endCol, endRow)) {
+    selectAll(screen, 0);
+    return 0;
+  }
+  return 1;
+}
