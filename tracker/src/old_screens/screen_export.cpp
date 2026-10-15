@@ -131,21 +131,21 @@ int exportCommonColumnCount(int row) {
 }
 
 void exportCommonDrawStatic(void) {
-  const ColorTheme cs = appSettings.colorScheme;
+  const ColorTheme t = appSettings.colorScheme;
 
-  gfxSetFgColor(cs.textTitles);
+  gfxSetFgColor(t.textTitles);
   gfxPrint(0, 0, "EXPORT");
 
-  gfxSetFgColor(cs.textDefault);
+  gfxSetFgColor(t.textDefault);
   gfxPrint(0, 2, "Start row");
 
-  gfxSetFgColor(cs.textValue);
+  gfxSetFgColor(t.textValue);
   gfxPrint(0, 4, "WAV");
-  gfxSetFgColor(cs.textDefault);
+  gfxSetFgColor(t.textDefault);
   gfxPrint(0, 5, "Sample rate");
   gfxPrint(0, 6, "Bit depth");
 
-  gfxSetFgColor(cs.textValue);
+  gfxSetFgColor(t.textValue);
   gfxPrint(0, 8, "VGM");
 }
 

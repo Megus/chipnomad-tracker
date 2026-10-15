@@ -17,6 +17,7 @@ enum class EventType {
   pushScreen,
   popScreen,
   showMessage,
+  showTimedMessage,
 };
 
 struct InputEventData {
@@ -30,6 +31,13 @@ struct RawInputEventData {
   InputCode keyCode;
 };
 
+struct PlayEventData {
+  chipnomad::LoopRange loopRange;
+  int track;
+  int songRow;
+  int chainRow;
+};
+
 struct Event {
   EventType type; // Event type
 
@@ -39,16 +47,17 @@ struct Event {
   std::string stringValue; // Universal option for all events that only need a string value. std::string to simplify memory management
   InputEventData input; // input event data
   RawInputEventData rawInput; // rawInput event data
+  PlayEventData play; // playSong/Chain/Phrase events data
 };
 
 class EventHandler {
   public:
-    virtual bool onEvent(Event event) = 0;
+    virtual bool onEvent(Event e) = 0;
 };
 
 class EventDispatcher {
   public:
-    virtual void dispatch(Event event) = 0;
+    virtual void dispatch(Event e) = 0;
 };
 
 #endif // __EVENTS_H__

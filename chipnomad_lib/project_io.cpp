@@ -731,57 +731,57 @@ int projectLoad(Project* project, const char* path) {
 
     // Chip-specific settings
     switch (p.chipType) {
-    case ChipType::AY:
-      line = peekLine(file);
-      if (line == NULL) throw formatError;
-      if (sscanf(line, "- *AY8910* Clock: %d", &p.chipSetup.ay.clock) != 1) throw formatError;
-      consumeLine(file);
+      case ChipType::AY:
+        line = peekLine(file);
+        if (line == NULL) throw formatError;
+        if (sscanf(line, "- *AY8910* Clock: %d", &p.chipSetup.ay.clock) != 1) throw formatError;
+        consumeLine(file);
 
-      int tempIsYM;
-      line = peekLine(file);
-      if (line == NULL) throw formatError;
-      if (sscanf(line, "- *AY8910* AY/YM: %d", &tempIsYM) != 1) throw formatError;
-      p.chipSetup.ay.isYM = (uint8_t)tempIsYM;
-      consumeLine(file);
+        int tempIsYM;
+        line = peekLine(file);
+        if (line == NULL) throw formatError;
+        if (sscanf(line, "- *AY8910* AY/YM: %d", &tempIsYM) != 1) throw formatError;
+        p.chipSetup.ay.isYM = (uint8_t)tempIsYM;
+        consumeLine(file);
 
-      line = peekLine(file);
-      if (line == NULL) throw formatError;
-      // AY Stereo mode
-      if (strncmp(line, "- *AY8910* Stereo:", 17) == 0) {
-        if (sscanf(line, "- *AY8910* Stereo: %s", buf) != 1) {
+        line = peekLine(file);
+        if (line == NULL) throw formatError;
+        // AY Stereo mode
+        if (strncmp(line, "- *AY8910* Stereo:", 17) == 0) {
+          if (sscanf(line, "- *AY8910* Stereo: %s", buf) != 1) {
+            throw "Invalid stereo mode";
+          }
+          if (!strcmp(buf, "ABC")) {
+            p.chipSetup.ay.stereoMode = StereoModeAY::ABC;
+          } else if (!strcmp(buf, "ACB")) {
+            p.chipSetup.ay.stereoMode = StereoModeAY::ACB;
+          } else if (!strcmp(buf, "BAC")) {
+            p.chipSetup.ay.stereoMode = StereoModeAY::BAC;
+          } else {
+            throw "Unknown stereo mode";
+          }
+        } else {
           throw "Invalid stereo mode";
         }
-        if (!strcmp(buf, "ABC")) {
-          p.chipSetup.ay.stereoMode = StereoModeAY::ABC;
-        } else if (!strcmp(buf, "ACB")) {
-          p.chipSetup.ay.stereoMode = StereoModeAY::ACB;
-        } else if (!strcmp(buf, "BAC")) {
-          p.chipSetup.ay.stereoMode = StereoModeAY::BAC;
-        } else {
-          throw "Unknown stereo mode";
-        }
-      } else {
-        throw "Invalid stereo mode";
-      }
-      consumeLine(file);
-
-      line = peekLine(file);
-      if (line == NULL) throw formatError;
-      if (sscanf(line, "- *AY8910* Stereo separation: %hhu", &p.chipSetup.ay.stereoSeparation) != 1) throw formatError;
-      consumeLine(file);
-
-      // PWM range (optional field for backwards compatibility)
-      line = peekLine(file);
-      if (line != NULL && strncmp(line, "- *AY8910* PWM range: ", 22) == 0) {
-        if (sscanf(line, "- *AY8910* PWM range: %hhu", &p.chipSetup.ay.pwmFullRange) != 1) throw formatError;
         consumeLine(file);
-      } else {
-        // Default to 16-step mode for old files
-        p.chipSetup.ay.pwmFullRange = 0;
-      }
-      break;
-    default:
-      break;
+
+        line = peekLine(file);
+        if (line == NULL) throw formatError;
+        if (sscanf(line, "- *AY8910* Stereo separation: %hhu", &p.chipSetup.ay.stereoSeparation) != 1) throw formatError;
+        consumeLine(file);
+
+        // PWM range (optional field for backwards compatibility)
+        line = peekLine(file);
+        if (line != NULL && strncmp(line, "- *AY8910* PWM range: ", 22) == 0) {
+          if (sscanf(line, "- *AY8910* PWM range: %hhu", &p.chipSetup.ay.pwmFullRange) != 1) throw formatError;
+          consumeLine(file);
+        } else {
+          // Default to 16-step mode for old files
+          p.chipSetup.ay.pwmFullRange = 0;
+        }
+        break;
+      default:
+        break;
     }
 
     p.tracksCount = projectGetTotalTracks(&p);
@@ -1008,25 +1008,25 @@ static int projectSaveInternal(FILE* file, Project* project) {
   fprintf(file, "- Chip type: %s\n", chipNames[static_cast<int>(project->chipType)]);
 
   switch (project->chipType) {
-  case ChipType::AY:
-    fprintf(file, "- *AY8910* Clock: %d\n", project->chipSetup.ay.clock);
-    fprintf(file, "- *AY8910* AY/YM: %d\n", project->chipSetup.ay.isYM);
-    switch (project->chipSetup.ay.stereoMode) {
-    case StereoModeAY::ABC:
-      fprintf(file, "- *AY8910* Stereo: ABC\n");
+    case ChipType::AY:
+      fprintf(file, "- *AY8910* Clock: %d\n", project->chipSetup.ay.clock);
+      fprintf(file, "- *AY8910* AY/YM: %d\n", project->chipSetup.ay.isYM);
+      switch (project->chipSetup.ay.stereoMode) {
+      case StereoModeAY::ABC:
+        fprintf(file, "- *AY8910* Stereo: ABC\n");
+        break;
+      case StereoModeAY::ACB:
+        fprintf(file, "- *AY8910* Stereo: ACB\n");
+        break;
+      case StereoModeAY::BAC:
+        fprintf(file, "- *AY8910* Stereo: BAC\n");
+        break;
+      }
+      fprintf(file, "- *AY8910* Stereo separation: %d\n", project->chipSetup.ay.stereoSeparation);
+      fprintf(file, "- *AY8910* PWM range: %d\n", project->chipSetup.ay.pwmFullRange);
       break;
-    case StereoModeAY::ACB:
-      fprintf(file, "- *AY8910* Stereo: ACB\n");
+    default:
       break;
-    case StereoModeAY::BAC:
-      fprintf(file, "- *AY8910* Stereo: BAC\n");
-      break;
-    }
-    fprintf(file, "- *AY8910* Stereo separation: %d\n", project->chipSetup.ay.stereoSeparation);
-    fprintf(file, "- *AY8910* PWM range: %d\n", project->chipSetup.ay.pwmFullRange);
-    break;
-  default:
-    break;
   }
 
   projectSavePitchTable(file, project);

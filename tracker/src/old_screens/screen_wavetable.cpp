@@ -158,14 +158,14 @@ static int getColumnCount(int row) {
 }
 
 static void drawStatic(void) {
-  const ColorTheme cs = appSettings.colorScheme;
+  const ColorTheme t = appSettings.colorScheme;
 
   // Title
-  gfxSetFgColor(cs.textTitles);
+  gfxSetFgColor(t.textTitles);
   gfxPrint(0, 0, "WAVETABLES");
 
   // Button labels and text (row 0 is at y=2)
-  gfxSetFgColor(cs.textDefault);
+  gfxSetFgColor(t.textDefault);
   gfxPrint(0, 2, "Load");
   gfxPrint(7, 2, "Save");
   gfxPrint(16, 2, "wavetables");  // Static text after the count (moved 1 char right)
@@ -174,7 +174,7 @@ static void drawStatic(void) {
   updatePreviews();
 
   // Clear all preview areas first (35 chars wide: 2 for index + 32 for data + 1 for safety)
-  gfxSetBgColor(cs.background);
+  gfxSetBgColor(t.background);
   gfxClearRect(0, 4, 35, 2);  // wavetable -2 (2 lines: y 4-5)
   gfxClearRect(0, 6, 35, 2);  // wavetable -1 (2 lines: y 6-7)
   gfxClearRect(0, 8, 35, 3);  // current wavetable preview (3 lines: y 8-10)
@@ -194,7 +194,7 @@ static void drawStatic(void) {
 
   // Draw wavetable indices only if they're valid (within 0-255)
   // Non-current wavetables use textInfo color
-  gfxSetFgColor(cs.textInfo);
+  gfxSetFgColor(t.textInfo);
 
   if (prevIdx2 >= 0) {
     gfxPrintf(0, 5, "%02X", prevIdx2);  // Bottom line of -2 preview
@@ -204,11 +204,11 @@ static void drawStatic(void) {
   }
 
   // Current wavetable index is highlighted with textTitles color (same as screen header)
-  gfxSetFgColor(cs.textTitles);
+  gfxSetFgColor(t.textTitles);
   gfxPrintf(0, 11, "%02X", wavetableIdx);  // Current wavetable (at y=11)
 
   // Back to textInfo for remaining wavetables
-  gfxSetFgColor(cs.textInfo);
+  gfxSetFgColor(t.textInfo);
 
   if (nextIdx1 <= 255) {
     gfxPrintf(0, 13, "%02X", nextIdx1);  // Bottom line of +1 preview
@@ -221,7 +221,7 @@ static void drawStatic(void) {
   }
 
   // Draw wavetable previews
-  gfxSetFgColor(cs.textInfo);
+  gfxSetFgColor(t.textInfo);
 
   if (prevIdx2 >= 0 && previewBitmapPrev2) {
     gfxDrawBitmap(previewBitmapPrev2, 2, 4);  // 2 lines: y 4-5
@@ -281,11 +281,11 @@ static void drawCursor(int col, int row) {
 }
 
 static void drawField(int col, int row, CellState state) {
-  const ColorTheme cs = appSettings.colorScheme;
+  const ColorTheme t = appSettings.colorScheme;
 
   if (row == 0) {
     // Buttons row - need to redraw to clear cursor
-    gfxSetFgColor(state == CellState::focus ? cs.textValue : cs.textDefault);
+    gfxSetFgColor(state == CellState::focus ? t.textValue : t.textDefault);
     if (col == 0) {
       gfxClearRect(0, 2, 4, 1);  // Clear area for "Load" button
       gfxPrint(0, 2, "Load");
@@ -302,7 +302,7 @@ static void drawField(int col, int row, CellState state) {
     uint8_t* wavetable = chipnomadState->project.ayWavetables[wavetableIdx];
     uint8_t value = wavetable[col];
 
-    gfxSetFgColor(state == CellState::focus ? cs.textValue : cs.textDefault);
+    gfxSetFgColor(state == CellState::focus ? t.textValue : t.textDefault);
 
     // Each wavetable value is 4-bit (0-15), display as single hex digit
     char hex[2];

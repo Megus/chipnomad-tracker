@@ -138,7 +138,7 @@ static int getColumnCount(int row) {
 }
 
 static void drawOscillatorHeaders(void) {
-  const ColorTheme cs = appSettings.colorScheme;
+  const ColorTheme t = appSettings.colorScheme;
   InstrumentAY2* ay2 = &chipnomadState->project.instruments[cInstrument].chip.ay2;
 
   // Determine oscillator on/off states
@@ -151,15 +151,15 @@ static void drawOscillatorHeaders(void) {
   int softwareOscOn = (ay2->oscSoftware.type != AYSoftwareOscType::none);
 
   // Top block headers (y 6)
-  gfxSetFgColor(toneOn ? cs.textTitles : cs.textInfo);
+  gfxSetFgColor(toneOn ? t.textTitles : t.textInfo);
   gfxPrint(COL_LEFT_X, 6, "Tone");
-  gfxSetFgColor(envelopeOn ? cs.textTitles : cs.textInfo);
+  gfxSetFgColor(envelopeOn ? t.textTitles : t.textInfo);
   gfxPrint(COL_RIGHT_X, 6, "Envelope");
 
   // Bottom block headers (y 11)
-  gfxSetFgColor(noiseOn ? cs.textTitles : cs.textInfo);
+  gfxSetFgColor(noiseOn ? t.textTitles : t.textInfo);
   gfxPrint(COL_LEFT_X, 11, "Noise");
-  gfxSetFgColor(softwareOscOn ? cs.textTitles : cs.textInfo);
+  gfxSetFgColor(softwareOscOn ? t.textTitles : t.textInfo);
   gfxPrint(COL_RIGHT_X, 11, "Soft osc");
 }
 
@@ -171,14 +171,14 @@ static void drawStatic(void) {
     wavetablePreviewBitmap = gfxBitmapCreate(2, 1);
   }
 
-  const ColorTheme cs = appSettings.colorScheme;
+  const ColorTheme t = appSettings.colorScheme;
   InstrumentAY2* ay2 = &chipnomadState->project.instruments[cInstrument].chip.ay2;
 
   // Draw oscillator headers with dynamic colors
   drawOscillatorHeaders();
 
   // Top block labels (y 7-9)
-  gfxSetFgColor(cs.textDefault);
+  gfxSetFgColor(t.textDefault);
   gfxPrint(COL_LEFT_X, 7, "Pitch");
   gfxPrint(COL_LEFT_X, 8, "Fine");
   gfxPrint(COL_RIGHT_X, 7, "Mode");

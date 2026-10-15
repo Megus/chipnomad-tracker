@@ -134,12 +134,12 @@ int colorThemeColumnCount(int row) {
 }
 
 void colorThemeDrawStatic(void) {
-  const ColorTheme cs = appSettings.colorScheme;
+  const ColorTheme t = appSettings.colorScheme;
 
-  gfxSetFgColor(cs.textTitles);
+  gfxSetFgColor(t.textTitles);
   gfxPrint(0, 0, "COLOR THEME");
 
-  gfxSetFgColor(cs.textDefault);
+  gfxSetFgColor(t.textDefault);
   gfxPrint(17, 1, "R  G  B");
   gfxPrint(0, 17, "Theme name");
 }

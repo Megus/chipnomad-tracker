@@ -556,17 +556,17 @@ namespace chipnomad {
 
     InstrumentType instType = p->instruments[track->note.instrument].type;
     switch (instType) {
-    case InstrumentType::AY1:
-      player->handleInstrumentAY1(trackIdx);
-      break;
-    case InstrumentType::AY2:
-      player->handleInstrumentAY2(trackIdx);
-      break;
-    case InstrumentType::AYSample:
-      player->handleInstrumentAYSample(trackIdx);
-      break;
-    case InstrumentType::none:
-      break;
+      case InstrumentType::AY1:
+        player->handleInstrumentAY1(trackIdx);
+        break;
+      case InstrumentType::AY2:
+        player->handleInstrumentAY2(trackIdx);
+        break;
+      case InstrumentType::AYSample:
+        player->handleInstrumentAYSample(trackIdx);
+        break;
+      case InstrumentType::none:
+        break;
     }
   }
 
@@ -804,7 +804,7 @@ namespace chipnomad {
     loopRange.enabled = 0;
   }
 
-  void Player::playSong(int songRow, int chainRow, int loop) {
+  void Player::playSong(int songRow, int chainRow, bool loop) {
     if (isPlaying()) return;
 
     for (int trackIdx = 0; trackIdx < p->tracksCount; trackIdx++) {
@@ -820,7 +820,7 @@ namespace chipnomad {
     }
   }
 
-  void Player::playChain(int trackIdx, int songRow, int chainRow, int loop) {
+  void Player::playChain(int trackIdx, int songRow, int chainRow, bool loop) {
     if (isPlaying()) return;
 
     PlaybackTrackState* track = &tracks[trackIdx];
@@ -834,7 +834,7 @@ namespace chipnomad {
     }
   }
 
-  void Player::playPhrase(int trackIdx, int songRow, int chainRow, int loop) {
+  void Player::playPhrase(int trackIdx, int songRow, int chainRow, bool loop) {
     if (isPlaying()) return;
 
     PlaybackTrackState* track = &tracks[trackIdx];

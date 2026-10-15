@@ -94,7 +94,7 @@ namespace chipnomad {
   };
 
   struct LoopRange {
-    int enabled;
+    bool enabled;
     int level; // 0 = song, 1 = chain, 2 = phrase
     int startSongRow;
     int startChainRow;
@@ -162,7 +162,7 @@ namespace chipnomad {
        * @param chainRow Starting row position in the chain
        * @param loop Whether to loop when reaching the end
        */
-      void playSong(int songRow, int chainRow, int loop);
+      void playSong(int songRow, int chainRow, bool loop);
 
       /**
        * Starts chain playback for a specific track
@@ -171,7 +171,7 @@ namespace chipnomad {
        * @param chainRow Starting row position in the chain
        * @param loop Whether to loop when reaching the end
        */
-      void playChain(int trackIdx, int songRow, int chainRow, int loop);
+      void playChain(int trackIdx, int songRow, int chainRow, bool loop);
 
       /**
        * Starts phrase playback for a specific track
@@ -180,7 +180,7 @@ namespace chipnomad {
        * @param chainRow Row position in the chain containing the phrase
        * @param loop Whether to loop when reaching the end
        */
-      void playPhrase(int trackIdx, int songRow, int chainRow, int loop);
+      void playPhrase(int trackIdx, int songRow, int chainRow, bool loop);
 
       /**
        * Starts playback of a phrase row

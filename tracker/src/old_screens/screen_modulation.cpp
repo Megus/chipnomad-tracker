@@ -182,9 +182,9 @@ static int getColumnCount(int row) {
 }
 
 static void drawStatic(void) {
-  const ColorTheme cs = appSettings.colorScheme;
+  const ColorTheme t = appSettings.colorScheme;
 
-  gfxSetFgColor(cs.textTitles);
+  gfxSetFgColor(t.textTitles);
   gfxPrintf(0, 0, "MODULATION %02X", cInstrument);
 
   if (chipnomadState->project.instruments[cInstrument].type == InstrumentType::none) return;
@@ -192,11 +192,11 @@ static void drawStatic(void) {
   for (int block = 0; block < 2; block++) {
     int baseY = block == 0 ? 2 : 10;
 
-    gfxSetFgColor(cs.textTitles);
+    gfxSetFgColor(t.textTitles);
     gfxPrintf(COL_LEFT_X, baseY, "Mod%d", block == 0 ? 1 : 2);
     gfxPrintf(COL_RIGHT_X, baseY, "Mod%d", block == 0 ? 3 : 4);
 
-    gfxSetFgColor(cs.textDefault);
+    gfxSetFgColor(t.textDefault);
     gfxPrint(COL_LEFT_X, baseY + 1, "Dest");
     gfxPrint(COL_LEFT_X, baseY + 2, "Amt");
     gfxPrint(COL_RIGHT_X, baseY + 1, "Dest");

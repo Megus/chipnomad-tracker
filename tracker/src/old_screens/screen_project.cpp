@@ -186,12 +186,12 @@ int projectCommonColumnCount(int row) {
 }
 
 void projectCommonDrawStatic(void) {
-  const ColorTheme cs = appSettings.colorScheme;
+  const ColorTheme t = appSettings.colorScheme;
 
-  gfxSetFgColor(cs.textTitles);
+  gfxSetFgColor(t.textTitles);
   gfxPrint(0, 0, "PROJECT");
 
-  gfxSetFgColor(cs.textDefault);
+  gfxSetFgColor(t.textDefault);
   gfxPrintf(8, 0, "%s v%s (%s)", appTitle, appVersion, appBuild);
 
   gfxPrint(0, 3, "File");
@@ -396,6 +396,11 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
   }
 
   return handled;
+}
+
+void clearNotePreview(void) {
+  // Clear the note preview area for all tracks (right side of screen)
+  gfxClearRect(35, 3, 5, PROJECT_MAX_TRACKS);
 }
 
 

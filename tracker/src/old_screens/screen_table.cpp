@@ -129,14 +129,14 @@ static void drawField(int col, int row, CellState state) {
   }
 }
 static void drawRowHeader(int row, CellState state) {
-  const ColorTheme cs = appSettings.colorScheme;
-  gfxSetFgColor((state == CellState::focus) ? cs.textDefault : cs.textInfo);
+  const ColorTheme t = appSettings.colorScheme;
+  gfxSetFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
   gfxPrintf(1, 3 + row, "%X", row);
 }
 
 static void drawColHeader(int col, CellState state) {
-  const ColorTheme cs = appSettings.colorScheme;
-  gfxSetFgColor((state == CellState::focus) ? cs.textDefault : cs.textInfo);
+  const ColorTheme t = appSettings.colorScheme;
+  gfxSetFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
   switch (col) {
     case 0:
     case 1:

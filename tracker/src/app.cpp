@@ -92,118 +92,122 @@ void TrackerApp::onMainLoopEvent(MainLoopEvent event) {
   static int doubleTapMask = keyEdit | keyOpt | keyUnmapped;
 
   switch (event.type) {
-  case MainLoopEventType::tick: {
-    // Autosave
-    if (++autosaveCounter >= kAutosaveInterval) {
-      autosaveCounter = 0;
-      chipnomad::projectSave(&state.project, file.getAutosavePath());
-    }
-
-    // Multi-tap timer handling
-    if (tapTimerCount > 0) {
-      tapTimerCount--;
-      if (tapTimerCount == 0) {
-        // Timer expired, reset tap count
-        tapCount = 0;
-        tapButton = 0;
+    case MainLoopEventType::tick: {
+      // Autosave
+      if (++autosaveCounter >= kAutosaveInterval) {
+        autosaveCounter = 0;
+        chipnomad::projectSave(&state.project, file.getAutosavePath());
       }
-    }
 
-    // Key repeat handling
-    if (keyRepeatCount > 0) {
-      int maskedButtons = pressedButtons & dPadMask;
-      // Only one d-pad button can be pressed for key repeats
-      if (maskedButtons == keyLeft || maskedButtons == keyRight || maskedButtons == keyUp || maskedButtons == keyDown) {
-        keyRepeatCount--;
-        if (keyRepeatCount == 0) {
-          keyRepeatCount = state.settings.keyRepeatSpeed;
-          dispatch({.type = EventType::input, .input = {.isKeyDown = true, .keys = pressedButtons, .tapCount = 0}});
+      // Multi-tap timer handling
+      if (tapTimerCount > 0) {
+        tapTimerCount--;
+        if (tapTimerCount == 0) {
+          // Timer expired, reset tap count
+          tapCount = 0;
+          tapButton = 0;
         }
-      } else {
-        keyRepeatCount = 0;
       }
+
+      // Key repeat handling
+      if (keyRepeatCount > 0) {
+        int maskedButtons = pressedButtons & dPadMask;
+        // Only one d-pad button can be pressed for key repeats
+        if (maskedButtons == keyLeft || maskedButtons == keyRight || maskedButtons == keyUp || maskedButtons == keyDown) {
+          keyRepeatCount--;
+          if (keyRepeatCount == 0) {
+            keyRepeatCount = state.settings.keyRepeatSpeed;
+            dispatch({.type = EventType::input, .input = {.isKeyDown = true, .keys = pressedButtons, .tapCount = 0}});
+          }
+        } else {
+          keyRepeatCount = 0;
+        }
+      }
+      break;
+
+      // Send all queued events. Currently TrackerUI is the only receiver
+      for (int c = 0; c < eventQueueLength; c++) {
+        ui->onEvent(eventQueue[c]);
+      }
+      eventQueueLength = 0;
     }
-    break;
+    case MainLoopEventType::keyDown: {
+      int value = input.inputCodeToKey(event.data.input, state.settings.keyMapping);
 
-    // Send all queued events. Currently TrackerUI is the only receiver
-    for (int c = 0; c < eventQueueLength; c++) {
-      ui->onEvent(eventQueue[c]);
-    }
-    eventQueueLength = 0;
-  }
-  case MainLoopEventType::keyDown: {
-    int value = input.inputCodeToKey(event.data.input, state.settings.keyMapping);
+      dispatch({.type = EventType::rawInput, .rawInput = {.isKeyDown = true, .keyCode = event.data.input}});
 
-    dispatch({.type = EventType::rawInput, .rawInput = {.keyCode = event.data.input, .isKeyDown = true}});
-
-    if (value == keyEdit || value == keyOpt || value == keyShift) {
-      // Edit/Opt/Shift "override" d-pad buttons
-      pressedButtons = (pressedButtons & (~dPadMask)) | value;
-    } else {
-      pressedButtons |= value;
-    }
-
-    // Multi-tap detection
-    if (value & doubleTapMask) {
-      if (value == tapButton && tapTimerCount > 0) {
-        // Same button pressed again within timer - increment tap count
-        tapCount++;
+      if (value == keyEdit || value == keyOpt || value == keyShift) {
+        // Edit/Opt/Shift "override" d-pad buttons
+        pressedButtons = (pressedButtons & (~dPadMask)) | value;
       } else {
-        // First tap or different button - start new tap sequence
-        tapButton = value;
+        pressedButtons |= value;
+      }
+
+      // Multi-tap detection
+      if (value & doubleTapMask) {
+        if (value == tapButton && tapTimerCount > 0) {
+          // Same button pressed again within timer - increment tap count
+          tapCount++;
+        } else {
+          // First tap or different button - start new tap sequence
+          tapButton = value;
+          tapCount = 1;
+        }
+        tapTimerCount = state.settings.doubleTapFrames;
+      } else {
+        // Non-multi-tap button pressed - reset tap state
+        tapButton = 0;
         tapCount = 1;
+        tapTimerCount = 0;
       }
-      tapTimerCount = state.settings.doubleTapFrames;
-    } else {
-      // Non-multi-tap button pressed - reset tap state
-      tapButton = 0;
-      tapCount = 1;
-      tapTimerCount = 0;
+
+      if (value & dPadMask) {
+        // Key repeats are only applicable to d-pad
+        keyRepeatCount = state.settings.keyRepeatDelay;
+        // As we don't support multiple d-pad keys, keep only the last pressed one
+        pressedButtons = (pressedButtons & ~dPadMask) | value;
+      }
+      dispatch({.type = EventType::input, .input = {.isKeyDown = true, .keys = pressedButtons, .tapCount = tapCount}});
+
+      break;
     }
+    case MainLoopEventType::keyUp: {
+      int value = input.inputCodeToKey(event.data.input, state.settings.keyMapping);
 
-    if (value & dPadMask) {
-      // Key repeats are only applicable to d-pad
-      keyRepeatCount = state.settings.keyRepeatDelay;
-      // As we don't support multiple d-pad keys, keep only the last pressed one
-      pressedButtons = (pressedButtons & ~dPadMask) | value;
+      dispatch({.type = EventType::rawInput, .rawInput = {.isKeyDown = false, .keyCode = event.data.input}});
+
+      pressedButtons &= ~value;
+
+      dispatch({.type = EventType::input, .input = {.isKeyDown = false, .keys = pressedButtons, .tapCount = 0}});
+
+      break;
     }
-    dispatch({.type = EventType::input, .input = {.isKeyDown = true, .keys = pressedButtons, .tapCount = tapCount}});
-
-    break;
-  }
-  case MainLoopEventType::keyUp: {
-    int value = input.inputCodeToKey(event.data.input, state.settings.keyMapping);
-
-    dispatch({.type = EventType::rawInput, .rawInput = {.keyCode = event.data.input, .isKeyDown = false}});
-
-    pressedButtons &= ~value;
-
-    dispatch({.type = EventType::input, .input = {.isKeyDown = false, .keys = pressedButtons, .tapCount = 0}});
-
-    break;
-  }
-  case MainLoopEventType::exit:
-    // Auto-save the current project and settings on exit
-    chipnomad::projectSave(&state.project, file.getAutosavePath());
-    state.settings.saveSettings(file.getSettingsPath());
-    break;
-  case MainLoopEventType::sleep:
-    audio->pause();
-    audio->engine.player.stop();
-    chipnomad::projectSave(&state.project, file.getAutosavePath());
-    state.settings.saveSettings(file.getSettingsPath());
-    break;
-  case MainLoopEventType::wake:
-    // Resume audio when app comes back to foreground
-    audio->resume();
-    break;
-  case MainLoopEventType::fullRedraw:
-    dispatch({.type = EventType::redrawScreen});
-    break;
+    case MainLoopEventType::exit: {
+      // Auto-save the current project and settings on exit
+      chipnomad::projectSave(&state.project, file.getAutosavePath());
+      state.settings.saveSettings(file.getSettingsPath());
+      break;
+    }
+    case MainLoopEventType::sleep: {
+      audio->pause();
+      audio->engine.player.stop();
+      chipnomad::projectSave(&state.project, file.getAutosavePath());
+      state.settings.saveSettings(file.getSettingsPath());
+      break;
+    }
+    case MainLoopEventType::wake: {
+      // Resume audio when app comes back to foreground
+      audio->resume();
+      break;
+    }
+    case MainLoopEventType::fullRedraw: {
+      dispatch({.type = EventType::redrawScreen});
+      break;
+    }
   }
 }
 
-void TrackerApp::dispatch(Event event) {
-  eventQueue[eventQueueLength] = event;
+void TrackerApp::dispatch(Event e) {
+  eventQueue[eventQueueLength] = e;
   eventQueueLength++;
 }

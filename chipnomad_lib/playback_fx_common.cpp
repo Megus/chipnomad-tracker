@@ -27,25 +27,25 @@ static uint8_t calculateArpUpDownOffset(const uint8_t *arp, const uint8_t period
   int octave, idx;
 
   switch (stepsTotal) {
-  case 4:
-    return currentStep < 3 ? arp[currentStep] : arp[1];
-  case 10:
-    if (currentStep < 3) return arp[currentStep];
-    if (currentStep < 8) {
-      idx = (currentStep <= 5) ? (currentStep - 3) : (7 - currentStep);
-      return arp[idx] + octaveSize;
-    }
-    return arp[10 - currentStep];
-  default:
-    if (currentStep < stepsTotal / 2) {
-      idx = currentStep % 3;
-      octave = currentStep / 3;
+    case 4:
+      return currentStep < 3 ? arp[currentStep] : arp[1];
+    case 10:
+      if (currentStep < 3) return arp[currentStep];
+      if (currentStep < 8) {
+        idx = (currentStep <= 5) ? (currentStep - 3) : (7 - currentStep);
+        return arp[idx] + octaveSize;
+      }
+      return arp[10 - currentStep];
+    default:
+      if (currentStep < stepsTotal / 2) {
+        idx = currentStep % 3;
+        octave = currentStep / 3;
+        return arp[idx] + (octave * octaveSize);
+      }
+      int s = currentStep - stepsTotal / 2;
+      idx = 2 - (s % 3);
+      octave = 2 - (s / 3);
       return arp[idx] + (octave * octaveSize);
-    }
-    int s = currentStep - stepsTotal / 2;
-    idx = 2 - (s % 3);
-    octave = 2 - (s / 3);
-    return arp[idx] + (octave * octaveSize);
   }
 }
 
@@ -53,57 +53,57 @@ static int8_t calculateArpModeOffset(uint8_t arp[3], const uint8_t period, const
   uint8_t noteOffset = 0;
 
   switch (arpType) {
-  case PlaybackArpType::upDown4Oct:
-    noteOffset = calculateArpUpDownOffset(arp, period, cycleCounter, 28, octaveSize);
-    break;
-  case PlaybackArpType::upDown3Oct:
-    noteOffset = calculateArpUpDownOffset(arp, period, cycleCounter, 22, octaveSize);
-    break;
-  case PlaybackArpType::upDown2Oct:
-    noteOffset = calculateArpUpDownOffset(arp, period, cycleCounter, 16, octaveSize);
-    break;
-  case PlaybackArpType::upDown1Oct:
-    noteOffset = calculateArpUpDownOffset(arp, period, cycleCounter, 10, octaveSize);
-    break;
-  case PlaybackArpType::upDown:
-    noteOffset = calculateArpUpDownOffset(arp, period, cycleCounter, 4, octaveSize);
-    break;
-  case PlaybackArpType::down4Oct:
-    noteOffset = (cycleCounter % 5) * -octaveSize + arp[2-period];
-    break;
-  case PlaybackArpType::down3Oct:
-    noteOffset = (cycleCounter % 4) * -octaveSize + arp[2-period];
-    break;
-  case PlaybackArpType::down2Oct:
-    noteOffset = (cycleCounter % 3) * -octaveSize + arp[2-period];
-    break;
-  case PlaybackArpType::down1Oct:
-    if (cycleCounter % 2 == 1) {
-      noteOffset = -octaveSize;
-    }
-  case PlaybackArpType::down:
-    noteOffset += arp[2-period];
-    break;
-  case PlaybackArpType::up5Oct:
-    noteOffset = (cycleCounter % 6) * octaveSize + arp[period];
-    break;
-  case PlaybackArpType::up4Oct:
-    noteOffset = (cycleCounter % 5) * octaveSize + arp[period];
-    break;
-  case PlaybackArpType::up3Oct:
-    noteOffset = (cycleCounter % 4) * octaveSize + arp[period];
-    break;
-  case PlaybackArpType::up2Oct:
-    noteOffset = (cycleCounter % 3) * octaveSize + arp[period];
-    break;
-  case PlaybackArpType::up1Oct:
-    if (cycleCounter % 2 == 1) {
-      noteOffset = octaveSize;
-    }
-  case PlaybackArpType::up:
-    default:
-    noteOffset += arp[period];
-    break;
+    case PlaybackArpType::upDown4Oct:
+      noteOffset = calculateArpUpDownOffset(arp, period, cycleCounter, 28, octaveSize);
+      break;
+    case PlaybackArpType::upDown3Oct:
+      noteOffset = calculateArpUpDownOffset(arp, period, cycleCounter, 22, octaveSize);
+      break;
+    case PlaybackArpType::upDown2Oct:
+      noteOffset = calculateArpUpDownOffset(arp, period, cycleCounter, 16, octaveSize);
+      break;
+    case PlaybackArpType::upDown1Oct:
+      noteOffset = calculateArpUpDownOffset(arp, period, cycleCounter, 10, octaveSize);
+      break;
+    case PlaybackArpType::upDown:
+      noteOffset = calculateArpUpDownOffset(arp, period, cycleCounter, 4, octaveSize);
+      break;
+    case PlaybackArpType::down4Oct:
+      noteOffset = (cycleCounter % 5) * -octaveSize + arp[2-period];
+      break;
+    case PlaybackArpType::down3Oct:
+      noteOffset = (cycleCounter % 4) * -octaveSize + arp[2-period];
+      break;
+    case PlaybackArpType::down2Oct:
+      noteOffset = (cycleCounter % 3) * -octaveSize + arp[2-period];
+      break;
+    case PlaybackArpType::down1Oct:
+      if (cycleCounter % 2 == 1) {
+        noteOffset = -octaveSize;
+      }
+    case PlaybackArpType::down:
+      noteOffset += arp[2-period];
+      break;
+    case PlaybackArpType::up5Oct:
+      noteOffset = (cycleCounter % 6) * octaveSize + arp[period];
+      break;
+    case PlaybackArpType::up4Oct:
+      noteOffset = (cycleCounter % 5) * octaveSize + arp[period];
+      break;
+    case PlaybackArpType::up3Oct:
+      noteOffset = (cycleCounter % 4) * octaveSize + arp[period];
+      break;
+    case PlaybackArpType::up2Oct:
+      noteOffset = (cycleCounter % 3) * octaveSize + arp[period];
+      break;
+    case PlaybackArpType::up1Oct:
+      if (cycleCounter % 2 == 1) {
+        noteOffset = octaveSize;
+      }
+    case PlaybackArpType::up:
+      default:
+      noteOffset += arp[period];
+      break;
   }
   return noteOffset;
 }

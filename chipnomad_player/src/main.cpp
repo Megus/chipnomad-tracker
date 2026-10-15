@@ -53,14 +53,14 @@ void handleEvents() {
   SDL_Event e;
   while (SDL_PollEvent(&e)) {
     switch (e.type) {
-    case SDL_QUIT:
-      player.quit = 1;
-      break;
-    case SDL_KEYDOWN:
-      switch (e.key.keysym.sym) {
-      case SDLK_ESCAPE:
+      case SDL_QUIT:
         player.quit = 1;
         break;
+      case SDL_KEYDOWN:
+        switch (e.key.keysym.sym) {
+        case SDLK_ESCAPE:
+          player.quit = 1;
+          break;
       default:
         if (!player.isPlaying) {
           startPlayback();

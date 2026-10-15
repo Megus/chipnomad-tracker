@@ -33,12 +33,12 @@ static void setup(int input) {
 }
 
 static void fullRedraw(void) {
-  const ColorTheme cs = appSettings.colorScheme;
+  const ColorTheme t = appSettings.colorScheme;
 
-  gfxSetFgColor(cs.textTitles);
+  gfxSetFgColor(t.textTitles);
   gfxPrintf(0, 0, "INSTRUMENT POOL");
 
-  gfxSetFgColor(cs.textInfo);
+  gfxSetFgColor(t.textInfo);
   gfxPrint(0, 2, "    Name            Type");
 
   // Draw instruments
@@ -50,11 +50,11 @@ static void fullRedraw(void) {
 
     // Set color based on cursor position and instrument state
     if (i == cursorRow) {
-      gfxSetFgColor(cs.textValue);
+      gfxSetFgColor(t.textValue);
     } else if (instrumentIsEmpty(&chipnomadState->project, i)) {
-      gfxSetFgColor(cs.textEmpty);
+      gfxSetFgColor(t.textEmpty);
     } else {
-      gfxSetFgColor(cs.textDefault);
+      gfxSetFgColor(t.textDefault);
     }
 
     // Draw cursor indicator and instrument number

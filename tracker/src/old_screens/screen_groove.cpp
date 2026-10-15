@@ -64,8 +64,8 @@ static int getColumnCount(int row) {
 }
 
 static void drawStatic(void) {
-  const ColorTheme cs = appSettings.colorScheme;
-  gfxSetFgColor(cs.textTitles);
+  const ColorTheme t = appSettings.colorScheme;
+  gfxSetFgColor(t.textTitles);
   gfxPrintf(0, 0, "GROOVE %02X", groove);
 }
 
@@ -76,14 +76,14 @@ static void drawField(int col, int row, CellState state) {
 }
 
 static void drawRowHeader(int row, CellState state) {
-  const ColorTheme cs = appSettings.colorScheme;
-  gfxSetFgColor((state == CellState::focus) ? cs.textDefault : cs.textInfo);
+  const ColorTheme t = appSettings.colorScheme;
+  gfxSetFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
   gfxPrintf(1, 3 + row, "%X", row);
 }
 
 static void drawColHeader(int col, CellState state) {
-  const ColorTheme cs = appSettings.colorScheme;
-  gfxSetFgColor((state == CellState::focus) ? cs.textDefault : cs.textInfo);
+  const ColorTheme t = appSettings.colorScheme;
+  gfxSetFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
   gfxPrint(3, 2, "T");  // T for Timing
 }
 

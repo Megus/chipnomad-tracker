@@ -14,15 +14,15 @@ namespace chipnomad {
     float panA = 0.5, panB = 0.5, panC = 0.5;
 
     switch (stereoMode) {
-    case StereoModeAY::ABC:
-      panA = 0.5 - sep; panB = 0.5; panC = 0.5 + sep;
-      break;
-    case StereoModeAY::ACB:
-      panA = 0.5 - sep; panB = 0.5 + sep; panC = 0.5;
-      break;
-    case StereoModeAY::BAC:
-      panA = 0.5; panB = 0.5 - sep; panC = 0.5 + sep;
-      break;
+      case StereoModeAY::ABC:
+        panA = 0.5 - sep; panB = 0.5; panC = 0.5 + sep;
+        break;
+      case StereoModeAY::ACB:
+        panA = 0.5 - sep; panB = 0.5 + sep; panC = 0.5;
+        break;
+      case StereoModeAY::BAC:
+        panA = 0.5; panB = 0.5 - sep; panC = 0.5 + sep;
+        break;
     }
 
     ayumi_set_pan(ay, 0, panA, 1);

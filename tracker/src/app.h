@@ -21,7 +21,7 @@ class TrackerApp: public App, public EventDispatcher {
     void teardown() override;
     void draw() override;
     void onMainLoopEvent(MainLoopEvent event) override;
-    void dispatch(Event event) override;
+    void dispatch(Event e) override;
 
   protected:
     static constexpr int eventQueueMaxLength = 16; // Max number of events in the queue

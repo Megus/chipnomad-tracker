@@ -56,10 +56,10 @@ class Screen : EventHandler {
     virtual bool isRowVisible(int row) { return true; }; // Is this row visible on the screen?
     virtual bool adjustVerticalScroll(bool pageJump) { return false; }; // Adjust vertical scroll, return true if the screen needs to be scrolled
 
-    virtual bool onEdit(int col, int row, CellEditAction action) {}; // Handle edit action
+    virtual bool onEdit(int col, int row, CellEditAction action) { return false; }; // Handle edit action
     virtual bool onNavigationInput(InputEventData eventData) { return false; }; // Navigation input handler. Convenience function
 
-    virtual bool onEvent(Event event) override { return false; }; // Handle events from the EventDispatcher
+    virtual bool onEvent(Event e) override { return false; }; // Handle events from the EventDispatcher
 
   protected:
 
@@ -93,8 +93,6 @@ class Screen : EventHandler {
     void validateCursorPosition(); // Ensure that cursor is in a valid cell
     void setCellColor(CellState state, int isEmpty, int hasContent); // Set cell color based on state and content
 
-    bool commonInputHandler(InputEventData eventData); // Common input handler to call from onInput()
-
     int isSingleCellSelection(Rect range);
     int isFullColumnSelection(Rect range, int maxRow);
     int isFullRowSelection(Rect range, int maxCol);
@@ -106,6 +104,7 @@ class Screen : EventHandler {
     void moveCursorBelowSelection(); // Move cursor below the selection (or to the last row if selection is at the bottom)
     void drawSelectedCells(); // Draw all selected cells
 
+    bool commonInputHandler(InputEventData eventData); // Common input handler to call from onInput()
     bool inputEditMode(int keys, int tapCount); // Handles common input in edit mode
     bool inputSelectMode(int keys, int tapCount);
     void inputCursor(int keys, bool& handled, bool& needsRedraw); // Handles standard cursor movement (left, right, up, down)

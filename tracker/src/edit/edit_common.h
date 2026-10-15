@@ -1,6 +1,8 @@
 #ifndef __EDIT_COMMON_H__
 #define __EDIT_COMMON_H__
 
+#include <stdint.h>
+
 enum class CellEditAction : int {
   clear,
   tap,

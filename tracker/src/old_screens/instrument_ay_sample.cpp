@@ -174,7 +174,7 @@ static int getColumnCount(int row) {
 }
 
 static void drawOscillatorHeaders(void) {
-  const ColorTheme cs = appSettings.colorScheme;
+  const ColorTheme t = appSettings.colorScheme;
   InstrumentAYSample* smp = &chipnomadState->project.instruments[cInstrument].chip.aySample;
 
   // Determine oscillator on/off states
@@ -182,32 +182,32 @@ static void drawOscillatorHeaders(void) {
   int noiseOn = smp->oscNoise.isOn;
 
   // Tone header (y 8) - color based on on/off state
-  gfxSetFgColor(toneOn ? cs.textTitles : cs.textInfo);
+  gfxSetFgColor(toneOn ? t.textTitles : t.textInfo);
   gfxPrint(COL_RIGHT_X, 8, "Tone");
 
   // Noise header (y 12) - color based on on/off state
-  gfxSetFgColor(noiseOn ? cs.textTitles : cs.textInfo);
+  gfxSetFgColor(noiseOn ? t.textTitles : t.textInfo);
   gfxPrint(COL_RIGHT_X, 12, "Noise");
 }
 
 static void drawStatic(void) {
   instrumentCommonDrawStatic();
 
-  const ColorTheme cs = appSettings.colorScheme;
+  const ColorTheme t = appSettings.colorScheme;
   InstrumentAYSample* smp = &chipnomadState->project.instruments[cInstrument].chip.aySample;
 
   // Sample label (y 6) - use title color like "Tone" and "Noise" (sample is always on)
-  gfxSetFgColor(cs.textTitles);
+  gfxSetFgColor(t.textTitles);
   gfxPrint(COL_LEFT_X, 6, "Sample");
 
   // Sample filename under "Sample" label (y 7) - dimmer color, not editable
-  gfxSetFgColor(cs.textInfo);
+  gfxSetFgColor(t.textInfo);
   if (strlen(smp->sampleName) > 0) {
     gfxPrint(COL_LEFT_X, 7, smp->sampleName);
   }
 
   // Sample params labels (y 8-13)
-  gfxSetFgColor(cs.textDefault);
+  gfxSetFgColor(t.textDefault);
   gfxPrint(COL_LEFT_X, 8, "Rate");
   gfxPrint(COL_LEFT_X, 9, "Start");
   gfxPrint(COL_LEFT_X, 10, "Length");
@@ -219,18 +219,18 @@ static void drawStatic(void) {
   drawOscillatorHeaders();
 
   // Tone labels (y 9-10)
-  gfxSetFgColor(cs.textDefault);
+  gfxSetFgColor(t.textDefault);
   gfxPrint(COL_RIGHT_X, 9, "Pitch");
   gfxPrint(COL_RIGHT_X, 10, "Fine");
 
   // Noise period label (y 13)
-  gfxSetFgColor(cs.textDefault);
+  gfxSetFgColor(t.textDefault);
   gfxPrint(COL_RIGHT_X, 13, "Period");
 
   // Update and draw sample preview
   updateSamplePreview();
   if (samplePreviewBitmap) {
-    gfxSetFgColor(cs.textInfo);
+    gfxSetFgColor(t.textInfo);
     gfxDrawBitmap(samplePreviewBitmap, PREVIEW_COL, PREVIEW_ROW);
   }
 }

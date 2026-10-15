@@ -224,7 +224,7 @@ bool Screen::inputEditMode(int keys, int tapCount) {
   if (!handled) {
     if (keys == (keyShift | keyOpt) && supportsSelectMode() && mode == ScreenMode::edit) {
       // Enter select mode
-      mode == ScreenMode::select;
+      mode = ScreenMode::select;
       selectStartRow = cursorRow;
       selectStartCol = cursorCol;
       selectAnchorRow = cursorRow;

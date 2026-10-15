@@ -231,12 +231,12 @@ int instrumentCommonColumnCount(int row) {
 }
 
 void instrumentCommonDrawStatic(void) {
-  const ColorTheme cs = appSettings.colorScheme;
+  const ColorTheme t = appSettings.colorScheme;
 
-  gfxSetFgColor(cs.textTitles);
+  gfxSetFgColor(t.textTitles);
   gfxPrintf(0, 0, "INSTRUMENT %02X", cInstrument);
 
-  gfxSetFgColor(cs.textDefault);
+  gfxSetFgColor(t.textDefault);
   gfxPrint(0, 2, "Type");
 
   if (chipnomadState->project.instruments[cInstrument].type == InstrumentType::none) return;

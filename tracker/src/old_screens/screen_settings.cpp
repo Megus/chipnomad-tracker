@@ -88,9 +88,9 @@ int settingsColumnCount(int row) {
 }
 
 void settingsDrawStatic(void) {
-  const ColorTheme cs = appSettings.colorScheme;
+  const ColorTheme t = appSettings.colorScheme;
 
-  gfxSetFgColor(cs.textTitles);
+  gfxSetFgColor(t.textTitles);
   gfxPrint(0, 0, "SETTINGS");
 }
 

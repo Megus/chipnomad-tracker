@@ -104,17 +104,17 @@ static void drawField(int col, int row, CellState state) {
 }
 
 static void drawRowHeader(int row, CellState state) {
-  const ColorTheme cs = appSettings.colorScheme;
+  const ColorTheme t = appSettings.colorScheme;
 
-  gfxSetFgColor((state == CellState::focus) ? cs.textDefault : cs.textInfo);
+  gfxSetFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
   gfxPrint(0, 3 + row - screen.topRow, byteToHex(row));
 }
 
 static void drawColHeader(int col, CellState state) {
   static char digit[2] = "0";
-  const ColorTheme cs = appSettings.colorScheme;
+  const ColorTheme t = appSettings.colorScheme;
 
-  gfxSetFgColor((state == CellState::focus) ? cs.textDefault : cs.textInfo);
+  gfxSetFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
   digit[0] = col + 49;
   gfxPrint(3 + col * 3, 2, digit);
 }

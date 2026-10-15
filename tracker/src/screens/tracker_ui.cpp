@@ -8,9 +8,6 @@
 
 #include "screen_song.h"
 
-
-#define MESSAGE_TIME (60)
-
 TrackerUI::TrackerUI(Gfx& gfx, FontManager& fontManager, AudioManager& audio, FileSystem& file, InputUtils& input, EventDispatcher& dispatcher, TrackerState& state):
   gfx(gfx),
   fontManager(fontManager),
@@ -20,22 +17,28 @@ TrackerUI::TrackerUI(Gfx& gfx, FontManager& fontManager, AudioManager& audio, Fi
   dispatcher(dispatcher),
   state(state)
 {
-
   // Create all screen objects
   screenSong = new ScreenSong(state, dispatcher, gfx);
 
-  // Initialize waveform display
+  // Remaining initialization
   waveformDisplayInit();
-
   screenStack[0] = screenSong;
+}
+
+TrackerUI::~TrackerUI() {
+  delete screenSong;
+}
+
+Screen* TrackerUI::getCurrentScreen() {
+  return screenStack[screenStackIdx];
 }
 
 void TrackerUI::drawScreenMap() {
   const static int smY = 15;
 
-  const ColorTheme cs = state.settings.colorTheme;
-  gfx.setBgColor(cs.background);
-  gfx.setFgColor(cs.textInfo);
+  const ColorTheme t = state.settings.colorTheme;
+  gfx.setBgColor(t.background);
+  gfx.setFgColor(t.textInfo);
   gfx.clearRect(35, smY, 5, 5);
 
   // Core screens
@@ -61,7 +64,7 @@ void TrackerUI::drawScreenMap() {
   }
 
   // Highlight current screen
-  gfx.setFgColor(cs.textDefault);
+  gfx.setFgColor(t.textDefault);
   if (currentScreen == &screenSong) {
     gfx.print(35, smY + 1, "S");
   } else if (currentScreen == &screenChain) {
@@ -87,38 +90,32 @@ void TrackerUI::drawScreenMap() {
   }
 */
 }
-
-bool TrackerUI::onEvent(Event event) {
-
-  return false;
-}
-
-
 void TrackerUI::draw() {
-  const ColorTheme cs = state.settings.colorTheme;
+  const ColorTheme t = state.settings.colorTheme;
 
-  // Tracks
+  /////////////////////////////////////////////////////////////////////////////
+  // Tracks playback preview
+
   char digit[2] = "0";
   for (int c = 0; c < state.project.tracksCount; c++) {
     // Draw mute/solo indicator to the left of track number
-    gfx.setFgColor(cs.textTitles);
+    gfx.setFgColor(t.textTitles);
     if (audio.trackStates[c] == TrackState::muted) {
       gfx.print(34, 3 + c, "M");
     } else if (audio.trackStates[c] == TrackState::solo) {
       gfx.print(34, 3 + c, "S");
     } else {
-      gfx.print(34, 3 + c, " "); // Clear indicator
+      gfx.print(34, 3 + c, " ");
     }
 
     // Use warning color for track numbers if audio overload is active
     int useOverloadColor = (audio.engine.audioOverload > 0);
-    gfx.setFgColor(useOverloadColor ? cs.warning :
-      (state.songTrack == c ? cs.textDefault : cs.textInfo));
+    gfx.setFgColor(useOverloadColor ? t.warning : (state.songTrack == c ? t.textDefault : t.textInfo));
     digit[0] = c + 49;
     gfx.print(35, 3 + c, digit);
 
     // Draw waveform between track number and note
-    gfx.setFgColor(cs.textInfo);
+    gfx.setFgColor(t.textInfo);
     Bitmap* waveformBitmap = waveformDisplayGetBitmap(c);
     if (waveformBitmap) {
       gfx.drawBitmap(waveformBitmap, 36, 3 + c);
@@ -130,19 +127,189 @@ void TrackerUI::draw() {
     // Use warning color if track warning is active
     int useWarningColor = (state.settings.pitchConflictWarning && audio.engine.trackWarnings[c] > 0);
 
-    gfx.setFgColor(useWarningColor ? cs.warning :
-      (noteStr[0] == '-' ? cs.textEmpty : cs.textValue));
+    gfx.setFgColor(useWarningColor ? t.warning :
+      (noteStr[0] == '-' ? t.textEmpty : t.textValue));
       gfx.print(37, 3 + c, noteStr);
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
+  // Screen draw
+  getCurrentScreen()->draw();
+
+  /////////////////////////////////////////////////////////////////////////////
+  // Message at the bottom line
+  if (strlen(messageBuffer) > 0) {
+    gfx.setFgColor(t.textDefault);
+    gfx.clearRect(0, 19, 40, 1);
+    gfx.print(0, 19, messageBuffer);
+  }
+
+  if (messageTimer >= 0) {
+    messageTimer--;
+    if (messageTimer == 0) {
+      messageBuffer[0] = '\0';
+      gfx.clearRect(0, 19, 40, 1);
+    }
   }
 }
 
+bool TrackerUI::onEvent(Event e) {
+  bool handled = false;
 
+  switch (e.type) {
+    case EventType::input:
+      handled = onInput(e);
+      break;
+    case EventType::playSong:
+      handled = onPlay(e);
+      break;
+    case EventType::playChain:
+      handled = onPlay(e);
+      break;
+    case EventType::playPhrase:
+      handled = onPlay(e);
+      break;
+    case EventType::playPhraseRow:
+      break;
+    case EventType::stopPlayback:
+      audio.engine.player.stop();
+      handled = true;
+      break;
+    case EventType::redrawScreen:
+/*
+  // Full redraw event
+    gfxSetBgColor(appSettings.colorScheme.background);
+    gfxClear();
+    if (currentScreen) {
+      currentScreen->fullRedraw();
+      drawScreenMap();
+    }
+*/
+      break;
+    case EventType::switchScreen:
+      break;
+    case EventType::pushScreen:
+      break;
+    case EventType::popScreen:
+      break;
+    case EventType::showMessage:
+      onShowMessage(e, true);
+      handled = true;
+      break;
+    case EventType::showTimedMessage:
+      onShowMessage(e, false);
+      handled = false;
+      break;
+    default:
+      break;
+  }
 
-void screenSetup(const AppScreen* screen, int input) {
-  pendingScreen = screen;
-  pendingScreenInput = input;
+  // If the event wasn't handled by the UI itself, forward it to the topmost screen
+  if (!handled) handled = getCurrentScreen()->onEvent(e);
+
+  return handled;
 }
 
+bool TrackerUI::onInput(Event e) {
+  using namespace chipnomad;
+
+  // All keys are released
+  if (!e.input.isKeyDown && e.input.keys == 0) {
+    // Clear immediate screen message
+    dispatcher.dispatch({.type = EventType::showMessage, .stringValue = ""});
+
+    // Stop phrase row playback
+    if (audio.engine.player.tracks[state.songTrack].mode == PlaybackMode::phraseRow) {
+      dispatcher.dispatch({.type = EventType::stopPlayback});
+    }
+  }
+
+  // Let the current screen handle input first and then handle global playback keys
+  bool handled = getCurrentScreen()->onEvent(e);
+  if (handled || !e.input.isKeyDown) return true;
+
+  ScreenPlaybackLevel playbackLevel = getCurrentScreen()->getPlaybackLevel();
+  LoopRange range = getCurrentScreen()->getLoopRange();
+  Player& player = audio.engine.player;
+  int isPlaying = player.isPlaying();
+
+  // Stop playback
+  if (isPlaying && e.input.keys == keyPlay) {
+    dispatcher.dispatch({.type = EventType::stopPlayback});
+    return true;
+  }
+
+  // This screen doesn't support playback
+  if (playbackLevel == ScreenPlaybackLevel::none) return true;
+
+  // Play song/chain/phrase depending on the screen's playback level
+  if (!isPlaying && e.input.keys == keyPlay) {
+    if (playbackLevel == ScreenPlaybackLevel::song) {
+      dispatcher.dispatch({
+        .type = EventType::playSong,
+        .play = {.loopRange = range, .songRow = range.enabled ? range.startSongRow : state.songRow, .chainRow = 0}
+      });
+    } else if (playbackLevel == ScreenPlaybackLevel::chain) {
+      dispatcher.dispatch({
+        .type = EventType::playChain,
+        .play = {.loopRange = range, .track = state.songTrack, .songRow = state.songRow, .chainRow = range.enabled ? range.startChainRow : state.chainRow}
+      });
+    } else if (playbackLevel == ScreenPlaybackLevel::phrase) {
+      dispatcher.dispatch({
+        .type = EventType::playPhrase,
+        .play = {.loopRange = range, .track = state.songTrack, .songRow = state.songRow, .chainRow = state.chainRow}
+      });
+    }
+  }
+  // Play song from music screens (Shift+Play)
+  else if (!isPlaying && e.input.keys == (keyPlay | keyShift)) {
+    if (playbackLevel == ScreenPlaybackLevel::song) {
+      dispatcher.dispatch({
+        .type = EventType::playSong,
+        .play = {.loopRange = range, .songRow = range.enabled ? range.startSongRow : state.songRow, .chainRow = 0}
+      });
+    } else if (playbackLevel == ScreenPlaybackLevel::chain || playbackLevel == ScreenPlaybackLevel::phrase) {
+      dispatcher.dispatch({
+        .type = EventType::playSong,
+        .play = {.loopRange = range, .songRow = state.songRow, .chainRow = range.enabled ? range.startChainRow : state.chainRow}
+      });
+    }
+  }
+  return true;
+}
+
+void TrackerUI::onShowMessage(Event e, bool isTimed) {
+  if (messageTimer > 0 && e.stringValue.length() == 0) return; // Don't clear timed messages
+  gfx.clearRect(0, 19, 40, 1);
+  messageTimer = isTimed ? timedMessageFrames : 0;
+  strncpy(messageBuffer, e.stringValue.c_str(), sizeof(messageBuffer) - 1);
+  messageBuffer[sizeof(messageBuffer) - 1] = 0;
+}
+
+bool TrackerUI::onPlay(Event e) {
+  chipnomad::Player& player = audio.engine.player;
+
+  if (player.isPlaying()) return true;
+
+  if (e.type == EventType::playSong) {
+    player.playSong(e.play.songRow, e.play.chainRow, true);
+  } else if (e.type == EventType::playChain) {
+    player.playChain(e.play.track, e.play.songRow, e.play.chainRow, true);
+  } else if (e.type == EventType::playPhrase) {
+    player.playPhrase(e.play.track, e.play.songRow, e.play.chainRow, true);
+  } else {
+    return false;
+  }
+
+  if (e.play.loopRange.enabled) {
+    player.setLoopRange(e.play.loopRange);
+  } else {
+    player.clearLoopRange();
+  }
+  return true;
+}
+
+/*
 void screenDraw() {
   if (pendingScreen != NULL) {
     currentScreen = pendingScreen;
@@ -155,168 +322,5 @@ void screenDraw() {
 
     pendingScreen = NULL;
   }
-
-  currentScreen->draw();
-
-  // Draw cached message
-  if (strlen(messageBuffer) > 0) {
-    gfxSetFgColor(appSettings.colorScheme.textDefault);
-    gfxClearRect(0, 19, 40, 1);
-    gfxPrint(0, 19, messageBuffer);
-  }
-
-  if (messageTimer >= 0) {
-    messageTimer--;
-    if (messageTimer == 0) {
-      messageBuffer[0] = '\0';
-      gfxClearRect(0, 19, 40, 1);
-    }
-  }
 }
-
-
-void screenMessage(int time, const char* format, ...) {
-  // Don't clear timed messages
-  if (messageTimer > 0 && strlen(format) == 0) {
-    return;
-  }
-
-  messageTimer = time;
-
-  va_list args;
-  va_start(args, format);
-  vsnprintf(messageBuffer, 41, format, args);
-  va_end(args);
-
-  // Clear message area immediately if setting empty message
-  if (strlen(messageBuffer) == 0) {
-    gfxClearRect(0, 19, 40, 1);
-  }
-}
-
-
-bool TrackerUI::onEvent(Event event) {
-
-/*
-  // On keyUp and no buttons - clear the message
-    if (pressedButtons == 0) {
-      // Clean untimed screen message when all keys are released
-      screenMessage(0, "");
-    }
 */
-
-/*
-  // Full redraw event
-    gfxSetBgColor(appSettings.colorScheme.background);
-    gfxClear();
-    if (currentScreen) {
-      currentScreen->fullRedraw();
-      drawScreenMap();
-    }
-*/
-
-  return false;
-}
-
-
-/**
-* @brief App input handler. Handles app-wide commands and then forwards the call to the current screen
-*
-* @param isKeyDown whether this is a key press (1) or key release (0)
-* @param keys Pressed buttons
-* @param tapCount number of taps
-*/
-static void appInput(int isKeyDown, int keys, int tapCount) {
-  // Stop phrase row and preview
-  if (chipnomadState->engine->player.tracks[*pSongTrack].mode == PlaybackMode::phraseRow && keys == 0) {
-    chipnomadState->engine->player.stop();
-  }
-  // Let screen handle input first, then try global playback if not handled
-  if (!currentScreen->onInput(isKeyDown, keys, tapCount)) {
-    if (isKeyDown) {
-      inputPlayback(keys, tapCount);
-    }
-  }
-}
-
-
-
-static void applyLoopRange(void) {
-  chipnomad::LoopRange range = screenGetLoopRange(currentScreen);
-  if (range.enabled) {
-    chipnomadState->engine->player.setLoopRange(range);
-  } else {
-    chipnomadState->engine->player.clearLoopRange();
-  }
-}
-
-/**
-* @brief Handle play/stop key commands
-*
-* @param keys Pressed keys
-* @param tapCount number of taps
-* @return int 0 - input not handled, 1 - input handled
-*/
-static int inputPlayback(int keys, int tapCount) {
-  if (!chipnomadState) return 0;
-
-  Player& player = chipnomadState->engine->player;
-  int isPlaying = player.isPlaying();
-  ScreenPlaybackLevel playbackLevel = screenGetPlaybackLevel(currentScreen);
-
-  // Play song/chain/phrase depending on the screen's playback level
-  if (!isPlaying && keys == keyPlay) {
-    if (playbackLevel == ScreenPlaybackLevel::none) {
-      return 0; // This screen doesn't support playback
-    }
-
-    player.stop();
-    LoopRange range = screenGetLoopRange(currentScreen);
-
-    if (playbackLevel == ScreenPlaybackLevel::song) {
-      int startRow = range.enabled ? range.startSongRow : *pSongRow;
-      player.playSong(startRow, 0, 1);
-      applyLoopRange();
-    } else if (playbackLevel == ScreenPlaybackLevel::chain) {
-      int startRow = range.enabled ? range.startChainRow : *pChainRow;
-      player.playChain(*pSongTrack, *pSongRow, startRow, 1);
-      applyLoopRange();
-    } else if (playbackLevel == ScreenPlaybackLevel::phrase) {
-      player.playPhrase(*pSongTrack, *pSongRow, *pChainRow, 1);
-      applyLoopRange();
-    }
-    return 1;
-  }
-  // Play song from music screens (Shift+Play)
-  else if (!isPlaying && keys == (keyPlay | keyShift)) {
-    if (playbackLevel == ScreenPlaybackLevel::none) {
-      return 0; // This screen doesn't support playback
-    }
-
-    player.stop();
-    LoopRange range = screenGetLoopRange(currentScreen);
-
-    if (playbackLevel == ScreenPlaybackLevel::song) {
-      int startRow = range.enabled ? range.startSongRow : *pSongRow;
-      player.playSong(startRow, 0, 1);
-      applyLoopRange();
-    } else if (playbackLevel == ScreenPlaybackLevel::chain || playbackLevel == ScreenPlaybackLevel::phrase) {
-      int startChainRow = range.enabled ? range.startChainRow : *pChainRow;
-      player.playSong(*pSongRow, startChainRow, 1);
-      applyLoopRange();
-    }
-    return 1;
-  }
-  // Stop playback
-  else if (isPlaying && keys == keyPlay) {
-    player.stop();
-    return 1;
-  }
-  return 0;
-}
-
-
-void clearNotePreview(void) {
-  // Clear the note preview area for all tracks (right side of screen)
-  gfxClearRect(35, 3, 5, PROJECT_MAX_TRACKS);
-}

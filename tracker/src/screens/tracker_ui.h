@@ -11,14 +11,20 @@
 class TrackerUI : public EventHandler {
   public:
     TrackerUI(Gfx& gfx, FontManager& fontManager, AudioManager& audio, FileSystem& file, InputUtils& input, EventDispatcher& dispatcher, TrackerState& state);
+    virtual ~TrackerUI();
 
-    bool onEvent(Event event) override;
     void draw();
+    bool onEvent(Event e) override;
 
   protected:
-    static constexpr int screenStackDepth = 3; // Root screen, 1st popup (e.g. file browser), 2nd popup (e.g. yes/no confirmation)
+    static constexpr int screenStackMaxDepth = 3; // Root screen, 1st popup (e.g. file browser), 2nd popup (e.g. yes/no confirmation)
+    static constexpr int timedMessageFrames = 60; // Duration of a timed message
 
+    Screen* getCurrentScreen();
     void drawScreenMap();
+    void onShowMessage(Event e, bool isTimed);
+    bool onInput(Event e);
+    bool onPlay(Event e);
 
     Gfx& gfx;
     FontManager& fontManager;
@@ -28,7 +34,7 @@ class TrackerUI : public EventHandler {
     EventDispatcher& dispatcher;
     TrackerState& state;
 
-    Screen* screenStack[screenStackDepth];
+    Screen* screenStack[screenStackMaxDepth];
     int screenStackIdx = 0;
 
     int messageTimer = 0;
