@@ -248,58 +248,58 @@ int edit16withOverflow(CellEditAction action, uint16_t* value, uint16_t bigStep,
   return 0;
 }
 
-int applyPhraseRotation(Phrase& phrase,int startRow, int endRow, int direction) {
-  if (startRow == endRow) return 0;
+int applyPhraseRotation(chipnomad::Phrase& p, int startRow, int endRow, int direction) {
+  using namespace chipnomad;
 
-  PhraseRow* rows = chipnomadState->project.phrases[phraseIdx].rows;
+  if (startRow == endRow) return 0;
 
   if (direction > 0) {
     // Rotate down: move last row to first
-    PhraseRow temp = rows[endRow];
+    PhraseRow temp = p.rows[endRow];
     for (int r = endRow; r > startRow; r--) {
-      rows[r] = rows[r - 1];
+      p.rows[r] = p.rows[r - 1];
     }
-    rows[startRow] = temp;
+    p.rows[startRow] = temp;
   } else {
     // Rotate up: move first row to last
-    PhraseRow temp = rows[startRow];
+    PhraseRow temp = p.rows[startRow];
     for (int r = startRow; r < endRow; r++) {
-      rows[r] = rows[r + 1];
+      p.rows[r] = p.rows[r + 1];
     }
-    rows[endRow] = temp;
+    p.rows[endRow] = temp;
   }
 
   return 1;
 }
 
-int applyTableRotation(int tableIdx, int startRow, int endRow, int direction) {
-  if (startRow == endRow) return 0;
+int applyTableRotation(chipnomad::Table& t, int startRow, int endRow, int direction) {
+  using namespace chipnomad;
 
-  TableRow* rows = chipnomadState->project.tables[tableIdx].rows;
+  if (startRow == endRow) return 0;
 
   if (direction > 0) {
     // Rotate down: move last row to first
-    TableRow temp = rows[endRow];
+    TableRow temp = t.rows[endRow];
     for (int r = endRow; r > startRow; r--) {
-      rows[r] = rows[r - 1];
+      t.rows[r] = t.rows[r - 1];
     }
-    rows[startRow] = temp;
+    t.rows[startRow] = temp;
   } else {
     // Rotate up: move first row to last
-    TableRow temp = rows[startRow];
+    TableRow temp = t.rows[startRow];
     for (int r = startRow; r < endRow; r++) {
-      rows[r] = rows[r + 1];
+      t.rows[r] = t.rows[r + 1];
     }
-    rows[endRow] = temp;
+    t.rows[endRow] = temp;
   }
 
   return 1;
 }
 
-int applySongMoveDown(int startCol, int startRow, int endCol, int endRow) {
+int applySongMoveDown(chipnomad::Project& p, int startCol, int startRow, int endCol, int endRow) {
   // Check if we can move down (bottom row must be empty)
   for (int c = startCol; c <= endCol; c++) {
-    if (chipnomadState->project.song[PROJECT_MAX_LENGTH - 1][c] != EMPTY_VALUE_16) {
+    if (p.song[PROJECT_MAX_LENGTH - 1][c] != EMPTY_VALUE_16) {
       return 0;
     }
   }
@@ -307,30 +307,30 @@ int applySongMoveDown(int startCol, int startRow, int endCol, int endRow) {
   // Push everything below selection down by 1 row (from bottom up)
   for (int c = startCol; c <= endCol; c++) {
     for (int r = PROJECT_MAX_LENGTH - 1; r > endRow + 1; r--) {
-      chipnomadState->project.song[r][c] = chipnomadState->project.song[r - 1][c];
-      chipnomadState->project.songHighlight[r][c] = chipnomadState->project.songHighlight[r - 1][c];
+      p.song[r][c] = p.song[r - 1][c];
+      p.songHighlight[r][c] = p.songHighlight[r - 1][c];
     }
   }
 
   // Move selection down by 1 row
   for (int c = startCol; c <= endCol; c++) {
     for (int r = endRow; r >= startRow; r--) {
-      chipnomadState->project.song[r + 1][c] = chipnomadState->project.song[r][c];
-      chipnomadState->project.songHighlight[r + 1][c] = chipnomadState->project.songHighlight[r][c];
+      p.song[r + 1][c] = p.song[r][c];
+      p.songHighlight[r + 1][c] = p.songHighlight[r][c];
     }
-    chipnomadState->project.song[startRow][c] = EMPTY_VALUE_16;
-    chipnomadState->project.songHighlight[startRow][c] = 0;
+    p.song[startRow][c] = EMPTY_VALUE_16;
+    p.songHighlight[startRow][c] = 0;
   }
 
   return 1;
 }
 
-int applySongMoveUp(int startCol, int startRow, int endCol, int endRow) {
+int applySongMoveUp(chipnomad::Project& p, int startCol, int startRow, int endCol, int endRow) {
   // Check if we can move up (space above selection must be empty)
   if (startRow == 0) return 0;
 
   for (int c = startCol; c <= endCol; c++) {
-    if (chipnomadState->project.song[startRow - 1][c] != EMPTY_VALUE_16) {
+    if (p.song[startRow - 1][c] != EMPTY_VALUE_16) {
       return 0; // Can't move up
     }
   }
@@ -338,11 +338,11 @@ int applySongMoveUp(int startCol, int startRow, int endCol, int endRow) {
   // Move selection up
   for (int c = startCol; c <= endCol; c++) {
     for (int r = startRow - 1; r < endRow; r++) {
-      chipnomadState->project.song[r][c] = chipnomadState->project.song[r + 1][c];
-      chipnomadState->project.songHighlight[r][c] = chipnomadState->project.songHighlight[r + 1][c];
+      p.song[r][c] = p.song[r + 1][c];
+      p.songHighlight[r][c] = p.songHighlight[r + 1][c];
     }
-    chipnomadState->project.song[endRow][c] = EMPTY_VALUE_16;
-    chipnomadState->project.songHighlight[endRow][c] = 0;
+    p.song[endRow][c] = EMPTY_VALUE_16;
+    p.songHighlight[endRow][c] = 0;
   }
 
   return 1;

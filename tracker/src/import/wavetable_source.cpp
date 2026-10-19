@@ -17,7 +17,7 @@ WavetableSource::WavetableSource(const char* path, bool isYM) {
 
   // Build the 4-bit level -> signed 16-bit amplitude table using the AY/YM
   // volume curve (cnDACTableAY/YM give unsigned 0-255 amplitude).
-  const uint8_t* dacTable = isYM ? cnDACTableYM : cnDACTableAY;
+  const uint8_t* dacTable = isYM ? chipnomad::cnDACTableYM : chipnomad::cnDACTableAY;
   for (int i = 0; i < 16; i++) {
     // Convert unsigned 0-255 to signed 16-bit range, centered at 0
     levelToSample[i] = (int16_t)(((int)dacTable[i] - 128) * 256);

@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include "version.h"
 #include "gfx_sdl12.h"
+#include "fonts.h"
 #include "font_manager.h"
 
 #define WINDOW_WIDTH (640)
@@ -12,8 +13,6 @@
 
 #define CHAR_X(x) ((x) * fontW * 8)
 #define CHAR_Y(y) ((y) * fontH)
-
-extern uint8_t font16x24[];
 
 SDL_Surface *sdlScreen;
 static uint32_t fgColor = 0;
@@ -147,15 +146,6 @@ void GfxSDL12::clear() {
   SDL_FillRect(offscreenSurface, NULL, bgColor);
 #else
   SDL_FillRect(sdlScreen, NULL, bgColor);
-#endif
-  isDirty = 1;
-}
-
-void GfxSDL12::point(int x, int y, uint32_t color) {
-#ifdef MIYOOPORTS_BUILD
-  ((Uint32 *)offscreenSurface->pixels)[y * offscreenSurface->w + x] = color;
-#else
-  ((Uint32 *)sdlScreen->pixels)[y * sdlScreen->w + x] = color;
 #endif
   isDirty = 1;
 }

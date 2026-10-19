@@ -2,9 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "chipnomad_lib.h"
 #include "file_system.h"
-#include "common.h"
 #include "import_common.h"
 
 static char lineBuffer[1024];
@@ -77,33 +75,33 @@ static inline int clampToInt8(int value) {
   return value;
 }
 
-static void setPrdEffect(TableRow* row, int prdValue) {
-  row->fx[FX_SLOT_PITCH][0] = fxPRD;
+static void setPrdEffect(chipnomad::TableRow* row, int prdValue) {
+  row->fx[FX_SLOT_PITCH][0] = chipnomad::fxPRD;
   row->fx[FX_SLOT_PITCH][1] = (uint8_t)prdValue;
 }
 
-static int findReferenceNote() {
-  for (int i = 0; i < chipnomadState->project.pitchTable.length; i++) {
-    if (strcmp(chipnomadState->project.pitchTable.noteNames[i], VTS_REFERENCE_NOTE) == 0) {
+static int findReferenceNote(chipnomad::Project& p) {
+  for (int i = 0; i < p.pitchTable.length; i++) {
+    if (strcmp(p.pitchTable.noteNames[i], VTS_REFERENCE_NOTE) == 0) {
       return i;
     }
   }
-  return chipnomadState->project.pitchTable.length / 2;
+  return p.pitchTable.length / 2;
 }
 
-static int calculateSemitonesFromOffset(int offset, int referenceNoteIdx, int* outAccumulatedPeriod) {
+static int calculateSemitonesFromOffset(chipnomad::Project& p, int offset, int referenceNoteIdx, int* outAccumulatedPeriod) {
   int semitones = 0;
   int accumulatedPeriod = 0;
   int currentNote = referenceNoteIdx;
   int direction = (offset > 0) ? -1 : 1;
   int absOffset = abs(offset);
 
-  while (currentNote >= 0 && currentNote < chipnomadState->project.pitchTable.length - 1) {
+  while (currentNote >= 0 && currentNote < p.pitchTable.length - 1) {
     int nextNote = currentNote + direction;
-    if (nextNote < 0 || nextNote >= chipnomadState->project.pitchTable.length) break;
+    if (nextNote < 0 || nextNote >= p.pitchTable.length) break;
 
-    int stepSize = abs(chipnomadState->project.pitchTable.values[currentNote] -
-      chipnomadState->project.pitchTable.values[nextNote]);
+    int stepSize = abs(p.pitchTable.values[currentNote] -
+      p.pitchTable.values[nextNote]);
 
     if (accumulatedPeriod + stepSize > absOffset) break;
 
@@ -122,7 +120,7 @@ static int calculateSemitonesFromOffset(int offset, int referenceNoteIdx, int* o
 }
 
 // Convert VTS pitch offsets to ChipNomad pitch commands for a table
-static void convertVTSPitchOffsets(Table* table, int* vtsOffsets, int* vtsOffsetTypes, int rowCount, int referenceNoteIdx) {
+static void convertVTSPitchOffsets(chipnomad::Project& p, chipnomad::Table* table, int* vtsOffsets, int* vtsOffsetTypes, int rowCount, int referenceNoteIdx) {
   for (int i = 0; i < rowCount; i++) {
     int currentVTSOffset = vtsOffsets[i];
     int prevOffset = (i > 0) ? vtsOffsets[i-1] : 0;
@@ -143,10 +141,10 @@ static void convertVTSPitchOffsets(Table* table, int* vtsOffsets, int* vtsOffset
         }
       } else {
         int currentAccumulated = 0;
-        int semitones = calculateSemitonesFromOffset(currentVTSOffset, referenceNoteIdx, &currentAccumulated);
+        int semitones = calculateSemitonesFromOffset(p, currentVTSOffset, referenceNoteIdx, &currentAccumulated);
 
         int prevAccumulated = 0;
-        calculateSemitonesFromOffset(prevOffset, referenceNoteIdx, &prevAccumulated);
+        calculateSemitonesFromOffset(p, prevOffset, referenceNoteIdx, &prevAccumulated);
 
         table->rows[i].pitchOffset = (int8_t)clampToInt8(semitones);
 
@@ -162,7 +160,9 @@ static void convertVTSPitchOffsets(Table* table, int* vtsOffsets, int* vtsOffset
   }
 }
 
-static void parseVTSLine(const char* line, TableRow* row) {
+static void parseVTSLine(const char* line, chipnomad::TableRow* row) {
+  using namespace chipnomad;
+
   initTableRow(row);
 
   size_t len = strlen(line);
@@ -256,8 +256,7 @@ static void parsePitchOffset(const char* line, size_t lineLen, int* offset, int*
   }
 }
 
-static void processVTSLine(Table* table, const char* line, int rowIdx,
-                           int* loopRow, int* vtsOffsets, int* vtsOffsetTypes) {
+static void processVTSLine(chipnomad::Table* table, const char* line, int rowIdx, int* loopRow, int* vtsOffsets, int* vtsOffsetTypes) {
   size_t lineLen = strlen(line);
   if (lineLen < 3) return;
 
@@ -269,14 +268,13 @@ static void processVTSLine(Table* table, const char* line, int rowIdx,
   parseVTSLine(line, &table->rows[rowIdx]);
 }
 
-static void finalizeVTSInstrument(Table* table, int rowCount, int loopRow,
-                                  int* vtsOffsets, int* vtsOffsetTypes) {
-  int referenceNoteIdx = findReferenceNote();
-  convertVTSPitchOffsets(table, vtsOffsets, vtsOffsetTypes, rowCount, referenceNoteIdx);
+static void finalizeVTSInstrument(chipnomad::Project& p, chipnomad::Table* table, int rowCount, int loopRow, int* vtsOffsets, int* vtsOffsetTypes) {
+  int referenceNoteIdx = findReferenceNote(p);
+  convertVTSPitchOffsets(p, table, vtsOffsets, vtsOffsetTypes, rowCount, referenceNoteIdx);
 
   if (loopRow >= 0 && rowCount < TABLE_ROW_COUNT) {
     initTableRow(&table->rows[rowCount]);
-    table->rows[rowCount].fx[FX_SLOT_CONTROL][0] = fxTHO;
+    table->rows[rowCount].fx[FX_SLOT_CONTROL][0] = chipnomad::fxTHO;
     table->rows[rowCount].fx[FX_SLOT_CONTROL][1] = loopRow;
     rowCount++;
   }
@@ -287,24 +285,26 @@ static void finalizeVTSInstrument(Table* table, int rowCount, int loopRow,
 }
 
 
-int instrumentLoadVTS(const char* path, int instrumentIdx) {
+bool instrumentLoadVTS(chipnomad::Project& p, const char* path, int instrumentIdx) {
+  using namespace chipnomad;
+
   if (instrumentIdx < 0 || instrumentIdx >= PROJECT_MAX_INSTRUMENTS) {
-    return 0;
+    return false;
   }
 
   FILE* file = fopen(path, "r");
   if (file == NULL) {
-    return 0;
+    return false;
   }
 
-  Instrument* inst = &chipnomadState->project.instruments[instrumentIdx];
-  Table* table = &chipnomadState->project.tables[instrumentIdx];
+  Instrument* inst = &p.instruments[instrumentIdx];
+  Table* table = &p.tables[instrumentIdx];
 
   getInstrumentFunctions(InstrumentType::AY1).init(inst);
 
   if (fgets(lineBuffer, sizeof(lineBuffer), file) == NULL) {
     fclose(file);
-    return 0;
+    return false;
   }
 
   extractInstrumentName(lineBuffer, path, inst->name, PROJECT_INSTRUMENT_NAME_LENGTH);
@@ -321,19 +321,21 @@ int instrumentLoadVTS(const char* path, int instrumentIdx) {
     rowCount++;
   }
 
-  finalizeVTSInstrument(table, rowCount, loopRow, vtsOffsets, vtsOffsetTypes);
+  finalizeVTSInstrument(p, table, rowCount, loopRow, vtsOffsets, vtsOffsetTypes);
 
   fclose(file);
-  return 1;
+  return true;
 }
 
-int instrumentLoadVTSFromMemory(char** lines, int lineCount, int instrumentIdx, const char* instrumentName) {
+bool instrumentLoadVTSFromMemory(chipnomad::Project& p, char** lines, int lineCount, int instrumentIdx, const char* instrumentName) {
+  using namespace chipnomad;
+
   if (instrumentIdx < 0 || instrumentIdx >= PROJECT_MAX_INSTRUMENTS) {
-    return 0;
+    return false;
   }
 
-  Instrument* inst = &chipnomadState->project.instruments[instrumentIdx];
-  Table* table = &chipnomadState->project.tables[instrumentIdx];
+  Instrument* inst = &p.instruments[instrumentIdx];
+  Table* table = &p.tables[instrumentIdx];
 
   getInstrumentFunctions(InstrumentType::AY1).init(inst);
 
@@ -357,7 +359,7 @@ int instrumentLoadVTSFromMemory(char** lines, int lineCount, int instrumentIdx, 
     rowCount++;
   }
 
-  finalizeVTSInstrument(table, rowCount, loopRow, vtsOffsets, vtsOffsetTypes);
+  finalizeVTSInstrument(p, table, rowCount, loopRow, vtsOffsets, vtsOffsetTypes);
 
-  return 1;
+  return true;
 }

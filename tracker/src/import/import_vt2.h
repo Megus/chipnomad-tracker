@@ -1,16 +1,9 @@
 #ifndef __IMPORT_VT2_H__
 #define __IMPORT_VT2_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "chipnomad_lib.h"
 
-int projectLoadVT2(const char* path);
-
-
-#ifdef __cplusplus
-}
-#endif
+bool projectLoadVT2(chipnomad::Project& p, const char* path);
 
 #endif
 

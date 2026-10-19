@@ -2,6 +2,7 @@
 #define __CHIPNOMAD_LIB__CHIP_AY_H__
 
 #include "chips.h"
+#include "project.h"
 #include "../external/ayumi/ayumi.h"
 
 namespace chipnomad {

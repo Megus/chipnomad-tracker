@@ -7,6 +7,7 @@
 #include "events.h"
 #include "tracker_state.h"
 #include "screen.h"
+#include "waveform_display.h"
 
 class TrackerUI : public EventHandler {
   public:
@@ -33,6 +34,8 @@ class TrackerUI : public EventHandler {
     InputUtils& input;
     EventDispatcher& dispatcher;
     TrackerState& state;
+
+    WaveformDisplay* waveDisplay; // TODO: Maybe this class can be moved to Gfx?
 
     Screen* screenStack[screenStackMaxDepth];
     int screenStackIdx = 0;

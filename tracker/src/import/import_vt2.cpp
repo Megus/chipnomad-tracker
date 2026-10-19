@@ -4,7 +4,6 @@
 #include <ctype.h>
 #include <chipnomad_lib.h>
 #include <file_system.h>
-#include <common.h>
 #include <project_utils.h>
 #include "import_vt2.h"
 #include "import_vts.h"
@@ -31,15 +30,15 @@ struct InstrumentCloneMap {
   int8_t clonedInstrumentIdx[VT2_MAX_SAMPLES][16];
 };
 
-static int importVT2Samples(const char* path, Project* project, int sampleCount);
+static bool importVT2Samples(chipnomad::Project& p, const char* path, int sampleCount);
 static void trimLineEndings(char* line);
-static void createMultiPhraseChain(Project* project, int chainIdx, const int* phraseIndices, int phraseCount);
-static int getOrCreateSkipGroove(Project* project, uint8_t baseSpeed, int rowsToSkip);
-static void setFxCommand(PhraseRow* phraseRow, int* fxSlot, uint8_t command, uint8_t param);
-static void setGgrCommand(PhraseRow* phraseRow, int* fxSlot, int grooveIdx);
-static void setEnvelopePeriodCommands(PhraseRow* phraseRow, int* fxSlot, uint16_t envelopePeriod);
+static void createMultiPhraseChain(chipnomad::Project* project, int chainIdx, const int* phraseIndices, int phraseCount);
+static int getOrCreateSkipGroove(chipnomad::Project* project, uint8_t baseSpeed, int rowsToSkip);
+static void setFxCommand(chipnomad::PhraseRow* phraseRow, int* fxSlot, uint8_t command, uint8_t param);
+static void setGgrCommand(chipnomad::PhraseRow* phraseRow, int* fxSlot, int grooveIdx);
+static void setEnvelopePeriodCommands(chipnomad::PhraseRow* phraseRow, int* fxSlot, uint16_t envelopePeriod);
 static void getPhraseIndicesForPattern(int phraseNum, const int* phraseIndices, int* phraseA, int* phraseB, int* phraseC);
-static void setupPitchTableFromVT2(Project* project, int noteTableIndex);
+static void setupPitchTableFromVT2(chipnomad::Project& p, int noteTableIndex);
 
 struct VT2ChannelData {
   uint8_t hasNote;
@@ -91,7 +90,7 @@ static int parseBase26(char c) {
   return parseBase26Char(c);
 }
 
-static int getCurrentSpeed(Project* project, int* realLastGroove) {
+static int getCurrentSpeed(chipnomad::Project* project, int* realLastGroove) {
   int currentSpeed = DEFAULT_SPEED;
   if (*realLastGroove >= 0 && *realLastGroove < PROJECT_MAX_GROOVES) {
     currentSpeed = project->grooves[*realLastGroove].speed[0];
@@ -140,8 +139,8 @@ static void trimLineEndings(char* line) {
 }
 
 
-static void createMultiPhraseChain(Project* project, int chainIdx, const int* phraseIndices, int phraseCount) {
-  Chain* chain = &project->chains[chainIdx];
+static void createMultiPhraseChain(chipnomad::Project* project, int chainIdx, const int* phraseIndices, int phraseCount) {
+  chipnomad::Chain* chain = &project->chains[chainIdx];
 
   for (int i = 0; i < phraseCount && i < CHAIN_MAX_ROWS; i++) {
     chain->rows[i].phrase = phraseIndices[i];
@@ -154,7 +153,7 @@ static void createMultiPhraseChain(Project* project, int chainIdx, const int* ph
   }
 }
 
-static void setFxCommand(PhraseRow* phraseRow, int* fxSlot, uint8_t command, uint8_t param) {
+static void setFxCommand(chipnomad::PhraseRow* phraseRow, int* fxSlot, uint8_t command, uint8_t param) {
   if (*fxSlot < MAX_FX_SLOTS) {
     phraseRow->fx[*fxSlot][0] = command;
     phraseRow->fx[*fxSlot][1] = param;
@@ -162,36 +161,36 @@ static void setFxCommand(PhraseRow* phraseRow, int* fxSlot, uint8_t command, uin
   }
 }
 
-static void setGgrCommand(PhraseRow* phraseRow, int* fxSlot, int grooveIdx) {
+static void setGgrCommand(chipnomad::PhraseRow* phraseRow, int* fxSlot, int grooveIdx) {
   for (int fx = 0; fx < MAX_FX_SLOTS; fx++) {
-    if (phraseRow->fx[fx][0] == fxGGR) {
+    if (phraseRow->fx[fx][0] == chipnomad::fxGGR) {
       phraseRow->fx[fx][1] = (uint8_t)grooveIdx;
       return;
     }
   }
   if (*fxSlot < MAX_FX_SLOTS) {
-    phraseRow->fx[*fxSlot][0] = fxGGR;
+    phraseRow->fx[*fxSlot][0] = chipnomad::fxGGR;
     phraseRow->fx[*fxSlot][1] = (uint8_t)grooveIdx;
     (*fxSlot)++;
   }
 }
 
-static void setEnvelopePeriodCommands(PhraseRow* phraseRow, int* fxSlot, uint16_t envelopePeriod) {
+static void setEnvelopePeriodCommands(chipnomad::PhraseRow* phraseRow, int* fxSlot, uint16_t envelopePeriod) {
   if (*fxSlot >= MAX_FX_SLOTS) return;
 
-  phraseRow->fx[*fxSlot][0] = fxEPL;
+  phraseRow->fx[*fxSlot][0] = chipnomad::fxEPL;
   phraseRow->fx[*fxSlot][1] = envelopePeriod & 0xFF;
   (*fxSlot)++;
 
   uint8_t highByte = (envelopePeriod >> 8) & 0xFF;
   if (highByte > 0 && *fxSlot < MAX_FX_SLOTS) {
-    phraseRow->fx[*fxSlot][0] = fxEPH;
+    phraseRow->fx[*fxSlot][0] = chipnomad::fxEPH;
     phraseRow->fx[*fxSlot][1] = highByte;
     (*fxSlot)++;
   }
 }
 
-static int getOrCreateGroove(Project* project, uint8_t speed);
+static int getOrCreateGroove(chipnomad::Project* project, uint8_t speed);
 
 static void getPhraseIndicesForPattern(int phraseNum, const int* phraseIndices, int* phraseA, int* phraseB, int* phraseC) {
   int baseIdx = phraseNum * VT2_CHANNELS;
@@ -229,10 +228,11 @@ static int getFinalInstrument(int baseInstrument, int envType, const InstrumentC
   return (clonedIdx >= 0) ? clonedIdx : baseInstrument;
 }
 
-static void processVT2Commands(Project* project, PhraseRow* phraseRow, int* fxSlot,
+static void processVT2Commands(chipnomad::Project* project, chipnomad::PhraseRow* phraseRow, int* fxSlot,
                                const VT2ChannelData* chData, int* lastUsedGroove,
                                int* realLastGroove, int startSpeedGroove,
                                int isFirstPattern, int phraseNum, int row) {
+  using namespace chipnomad;
   for (int cmdIdx = 0; cmdIdx < chData->commandCount && cmdIdx < 4; cmdIdx++) {
     uint8_t cmd = chData->commands[cmdIdx][0];
     uint8_t param = chData->commands[cmdIdx][1];
@@ -269,7 +269,7 @@ static void processVT2Commands(Project* project, PhraseRow* phraseRow, int* fxSl
   }
 }
 
-static void processChannelRow(Project* project, PhraseRow* phraseRow,
+static void processChannelRow(chipnomad::Project* project, chipnomad::PhraseRow* phraseRow,
                               const VT2ChannelData* chData, const VT2PatternRow* vt2Row,
                               uint8_t* currentInstrument, uint8_t* currentOrnament,
                               uint8_t* currentVolume, int* needsInstrumentAfterOff,
@@ -308,7 +308,7 @@ static void processChannelRow(Project* project, PhraseRow* phraseRow,
   if (chData->hasNote && *currentOrnament > 0) {
     int ornTableIdx = ornamentBaseIdx + *currentOrnament - 1;
     if (ornTableIdx < PROJECT_MAX_TABLES) {
-      setFxCommand(phraseRow, &fxSlot, fxTBX, (uint8_t)ornTableIdx);
+      setFxCommand(phraseRow, &fxSlot, chipnomad::fxTBX, (uint8_t)ornTableIdx);
     }
   }
 
@@ -332,21 +332,21 @@ static void processChannelRow(Project* project, PhraseRow* phraseRow,
 }
 
 
-static void setupPitchTableFromVT2(Project* project, int noteTableIndex) {
+static void setupPitchTableFromVT2(chipnomad::Project& p, int noteTableIndex) {
   if (noteTableIndex < 0 || noteTableIndex > 3) {
     noteTableIndex = 2;
   }
 
   const uint16_t* table = PT3ToneTables[noteTableIndex];
 
-  strncpy(project->pitchTable.name, PT3TableNames[noteTableIndex], PROJECT_PITCH_TABLE_TITLE_LENGTH);
-  project->pitchTable.name[PROJECT_PITCH_TABLE_TITLE_LENGTH] = '\0';
+  strncpy(p.pitchTable.name, PT3TableNames[noteTableIndex], PROJECT_PITCH_TABLE_TITLE_LENGTH);
+  p.pitchTable.name[PROJECT_PITCH_TABLE_TITLE_LENGTH] = '\0';
 
-  project->pitchTable.octaveSize = OCTAVE_SIZE;
-  project->pitchTable.length = PT3_TABLE_NOTES;
+  p.pitchTable.octaveSize = OCTAVE_SIZE;
+  p.pitchTable.length = PT3_TABLE_NOTES;
 
   for (int i = 0; i < PT3_TABLE_NOTES; i++) {
-    project->pitchTable.values[i] = table[i] * 2;
+    p.pitchTable.values[i] = table[i] * 2;
   }
 
   const char* noteNames[NOTES_PER_OCTAVE] = {"C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-"};
@@ -354,7 +354,7 @@ static void setupPitchTableFromVT2(Project* project, int noteTableIndex) {
     for (int note = 0; note < NOTES_PER_OCTAVE; note++) {
       int index = octave * NOTES_PER_OCTAVE + note;
       if (index < PROJECT_MAX_PITCHES) {
-        snprintf(project->pitchTable.noteNames[index], 4, "%s%d", noteNames[note], octave);
+        snprintf(p.pitchTable.noteNames[index], 4, "%s%d", noteNames[note], octave);
       }
     }
   }
@@ -662,7 +662,7 @@ static int loadVT2Module(const char* path, VT2Module* module) {
 // Groove 00 = start speed (default, all 16 rows same speed)
 // Groove 01+ = other grooves (constant-speed or pattern-length)
 // Find or create a constant-speed groove (same speed for all 16 rows)
-static int getOrCreateGroove(Project* project, uint8_t speed) {
+static int getOrCreateGroove(chipnomad::Project* project, uint8_t speed) {
   for (int g = 0; g < PROJECT_MAX_GROOVES; g++) {
     if (project->grooves[g].speed[0] == speed && project->grooves[g].speed[1] == EMPTY_VALUE_8) {
       return g;
@@ -686,7 +686,7 @@ static int getOrCreateGroove(Project* project, uint8_t speed) {
 // then skips a given number of rows with zeros.
 // The next phrase will start with its own groove table.
 // This is used to trim VT2 patterns whose length is not a multiple of 16.
-static int getOrCreateSkipGroove(Project* project, uint8_t baseSpeed, int rowsToSkip) {
+static int getOrCreateSkipGroove(chipnomad::Project* project, uint8_t baseSpeed, int rowsToSkip) {
   if (rowsToSkip <= 0 || rowsToSkip >= 16 || baseSpeed == EMPTY_VALUE_8) {
     return -1;
   }
@@ -728,7 +728,7 @@ static int getOrCreateSkipGroove(Project* project, uint8_t baseSpeed, int rowsTo
   return -1;
 }
 
-static void convertOrnamentToTable(const VT2Ornament* orn, Table* table, int ornIdx) {
+static void convertOrnamentToTable(const VT2Ornament* orn, chipnomad::Table* table, int ornIdx) {
   initEmptyTable(table);
 
   if (orn->length == 0) return;
@@ -740,12 +740,12 @@ static void convertOrnamentToTable(const VT2Ornament* orn, Table* table, int orn
   }
 
   if (rowCount < 16) {
-    table->rows[rowCount].fx[0][0] = fxTHO;
+    table->rows[rowCount].fx[0][0] = chipnomad::fxTHO;
     table->rows[rowCount].fx[0][1] = (orn->loopPoint >= 0) ? (uint8_t)orn->loopPoint : 0;
   }
 }
 
-static int convertPatternToPhrases(const VT2Pattern* pattern, Project* project,
+static int convertPatternToPhrases(const VT2Pattern* pattern, chipnomad::Project* project,
                                      int* phraseIndices, int maxPhrases,
                                      int ornamentBaseIdx, InstrumentCloneMap* cloneMap,
                                      uint8_t currentInstrument[VT2_CHANNELS],
@@ -754,6 +754,7 @@ static int convertPatternToPhrases(const VT2Pattern* pattern, Project* project,
                                      int needsInstrumentAfterOff[VT2_CHANNELS],
                                      int isFirstPattern, int startSpeedGroove,
                                      int* lastUsedGroove, int* realLastGroove, int patIdx) {
+  using namespace chipnomad;
   if (pattern->rowCount == 0) return 0;
 
   int phrasesNeeded = (pattern->rowCount + PHRASE_ROWS - 1) / PHRASE_ROWS;
@@ -881,8 +882,9 @@ static void scanInstrumentEnvelopeUsage(const VT2Module* module, InstrumentEnvel
 
 // Clone instruments that have envelope enabled in their mixer settings
 // for each envelope type used (VT2 'E' in mixer + specific envelope types)
-static int cloneInstrumentsForEnvelopes(Project* project, const InstrumentEnvelopeUsage usage[VT2_MAX_SAMPLES],
+static int cloneInstrumentsForEnvelopes(chipnomad::Project* project, const InstrumentEnvelopeUsage usage[VT2_MAX_SAMPLES],
                                           int sampleCount, InstrumentCloneMap* cloneMap) {
+  using namespace chipnomad;
   for (int i = 0; i < VT2_MAX_SAMPLES; i++) {
     for (int e = 0; e < 16; e++) {
       cloneMap->clonedInstrumentIdx[i][e] = -1;
@@ -983,68 +985,51 @@ static int cloneInstrumentsForEnvelopes(Project* project, const InstrumentEnvelo
   return nextInstrumentIdx;
 }
 
-int projectLoadVT2(const char* path) {
-  if (!chipnomadState) {
-    return 0;
-  }
-
+bool projectLoadVT2(chipnomad::Project& p, const char* path) {
+  using namespace chipnomad;
 
   VT2Module module;
   if (!loadVT2Module(path, &module)) {
-    return 0;
+    return false;
   }
 
-  Project p;
   projectInitAY(&p);
   p.linearPitch = 0;
 
-  Project* project = &p;
+  setupPitchTableFromVT2(p, module.noteTable);
 
-  setupPitchTableFromVT2(project, module.noteTable);
+  strncpy(p.title, module.title, PROJECT_TITLE_LENGTH);
+  p.title[PROJECT_TITLE_LENGTH] = '\0';
+  strncpy(p.author, module.author, PROJECT_TITLE_LENGTH);
+  p.author[PROJECT_TITLE_LENGTH] = '\0';
 
-  strncpy(project->title, module.title, PROJECT_TITLE_LENGTH);
-  project->title[PROJECT_TITLE_LENGTH] = '\0';
-  strncpy(project->author, module.author, PROJECT_TITLE_LENGTH);
-  project->author[PROJECT_TITLE_LENGTH] = '\0';
-
-  project->tracksCount = 3;
+  p.tracksCount = 3;
 
   int startSpeedGroove = 0;
   if (module.speed > 0) {
-    project->grooves[0].speed[0] = module.speed;
+    p.grooves[0].speed[0] = module.speed;
     for (int i = 1; i < 16; i++) {
-      project->grooves[0].speed[i] = EMPTY_VALUE_8;
+      p.grooves[0].speed[i] = EMPTY_VALUE_8;
     }
   }
 
   int ornamentBaseIdx = 0x80;
   for (int i = 0; i < module.ornamentCount && i < VT2_MAX_ORNAMENTS; i++) {
     if (ornamentBaseIdx + i < PROJECT_MAX_TABLES) {
-      convertOrnamentToTable(&module.ornaments[i], &project->tables[ornamentBaseIdx + i], i);
+      convertOrnamentToTable(&module.ornaments[i], &p.tables[ornamentBaseIdx + i], i);
     }
   }
 
   InstrumentEnvelopeUsage envelopeUsage[VT2_MAX_SAMPLES];
   scanInstrumentEnvelopeUsage(&module, envelopeUsage);
 
-  Project* savedProject = &chipnomadState->project;
-  chipnomadState->project = p;
-
-  int sampleImportSuccess = importVT2Samples(path, &chipnomadState->project, module.sampleCount);
+  bool sampleImportSuccess = importVT2Samples(p, path, module.sampleCount);
+  if (!sampleImportSuccess) return false;
 
   InstrumentCloneMap cloneMap;
   if (sampleImportSuccess) {
-    cloneInstrumentsForEnvelopes(&chipnomadState->project, envelopeUsage, module.sampleCount, &cloneMap);
+    cloneInstrumentsForEnvelopes(&p, envelopeUsage, module.sampleCount, &cloneMap);
   }
-
-  Project tempWithSamples = chipnomadState->project;
-  chipnomadState->project = *savedProject;
-
-  if (!sampleImportSuccess) {
-    return 0;
-  }
-
-  project = &tempWithSamples;
 
   int patternToPhrases[VT2_MAX_PATTERNS][3][16];
   int patternPhraseCounts[VT2_MAX_PATTERNS];
@@ -1089,12 +1074,9 @@ int projectLoadVT2(const char* path) {
     }
 
     int isFirstPattern = (patIdx == firstPatternInPlayOrder);
-    int phrasesUsed = convertPatternToPhrases(pattern, project, phraseIndices, phrasesAllocated,
-                                               ornamentBaseIdx, &cloneMap,
-                                               globalCurrentInstrument, globalCurrentOrnament,
-                                               globalCurrentVolume,
-                                               globalNeedsInstrumentAfterOff,
-                                               isFirstPattern, startSpeedGroove, &lastUsedGroove, &realLastGroove, patIdx);
+    int phrasesUsed = convertPatternToPhrases(pattern, &p, phraseIndices, phrasesAllocated, ornamentBaseIdx, &cloneMap,
+      globalCurrentInstrument, globalCurrentOrnament, globalCurrentVolume, globalNeedsInstrumentAfterOff,
+      isFirstPattern, startSpeedGroove, &lastUsedGroove, &realLastGroove, patIdx);
 
     patternPhraseCounts[patIdx] = phrasesUsed;
 
@@ -1119,25 +1101,22 @@ int projectLoadVT2(const char* path) {
       int chainB = chainIdx++;
       int chainC = chainIdx++;
 
-      createMultiPhraseChain(project, chainA, patternToPhrases[patNum][0], phrasesNeeded);
-      createMultiPhraseChain(project, chainB, patternToPhrases[patNum][1], phrasesNeeded);
-      createMultiPhraseChain(project, chainC, patternToPhrases[patNum][2], phrasesNeeded);
+      createMultiPhraseChain(&p, chainA, patternToPhrases[patNum][0], phrasesNeeded);
+      createMultiPhraseChain(&p, chainB, patternToPhrases[patNum][1], phrasesNeeded);
+      createMultiPhraseChain(&p, chainC, patternToPhrases[patNum][2], phrasesNeeded);
 
-      project->song[i][0] = chainA;
-      project->song[i][1] = chainB;
-      project->song[i][2] = chainC;
-
+      p.song[i][0] = chainA;
+      p.song[i][1] = chainB;
+      p.song[i][2] = chainC;
     }
   }
 
-  chipnomadState->project = *project;
-
-  return 1;
+  return true;
 }
 
-static int importVT2Samples(const char* path, Project* project, int sampleCount) {
+static bool importVT2Samples(chipnomad::Project& p, const char* path, int sampleCount) {
   FILE* file = fopen(path, "r");
-  if (file == NULL) return 0;
+  if (file == NULL) return false;
 
   int currentSample = -1;
   int inSampleSection = 0;
@@ -1151,7 +1130,7 @@ static int importVT2Samples(const char* path, Project* project, int sampleCount)
         free(sampleLines[j]);
       }
       fclose(file);
-      return 0;
+      return false;
     }
   }
 
@@ -1165,7 +1144,7 @@ static int importVT2Samples(const char* path, Project* project, int sampleCount)
       if (inSampleSection && currentSample >= 0 && currentSample < VT2_MAX_SAMPLES && currentSample < PROJECT_MAX_INSTRUMENTS) {
         char sampleName[PROJECT_INSTRUMENT_NAME_LENGTH + 1];
         snprintf(sampleName, PROJECT_INSTRUMENT_NAME_LENGTH + 1, "Sample%02d", currentSample + 1);
-        instrumentLoadVTSFromMemory(sampleLines, sampleLineCount, currentSample, sampleName);
+        instrumentLoadVTSFromMemory(p, sampleLines, sampleLineCount, currentSample, sampleName);
         sampleLineCount = 0;
       }
 
@@ -1190,7 +1169,7 @@ static int importVT2Samples(const char* path, Project* project, int sampleCount)
   if (inSampleSection && currentSample >= 0 && currentSample < VT2_MAX_SAMPLES && currentSample < PROJECT_MAX_INSTRUMENTS) {
     char sampleName[PROJECT_INSTRUMENT_NAME_LENGTH + 1];
     snprintf(sampleName, PROJECT_INSTRUMENT_NAME_LENGTH + 1, "Sample%02d", currentSample + 1);
-    instrumentLoadVTSFromMemory(sampleLines, sampleLineCount, currentSample, sampleName);
+    instrumentLoadVTSFromMemory(p, sampleLines, sampleLineCount, currentSample, sampleName);
   }
 
   for (int i = 0; i < 64; i++) {
@@ -1198,5 +1177,5 @@ static int importVT2Samples(const char* path, Project* project, int sampleCount)
   }
 
   fclose(file);
-  return 1;
+  return true;
 }

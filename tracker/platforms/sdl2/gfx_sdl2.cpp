@@ -6,6 +6,7 @@
 #include "version.h"
 #include "gfx_sdl2.h"
 #include "font_manager.h"
+#include "fonts.h"
 
 #ifdef TOUCH_INPUT
 #include "button_icons.h"
@@ -22,12 +23,6 @@
 #define VPAD_BUTTON_SIZE 110
 #define VPAD_MARGIN 30
 #endif
-
-extern const uint8_t font12x16[];
-extern const uint8_t font16x24[];
-extern const uint8_t font24x36[];
-extern const uint8_t font32x48[];
-extern const uint8_t font48x54[];
 
 SDL_Window* window = NULL;
 SDL_Renderer * renderer = NULL;

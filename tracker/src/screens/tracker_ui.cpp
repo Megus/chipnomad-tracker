@@ -21,7 +21,7 @@ TrackerUI::TrackerUI(Gfx& gfx, FontManager& fontManager, AudioManager& audio, Fi
   screenSong = new ScreenSong(state, dispatcher, gfx);
 
   // Remaining initialization
-  waveformDisplayInit();
+  waveDisplay = new WaveformDisplay(gfx);
   screenStack[0] = screenSong;
 }
 
@@ -116,7 +116,7 @@ void TrackerUI::draw() {
 
     // Draw waveform between track number and note
     gfx.setFgColor(t.textInfo);
-    Bitmap* waveformBitmap = waveformDisplayGetBitmap(c);
+    Bitmap* waveformBitmap = waveDisplay->getWaveformBitmap(audio.engine, c);
     if (waveformBitmap) {
       gfx.drawBitmap(waveformBitmap, 36, 3 + c);
     }

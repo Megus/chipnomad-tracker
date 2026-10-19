@@ -25,7 +25,7 @@ int parseHexString(const char* str, int maxDigits) {
   return value;
 }
 
-void initTableRow(TableRow* row) {
+void initTableRow(chipnomad::TableRow* row) {
   row->pitchFlag = 0;
   row->pitchOffset = 0;
   row->volume = EMPTY_VALUE_8;
@@ -35,7 +35,7 @@ void initTableRow(TableRow* row) {
   }
 }
 
-void initEmptyPhraseRow(PhraseRow* row) {
+void initEmptyPhraseRow(chipnomad::PhraseRow* row) {
   row->note = EMPTY_VALUE_8;
   row->instrument = EMPTY_VALUE_8;
   row->volume = EMPTY_VALUE_8;
@@ -45,7 +45,7 @@ void initEmptyPhraseRow(PhraseRow* row) {
   }
 }
 
-void initEmptyTable(Table* table) {
+void initEmptyTable(chipnomad::Table* table) {
   for (int row = 0; row < 16; row++) {
     initTableRow(&table->rows[row]);
   }

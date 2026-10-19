@@ -1,44 +1,29 @@
-#include "waveform_display.h"
-#include "gfx.h"
-#include "chipnomad_lib.h"
-#include "playback_chips.h"
-#include "tracker_state.h"
 #include <string.h>
 #include <stdlib.h>
-#include <functional>
+#include "waveform_display.h"
+#include "playback_chips.h"
+#include "tracker_state.h"
+#include "chip_ay.h"
 
-using namespace chipnomad;
+WaveformDisplay::WaveformDisplay(Gfx& gfx): gfx(gfx) {
+  charW = gfx.getCharWidth();
+  charH = gfx.getCharHeight();
 
-#define ENVELOPE_DIM_BRIGHTNESS 160
+  emptyBitmap = gfx.bitmapCreate(1, 1);
 
-static Bitmap* emptyBitmap = NULL;
-static Bitmap* waveformBitmaps[PROJECT_MAX_TRACKS];
-static int charW = 0;
-static int charH = 0;
-static uint8_t noisePattern[512];
-static int noiseAnimIdx = 0;
+  // Create bitmaps for track waveform display and initialize noise pattern
+  for (int c = 0; c < PROJECT_MAX_TRACKS; c++) waveformBitmaps[c] = gfx.bitmapCreate(1, 1);
+  for (int c = 0; c < 512; c++) noisePattern[c] = rand() & 1;
+}
 
-// ============================================================================
-// Playback wavevorm display
-// ============================================================================
-
-// Create bitmaps for track waveform display and initialize noise pattern
-void waveformDisplayInit(void) {
-  charW = gfxGetCharWidth();
-  charH = gfxGetCharHeight();
-
-  emptyBitmap = gfxBitmapCreate(1, 1);
-
-  for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
-    waveformBitmaps[i] = gfxBitmapCreate(1, 1);
-  }
-
-  for (int i = 0; i < 512; i++) {
-    noisePattern[i] = rand() & 1;
+WaveformDisplay::~WaveformDisplay() {
+  gfx.bitmapFree(emptyBitmap);
+  for (int c = 0; c < PROJECT_MAX_TRACKS; c++) {
+    gfx.bitmapFree(waveformBitmaps[c]);
   }
 }
 
-static void drawVerticalLine(Bitmap* bitmap, int x, int y1, int y2, uint8_t shade) {
+void WaveformDisplay::drawVerticalLine(Bitmap* bitmap, int x, int y1, int y2, uint8_t shade) {
   int startY = y1 < y2 ? y1 : y2;
   int endY = y1 > y2 ? y1 : y2;
   for (int dy = startY; dy <= endY; dy++) {
@@ -46,7 +31,7 @@ static void drawVerticalLine(Bitmap* bitmap, int x, int y1, int y2, uint8_t shad
   }
 }
 
-static void drawAYWaveformSlice(Bitmap* bitmap, int x, int amplitude, int toneHigh, int hasEnvelope, int hasNoise, int noiseShadeBase) {
+void WaveformDisplay::drawAYWaveformSlice(Bitmap* bitmap, int x, int amplitude, int toneHigh, int hasEnvelope, int hasNoise, int noiseShadeBase) {
   static int prevAmplitude = -1;
   static int prevToneHigh = 1;
   static int prevEnvAmplitude = -1;
@@ -77,10 +62,10 @@ static void drawAYWaveformSlice(Bitmap* bitmap, int x, int amplitude, int toneHi
     bitmap->data[lowY * charW + x] = 255;
 
     if (hasEnvelope) {
-      bitmap->data[y * charW + x] = ENVELOPE_DIM_BRIGHTNESS;
+      bitmap->data[y * charW + x] = dimBrightness;
       if (prevEnvAmplitude >= 0) {
         int prevY = charH - 1 - prevEnvAmplitude;
-        drawVerticalLine(bitmap, x, y, prevY, ENVELOPE_DIM_BRIGHTNESS);
+        drawVerticalLine(bitmap, x, y, prevY, dimBrightness);
       }
     }
 
@@ -105,7 +90,7 @@ static void drawAYWaveformSlice(Bitmap* bitmap, int x, int amplitude, int toneHi
   }
 }
 
-static int getAYEnvelopeHeight(int x, int envShape) {
+int WaveformDisplay::getAYEnvelopeHeight(int x, int envShape) {
   int shape = envShape & 0x0F;
   int halfW = charW / 2;
   int maxH = charH - 1;
@@ -126,8 +111,10 @@ static int getAYEnvelopeHeight(int x, int envShape) {
   return 0;
 }
 
-Bitmap* waveformDisplayGetBitmap(int trackIdx) {
-  PlaybackTrackState* track = &chipnomadState->engine->player.tracks[trackIdx];
+Bitmap* WaveformDisplay::getWaveformBitmap(chipnomad::Engine engine, int trackIdx) {
+  using namespace chipnomad;
+
+  PlaybackTrackState* track = &engine.player.tracks[trackIdx];
 
   // Check if track is playing
   if (track->note.pitchFinal == EMPTY_VALUE_8) {
@@ -141,7 +128,7 @@ Bitmap* waveformDisplayGetBitmap(int trackIdx) {
   int chipIdx = trackIdx / 3;
   int ayChannel = trackIdx % 3;
 
-  SoundChipAY* chip = static_cast<SoundChipAY*>(chipnomadState->engine->chips[chipIdx]);
+  SoundChipAY* chip = static_cast<SoundChipAY*>(engine.chips[chipIdx]);
 
   // Read mixer register (reg 7)
   uint8_t mixerReg = chip->getRegister(7);
@@ -213,17 +200,8 @@ Bitmap* waveformDisplayGetBitmap(int trackIdx) {
   return bitmap;
 }
 
-// ============================================================================
-// Waveform Preview Rendering
-// ============================================================================
-
 // Generic waveform preview renderer
-static void renderWaveformPreview(
-  Bitmap* bitmap,
-  uint8_t* data,
-  uint16_t dataLength,
-  std::function<uint8_t(uint8_t)> transformFunc
-) {
+void WaveformDisplay::renderWaveformPreview(Bitmap* bitmap, uint8_t* data, uint16_t dataLength, std::function<uint8_t(uint8_t)> transformFunc) {
   if (!bitmap || !data || dataLength == 0) {
     return;
   }
@@ -271,18 +249,18 @@ static void renderWaveformPreview(
   }
 }
 
-void renderSamplePreview(Bitmap* bitmap, uint8_t* sampleData, uint16_t startSample, uint16_t endSample) {
-  if (bitmap) gfxBitmapClear(bitmap);
+void WaveformDisplay::renderSamplePreview(Bitmap* bitmap, uint8_t* sampleData, uint16_t startSample, uint16_t endSample) {
+  if (bitmap) gfx.bitmapClear(bitmap);
   if (!bitmap || !sampleData || startSample >= endSample) return;
 
   renderWaveformPreview(bitmap, sampleData + startSample, endSample - startSample, nullptr);
 }
 
-void renderAYWavetablePreview(Bitmap* bitmap, uint8_t* wavetable, int isYM) {
-  if (bitmap) gfxBitmapClear(bitmap);
+void WaveformDisplay::renderAYWavetablePreview(Bitmap* bitmap, uint8_t* wavetable, int isYM) {
+  if (bitmap) gfx.bitmapClear(bitmap);
   if (!bitmap || !wavetable) return;
 
-  uint8_t* dacTable = isYM ? cnDACTableYM : cnDACTableAY;
+  uint8_t* dacTable = isYM ? chipnomad::cnDACTableYM : chipnomad::cnDACTableAY;
 
   auto transformFunc = [dacTable](uint8_t value) -> uint8_t {
     return dacTable[value & 0x0F];

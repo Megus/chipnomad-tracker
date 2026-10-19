@@ -1,6 +1,7 @@
 #include <stdint.h>
+#include "fonts.h"
 
-extern "C" const uint8_t font12x16[] = {
+const uint8_t font12x16[] = {
   // Character ' '
   0x00, 0x00,
   0x00, 0x00,
