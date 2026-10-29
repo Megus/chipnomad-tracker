@@ -993,7 +993,7 @@ bool projectLoadVT2(chipnomad::Project& p, const char* path) {
     return false;
   }
 
-  projectInitAY(&p);
+  projectInitAY(p);
   p.linearPitch = 0;
 
   setupPitchTableFromVT2(p, module.noteTable);

@@ -285,7 +285,7 @@ void projectCommonDrawField(int col, int row, CellState state) {
   }
 }
 
-int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
+int projectCommonOnEdit(int col, int row, enum EditCellAction action) {
   int handled = 0;
 
   if (row == 0) {
@@ -367,7 +367,7 @@ int projectCommonOnEdit(int col, int row, enum CellEditAction action) {
     // Tick rate
     if (col == 0) {
       // Integer part (1-200), clear sets to 50
-      if (action == CellEditAction::clear) {
+      if (action == EditCellAction::clear) {
         tickRateI = 50;
         handled = 1;
       } else {

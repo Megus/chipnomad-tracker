@@ -9,7 +9,7 @@ int instrumentCommonColumnCount(int row);
 void instrumentCommonDrawStatic(void);
 void instrumentCommonDrawCursor(int col, int row);
 void instrumentCommonDrawField(int col, int row, CellState state);
-int instrumentCommonOnEdit(int col, int row, CellEditAction action);
+int instrumentCommonOnEdit(int col, int row, EditCellAction action);
 
 extern ScreenData screenInstrumentAY;
 extern ScreenData screenInstrumentAY2;

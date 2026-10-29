@@ -15,7 +15,7 @@ static void drawRowHeader(int row, CellState state);
 static void drawColHeader(int col, CellState state);
 static void drawCursor(int col, int row);
 static void drawSelection(int col1, int row1, int col2, int row2);
-static int onEdit(int col, int row, enum CellEditAction action);
+static int onEdit(int col, int row, enum EditCellAction action);
 
 static ScreenData screen = {
   .rows = 16,
@@ -113,19 +113,19 @@ static void draw(void) {
   }
 }
 
-static int editCell(int col, int row, CellEditAction action) {
+static int editCell(int col, int row, EditCellAction action) {
   return edit8withLimit(action, &chipnomadState->project.grooves[groove].speed[row], &lastValue, 16, EMPTY_VALUE_8 - 1);
 }
 
-static int onEdit(int col, int row, CellEditAction action) {
+static int onEdit(int col, int row, EditCellAction action) {
   int handled = 0;
 
   int startCol, startRow, endCol, endRow;
   getSelectionRange(&screen, &startCol, &startRow, &endCol, &endRow);
 
-  if (action == CellEditAction::switchSelection) {
+  if (action == EditCellAction::switchSelection) {
     return switchGrooveSelectionMode(&screen);
-  } else if (action == CellEditAction::increaseBig || action == CellEditAction::decreaseBig) {
+  } else if (action == EditCellAction::increaseBig || action == EditCellAction::decreaseBig) {
     // Groove nudge: work in row pairs (0-1, 2-3, 4-5, etc.)
     int firstRow = row & ~1;
     int secondRow = firstRow + 1;
@@ -136,7 +136,7 @@ static int onEdit(int col, int row, CellEditAction action) {
       return 0;
     }
 
-    if (action == CellEditAction::increaseBig) {
+    if (action == EditCellAction::increaseBig) {
       if (*firstValue < EMPTY_VALUE_8 - 1 && *secondValue > 0) {
         (*firstValue)++;
         (*secondValue)--;
@@ -151,16 +151,16 @@ static int onEdit(int col, int row, CellEditAction action) {
     int otherRow = (row == firstRow) ? secondRow : firstRow;
     drawField(col, otherRow, CellState::normal);
     handled = 1;
-  } else if (action == CellEditAction::multiIncrease || action == CellEditAction::multiDecrease) {
+  } else if (action == EditCellAction::multiIncrease || action == EditCellAction::multiDecrease) {
     if (!isSingleColumnSelection(&screen)) return 0;
     return applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell);
-  } else if (action == CellEditAction::copy) {
+  } else if (action == EditCellAction::copy) {
     copyGroove(groove, startRow, endRow, 0);
     handled = 1;
-  } else if (action == CellEditAction::cut) {
+  } else if (action == EditCellAction::cut) {
     copyGroove(groove, startRow, endRow, 1);
     handled = 1;
-  } else if (action == CellEditAction::paste) {
+  } else if (action == EditCellAction::paste) {
     const int rowsPasted = pasteGroove(groove, row);
     if (rowsPasted > 0) {
       // Move cursor below pasted data, or to last row if paste extends to end

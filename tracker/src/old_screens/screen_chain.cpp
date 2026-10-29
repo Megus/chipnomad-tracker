@@ -18,7 +18,7 @@ static void drawRowHeader(int row, CellState state);
 static void drawColHeader(int col, CellState state);
 static void drawCursor(int col, int row);
 static void drawSelection(int col1, int row1, int col2, int row2);
-static int onEdit(int col, int row, CellEditAction action);
+static int onEdit(int col, int row, EditCellAction action);
 static LoopRange getLoopRange(void);
 
 static ScreenData screen = {
@@ -160,9 +160,9 @@ static void draw(void) {
 // Input handling
 //
 
-static int editCell(int col, int row, enum CellEditAction action) {
+static int editCell(int col, int row, enum EditCellAction action) {
   if (col == 0) {
-    if (action == CellEditAction::doubleTap) {
+    if (action == EditCellAction::doubleTap) {
       uint16_t current = chipnomadState->project.chains[chain].rows[row].phrase;
       if (current != EMPTY_VALUE_16) {
         int nextEmpty = findEmptyPhrase(&chipnomadState->project, current + 1);
@@ -174,7 +174,7 @@ static int editCell(int col, int row, enum CellEditAction action) {
         }
       }
       return 1;
-    } else if (action == CellEditAction::shallowClone || action == CellEditAction::deepClone) {
+    } else if (action == EditCellAction::shallowClone || action == EditCellAction::deepClone) {
       uint16_t current = chipnomadState->project.chains[chain].rows[row].phrase;
       if (current != EMPTY_VALUE_16) {
         int cloned = clonePhraseToNext(current);
@@ -192,19 +192,19 @@ static int editCell(int col, int row, enum CellEditAction action) {
   }
 }
 
-static int onEdit(int col, int row, enum CellEditAction action) {
+static int onEdit(int col, int row, enum EditCellAction action) {
   int handled = 0;
 
   int startCol, startRow, endCol, endRow;
   getSelectionRange(&screen, &startCol, &startRow, &endCol, &endRow);
 
-  if (action == CellEditAction::switchSelection) {
+  if (action == EditCellAction::switchSelection) {
     return switchChainSelectionMode(&screen);
-  } else if (action == CellEditAction::multiIncrease || action == CellEditAction::multiDecrease ||
-             action == CellEditAction::multiIncreaseBig || action == CellEditAction::multiDecreaseBig) {
+  } else if (action == EditCellAction::multiIncrease || action == EditCellAction::multiDecrease ||
+             action == EditCellAction::multiIncreaseBig || action == EditCellAction::multiDecreaseBig) {
     if (!isSingleColumnSelection(&screen)) return 0;
     handled = applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell);
-  } else if (action == CellEditAction::shallowClone || action == CellEditAction::deepClone) {
+  } else if (action == EditCellAction::shallowClone || action == EditCellAction::deepClone) {
     int clonedCount = 0;
     for (int r = startRow; r <= endRow; r++) {
       for (int c = startCol; c <= endCol; c++) {
@@ -217,17 +217,17 @@ static int onEdit(int col, int row, enum CellEditAction action) {
     } else {
       screenMessage(MESSAGE_TIME, "No phrases to clone");
     }
-  } else if (action == CellEditAction::copy) {
+  } else if (action == EditCellAction::copy) {
     int startCol, startRow, endCol, endRow;
     getSelectionRange(&screen, &startCol, &startRow, &endCol, &endRow);
     copyChain(chain, startCol, startRow, endCol, endRow, 0);
     handled = 1;
-  } else if (action == CellEditAction::cut) {
+  } else if (action == EditCellAction::cut) {
     int startCol, startRow, endCol, endRow;
     getSelectionRange(&screen, &startCol, &startRow, &endCol, &endRow);
     copyChain(chain, startCol, startRow, endCol, endRow, 1);
     handled = 1;
-  } else if (action == CellEditAction::paste) {
+  } else if (action == EditCellAction::paste) {
     const int rowsPasted = pasteChain(chain, col, row);
     if (rowsPasted > 0) {
       // Move cursor below pasted data, or to last row if paste extends to end

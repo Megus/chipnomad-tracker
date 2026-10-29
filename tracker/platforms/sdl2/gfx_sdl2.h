@@ -6,7 +6,7 @@
 class GfxSDL2 : public Gfx {
   public:
     GfxSDL2(FontManager& fontManager) : Gfx(fontManager) {}
-    ~GfxSDL2() override;
+    ~GfxSDL2() override = default;
 
     int setup(int* screenWidth, int* screenHeight) override;
     void teardown() override;

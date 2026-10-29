@@ -36,7 +36,7 @@ static void drawField(int col, int row, CellState state) {
   }
 }
 
-static int onEdit(int col, int row, enum CellEditAction action) {
+static int onEdit(int col, int row, enum EditCellAction action) {
   if (row < SCR_EXPORT_ROWS) return exportCommonOnEdit(col, row, action);
 
   int handled = 0;

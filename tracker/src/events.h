@@ -20,6 +20,29 @@ enum class EventType {
   showTimedMessage,
 };
 
+enum class ScreenEnum : int {
+  song,
+  project,
+  pitchTable,
+  projectExport,
+  manage,
+  settings,
+  colorTheme,
+  keyMapping,
+  chain,
+  phrase,
+  groove,
+  instrument,
+  instrumentPool,
+  modulation,
+  table,
+  ayWavetable,
+  confirm,
+  fileBrowser,
+  createFolder,
+  charEntry,
+};
+
 struct InputEventData {
   bool isKeyDown;
   int keys;
@@ -38,16 +61,22 @@ struct PlayEventData {
   int chainRow;
 };
 
+struct ScreenEventData {
+  ScreenEnum screen;
+  int input;
+};
+
 struct Event {
   EventType type; // Event type
 
   // Possible event data types (can't use union here because of std::string):
 
-  int intValue; // Universal option for all events that only need a single integer value
+  int intValue; // Universal option for all events that only need a single integer (or enum) value
   std::string stringValue; // Universal option for all events that only need a string value. std::string to simplify memory management
   InputEventData input; // input event data
   RawInputEventData rawInput; // rawInput event data
   PlayEventData play; // playSong/Chain/Phrase events data
+  ScreenEventData screen; // switch/push screen events
 };
 
 class EventHandler {

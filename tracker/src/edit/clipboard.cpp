@@ -35,14 +35,14 @@ int Clipboard::pasteGroove(chipnomad::Project &p, int grooveIdx, int startRow) {
   return rowsPasted;
 }
 
-void Clipboard::copySong(chipnomad::Project &p, int startCol, int startRow, int endCol, int endRow, int isCut) {
-  songRows = endRow - startRow + 1;
-  songCols = endCol - startCol + 1;
+void Clipboard::copySong(chipnomad::Project &p, Rect range, bool isCut) {
+  songRows = range.h;
+  songCols = range.w;
 
-  for (int row = 0; row < songRows; row++) {
-    for (int col = 0; col < songCols; col++) {
-      song[row][col] = p.song[startRow + row][startCol + col];
-      if (isCut) p.song[startRow + row][startCol + col] = EMPTY_VALUE_16;
+  for (int row = 0; row < range.h; row++) {
+    for (int col = 0; col < range.w; col++) {
+      song[row][col] = p.song[range.y + row][range.x + col];
+      if (isCut) p.song[range.y + row][range.x + col] = EMPTY_VALUE_16;
     }
   }
 }
@@ -66,24 +66,17 @@ int Clipboard::pasteSong(chipnomad::Project &p, int startCol, int startRow) {
   return rowsPasted;
 }
 
-void Clipboard::shiftSongColumnUp(chipnomad::Project &p, int col, int startRow) {
-  for (int row = startRow; row < PROJECT_MAX_LENGTH - 1; row++) {
-    p.song[row][col] = p.song[row + 1][col];
-  }
-  p.song[PROJECT_MAX_LENGTH - 1][col] = EMPTY_VALUE_16;
-}
+void Clipboard::copyChain(chipnomad::Project &p, int chainIdx, Rect range, bool isCut) {
+  chainRows = range.h;
+  chainStartCol = range.x;
+  chainEndCol = range.x + range.w - 1;
 
-void Clipboard::copyChain(chipnomad::Project &p, int chainIdx, int startCol, int startRow, int endCol, int endRow, int isCut) {
-  chainRows = endRow - startRow + 1;
-  chainStartCol = startCol;
-  chainEndCol = endCol;
-
-  for (int row = 0; row < chainRows; row++) {
-    chain.rows[row] = p.chains[chainIdx].rows[startRow + row];
+  for (int row = 0; row < range.h; row++) {
+    chain.rows[row] = p.chains[chainIdx].rows[range.y + row];
 
     if (isCut) {
-      if (startCol == 0) p.chains[chainIdx].rows[startRow + row].phrase = EMPTY_VALUE_16;
-      if (endCol == 1) p.chains[chainIdx].rows[startRow + row].transpose = 0;
+      if (range.x == 0) p.chains[chainIdx].rows[range.y + row].phrase = EMPTY_VALUE_16;
+      if (range.x + range.w == 2) p.chains[chainIdx].rows[range.y + row].transpose = 0;
     }
   }
 }
@@ -108,29 +101,29 @@ int Clipboard::pasteChain(chipnomad::Project &p, int chainIdx, int startCol, int
   return rowsPasted;
 }
 
-void Clipboard::copyPhrase(chipnomad::Project &p, int phraseIdx, int startCol, int startRow, int endCol, int endRow, int isCut) {
-  phraseRows = endRow - startRow + 1;
-  phraseStartCol = startCol;
-  phraseEndCol = endCol;
+void Clipboard::copyPhrase(chipnomad::Project &p, int phraseIdx, Rect range, bool isCut) {
+  phraseRows = range.h;
+  phraseStartCol = range.x;
+  phraseEndCol = range.x + range.w - 1;
 
-  for (int row = 0; row < phraseRows; row++) {
-    phrase.rows[row] = p.phrases[phraseIdx].rows[startRow + row];
+  for (int row = 0; row < range.h; row++) {
+    phrase.rows[row] = p.phrases[phraseIdx].rows[range.y + row];
 
     if (isCut) {
-      if (startCol <= 0 && endCol >= 0) p.phrases[phraseIdx].rows[startRow + row].note = EMPTY_VALUE_8;
-      if (startCol <= 1 && endCol >= 1) p.phrases[phraseIdx].rows[startRow + row].instrument = EMPTY_VALUE_8;
-      if (startCol <= 2 && endCol >= 2) p.phrases[phraseIdx].rows[startRow + row].volume = EMPTY_VALUE_8;
-      if (startCol <= 3 && endCol >= 4) {
-        p.phrases[phraseIdx].rows[startRow + row].fx[0][0] = EMPTY_VALUE_8;
-        p.phrases[phraseIdx].rows[startRow + row].fx[0][1] = 0;
+      if (range.x == 0) p.phrases[phraseIdx].rows[range.y + row].note = EMPTY_VALUE_8;
+      if (range.x <= 1) p.phrases[phraseIdx].rows[range.y + row].instrument = EMPTY_VALUE_8;
+      if (range.x <= 2) p.phrases[phraseIdx].rows[range.y + row].volume = EMPTY_VALUE_8;
+      if (range.x <= 3) {
+        p.phrases[phraseIdx].rows[range.y + row].fx[0][0] = EMPTY_VALUE_8;
+        p.phrases[phraseIdx].rows[range.y + row].fx[0][1] = 0;
       }
-      if (startCol <= 5 && endCol >= 6) {
-        p.phrases[phraseIdx].rows[startRow + row].fx[1][0] = EMPTY_VALUE_8;
-        p.phrases[phraseIdx].rows[startRow + row].fx[1][1] = 0;
+      if (range.x <= 5) {
+        p.phrases[phraseIdx].rows[range.y + row].fx[1][0] = EMPTY_VALUE_8;
+        p.phrases[phraseIdx].rows[range.y + row].fx[1][1] = 0;
       }
-      if (startCol <= 7 && endCol >= 8) {
-        p.phrases[phraseIdx].rows[startRow + row].fx[2][0] = EMPTY_VALUE_8;
-        p.phrases[phraseIdx].rows[startRow + row].fx[2][1] = 0;
+      if (range.x <= 7) {
+        p.phrases[phraseIdx].rows[range.y + row].fx[2][0] = EMPTY_VALUE_8;
+        p.phrases[phraseIdx].rows[range.y + row].fx[2][1] = 0;
       }
     }
   }
@@ -190,33 +183,33 @@ int Clipboard::pastePhrase(chipnomad::Project &p, int phraseIdx, int startCol, i
   return rowsPasted;
 }
 
-void Clipboard::copyTable(chipnomad::Project &p, int tableIdx, int startCol, int startRow, int endCol, int endRow, int isCut) {
-  tableRows = endRow - startRow + 1;
-  tableStartCol = startCol;
-  tableEndCol = endCol;
+void Clipboard::copyTable(chipnomad::Project &p, int tableIdx, Rect range, bool isCut) {
+  tableRows = range.h;
+  tableStartCol = range.x;
+  tableEndCol = range.x + range.w - 1;
 
   for (int row = 0; row < tableRows; row++) {
-    table.rows[row] = p.tables[tableIdx].rows[startRow + row];
+    table.rows[row] = p.tables[tableIdx].rows[range.y + row];
 
     if (isCut) {
-      if (startCol <= 0 && endCol >= 0) p.tables[tableIdx].rows[startRow + row].pitchFlag = 0;
-      if (startCol <= 1 && endCol >= 1) p.tables[tableIdx].rows[startRow + row].pitchOffset = 0;
-      if (startCol <= 2 && endCol >= 2) p.tables[tableIdx].rows[startRow + row].volume = EMPTY_VALUE_8;
-      if (startCol <= 3 && endCol >= 4) {
-        p.tables[tableIdx].rows[startRow + row].fx[0][0] = EMPTY_VALUE_8;
-        p.tables[tableIdx].rows[startRow + row].fx[0][1] = 0;
+      if (range.x == 0) p.tables[tableIdx].rows[range.y + row].pitchFlag = 0;
+      if (range.x <= 1) p.tables[tableIdx].rows[range.y + row].pitchOffset = 0;
+      if (range.x <= 2) p.tables[tableIdx].rows[range.y + row].volume = EMPTY_VALUE_8;
+      if (range.x <= 3) {
+        p.tables[tableIdx].rows[range.y + row].fx[0][0] = EMPTY_VALUE_8;
+        p.tables[tableIdx].rows[range.y + row].fx[0][1] = 0;
       }
-      if (startCol <= 5 && endCol >= 6) {
-        p.tables[tableIdx].rows[startRow + row].fx[1][0] = EMPTY_VALUE_8;
-        p.tables[tableIdx].rows[startRow + row].fx[1][1] = 0;
+      if (range.x <= 5) {
+        p.tables[tableIdx].rows[range.y + row].fx[1][0] = EMPTY_VALUE_8;
+        p.tables[tableIdx].rows[range.y + row].fx[1][1] = 0;
       }
-      if (startCol <= 7 && endCol >= 8) {
-        p.tables[tableIdx].rows[startRow + row].fx[2][0] = EMPTY_VALUE_8;
-        p.tables[tableIdx].rows[startRow + row].fx[2][1] = 0;
+      if (range.x <= 7) {
+        p.tables[tableIdx].rows[range.y + row].fx[2][0] = EMPTY_VALUE_8;
+        p.tables[tableIdx].rows[range.y + row].fx[2][1] = 0;
       }
-      if (startCol <= 9 && endCol >= 10) {
-        p.tables[tableIdx].rows[startRow + row].fx[3][0] = EMPTY_VALUE_8;
-        p.tables[tableIdx].rows[startRow + row].fx[3][1] = 0;
+      if (range.x <= 9) {
+        p.tables[tableIdx].rows[range.y + row].fx[3][0] = EMPTY_VALUE_8;
+        p.tables[tableIdx].rows[range.y + row].fx[3][1] = 0;
       }
     }
   }
@@ -339,7 +332,7 @@ int Clipboard::deepCloneChain(chipnomad::Project &p, int chainIdx) {
 
     if (found == -1) {
       // New phrase, find empty slot
-      int newPhraseIdx = findEmptyPhrase(&p, 0);
+      int newPhraseIdx = findEmptyPhrase(p, 0);
       if (newPhraseIdx == EMPTY_VALUE_16) return 0;
 
       // Clone the phrase
@@ -369,28 +362,28 @@ int Clipboard::deepCloneChain(chipnomad::Project &p, int chainIdx) {
 
 // Consolidated cloning functions
 int Clipboard::cloneChainToNext(chipnomad::Project &p, int srcIdx) {
-  int nextEmpty = findEmptyChain(&p, srcIdx + 1);
+  int nextEmpty = findEmptyChain(p, srcIdx + 1);
   if (nextEmpty == EMPTY_VALUE_16) return EMPTY_VALUE_16;
   cloneChain(p, srcIdx, nextEmpty);
   return nextEmpty;
 }
 
 int Clipboard::clonePhraseToNext(chipnomad::Project &p, int srcIdx) {
-  int nextEmpty = findEmptyPhrase(&p, srcIdx + 1);
+  int nextEmpty = findEmptyPhrase(p, srcIdx + 1);
   if (nextEmpty == EMPTY_VALUE_16) return EMPTY_VALUE_16;
   clonePhrase(p, srcIdx, nextEmpty);
   return nextEmpty;
 }
 
 int Clipboard::cloneInstrumentToNext(chipnomad::Project &p, int srcIdx) {
-  int nextEmpty = findEmptyInstrument(&p, srcIdx + 1);
+  int nextEmpty = findEmptyInstrument(p, srcIdx + 1);
   if (nextEmpty == EMPTY_VALUE_8) return EMPTY_VALUE_8;
   cloneInstrument(p, srcIdx, nextEmpty);
   return nextEmpty;
 }
 
 int Clipboard::deepCloneChainToNext(chipnomad::Project &p, int srcIdx) {
-  int nextEmpty = findEmptyChain(&p, srcIdx + 1);
+  int nextEmpty = findEmptyChain(p, srcIdx + 1);
   if (nextEmpty == EMPTY_VALUE_16) return EMPTY_VALUE_16;
   cloneChain(p, srcIdx, nextEmpty);
   if (!deepCloneChain(p, nextEmpty)) return EMPTY_VALUE_16;

@@ -18,7 +18,7 @@ TrackerUI::TrackerUI(Gfx& gfx, FontManager& fontManager, AudioManager& audio, Fi
   state(state)
 {
   // Create all screen objects
-  screenSong = new ScreenSong(state, dispatcher, gfx);
+  screenSong = new ScreenSong(state, dispatcher, gfx, audio, clipboard);
 
   // Remaining initialization
   waveDisplay = new WaveformDisplay(gfx);

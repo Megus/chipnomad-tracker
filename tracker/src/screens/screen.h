@@ -28,12 +28,11 @@ enum class ScreenMode : int {
 };
 
 // Base Screen class. Instances of main screens are created once on app launch.
-class Screen : EventHandler {
+class Screen : public EventHandler {
   ///////////////////////////////////////////////////////////////////////////
   // Methods to override in sub-classes
   public:
-    Screen(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx):
-      state(state), events(dispatcher), gfx(gfx), optPressed(0), shallowClonePressed(0) {};
+    Screen(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx): state(state), events(dispatcher), gfx(gfx) {}
     virtual ~Screen() = default;
 
     virtual void setup(int input) {}; // Setup screen before it's displayed
@@ -43,7 +42,7 @@ class Screen : EventHandler {
     virtual int getColumnCount(int row) { return 0; }; // How many columns in this row?
     virtual ScreenPlaybackLevel getPlaybackLevel() { return ScreenPlaybackLevel::none; }; // Screen playback level. Used with the global playback input handler
 
-    virtual bool isValidCell(int col, int row) { return false; }; // Is this cell valid?
+    virtual bool isValidCell(int col, int row) { return true; }; // Is this cell valid?
     virtual Rect getSelectionRect(Rect range) { return {0, 0, 0, 0}; }; // Get screen rectangle of the selection
     virtual chipnomad::LoopRange getLoopRange() { return {}; }; // Get playback loop range
 
@@ -56,7 +55,7 @@ class Screen : EventHandler {
     virtual bool isRowVisible(int row) { return true; }; // Is this row visible on the screen?
     virtual bool adjustVerticalScroll(bool pageJump) { return false; }; // Adjust vertical scroll, return true if the screen needs to be scrolled
 
-    virtual bool onEdit(int col, int row, CellEditAction action) { return false; }; // Handle edit action
+    virtual bool onEdit(int col, int row, EditCellAction action) { return false; }; // Handle edit action
     virtual bool onNavigationInput(InputEventData eventData) { return false; }; // Navigation input handler. Convenience function
 
     virtual bool onEvent(Event e) override { return false; }; // Handle events from the EventDispatcher
@@ -73,18 +72,18 @@ class Screen : EventHandler {
     EventDispatcher& events;
     Gfx& gfx;
 
-    ScreenMode mode; // Edit / Select mode
-    int cursorRow; // Cursor row
-    int cursorCol; // Cursor column
-    int selectStartRow; // Selection start row
-    int selectStartCol; // Selection start column
-    int selectAnchorRow; // Where selection mode was entered
-    int selectAnchorCol; // Where selection mode was entered
+    ScreenMode mode = ScreenMode::edit; // Edit / Select mode
+    int cursorRow = 0; // Cursor row
+    int cursorCol = 0; // Cursor column
+    int selectStartRow = 0; // Selection start row
+    int selectStartCol = 0; // Selection start column
+    int selectAnchorRow = 0; // Where selection mode was entered
+    int selectAnchorCol = 0; // Where selection mode was entered
 
-    int optPressed; // Used for input handling. TODO: Can it be removed/simplified?
-    int shallowClonePressed; // Used for input handling. TODO: Can it be removed/simplified?
+    int optPressed = 0; // Used for input handling. TODO: Can it be removed/simplified?
+    int shallowClonePressed = 0; // Used for input handling. TODO: Can it be removed/simplified?
 
-    inline ColorTheme& theme(); // Convenience function to get color theme from TrackerState
+    inline ColorTheme& theme() { return state.settings.colorTheme; }; // Convenience function to get color theme from TrackerState
 
     Rect getSelectionRange(); // Get selection range between cursor and selection start cell
     void drawSelectionBorder(Rect range, bool draw); // Draw selection border
@@ -104,7 +103,7 @@ class Screen : EventHandler {
     void moveCursorBelowSelection(); // Move cursor below the selection (or to the last row if selection is at the bottom)
     void drawSelectedCells(); // Draw all selected cells
 
-    bool commonInputHandler(InputEventData eventData); // Common input handler to call from onInput()
+    bool commonInputHandler(InputEventData eventData); // Common input handler to call from onEvent()
     bool inputEditMode(int keys, int tapCount); // Handles common input in edit mode
     bool inputSelectMode(int keys, int tapCount);
     void inputCursor(int keys, bool& handled, bool& needsRedraw); // Handles standard cursor movement (left, right, up, down)

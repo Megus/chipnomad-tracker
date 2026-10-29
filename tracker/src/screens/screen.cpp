@@ -1,9 +1,5 @@
 #include "screen.h"
 
-ColorTheme& Screen::theme() {
-  return state.settings.colorTheme;
-}
-
 Rect Screen::getSelectionRange() {
   using namespace chipnomad;
   if (!supportsSelectMode() || mode != ScreenMode::select) return {0, 0, 0, 0};
@@ -253,28 +249,28 @@ bool Screen::inputEditMode(int keys, int tapCount) {
       }
     } else if (keys == keyEdit && tapCount == 1) {
       // Edit: insert/copy value
-      handled = onEdit(cursorCol, cursorRow, CellEditAction::tap);
+      handled = onEdit(cursorCol, cursorRow, EditCellAction::tap);
     } else if (keys == keyEdit && tapCount == 2) {
       // Edit: double tap (usually increment to an empty value)
-      handled = onEdit(cursorCol, cursorRow, CellEditAction::doubleTap);
+      handled = onEdit(cursorCol, cursorRow, EditCellAction::doubleTap);
     } else if (keys == (keyRight | keyEdit)) {
       // Edit: value small increase (usually by 1)
-      handled = onEdit(cursorCol, cursorRow, CellEditAction::increase);
+      handled = onEdit(cursorCol, cursorRow, EditCellAction::increase);
     } else if (keys == (keyLeft | keyEdit)) {
       // Edit: value small decrease (usually by 1)
-      handled = onEdit(cursorCol, cursorRow, CellEditAction::decrease);
+      handled = onEdit(cursorCol, cursorRow, EditCellAction::decrease);
     } else if (keys == (keyUp | keyEdit)) {
       // Edit: value big increase
-      handled = onEdit(cursorCol, cursorRow, CellEditAction::increaseBig);
+      handled = onEdit(cursorCol, cursorRow, EditCellAction::increaseBig);
     } else if (keys == (keyDown | keyEdit)) {
       // Edit: value big decrease
-      handled = onEdit(cursorCol, cursorRow, CellEditAction::decreaseBig);
+      handled = onEdit(cursorCol, cursorRow, EditCellAction::decreaseBig);
     } else if (keys == (keyEdit | keyOpt)) {
       // Edit: clear value
-      handled = onEdit(cursorCol, cursorRow, CellEditAction::clear);
+      handled = onEdit(cursorCol, cursorRow, EditCellAction::clear);
     } else if (keys == (keyShift | keyEdit)) {
       // Edit: paste
-      handled = onEdit(cursorCol, cursorRow, CellEditAction::paste);
+      handled = onEdit(cursorCol, cursorRow, EditCellAction::paste);
     }
   }
 
@@ -313,7 +309,7 @@ bool Screen::inputSelectMode(int keys, int tapCount) {
   if (!handled) {
     if (keys == (keyShift | keyOpt)) {
       // Switch selection mode
-      bool exitSelection = onEdit(cursorCol, cursorRow, CellEditAction::switchSelection);
+      bool exitSelection = onEdit(cursorCol, cursorRow, EditCellAction::switchSelection);
       if (exitSelection) {
         // Exit selection mode
         mode = ScreenMode::edit;
@@ -324,7 +320,7 @@ bool Screen::inputSelectMode(int keys, int tapCount) {
       handled = true;
     } else if (keys == 0 && optPressed) {
       // Copy and exit select mode on Opt release (no keys pressed)
-      handled = onEdit(cursorCol, cursorRow, CellEditAction::copy);
+      handled = onEdit(cursorCol, cursorRow, EditCellAction::copy);
       if (handled) {
         showMessage(true, "Copied selection");
         moveCursorBelowSelection();
@@ -341,7 +337,7 @@ bool Screen::inputSelectMode(int keys, int tapCount) {
       shallowClonePressed = 0;
     } else if (keys == (keyEdit | keyOpt)) {
       // Cut and exit select mode
-      handled = onEdit(cursorCol, cursorRow, CellEditAction::cut);
+      handled = onEdit(cursorCol, cursorRow, EditCellAction::cut);
       if (handled) {
         showMessage(true, "Cut selection");
         moveCursorToSelectionStart();
@@ -351,23 +347,23 @@ bool Screen::inputSelectMode(int keys, int tapCount) {
       optPressed = 0;
     } else if (keys == (keyRight | keyEdit)) {
       // Multi-edit: increase values in selection
-      handled = onEdit(cursorCol, cursorRow, CellEditAction::multiIncrease);
+      handled = onEdit(cursorCol, cursorRow, EditCellAction::multiIncrease);
     } else if (keys == (keyLeft | keyEdit)) {
       // Multi-edit: decrease values in selection
-      handled = onEdit(cursorCol, cursorRow, CellEditAction::multiDecrease);
+      handled = onEdit(cursorCol, cursorRow, EditCellAction::multiDecrease);
     } else if (keys == (keyUp | keyEdit)) {
       // Multi-edit: big increase values in selection
-      handled = onEdit(cursorCol, cursorRow, CellEditAction::multiIncreaseBig);
+      handled = onEdit(cursorCol, cursorRow, EditCellAction::multiIncreaseBig);
     } else if (keys == (keyDown | keyEdit)) {
       // Multi-edit: big decrease values in selection
-      handled = onEdit(cursorCol, cursorRow, CellEditAction::multiDecreaseBig);
+      handled = onEdit(cursorCol, cursorRow, EditCellAction::multiDecreaseBig);
     } else if (keys == (keyShift | keyEdit) && !shallowClonePressed) {
       // Shallow clone
-      handled = onEdit(cursorCol, cursorRow, CellEditAction::shallowClone);
+      handled = onEdit(cursorCol, cursorRow, EditCellAction::shallowClone);
       shallowClonePressed = 1;
     } else if (keys == (keyShift | keyEdit) && shallowClonePressed) {
       // Deep clone (second press while Shift still held)
-      handled = onEdit(cursorCol, cursorRow, CellEditAction::deepClone);
+      handled = onEdit(cursorCol, cursorRow, EditCellAction::deepClone);
       mode = ScreenMode::edit;
       shallowClonePressed = 0;
       needsRedraw = true;

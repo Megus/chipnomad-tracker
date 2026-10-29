@@ -1,281 +1,155 @@
-#include "gfx.h"
+#include <string.h>
+#include "screen_song.h"
 #include "utils.h"
 #include "chipnomad_lib.h"
 #include "project_utils.h"
 #include "audio_manager.h"
 
 #include "clipboard.h"
-#include <string.h>
 
-// Screen state variables
-static uint16_t lastChainValue = 0;
-
-// Track mute/solo state machine
-typedef enum {
-  MUTE_SOLO_EMPTY,
-  MUTE_SOLO_OPT_PRESSED,
-  MUTE_SOLO_MUTE_STATE,
-  MUTE_SOLO_SOLO_STATE,
-  MUTE_SOLO_TEMP_LEFT,
-  MUTE_SOLO_TEMP_RIGHT
-} MuteSoloState;
-
-static MuteSoloState muteSoloState = MUTE_SOLO_EMPTY;
-
-static int getColumnCount(int row);
-static void drawStatic(void);
-static void drawField(int col, int row, CellState state);
-static void drawRowHeader(int row, CellState state);
-static void drawColHeader(int col, CellState state);
-static void drawCursor(int col, int row);
-static void drawSelection(int col1, int row1, int col2, int row2);
-static int onEdit(int col, int row, CellEditAction action);
-static LoopRange getLoopRange(void);
-
-static ScreenData screen = {
-  .rows = PROJECT_MAX_LENGTH,
-  .cursorRow = 0,
-  .cursorCol = 0,
-  .topRow = 0,
-  .selectMode = 0,
-  .selectStartRow = 0,
-  .selectStartCol = 0,
-  .selectAnchorRow = 0,
-  .selectAnchorCol = 0,
-  .playbackLevel = ScreenPlaybackLevel::none,
-  .getColumnCount = getColumnCount,
-  .drawStatic = drawStatic,
-  .drawCursor = drawCursor,
-  .drawSelection = drawSelection,
-  .drawRowHeader = drawRowHeader,
-  .drawColHeader = drawColHeader,
-  .drawField = drawField,
-  .onEdit = onEdit,
-  .onInput = NULL,
-  .onRawInput = NULL,
-  .isCellValid = NULL,
-  .getLoopRange = getLoopRange,
-};
-
-static void init(void) {
-  lastChainValue = 0;
-  screen.cursorRow = 0;
-  screen.cursorCol = 0;
-  screen.topRow = 0;
-  screen.selectMode = 0;
-  screen.selectStartRow = 0;
-  screen.selectStartCol = 0;
-  screen.selectAnchorRow = 0;
-  screen.selectAnchorCol = 0;
-  pSongRow = &screen.cursorRow;
-  pSongTrack = &screen.cursorCol;
+void ScreenSong::setup(int input) {
+  mode = ScreenMode::edit;
 }
 
-static void setup(int input) {
-  screen.selectMode = 0;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// Drawing functions
-//
-
-static int getColumnCount(int row) {
-  return chipnomadState->project.tracksCount;
-}
-
-static void drawStatic(void) {
-  gfxSetFgColor(appSettings.colorScheme.textTitles);
-  gfxPrint(0, 0, "SONG");
-}
-
-static void drawField(int col, int row, CellState state) {
-  if (row < screen.topRow || row >= (screen.topRow + 16)) return; // Don't draw outside of the viewing area
-
-  int chain = chipnomadState->project.song[row][col];
-  int isHighlighted = chipnomadState->project.songHighlight[row][col];
-
-  if (isHighlighted) {
-    gfxSetFgColor(appSettings.colorScheme.textTitles);
-  } else {
-    setCellColor(state, chain == EMPTY_VALUE_16, chain != EMPTY_VALUE_16 && chainHasNotes(&chipnomadState->project, chain));
-  }
-  gfxPrint(3 + col * 3, 3 + row - screen.topRow, chain == EMPTY_VALUE_16 ? "--" : byteToHex(chain));
-}
-
-static void drawRowHeader(int row, CellState state) {
-  const ColorTheme t = appSettings.colorScheme;
-
-  gfxSetFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
-  gfxPrint(0, 3 + row - screen.topRow, byteToHex(row));
-}
-
-static void drawColHeader(int col, CellState state) {
-  static char digit[2] = "0";
-  const ColorTheme t = appSettings.colorScheme;
-
-  gfxSetFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
-  digit[0] = col + 49;
-  gfxPrint(3 + col * 3, 2, digit);
-}
-
-static void drawCursor(int col, int row) {
-  gfxCursor(3 + col * 3, 3 + row - screen.topRow, 2);
-}
-
-static void drawSelection(int col1, int row1, int col2, int row2) {
-  int x = 3 + col1 * 3;
-  int y = 3 + row1 - screen.topRow;
-  int w = 3 * (col2 - col1 + 1) - 1;
-  int y2 = y + (row2 - row1);
+Rect ScreenSong::getSelectionRect(Rect range) {
+  int x = 3 + range.x * 3;
+  int y = 3 + range.y - topRow;
+  int w = 3 * range.w - 1;
+  int y2 = y + range.h - 1;
 
   if (y < 3) y = 3; // Top row of selection is above the screen
-  if (y > (3 + 15)) return; // Top row of selection is below the screen
-  if (y2 < 3) return;
-  if (y2 > (3 + 15)) y2 = (3 + 15);
+  if (y > (3 + 15)) return {.x = -1, .y = 0, .w = 0, .h = 0}; // Top row of selection is below the screen
+  if (y2 < 3) return {.x = -1, .y = 0, .w = 0, .h = 0}; // Bottom row is above the screen
+  if (y2 > (3 + 15)) y2 = (3 + 15); // Bottom row is below the screen
 
-  gfxRect(x, y, w, (y2 - y) + 1);
+  return {.x = x, .y = y, .w = w, .h = y2 - y + 1};
 }
 
-static void fullRedraw(void) {
-  screenFullRedraw(&screen);
+chipnomad::LoopRange ScreenSong::getLoopRange() {
+  chipnomad::LoopRange range = {0};
+  if (mode == ScreenMode::select) {
+    Rect selection = getSelectionRange();
+    range.enabled = true;
+    range.level = 0;
+    range.startSongRow = selection.y;
+    range.startChainRow = 0;
+    range.startPhraseRow = 0;
+    range.endSongRow = selection.y + selection.h - 1;
+    range.endChainRow = 15;
+    range.endPhraseRow = 15;
+  }
+  return range;
 }
 
-static void draw(void) {
-  for (int c = 0; c < chipnomadState->project.tracksCount; c++) {
-    gfxClearRect(2 + c * 3, 3, 1, 16);
-    if (chipnomadState->engine->player.tracks[c].songRow != EMPTY_VALUE_16) {
-      int row = chipnomadState->engine->player.tracks[c].songRow - screen.topRow;
+void ScreenSong::draw() {
+  for (int c = 0; c < state.project.tracksCount; c++) {
+    gfx.clearRect(2 + c * 3, 3, 1, 16);
+    if (audio.engine.player.tracks[c].songRow != EMPTY_VALUE_16) {
+      int row = audio.engine.player.tracks[c].songRow - topRow;
       if (row >= 0 && row < 16) {
-        gfxSetFgColor(appSettings.colorScheme.playMarkers);
-        gfxPrint(2 + c * 3, 3 + row, ">");
+        gfx.setFgColor(theme().playMarkers);
+        gfx.print(2 + c * 3, 3 + row, ">");
       }
     }
 
     // Draw mute/solo indicator above track number
-    gfxSetFgColor(appSettings.colorScheme.textTitles);
+    gfx.setFgColor(theme().textTitles);
     if (audio.trackStates[c] == TrackState::muted) {
-      gfxPrint(3 + c * 3, 1, "M");
+      gfx.print(3 + c * 3, 1, "M");
     } else if (audio.trackStates[c] == TrackState::solo) {
-      gfxPrint(3 + c * 3, 1, "S");
+      gfx.print(3 + c * 3, 1, "S");
     } else {
-      gfxPrint(3 + c * 3, 1, " "); // Clear indicator
+      gfx.print(3 + c * 3, 1, " "); // Clear indicator
     }
   }
 
-  screenDrawOverlays(&screen);
+  drawSelectionBorder(getSelectionRange(), true);
 }
 
-///////////////////////////////////////////////////////////////////////////////
-//
-// Input handling
-//
-
-static int inputScreenNavigation(int keys, int tapCount) {
-  // Fix all bare returns in this function
-  // Go to Chain screen
-  if (keys == (keyRight | keyShift)) {
-    int chain = chipnomadState->project.song[screen.cursorRow][screen.cursorCol];
-
-    if (chain == EMPTY_VALUE_16) {
-      screenMessage(0, "Enter a chain");
-    } else {
-      screenSetup(&screenChain, -1);
-    }
-    return 1;
-  }
-
-  // Go to Project screen
-  if (keys == (keyUp | keyShift)) {
-    screenSetup(&screenProject, 0);
-    return 1;
-  }
-
-  // Go to Settings screen
-  if (keys == (keyDown | keyShift)) {
-    screenSetup(&screenSettings, 0);
-    return 1;
-  }
-
-  return 0;
+void ScreenSong::drawStatic(void) {
+  gfx.setFgColor(theme().textTitles);
+  gfx.print(0, 0, "SONG");
 }
 
-static int editCell(int col, int row, CellEditAction action) {
-  if (action == CellEditAction::doubleTap) {
-    int current = chipnomadState->project.song[row][col];
-    if (current != EMPTY_VALUE_16) {
-      int nextEmpty = findEmptyChain(&chipnomadState->project, current + 1);
-      if (nextEmpty != EMPTY_VALUE_16) {
-        chipnomadState->project.song[row][col] = nextEmpty;
-        lastChainValue = nextEmpty;
-      } else {
-        screenMessage(MESSAGE_TIME, "No free chains");
-      }
-    }
-    return 1;
-  } else if (action == CellEditAction::clear) {
-    if (chipnomadState->project.song[row][col] != EMPTY_VALUE_16) {
-      // Clear the value
-      chipnomadState->project.song[row][col] = EMPTY_VALUE_16;
-      return 1;
-    } else {
-      // Value is already empty, shift column up
-      shiftSongColumnUp(col, row);
-      fullRedraw();
-      return 1;
-    }
-  } else if (action == CellEditAction::shallowClone) {
-    int current = chipnomadState->project.song[row][col];
-    if (current != EMPTY_VALUE_16) {
-      int cloned = cloneChainToNext(current);
-      if (cloned != EMPTY_VALUE_16) {
-        chipnomadState->project.song[row][col] = cloned;
-        lastChainValue = cloned;
-        return 1;
-      }
-    }
-    return 0;
-  } else if (action == CellEditAction::deepClone) {
-    int current = chipnomadState->project.song[row][col];
-    if (current != EMPTY_VALUE_16) {
-      // Deep clone the phrases in the existing chain (don't create a new chain)
-      if (deepCloneChain(current)) {
-        return 1;
-      }
-    }
-    return 0;
-  }
-  return edit16withLimit(action, &chipnomadState->project.song[row][col], &lastChainValue, 16, PROJECT_MAX_CHAINS - 1);
+void ScreenSong::drawCursor(int col, int row) {
+  gfx.cursor(3 + col * 3, 3 + row - topRow, 2);
 }
 
-static int onEdit(int col, int row, CellEditAction action) {
-  int handled = 0;
-  int startCol, startRow, endCol, endRow;
-  getSelectionRange(&screen, &startCol, &startRow, &endCol, &endRow);
+void ScreenSong::drawRowHeader(int row, CellState state) {
+  gfx.setFgColor((state == CellState::focus) ? theme().textDefault : theme().textInfo);
+  gfx.print(0, 3 + row - topRow, chipnomad::byteToHex(row));
+}
 
-  if (action == CellEditAction::switchSelection) {
-    return switchSongSelectionMode(&screen);
-  } else if (action == CellEditAction::multiIncreaseBig || action == CellEditAction::multiDecreaseBig) {
-    if (screen.selectMode != 1) return 0;
+void ScreenSong::drawColHeader(int col, CellState state) {
+  static char digit[2] = "0";
 
-    if (action == CellEditAction::multiDecreaseBig) {
-      handled = applySongMoveDown(startCol, startRow, endCol, endRow);
+  gfx.setFgColor((state == CellState::focus) ? theme().textDefault : theme().textInfo);
+  digit[0] = col + 49;
+  gfx.print(3 + col * 3, 2, digit);
+}
+
+void ScreenSong::drawCell(int col, int row, CellState cellState) {
+  if (!isRowVisible(row)) return;
+
+  int chain = state.project.song[row][col];
+  int isHighlighted = state.project.songHighlight[row][col];
+
+  if (isHighlighted) {
+    gfx.setFgColor(theme().textTitles);
+  } else {
+    setCellColor(cellState, chain == EMPTY_VALUE_16, chain != EMPTY_VALUE_16 && chainHasNotes(state.project, chain));
+  }
+  gfx.print(3 + col * 3, 3 + row - topRow, chain == EMPTY_VALUE_16 ? "--" : chipnomad::byteToHex(chain));
+}
+
+bool ScreenSong::isRowVisible(int row) {
+  return row >= topRow && row < (topRow + 16);
+}
+
+bool ScreenSong::adjustVerticalScroll(bool pageJump) {
+  bool needsRedraw = false;
+  // TODO: Handle pageJump - change topRow by 16
+
+  if (cursorRow < topRow) {
+    topRow = cursorRow;
+    needsRedraw = true;
+  } else if (cursorRow >= topRow + 16) {
+    topRow = cursorRow - 15;
+    needsRedraw = true;
+  }
+
+  return needsRedraw;
+}
+
+
+
+bool ScreenSong::onEdit(int col, int row, EditCellAction action) {
+  bool handled = 0;
+  Rect selection = getSelectionRange();
+
+  if (action == EditCellAction::switchSelection) {
+    return switchSelectionMode();
+  } else if (action == EditCellAction::multiIncreaseBig || action == EditCellAction::multiDecreaseBig) {
+    if (mode != ScreenMode::select) return false;
+
+    if (action == EditCellAction::multiDecreaseBig) {
+      handled = applySongMoveDown(state.project, selection);
       if (handled) {
-        screen.selectStartRow++;
-        screen.cursorRow++;
+        selectStartRow++;
+        cursorRow++;
         // Scroll down if selection moved below visible area
-        if (screen.cursorRow >= screen.topRow + 16) {
-          screen.topRow++;
+        if (cursorRow >= topRow + 16) {
+          topRow++;
         }
       }
     } else {
-      handled = applySongMoveUp(startCol, startRow, endCol, endRow);
+      handled = applySongMoveUp(state.project, selection);
       if (handled) {
-        screen.selectStartRow--;
-        screen.cursorRow--;
+        selectStartRow--;
+        cursorRow--;
         // Scroll up if selection moved above visible area
-        if (screen.cursorRow < screen.topRow) {
-          screen.topRow--;
+        if (cursorRow < topRow) {
+          topRow--;
         }
       }
     }
@@ -283,145 +157,224 @@ static int onEdit(int col, int row, CellEditAction action) {
     if (handled) {
       fullRedraw();
     }
-  } else if (action == CellEditAction::shallowClone || action == CellEditAction::deepClone) {
+  } else if (action == EditCellAction::shallowClone || action == EditCellAction::deepClone) {
     int clonedCount = 0;
-    for (int r = startRow; r <= endRow; r++) {
-      for (int c = startCol; c <= endCol; c++) {
+    for (int r = selection.y; r < selection.y + selection.h; r++) {
+      for (int c = selection.x; c < selection.x + selection.w; c++) {
         if (editCell(c, r, action)) clonedCount++;
       }
     }
     if (clonedCount > 0) {
-      const char* msg = (action == CellEditAction::shallowClone) ? "Shallow-cloned" : "Deep-cloned";
-      handled = 1;
-      screenMessage(MESSAGE_TIME, "%s %d chain%s", msg, clonedCount, clonedCount == 1 ? "" : "s");
+      const char* msg = (action == EditCellAction::shallowClone) ? "Shallow-cloned" : "Deep-cloned";
+      handled = true;
+      showMessage(true, "%s %d chain%s", msg, clonedCount, clonedCount == 1 ? "" : "s");
     } else {
-      screenMessage(MESSAGE_TIME, "No chains to clone");
+      showMessage(true, "No chains to clone");
     }
-  } else if (applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell)) {
-    handled = 1;
-  } else if (action == CellEditAction::copy) {
-    copySong(startCol, startRow, endCol, endRow, 0);
-    handled = 1;
-  } else if (action == CellEditAction::cut) {
-    copySong(startCol, startRow, endCol, endRow, 1);
-    handled = 1;
-  } else if (action == CellEditAction::paste) {
-    const int rowsPasted = pasteSong(col, row);
+  } else if (applyMultiEdit(selection, action, this)) {
+    handled = true;
+  } else if (action == EditCellAction::copy) {
+    clipboard.copySong(state.project, selection, false);
+    handled = true;
+  } else if (action == EditCellAction::cut) {
+    clipboard.copySong(state.project, selection, true);
+    handled = true;
+  } else if (action == EditCellAction::paste) {
+    const int rowsPasted = clipboard.pasteSong(state.project, col, row);
     if (rowsPasted > 0) {
       // Move cursor below pasted data, or to last row if paste extends to end
       int newRow = row + rowsPasted;
-      if (newRow >= screen.rows) newRow = screen.rows - 1;
-      screen.cursorRow = newRow;
+      if (newRow >= getRowCount()) newRow = getRowCount() - 1;
+      cursorRow = newRow;
     }
     fullRedraw();
-    handled = 1;
+    handled = true;
   } else {
     handled = editCell(col, row, action);
   }
 
-  if (handled) projectModified = 1;
+  if (handled) state.projectModified = true;
   return handled;
-  return 0;
 }
 
-static int onInput(int isKeyDown, int keys, int tapCount) {
-  int handled = 0;
+bool ScreenSong::onNavigationInput(InputEventData e) {
+  // Fix all bare returns in this function
+  // Go to Chain screen
+  if (e.keys == (keyRight | keyShift)) {
+    int chain = state.project.song[cursorRow][cursorCol];
+
+    if (chain == EMPTY_VALUE_16) {
+      showMessage(false, "Enter a chain");
+    } else {
+      events.dispatch({.type = EventType::switchScreen, .screen = {.screen = ScreenEnum::chain, .input = -1}});
+    }
+    return true;
+  }
+
+  // Go to Project screen
+  if (e.keys == (keyUp | keyShift)) {
+    events.dispatch({.type = EventType::switchScreen, .screen = {.screen = ScreenEnum::project, .input = 0}});
+    return true;
+  }
+
+  // Go to Settings screen
+  if (e.keys == (keyDown | keyShift)) {
+    events.dispatch({.type = EventType::switchScreen, .screen = {.screen = ScreenEnum::settings, .input = 0}});
+    return true;
+  }
+
+  return false;
+}
+
+bool ScreenSong::editCell(int col, int row, EditCellAction action) {
+  if (action == EditCellAction::doubleTap) {
+    int current = state.project.song[row][col];
+    if (current != EMPTY_VALUE_16) {
+      int nextEmpty = findEmptyChain(state.project, current + 1);
+      if (nextEmpty != EMPTY_VALUE_16) {
+        state.project.song[row][col] = nextEmpty;
+        lastChainValue = nextEmpty;
+      } else {
+        showMessage(true, "No free chains");
+      }
+    }
+    return 1;
+  } else if (action == EditCellAction::clear) {
+    if (state.project.song[row][col] != EMPTY_VALUE_16) {
+      // Clear the value
+      state.project.song[row][col] = EMPTY_VALUE_16;
+      return 1;
+    } else {
+      // Value is already empty, shift column up
+      shiftSongColumnUp(state.project, col, row);
+      fullRedraw();
+      return 1;
+    }
+  } else if (action == EditCellAction::shallowClone) {
+    int current = state.project.song[row][col];
+    if (current != EMPTY_VALUE_16) {
+      int cloned = clipboard.cloneChainToNext(state.project, current);
+      if (cloned != EMPTY_VALUE_16) {
+        state.project.song[row][col] = cloned;
+        lastChainValue = cloned;
+        return 1;
+      }
+    }
+    return 0;
+  } else if (action == EditCellAction::deepClone) {
+    int current = state.project.song[row][col];
+    if (current != EMPTY_VALUE_16) {
+      // Deep clone the phrases in the existing chain (don't create a new chain)
+      if (clipboard.deepCloneChain(state.project, current)) {
+        return 1;
+      }
+    }
+    return 0;
+  }
+  return edit16withLimit(action, &state.project.song[row][col], &lastChainValue, 16, PROJECT_MAX_CHAINS - 1);
+}
+
+bool ScreenSong::onEvent(Event event) {
+  bool handled = false;
+
+  if (event.type != EventType::input) return false; // This screen only responds to input events
+  InputEventData e = event.input;
 
   // Only handle mute/solo when not in selection mode
-  if (screen.selectMode == 0) {
+  if (mode == ScreenMode::edit) {
     switch (muteSoloState) {
-      case MUTE_SOLO_EMPTY:
-        if (isKeyDown && keys == keyOpt) {
-          if (tapCount == 3) {
+      case MuteSoloState::empty:
+        if (e.isKeyDown && e.keys == keyOpt) {
+          if (e.tapCount == 3) {
             // Toggle highlight on triple-tap Opt
-            chipnomadState->project.songHighlight[screen.cursorRow][screen.cursorCol] ^= 1;
-            projectModified = 1;
-            drawField(screen.cursorCol, screen.cursorRow, CellState::focus);
-            drawCursor(screen.cursorCol, screen.cursorRow);
+            state.project.songHighlight[cursorRow][cursorCol] ^= 1;
+            state.projectModified = 1;
+            drawCell(cursorCol, cursorRow, CellState::focus);
+            drawCursor(cursorCol, cursorRow);
           } else {
-            muteSoloState = MUTE_SOLO_OPT_PRESSED;
+            muteSoloState = MuteSoloState::optPressed;
           }
-            handled = 1;
+            handled = true;
         }
         break;
 
-      case MUTE_SOLO_OPT_PRESSED:
-        if (isKeyDown && keys == (keyOpt | keyShift)) {
-          audio.toggleTrackMute(screen.cursorCol);
-          muteSoloState = MUTE_SOLO_MUTE_STATE;
-          handled = 1;
-        } else if (isKeyDown && keys == (keyOpt | keyPlay)) {
-          audio.toggleTrackSolo(screen.cursorCol);
-          muteSoloState = MUTE_SOLO_SOLO_STATE;
-          handled = 1;
-        } else if (isKeyDown && keys == (keyOpt | keyLeft)) {
+      case MuteSoloState::optPressed:
+        if (e.isKeyDown && e.keys == (keyOpt | keyShift)) {
+          audio.toggleTrackMute(cursorCol);
+          muteSoloState = MuteSoloState::mute;
+          handled = true;
+        } else if (e.isKeyDown && e.keys == (keyOpt | keyPlay)) {
+          audio.toggleTrackSolo(cursorCol);
+          muteSoloState = MuteSoloState::solo;
+          handled = true;
+        } else if (e.isKeyDown && e.keys == (keyOpt | keyLeft)) {
           // Solo tracks to the left (including cursor)
           for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
-            audio.trackStates[i] = (i <= screen.cursorCol) ? TrackState::solo : TrackState::normal;
+            audio.trackStates[i] = (i <= cursorCol) ? TrackState::solo : TrackState::normal;
           }
           audio.toggleTrackSolo(-1);
-          muteSoloState = MUTE_SOLO_TEMP_LEFT;
-          handled = 1;
-        } else if (isKeyDown && keys == (keyOpt | keyRight)) {
+          muteSoloState = MuteSoloState::tempLeft;
+          handled = true;
+        } else if (e.isKeyDown && e.keys == (keyOpt | keyRight)) {
           // Solo tracks to the right (including cursor)
           for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
-            audio.trackStates[i] = (i >= screen.cursorCol) ? TrackState::solo : TrackState::normal;
+            audio.trackStates[i] = (i >= cursorCol) ? TrackState::solo : TrackState::normal;
           }
           audio.toggleTrackSolo(-1);
-          muteSoloState = MUTE_SOLO_TEMP_RIGHT;
-          handled = 1;
-        } else if (isKeyDown && keys == keyOpt) {
+          muteSoloState = MuteSoloState::tempRight;
+          handled = true;
+        } else if (e.isKeyDown && e.keys == keyOpt) {
           handled = 1; // Stay in OPT_PRESSED state
-        } else if (!isKeyDown && keys == 0) {
-          muteSoloState = MUTE_SOLO_EMPTY;
+        } else if (!e.isKeyDown && e.keys == 0) {
+          muteSoloState = MuteSoloState::empty;
         }
         break;
 
-      case MUTE_SOLO_MUTE_STATE:
-        if (!isKeyDown && keys == keyOpt) {
+      case MuteSoloState::mute:
+        if (!e.isKeyDown && e.keys == keyOpt) {
           // SHIFT released first - momentary unmute
-          audio.toggleTrackMute(screen.cursorCol);
-          muteSoloState = MUTE_SOLO_OPT_PRESSED;
+          audio.toggleTrackMute(cursorCol);
+          muteSoloState = MuteSoloState::optPressed;
           handled = 1;
-        } else if (!isKeyDown && keys == keyShift) {
+        } else if (!e.isKeyDown && e.keys == keyShift) {
           // OPT released first - mute sticks
-          muteSoloState = MUTE_SOLO_EMPTY;
+          muteSoloState = MuteSoloState::empty;
           handled = 1;
-        } else if (keys == (keyOpt | keyShift)) {
+        } else if (e.keys == (keyOpt | keyShift)) {
           handled = 1; // Stay in mute state
-        } else if (keys == 0) {
-          muteSoloState = MUTE_SOLO_EMPTY;
+        } else if (e.keys == 0) {
+          muteSoloState = MuteSoloState::empty;
         }
         break;
 
-      case MUTE_SOLO_SOLO_STATE:
-        if (!isKeyDown && keys == keyOpt) {
+      case MuteSoloState::solo:
+        if (!e.isKeyDown && e.keys == keyOpt) {
           // PLAY released first - momentary unsolo
-          audio.toggleTrackSolo(screen.cursorCol);
-          muteSoloState = MUTE_SOLO_OPT_PRESSED;
+          audio.toggleTrackSolo(cursorCol);
+          muteSoloState = MuteSoloState::optPressed;
           handled = 1;
-        } else if (!isKeyDown && keys == keyPlay) {
+        } else if (!e.isKeyDown && e.keys == keyPlay) {
           // OPT released first - solo sticks
-          muteSoloState = MUTE_SOLO_EMPTY;
+          muteSoloState = MuteSoloState::empty;
           handled = 1;
-        } else if (keys == (keyOpt | keyPlay)) {
+        } else if (e.keys == (keyOpt | keyPlay)) {
           handled = 1; // Stay in solo state
-        } else if (keys == 0) {
-          muteSoloState = MUTE_SOLO_EMPTY;
+        } else if (e.keys == 0) {
+          muteSoloState = MuteSoloState::empty;
         }
         break;
 
-      case MUTE_SOLO_TEMP_LEFT:
-      case MUTE_SOLO_TEMP_RIGHT:
-        if (!isKeyDown && (keys == keyOpt || keys == 0)) {
+      case MuteSoloState::tempLeft:
+      case MuteSoloState::tempRight:
+        if (!e.isKeyDown && (e.keys == keyOpt || e.keys == 0)) {
           // Reset all tracks to normal
           for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
             audio.trackStates[i] = TrackState::normal;
           }
           audio.toggleTrackSolo(-1);
-          muteSoloState = (keys == keyOpt) ? MUTE_SOLO_OPT_PRESSED : MUTE_SOLO_EMPTY;
+          muteSoloState = (e.keys == keyOpt) ? MuteSoloState::optPressed : MuteSoloState::empty;
           handled = 1;
-        } else if (keys == (keyOpt | keyLeft) || keys == (keyOpt | keyRight)) {
+        } else if (e.keys == (keyOpt | keyLeft) || e.keys == (keyOpt | keyRight)) {
           handled = 1;
         }
         break;
@@ -429,74 +382,25 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   }
 
   // Reset state when all keys released or entering selection mode
-  if (keys == 0 || screen.selectMode != 0) {
-    muteSoloState = MUTE_SOLO_EMPTY;
+  if (e.keys == 0 || mode == ScreenMode::select) {
+    muteSoloState = MuteSoloState::empty;
   }
 
   // Only call common input handling if we didn't handle Song-specific input
   if (!handled) {
-    if (isKeyDown && screen.selectMode == 0 && inputScreenNavigation(keys, tapCount)) return 1;
-    return screenInput(&screen, isKeyDown, keys, tapCount);
+    if (e.isKeyDown && mode == ScreenMode::edit && onNavigationInput(e)) return 1;
+    return commonInputHandler(e);
   }
-
-  // Moved from the global screen handling because it's the only screen with scrolling
-  /*
-  if (screen->cursorRow < screen->topRow) {
-    screen->topRow = screen->cursorRow;
-  } else if (screen->cursorRow >= screen->topRow + 16) {
-    screen->topRow = screen->cursorRow - 15;
-  }
-  */
 
   return handled;
 }
 
-static LoopRange getLoopRange(void) {
-  LoopRange range = {0};
-  if (screen.selectMode == 1) {
-    int startCol, startRow, endCol, endRow;
-    getSelectionRange(&screen, &startCol, &startRow, &endCol, &endRow);
-    range.enabled = 1;
-    range.level = 0;
-    range.startSongRow = startRow;
-    range.startChainRow = 0;
-    range.startPhraseRow = 0;
-    range.endSongRow = endRow;
-    range.endChainRow = 15;
-    range.endPhraseRow = 15;
+
+bool ScreenSong::switchSelectionMode() {
+  if (isSingleCellSelection(getSelectionRange())) {
+    selectRow(getColumnCount(0) - 1);
+    return false;
   }
-  return range;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-static ScreenPlaybackLevel getPlaybackLevel(void) {
-  return ScreenPlaybackLevel::song;
-}
-
-const AppScreen screenSong = {
-  .init = init,
-  .setup = setup,
-  .fullRedraw = fullRedraw,
-  .draw = draw,
-  .onInput = onInput,
-  .getPlaybackLevel = getPlaybackLevel
-};
-
-LoopRange songScreenGetLoopRange(void) {
-  return getLoopRange();
-}
-
-
-
-int switchSongSelectionMode(ScreenData* screen) {
-  int startCol, startRow, endCol, endRow;
-  getSelectionRange(screen, &startCol, &startRow, &endCol, &endRow);
-
-  if (isSingleCell(startCol, startRow, endCol, endRow)) {
-    selectRow(screen, screen->getColumnCount(screen->selectAnchorRow) - 1);
-    return 0;
-  }
-  return 1;
+  return true;
 }
 

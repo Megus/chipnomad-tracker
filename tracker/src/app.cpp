@@ -55,7 +55,7 @@ bool TrackerApp::setup() {
   // Try to load an auto-saved project
   if (!projectLoad(&state.project, file.getAutosavePath())) {
     // Failed to load autosave, initialize empty project
-    projectInitAY(&state.project);
+    projectInitAY(state.project);
   }
 
   // Create and configure the audio system

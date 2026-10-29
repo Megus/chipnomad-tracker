@@ -2,6 +2,7 @@
 #define __COPY_PASTE_H__
 
 #include "chipnomad_lib.h"
+#include "gfx.h"
 
 class Clipboard {
   public:
@@ -13,17 +14,16 @@ class Clipboard {
     void copyGroove(chipnomad::Project &p, int grooveIdx, int startRow, int endRow, int isCut);
     int pasteGroove(chipnomad::Project &p, int grooveIdx, int startRow);
 
-    void copySong(chipnomad::Project &p, int startCol, int startRow, int endCol, int endRow, int isCut);
+    void copySong(chipnomad::Project &p, Rect range, bool isCut);
     int pasteSong(chipnomad::Project &p, int startCol, int startRow);
-    void shiftSongColumnUp(chipnomad::Project &project, int col, int startRow);
 
-    void copyChain(chipnomad::Project &p, int chainIdx, int startCol, int startRow, int endCol, int endRow, int isCut);
+    void copyChain(chipnomad::Project &p, int chainIdx, Rect range, bool isCut);
     int pasteChain(chipnomad::Project &p, int chainIdx, int startCol, int startRow);
 
-    void copyPhrase(chipnomad::Project &p, int phraseIdx, int startCol, int startRow, int endCol, int endRow, int isCut);
+    void copyPhrase(chipnomad::Project &p, int phraseIdx, Rect range, bool isCut);
     int pastePhrase(chipnomad::Project &p, int phraseIdx, int startCol, int startRow);
 
-    void copyTable(chipnomad::Project &p, int tableIdx, int startCol, int startRow, int endCol, int endRow, int isCut);
+    void copyTable(chipnomad::Project &p, int tableIdx, Rect range, bool isCut);
     int pasteTable(chipnomad::Project &p, int tableIdx, int startCol, int startRow);
 
     void copyInstrument(chipnomad::Project &p, int instrumentIdx);

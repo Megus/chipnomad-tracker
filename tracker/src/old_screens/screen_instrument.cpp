@@ -299,7 +299,7 @@ void instrumentCommonDrawField(int col, int row, CellState state) {
   }
 }
 
-int instrumentCommonOnEdit(int col, int row, enum CellEditAction action) {
+int instrumentCommonOnEdit(int col, int row, enum EditCellAction action) {
   int handled = 0;
   if (row == 0 && col == 0) {
     // Instrument type

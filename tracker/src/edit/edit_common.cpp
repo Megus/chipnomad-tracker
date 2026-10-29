@@ -1,61 +1,61 @@
 #include "edit_common.h"
 #include "chipnomad_lib.h"
 
-CellEditAction convertMultiAction(CellEditAction action) {
-  if (action == CellEditAction::multiIncrease) return CellEditAction::increase;
-  if (action == CellEditAction::multiDecrease) return CellEditAction::decrease;
-  if (action == CellEditAction::multiIncreaseBig) return CellEditAction::increaseBig;
-  if (action == CellEditAction::multiDecreaseBig) return CellEditAction::decreaseBig;
+EditCellAction convertMultiAction(EditCellAction action) {
+  if (action == EditCellAction::multiIncrease) return EditCellAction::increase;
+  if (action == EditCellAction::multiDecrease) return EditCellAction::decrease;
+  if (action == EditCellAction::multiIncreaseBig) return EditCellAction::increaseBig;
+  if (action == EditCellAction::multiDecreaseBig) return EditCellAction::decreaseBig;
   return action;
 }
 
-int isMultiAction(CellEditAction action) {
-  return action == CellEditAction::multiIncrease || action == CellEditAction::multiDecrease || action == CellEditAction::multiIncreaseBig || action == CellEditAction::multiDecreaseBig;
+static bool isMultiAction(EditCellAction action) {
+  return action == EditCellAction::multiIncrease || action == EditCellAction::multiDecrease || action == EditCellAction::multiIncreaseBig || action == EditCellAction::multiDecreaseBig;
 }
 
-int applyMultiEdit(int startCol, int startRow, int endCol, int endRow, CellEditAction action, int (*editFunc)(int col, int row, CellEditAction action)) {
-  if (!isMultiAction(action)) return 0;
+bool applyMultiEdit(Rect range, EditCellAction action, EditCellInterface* editor) {
+  if (!isMultiAction(action)) return false;
 
-  for (int r = startRow; r <= endRow; r++) {
-    for (int c = startCol; c <= endCol; c++) {
-      editFunc(c, r, action);
+  for (int r = range.y; r < range.y + range.h; r++) {
+    for (int c = range.x; c < range.x + range.w; c++) {
+      editor->editCell(c, r, action);
     }
   }
-  return 1;
+  return true;
 }
 
-int edit16withLimit(CellEditAction action, uint16_t* value, uint16_t* lastValue, uint16_t bigStep, uint16_t max) {
-  int handled = 0;
+bool edit16withLimit(EditCellAction action, uint16_t* value, uint16_t* lastValue, uint16_t bigStep, uint16_t max) {
+  bool handled = false;
   int isNotMultiAction = !isMultiAction(action);
   action = convertMultiAction(action);
 
   switch (action) {
-    case CellEditAction::clear:
+    case EditCellAction::clear:
       if (*value != EMPTY_VALUE_16) {
         if (*value <= max) *lastValue = *value;
         *value = EMPTY_VALUE_16;
       }
-      handled = 1;
+      handled = true;
       break;
-    case CellEditAction::tap:
+    case EditCellAction::tap:
       if (*value == EMPTY_VALUE_16) *value = *lastValue;
-      handled = 1;
+      handled = true;
       break;
-    case CellEditAction::increase:
+    case EditCellAction::increase:
       if (*value != EMPTY_VALUE_16 && *value < max) *value += 1;
-      handled = 1;
+      handled = true;
       break;
-    case CellEditAction::decrease:
+    case EditCellAction::decrease:
       if (*value != EMPTY_VALUE_16 && *value > 0) *value -= 1;
-      handled = 1;
+      handled = true;
       break;
-    case CellEditAction::increaseBig:
+    case EditCellAction::increaseBig:
       if (*value != EMPTY_VALUE_16) *value = *value > max - bigStep ? max : *value + bigStep;
-      handled = 1;
+      handled = true;
       break;
-    case CellEditAction::decreaseBig:
+    case EditCellAction::decreaseBig:
       if (*value != EMPTY_VALUE_16) *value = *value < bigStep ? 0 : *value - bigStep;
-      handled = 1;
+      handled = true;
       break;
     default:
       break;
@@ -68,7 +68,7 @@ int edit16withLimit(CellEditAction action, uint16_t* value, uint16_t* lastValue,
   return handled;
 }
 
-int edit8withLimit(CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep, uint8_t max) {
+bool edit8withLimit(EditCellAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep, uint8_t max) {
   uint16_t value16 = *value;
   uint16_t lastValue16 = *lastValue;
 
@@ -76,7 +76,7 @@ int edit8withLimit(CellEditAction action, uint8_t* value, uint8_t* lastValue, ui
     value16 = EMPTY_VALUE_16;
   }
 
-  int handled = edit16withLimit(action, &value16, &lastValue16, bigStep, max);
+  bool handled = edit16withLimit(action, &value16, &lastValue16, bigStep, max);
 
   *value = (uint8_t)value16;
   *lastValue = (uint8_t)lastValue16;
@@ -84,72 +84,72 @@ int edit8withLimit(CellEditAction action, uint8_t* value, uint8_t* lastValue, ui
   return handled;
 }
 
-int edit8noLast(CellEditAction action, uint8_t* value, uint8_t bigStep, uint8_t min, uint8_t max) {
+bool edit8noLast(EditCellAction action, uint8_t* value, uint8_t bigStep, uint8_t min, uint8_t max) {
   action = convertMultiAction(action);
 
   switch (action) {
-    case CellEditAction::tap:
-      return 1;
+    case EditCellAction::tap:
+      return true;
       break;
-    case CellEditAction::clear:
+    case EditCellAction::clear:
       *value = min;
-      return 1;
+      return true;
       break;
-    case CellEditAction::increase:
+    case EditCellAction::increase:
       if (*value < max) *value += 1;
-      return 1;
+      return true;
       break;
-    case CellEditAction::decrease:
+    case EditCellAction::decrease:
       if (*value > min) *value -= 1;
-      return 1;
+      return true;
       break;
-    case CellEditAction::increaseBig:
+    case EditCellAction::increaseBig:
       *value = *value > max - bigStep ? max : *value + bigStep;
-      return 1;
+      return true;
       break;
-    case CellEditAction::decreaseBig:
+    case EditCellAction::decreaseBig:
       *value = *value < bigStep + min ? min : *value - bigStep;
-      return 1;
+      return true;
       break;
     default:
       break;
   }
 
-  return 0;
+  return false;
 }
 
-int edit8noLimit(CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep) {
-  int handled = 0;
-  int isNotMultiAction = !isMultiAction(action);
+bool edit8noLimit(EditCellAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep) {
+  bool handled = false;
+  bool isNotMultiAction = !isMultiAction(action);
   action = convertMultiAction(action);
 
   switch (action) {
-    case CellEditAction::clear:
+    case EditCellAction::clear:
       if (*value != 0) {
         *lastValue = *value;
         *value = 0;
       }
-      handled = 1;
+      handled = true;
       break;
-    case CellEditAction::tap:
+    case EditCellAction::tap:
       if (*value == 0) *value = *lastValue;
-      handled = 1;
+      handled = true;
       break;
-    case CellEditAction::increase:
+    case EditCellAction::increase:
       *value += 1;
-      handled = 1;
+      handled = true;
       break;
-    case CellEditAction::decrease:
+    case EditCellAction::decrease:
       *value -= 1;
-      handled = 1;
+      handled = true;
       break;
-    case CellEditAction::increaseBig:
+    case EditCellAction::increaseBig:
       *value += bigStep;
-      handled = 1;
+      handled = true;
       break;
-    case CellEditAction::decreaseBig:
+    case EditCellAction::decreaseBig:
       *value -= bigStep;
-      handled = 1;
+      handled = true;
       break;
     default:
       break;
@@ -162,96 +162,96 @@ int edit8noLimit(CellEditAction action, uint8_t* value, uint8_t* lastValue, uint
   return handled;
 }
 
-int editSigned16(CellEditAction action, int16_t* value, int16_t bigStep, int16_t min, int16_t max) {
+bool editSigned16(EditCellAction action, int16_t* value, int16_t bigStep, int16_t min, int16_t max) {
   action = convertMultiAction(action);
 
   switch (action) {
-    case CellEditAction::tap:
-      return 1;
-    case CellEditAction::clear:
+    case EditCellAction::tap:
+      return true;
+    case EditCellAction::clear:
       *value = 0;
-      return 1;
-    case CellEditAction::increase:
+      return true;
+    case EditCellAction::increase:
       if (*value < max) *value += 1;
-      return 1;
-    case CellEditAction::decrease:
+      return true;
+    case EditCellAction::decrease:
       if (*value > min) *value -= 1;
-      return 1;
-    case CellEditAction::increaseBig:
+      return true;
+    case EditCellAction::increaseBig:
       *value = *value > max - bigStep ? max : *value + bigStep;
-      return 1;
-    case CellEditAction::decreaseBig:
+      return true;
+    case EditCellAction::decreaseBig:
       *value = *value < min + bigStep ? min : *value - bigStep;
-      return 1;
+      return true;
     default:
       break;
   }
-  return 0;
+  return false;
 }
 
-int editSigned8(CellEditAction action, int8_t* value, int8_t bigStep, int8_t min, int8_t max) {
+bool editSigned8(EditCellAction action, int8_t* value, int8_t bigStep, int8_t min, int8_t max) {
   int16_t value16 = *value;
-  int result = editSigned16(action, &value16, bigStep, min, max);
+  bool handled = editSigned16(action, &value16, bigStep, min, max);
   *value = (int8_t)value16;
-  return result;
+  return handled;
 }
 
-int edit16withMinMax(CellEditAction action, uint16_t* value, uint16_t bigStep, uint16_t min, uint16_t max) {
+bool edit16withMinMax(EditCellAction action, uint16_t* value, uint16_t bigStep, uint16_t min, uint16_t max) {
   action = convertMultiAction(action);
 
   switch (action) {
-    case CellEditAction::tap:
-      return 1;
-    case CellEditAction::clear:
+    case EditCellAction::tap:
+      return true;
+    case EditCellAction::clear:
       *value = min;
-      return 1;
-    case CellEditAction::increase:
+      return true;
+    case EditCellAction::increase:
       if (*value < max) *value += 1;
-      return 1;
-    case CellEditAction::decrease:
+      return true;
+    case EditCellAction::decrease:
       if (*value > min) *value -= 1;
-      return 1;
-    case CellEditAction::increaseBig:
+      return true;
+    case EditCellAction::increaseBig:
       *value = *value > max - bigStep ? max : *value + bigStep;
-      return 1;
-    case CellEditAction::decreaseBig:
+      return true;
+    case EditCellAction::decreaseBig:
       *value = *value < min + bigStep ? min : *value - bigStep;
-      return 1;
+      return true;
     default:
       break;
   }
-  return 0;
+  return false;
 }
 
-int edit16withOverflow(CellEditAction action, uint16_t* value, uint16_t bigStep, uint16_t min, uint16_t max) {
+bool edit16withOverflow(EditCellAction action, uint16_t* value, uint16_t bigStep, uint16_t min, uint16_t max) {
   switch (action) {
-    case CellEditAction::tap:
-      return 1;
-    case CellEditAction::clear:
+    case EditCellAction::tap:
+      return true;
+    case EditCellAction::clear:
       *value = min;
-      return 1;
-    case CellEditAction::increase:
+      return true;
+    case EditCellAction::increase:
       *value = (*value >= max) ? min : *value + 1;
-      return 1;
-    case CellEditAction::decrease:
+      return true;
+    case EditCellAction::decrease:
       *value = (*value <= min) ? max : *value - 1;
-      return 1;
-    case CellEditAction::increaseBig:
+      return true;
+    case EditCellAction::increaseBig:
       *value = (*value > max - bigStep) ? min + (*value + bigStep - max - 1) : *value + bigStep;
-      return 1;
-    case CellEditAction::decreaseBig:
+      return true;
+    case EditCellAction::decreaseBig:
       *value = (*value < min + bigStep) ? max - (min + bigStep - *value - 1) : *value - bigStep;
-      return 1;
+      return true;
     default:
       break;
   }
-  return 0;
+  return false;
 }
 
-int applyPhraseRotation(chipnomad::Phrase& p, int startRow, int endRow, int direction) {
+bool applyPhraseRotation(chipnomad::Phrase& p, int startRow, int endRow, int direction) {
   using namespace chipnomad;
 
-  if (startRow == endRow) return 0;
+  if (startRow == endRow) return false;
 
   if (direction > 0) {
     // Rotate down: move last row to first
@@ -269,13 +269,13 @@ int applyPhraseRotation(chipnomad::Phrase& p, int startRow, int endRow, int dire
     p.rows[endRow] = temp;
   }
 
-  return 1;
+  return true;
 }
 
-int applyTableRotation(chipnomad::Table& t, int startRow, int endRow, int direction) {
+bool applyTableRotation(chipnomad::Table& t, int startRow, int endRow, int direction) {
   using namespace chipnomad;
 
-  if (startRow == endRow) return 0;
+  if (startRow == endRow) return false;
 
   if (direction > 0) {
     // Rotate down: move last row to first
@@ -293,57 +293,65 @@ int applyTableRotation(chipnomad::Table& t, int startRow, int endRow, int direct
     t.rows[endRow] = temp;
   }
 
-  return 1;
+  return true;
 }
 
-int applySongMoveDown(chipnomad::Project& p, int startCol, int startRow, int endCol, int endRow) {
+bool applySongMoveDown(chipnomad::Project& p, Rect range) {
   // Check if we can move down (bottom row must be empty)
-  for (int c = startCol; c <= endCol; c++) {
+  for (int c = range.x; c < range.x + range.w; c++) {
     if (p.song[PROJECT_MAX_LENGTH - 1][c] != EMPTY_VALUE_16) {
-      return 0;
+      return false;
     }
   }
 
   // Push everything below selection down by 1 row (from bottom up)
-  for (int c = startCol; c <= endCol; c++) {
-    for (int r = PROJECT_MAX_LENGTH - 1; r > endRow + 1; r--) {
+  for (int c = range.x; c < range.x + range.w; c++) {
+    for (int r = PROJECT_MAX_LENGTH - 1; r > range.y + range.h; r--) {
       p.song[r][c] = p.song[r - 1][c];
       p.songHighlight[r][c] = p.songHighlight[r - 1][c];
     }
   }
 
   // Move selection down by 1 row
-  for (int c = startCol; c <= endCol; c++) {
-    for (int r = endRow; r >= startRow; r--) {
+  for (int c = range.x; c <= range.x + range.w; c++) {
+    for (int r = range.y + range.h - 1; r >= range.y; r--) {
       p.song[r + 1][c] = p.song[r][c];
       p.songHighlight[r + 1][c] = p.songHighlight[r][c];
     }
-    p.song[startRow][c] = EMPTY_VALUE_16;
-    p.songHighlight[startRow][c] = 0;
+    p.song[range.y][c] = EMPTY_VALUE_16;
+    p.songHighlight[range.y][c] = 0;
   }
 
-  return 1;
+  return true;
 }
 
-int applySongMoveUp(chipnomad::Project& p, int startCol, int startRow, int endCol, int endRow) {
+bool applySongMoveUp(chipnomad::Project& p, Rect range) {
   // Check if we can move up (space above selection must be empty)
-  if (startRow == 0) return 0;
+  if (range.y == 0) return false;
 
-  for (int c = startCol; c <= endCol; c++) {
-    if (p.song[startRow - 1][c] != EMPTY_VALUE_16) {
-      return 0; // Can't move up
+  for (int c = range.x; c < range.x + range.w; c++) {
+    if (p.song[range.y - 1][c] != EMPTY_VALUE_16) {
+      return false; // Can't move up
     }
   }
 
   // Move selection up
-  for (int c = startCol; c <= endCol; c++) {
-    for (int r = startRow - 1; r < endRow; r++) {
+  for (int c = range.x; c < range.x + range.w; c++) {
+    for (int r = range.y; r < range.y + range.h - 1; r++) {
       p.song[r][c] = p.song[r + 1][c];
       p.songHighlight[r][c] = p.songHighlight[r + 1][c];
     }
-    p.song[endRow][c] = EMPTY_VALUE_16;
-    p.songHighlight[endRow][c] = 0;
+    p.song[range.y + range.h - 1][c] = EMPTY_VALUE_16;
+    p.songHighlight[range.y + range.h - 1][c] = 0;
   }
 
-  return 1;
+  return true;
 }
+
+void shiftSongColumnUp(chipnomad::Project &p, int col, int startRow) {
+  for (int row = startRow; row < PROJECT_MAX_LENGTH - 1; row++) {
+    p.song[row][col] = p.song[row + 1][col];
+  }
+  p.song[PROJECT_MAX_LENGTH - 1][col] = EMPTY_VALUE_16;
+}
+

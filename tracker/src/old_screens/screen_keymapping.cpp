@@ -119,16 +119,16 @@ static void drawRowHeader(int row, CellState state) {
 static void drawColHeader(int col, CellState state) {
 }
 
-static int onEdit(int col, int row, CellEditAction action) {
+static int onEdit(int col, int row, EditCellAction action) {
   if (row < 8) {
-    if (action == CellEditAction::tap) {
+    if (action == EditCellAction::tap) {
       captureRow = row;
       captureCol = col;
       captureState = STATE_CAPTURING;
       inputRawCallback = onRawInput;
       fullRedraw();
       return 1;
-    } else if (action == CellEditAction::clear && col > 0) {
+    } else if (action == EditCellAction::clear && col > 0) {
       InputCode* slot = getKeySlot(row, col);
       if (slot) {
         slot->deviceType = InputDeviceType::none;
@@ -136,7 +136,7 @@ static int onEdit(int col, int row, CellEditAction action) {
       }
       return 1;
     }
-  } else if (row == 8 && action == CellEditAction::tap) {
+  } else if (row == 8 && action == EditCellAction::tap) {
     settingsSave();
     screenSetup(&screenSettings, 0);
     return 1;

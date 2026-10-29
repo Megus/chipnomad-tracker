@@ -180,7 +180,7 @@ const char* FileSystem::getSettingsPath(void) {
   return settingsPath;
 }
 
-void extractFilenameWithoutExtension(const char* path, char* output, int maxLength) {
+void FileSystem::extractFilenameWithoutExtension(const char* path, char* output, int maxLength) {
   // Extract filename from path
   const char* filename = strrchr(path, kPathSeparator);
   if (filename) {

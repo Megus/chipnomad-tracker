@@ -34,7 +34,7 @@ static void drawRowHeader(int row, CellState state);
 static void drawColHeader(int col, CellState state);
 static void drawCursor(int col, int row);
 static void drawSelection(int col1, int row1, int col2, int row2);
-static int onEdit(int col, int row, CellEditAction action);
+static int onEdit(int col, int row, EditCellAction action);
 
 static int columnX[] = {3, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34};
 
@@ -231,7 +231,7 @@ static void draw(void) {
 
 }
 
-static int editCell(int col, int row, enum CellEditAction action) {
+static int editCell(int col, int row, enum EditCellAction action) {
   int handled = 0;
   uint8_t maxVolume = 15;
 
@@ -278,20 +278,20 @@ static int editCell(int col, int row, enum CellEditAction action) {
   return handled;
 }
 
-static int onEdit(int col, int row, CellEditAction action) {
+static int onEdit(int col, int row, EditCellAction action) {
   int startCol, startRow, endCol, endRow;
   getSelectionRange(&screen, &startCol, &startRow, &endCol, &endRow);
 
-  if (action == CellEditAction::switchSelection) {
+  if (action == EditCellAction::switchSelection) {
     return switchTableSelectionMode(&screen);
-  } else if (action == CellEditAction::multiIncrease || action == CellEditAction::multiDecrease) {
+  } else if (action == EditCellAction::multiIncrease || action == EditCellAction::multiDecrease) {
     if (!isSingleColumnSelection(&screen)) return 0;
     return applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell);
-  } else if (action == CellEditAction::multiIncreaseBig || action == CellEditAction::multiDecreaseBig) {
+  } else if (action == EditCellAction::multiIncreaseBig || action == EditCellAction::multiDecreaseBig) {
     // Check if full width selection (all columns)
     if (startCol == 0 && endCol == 10) {
       // Rotation mode
-      int direction = (action == CellEditAction::multiIncreaseBig) ? -1 : 1;
+      int direction = (action == EditCellAction::multiIncreaseBig) ? -1 : 1;
       applyTableRotation(tableIdx, startRow, endRow, direction);
       fullRedraw();
       return 1;
@@ -310,13 +310,13 @@ static int onEdit(int col, int row, CellEditAction action) {
       }
     }
     return 0;
-  } else if (action == CellEditAction::copy) {
+  } else if (action == EditCellAction::copy) {
     copyTable(tableIdx, startCol, startRow, endCol, endRow, 0);
     return 1;
-  } else if (action == CellEditAction::cut) {
+  } else if (action == EditCellAction::cut) {
     copyTable(tableIdx, startCol, startRow, endCol, endRow, 1);
     return 1;
-  } else if (action == CellEditAction::paste) {
+  } else if (action == EditCellAction::paste) {
     const int rowsPasted = pasteTable(tableIdx, col, row);
     if (rowsPasted > 0) {
       // Move cursor below pasted data, or to last row if paste extends to end

@@ -19,13 +19,13 @@ static void stripTrailingWhitespace(char* str) {
   }
 }
 
-int pitchTableLoadCSV(chipnomad::Project* project, const char* path) {
+int pitchTableLoadCSV(chipnomad::Project& p, const char* path) {
   FILE* file = fopen(path, "r");
   if (file == NULL) return 0;
 
   int noteIndex = 0;
   int noteCol = -1, valueCol = -1;
-  const char* expectedValueColumn = project->linearPitch ? "Cents" : "Period";
+  const char* expectedValueColumn = p.linearPitch ? "Cents" : "Period";
 
   // Read header line and find column positions
   if (fgets(lineBuffer, sizeof(lineBuffer), file) == NULL) {
@@ -78,9 +78,9 @@ int pitchTableLoadCSV(chipnomad::Project* project, const char* path) {
 
     // Add entry if both values were found
     if (foundNote && foundValue && strlen(noteName) > 0) {
-      strncpy(project->pitchTable.noteNames[noteIndex], noteName, 3);
-      project->pitchTable.noteNames[noteIndex][3] = 0;
-      project->pitchTable.values[noteIndex] = value;
+      strncpy(p.pitchTable.noteNames[noteIndex], noteName, 3);
+      p.pitchTable.noteNames[noteIndex][3] = 0;
+      p.pitchTable.values[noteIndex] = value;
       noteIndex++;
     }
   }
@@ -88,14 +88,14 @@ int pitchTableLoadCSV(chipnomad::Project* project, const char* path) {
   fclose(file);
 
   if (noteIndex > 0) {
-    project->pitchTable.length = noteIndex;
+    p.pitchTable.length = noteIndex;
 
     // Calculate octave size (find first note name change)
-    char firstOctave = project->pitchTable.noteNames[0][2];
-    project->pitchTable.octaveSize = 12; // Default
+    char firstOctave = p.pitchTable.noteNames[0][2];
+    p.pitchTable.octaveSize = 12; // Default
     for (int i = 1; i < noteIndex; i++) {
-      if (project->pitchTable.noteNames[i][2] != firstOctave) {
-        project->pitchTable.octaveSize = i;
+      if (p.pitchTable.noteNames[i][2] != firstOctave) {
+        p.pitchTable.octaveSize = i;
         break;
       }
     }
@@ -106,7 +106,7 @@ int pitchTableLoadCSV(chipnomad::Project* project, const char* path) {
   return 0;
 }
 
-int pitchTableSaveCSV(chipnomad::Project* project, const char* folderPath, const char* filename) {
+int pitchTableSaveCSV(chipnomad::Project& p, const char* folderPath, const char* filename) {
   char fullPath[2048];
   snprintf(fullPath, sizeof(fullPath), "%s/%s.csv", folderPath, filename);
 
@@ -114,12 +114,12 @@ int pitchTableSaveCSV(chipnomad::Project* project, const char* folderPath, const
   if (file == NULL) return 0;
 
   // Write header with appropriate column name
-  const char* valueColumn = project->linearPitch ? "Cents" : "Period";
+  const char* valueColumn = p.linearPitch ? "Cents" : "Period";
   fprintf(file, "Note,%s\n", valueColumn);
 
   // Write data
-  for (int i = 0; i < project->pitchTable.length; i++) {
-    fprintf(file, "%s,%d\n", project->pitchTable.noteNames[i], project->pitchTable.values[i]);
+  for (int i = 0; i < p.pitchTable.length; i++) {
+    fprintf(file, "%s,%d\n", p.pitchTable.noteNames[i], p.pitchTable.values[i]);
   }
 
   fclose(file);
@@ -127,16 +127,16 @@ int pitchTableSaveCSV(chipnomad::Project* project, const char* folderPath, const
 }
 
 // Create 12TET scale
-void calculatePitchTableAY(chipnomad::Project* p) {
+void calculatePitchTableAY(chipnomad::Project& p) {
   static char noteStrings[12][4] = { "C-1", "C#1", "D-1", "D#1", "E-1", "F-1", "F#1", "G-1", "G#1", "A-1", "A#1", "B-1" };
 
-  float clock = (float)(p->chipSetup.ay.clock);
+  float clock = (float)(p.chipSetup.ay.clock);
   int octaves = 9;
   int startMidiNote = 12; // Start from C-0 (MIDI 12)
 
-  snprintf(p->pitchTable.name, sizeof(p->pitchTable.name), "12TET %dHz", p->chipSetup.ay.clock);
-  p->pitchTable.length = octaves * 12;
-  p->pitchTable.octaveSize = 12;
+  snprintf(p.pitchTable.name, sizeof(p.pitchTable.name), "12TET %dHz", p.chipSetup.ay.clock);
+  p.pitchTable.length = octaves * 12;
+  p.pitchTable.octaveSize = 12;
 
   for (int o = 0; o < octaves; o++) {
     for (int c = 0; c < 12; c++) {
@@ -146,20 +146,20 @@ void calculatePitchTableAY(chipnomad::Project* p) {
       float freq = chipnomad::centsToFrequency(midiNote * 100);
       int period = chipnomad::frequencyToAYPeriod(freq, (int)clock);
 
-      p->pitchTable.values[o * 12 + c] = period;
-      strcpy(p->pitchTable.noteNames[o * 12 + c], noteStrings[c]);
+      p.pitchTable.values[o * 12 + c] = period;
+      strcpy(p.pitchTable.noteNames[o * 12 + c], noteStrings[c]);
     }
   }
 }
 
 // Create 12TET linear pitch table (values in cents)
-void calculateLinearPitchTable12TET(chipnomad::Project* p) {
+void calculateLinearPitchTable12TET(chipnomad::Project& p) {
   static char noteStrings[12][4] = { "C-0", "C#0", "D-0", "D#0", "E-0", "F-0", "F#0", "G-0", "G#0", "A-0", "A#0", "B-0" };
 
-  strcpy(p->pitchTable.name, "12TET Linear");
+  strcpy(p.pitchTable.name, "12TET Linear");
   int octaves = 9;
-  p->pitchTable.length = octaves * 12;
-  p->pitchTable.octaveSize = 12;
+  p.pitchTable.length = octaves * 12;
+  p.pitchTable.octaveSize = 12;
 
   int startMidiNote = 12; // Start from C-0 (MIDI 12)
 
@@ -168,15 +168,15 @@ void calculateLinearPitchTable12TET(chipnomad::Project* p) {
       noteStrings[c][2] = 48 + o; // ASCII '0' + octave number
 
       int midiNote = startMidiNote + o * 12 + c;
-      p->pitchTable.values[o * 12 + c] = midiNote * 100; // Value in cents
-      strcpy(p->pitchTable.noteNames[o * 12 + c], noteStrings[c]);
+      p.pitchTable.values[o * 12 + c] = midiNote * 100; // Value in cents
+      strcpy(p.pitchTable.noteNames[o * 12 + c], noteStrings[c]);
     }
   }
 }
 
 // Reinitialize pitch table based on linear pitch setting
-void reinitializePitchTable(chipnomad::Project* p) {
-  if (p->linearPitch) {
+void reinitializePitchTable(chipnomad::Project& p) {
+  if (p.linearPitch) {
     calculateLinearPitchTable12TET(p);
   } else {
     calculatePitchTableAY(p);

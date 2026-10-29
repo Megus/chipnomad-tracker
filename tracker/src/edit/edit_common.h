@@ -3,8 +3,9 @@
 
 #include <stdint.h>
 #include "chipnomad_lib.h"
+#include "gfx.h"
 
-enum class CellEditAction : int {
+enum class EditCellAction : int {
   clear,
   tap,
   doubleTap,
@@ -24,20 +25,26 @@ enum class CellEditAction : int {
   multiDecreaseBig
 };
 
+class EditCellInterface {
+  public:
+    virtual bool editCell(int col, int row, EditCellAction action) = 0;
+};
+
 // Common edit functions
-int edit16withLimit(CellEditAction action, uint16_t* value, uint16_t* lastValue, uint16_t bigStep, uint16_t max);
-int edit8withLimit(CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep, uint8_t max);
-int edit8noLimit(CellEditAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep);
-int edit8noLast(CellEditAction action, uint8_t* value, uint8_t bigStep, uint8_t min, uint8_t max);
-int editSigned16(CellEditAction action, int16_t* value, int16_t bigStep, int16_t min, int16_t max);
-int editSigned8(CellEditAction action, int8_t* value, int8_t bigStep, int8_t min, int8_t max);
-int edit16withMinMax(CellEditAction action, uint16_t* value, uint16_t bigStep, uint16_t min, uint16_t max);
-int edit16withOverflow(CellEditAction action, uint16_t* value, uint16_t bigStep, uint16_t min, uint16_t max);
-int applyMultiEdit(int startCol, int startRow, int endCol, int endRow, CellEditAction action, int (*editFunc)(int col, int row, CellEditAction action));
-int applyPhraseRotation(chipnomad::Phrase& p, int startRow, int endRow, int direction);
-int applyTableRotation(chipnomad::Table& t, int startRow, int endRow, int direction);
-int applySongMoveDown(chipnomad::Project& p, int startCol, int startRow, int endCol, int endRow);
-int applySongMoveUp(chipnomad::Project& p, int startCol, int startRow, int endCol, int endRow);
-CellEditAction convertMultiAction(CellEditAction action);
+bool edit16withLimit(EditCellAction action, uint16_t* value, uint16_t* lastValue, uint16_t bigStep, uint16_t max);
+bool edit8withLimit(EditCellAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep, uint8_t max);
+bool edit8noLimit(EditCellAction action, uint8_t* value, uint8_t* lastValue, uint8_t bigStep);
+bool edit8noLast(EditCellAction action, uint8_t* value, uint8_t bigStep, uint8_t min, uint8_t max);
+bool editSigned16(EditCellAction action, int16_t* value, int16_t bigStep, int16_t min, int16_t max);
+bool editSigned8(EditCellAction action, int8_t* value, int8_t bigStep, int8_t min, int8_t max);
+bool edit16withMinMax(EditCellAction action, uint16_t* value, uint16_t bigStep, uint16_t min, uint16_t max);
+bool edit16withOverflow(EditCellAction action, uint16_t* value, uint16_t bigStep, uint16_t min, uint16_t max);
+bool applyMultiEdit(Rect range, EditCellAction action, EditCellInterface* editor);
+bool applyPhraseRotation(chipnomad::Phrase& p, int startRow, int endRow, int direction);
+bool applyTableRotation(chipnomad::Table& t, int startRow, int endRow, int direction);
+bool applySongMoveDown(chipnomad::Project& p, Rect range);
+bool applySongMoveUp(chipnomad::Project& p, Rect range);
+void shiftSongColumnUp(chipnomad::Project &project, int col, int startRow);
+EditCellAction convertMultiAction(EditCellAction action);
 
 #endif // __EDIT_COMMON_H__

@@ -49,7 +49,7 @@ static void drawCursor(int col, int row);
 static void drawRowHeader(int row, CellState state);
 static void drawColHeader(int col, CellState state);
 static void drawField(int col, int row, CellState state);
-static int onEdit(int col, int row, CellEditAction action);
+static int onEdit(int col, int row, EditCellAction action);
 static int isCellValid(int col, int row);
 
 // ScreenData definition
@@ -286,7 +286,7 @@ static void drawField(int col, int row, CellState state) {
   }
 }
 
-static int onEdit(int col, int row, enum CellEditAction action) {
+static int onEdit(int col, int row, enum EditCellAction action) {
   if (chipnomadState->project.instruments[cInstrument].type == InstrumentType::none) return 0;
 
   int handled = 0;
