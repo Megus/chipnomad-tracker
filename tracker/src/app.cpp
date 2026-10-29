@@ -123,13 +123,14 @@ void TrackerApp::onMainLoopEvent(MainLoopEvent event) {
           keyRepeatCount = 0;
         }
       }
-      break;
 
       // Send all queued events. Currently TrackerUI is the only receiver
       for (int c = 0; c < eventQueueLength; c++) {
         ui->onEvent(eventQueue[c]);
       }
       eventQueueLength = 0;
+
+      break;
     }
     case MainLoopEventType::keyDown: {
       int value = input.inputCodeToKey(event.data.input, state.settings.keyMapping);

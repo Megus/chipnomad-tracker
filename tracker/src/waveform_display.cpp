@@ -111,7 +111,7 @@ int WaveformDisplay::getAYEnvelopeHeight(int x, int envShape) {
   return 0;
 }
 
-Bitmap* WaveformDisplay::getWaveformBitmap(chipnomad::Engine engine, int trackIdx) {
+Bitmap* WaveformDisplay::getWaveformBitmap(chipnomad::Engine& engine, int trackIdx) {
   using namespace chipnomad;
 
   PlaybackTrackState* track = &engine.player.tracks[trackIdx];

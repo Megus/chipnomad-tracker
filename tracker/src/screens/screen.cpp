@@ -149,13 +149,13 @@ void Screen::drawSelectedCells() {
 }
 
 
-bool Screen::commonInputHandler(InputEventData eventData) {
-  bool isKeyDown = eventData.isKeyDown;
-  int keys = eventData.keys;
-  int tapCount = eventData.tapCount;
+bool Screen::commonInputHandler(InputEventData e) {
+  // Screen navigation
+  if (e.isKeyDown && mode == ScreenMode::edit && onNavigationInput(e)) return true;;
 
-  if (!isKeyDown && keys != 0) return false; // Discard key up events unless no buttons are pressed (for existing logic that expects keys == 0)
-  return (mode == ScreenMode::select) ? inputSelectMode(keys, tapCount) : inputEditMode(keys, tapCount);
+  // Common input for edit and select modes
+  if (!e.isKeyDown && e.keys != 0) return false; // Discard key up events unless no buttons are pressed (for existing logic that expects keys == 0)
+  return (mode == ScreenMode::select) ? inputSelectMode(e.keys, e.tapCount) : inputEditMode(e.keys, e.tapCount);
 }
 
 void Screen::inputCursor(int keys, bool& handled, bool& needsRedraw) {

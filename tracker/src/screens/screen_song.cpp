@@ -108,14 +108,25 @@ bool ScreenSong::isRowVisible(int row) {
 
 bool ScreenSong::adjustVerticalScroll(bool pageJump) {
   bool needsRedraw = false;
-  // TODO: Handle pageJump - change topRow by 16
 
-  if (cursorRow < topRow) {
-    topRow = cursorRow;
-    needsRedraw = true;
-  } else if (cursorRow >= topRow + 16) {
-    topRow = cursorRow - 15;
-    needsRedraw = true;
+  if (pageJump) {
+    if (cursorRow < topRow) {
+      topRow -= 16;
+      if (topRow < 0) topRow = 0;
+      needsRedraw = true;
+    } else if (topRow + 16 <= cursorRow) {
+      topRow += 16;
+      if (topRow + 16 >= PROJECT_MAX_LENGTH) topRow = PROJECT_MAX_LENGTH - 16;
+      needsRedraw = true;
+    }
+  } else {
+    if (cursorRow < topRow) {
+      topRow = cursorRow;
+      needsRedraw = true;
+    } else if (cursorRow >= topRow + 16) {
+      topRow = cursorRow - 15;
+      needsRedraw = true;
+    }
   }
 
   return needsRedraw;
@@ -387,10 +398,9 @@ bool ScreenSong::onEvent(Event event) {
   }
 
   // Only call common input handling if we didn't handle Song-specific input
-  if (!handled) {
-    if (e.isKeyDown && mode == ScreenMode::edit && onNavigationInput(e)) return 1;
-    return commonInputHandler(e);
-  }
+  if (!handled) handled = commonInputHandler(e);
+
+  state.songRow = cursorRow; // Sync song row with the cursor
 
   return handled;
 }

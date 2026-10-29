@@ -1,6 +1,7 @@
 #ifndef __SCREENS_H__
 #define __SCREENS_H__
 
+#include <unordered_map>
 #include "chipnomad_lib.h"
 #include "gfx.h"
 #include "audio_manager.h"
@@ -33,42 +34,19 @@ class TrackerUI : public EventHandler {
     AudioManager& audio;
     FileSystem& file;
     InputUtils& input;
-    EventDispatcher& dispatcher;
+    EventDispatcher& events;
     TrackerState& state;
     Clipboard clipboard = Clipboard();
 
     WaveformDisplay* waveDisplay; // TODO: Maybe this class can be moved to Gfx?
 
     Screen* screenStack[screenStackMaxDepth];
-    int screenStackIdx = 0;
+    int screenStackIdx = -1;
 
     int messageTimer = 0;
     char messageBuffer[41];
 
-    Screen* screenSong;
-
-    /*
-    Screen* screenProject;
-    Screen* screenConfirm;
-    Screen* screenPitchTable;
-    Screen* screenFileBrowser;
-    Screen* screenCreateFolder;
-    Screen* screenEnterName;
-    Screen* screenChain;
-    Screen* screenPhrase;
-    Screen* screenGroove;
-    Screen* screenInstrument;
-    Screen* screenInstrumentPool;
-    Screen* screenModulation;
-    Screen* screenTable;
-    Screen* screenWavetable;
-    Screen* screenExport;
-    Screen* screenManage;
-    Screen* screenSettings;
-    Screen* screenColorTheme;
-    Screen* screenKeyMapping;
-    */
-
+    std::unordered_map<ScreenEnum, Screen*> screens;
 };
 
 #endif // __SCREENS_H__

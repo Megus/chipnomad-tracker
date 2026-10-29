@@ -14,23 +14,26 @@ TrackerUI::TrackerUI(Gfx& gfx, FontManager& fontManager, AudioManager& audio, Fi
   audio(audio),
   file(file),
   input(input),
-  dispatcher(dispatcher),
+  events(dispatcher),
   state(state)
 {
   // Create all screen objects
-  screenSong = new ScreenSong(state, dispatcher, gfx, audio, clipboard);
+  screens[ScreenEnum::song] = new ScreenSong(state, dispatcher, gfx, audio, clipboard);
 
   // Remaining initialization
   waveDisplay = new WaveformDisplay(gfx);
-  screenStack[0] = screenSong;
+
+  events.dispatch({.type = EventType::switchScreen, .screen = {.screen = ScreenEnum::song, .input = 0}});
 }
 
 TrackerUI::~TrackerUI() {
-  delete screenSong;
+  for (const auto& s : screens) {
+    delete s.second;
+  }
 }
 
 Screen* TrackerUI::getCurrentScreen() {
-  return screenStack[screenStackIdx];
+  return screenStackIdx >= 0 ? screenStack[screenStackIdx] : nullptr;
 }
 
 void TrackerUI::drawScreenMap() {
@@ -134,7 +137,8 @@ void TrackerUI::draw() {
 
   /////////////////////////////////////////////////////////////////////////////
   // Screen draw
-  getCurrentScreen()->draw();
+  Screen* screen = getCurrentScreen();
+  if (screen) screen->draw();
 
   /////////////////////////////////////////////////////////////////////////////
   // Message at the bottom line
@@ -176,18 +180,21 @@ bool TrackerUI::onEvent(Event e) {
       handled = true;
       break;
     case EventType::redrawScreen:
-/*
-  // Full redraw event
-    gfxSetBgColor(appSettings.colorScheme.background);
-    gfxClear();
-    if (currentScreen) {
-      currentScreen->fullRedraw();
+      gfx.setBgColor(state.settings.colorTheme.background);
+      gfx.setCursorColor(state.settings.colorTheme.cursor);
+      gfx.clear();
+      getCurrentScreen()->fullRedraw();
       drawScreenMap();
+      break;
+    case EventType::switchScreen: {
+      Screen* screen = screens[e.screen.screen];
+      if (!screen) break;
+      screen->setup(e.screen.input);
+      screenStack[0] = screen;
+      screenStackIdx = 0;
+      events.dispatch({.type = EventType::redrawScreen});
+      break;
     }
-*/
-      break;
-    case EventType::switchScreen:
-      break;
     case EventType::pushScreen:
       break;
     case EventType::popScreen:
@@ -216,11 +223,11 @@ bool TrackerUI::onInput(Event e) {
   // All keys are released
   if (!e.input.isKeyDown && e.input.keys == 0) {
     // Clear immediate screen message
-    dispatcher.dispatch({.type = EventType::showMessage, .stringValue = ""});
+    events.dispatch({.type = EventType::showMessage, .stringValue = ""});
 
     // Stop phrase row playback
     if (audio.engine.player.tracks[state.songTrack].mode == PlaybackMode::phraseRow) {
-      dispatcher.dispatch({.type = EventType::stopPlayback});
+      events.dispatch({.type = EventType::stopPlayback});
     }
   }
 
@@ -235,7 +242,7 @@ bool TrackerUI::onInput(Event e) {
 
   // Stop playback
   if (isPlaying && e.input.keys == keyPlay) {
-    dispatcher.dispatch({.type = EventType::stopPlayback});
+    events.dispatch({.type = EventType::stopPlayback});
     return true;
   }
 
@@ -245,17 +252,17 @@ bool TrackerUI::onInput(Event e) {
   // Play song/chain/phrase depending on the screen's playback level
   if (!isPlaying && e.input.keys == keyPlay) {
     if (playbackLevel == ScreenPlaybackLevel::song) {
-      dispatcher.dispatch({
+      events.dispatch({
         .type = EventType::playSong,
         .play = {.loopRange = range, .songRow = range.enabled ? range.startSongRow : state.songRow, .chainRow = 0}
       });
     } else if (playbackLevel == ScreenPlaybackLevel::chain) {
-      dispatcher.dispatch({
+      events.dispatch({
         .type = EventType::playChain,
         .play = {.loopRange = range, .track = state.songTrack, .songRow = state.songRow, .chainRow = range.enabled ? range.startChainRow : state.chainRow}
       });
     } else if (playbackLevel == ScreenPlaybackLevel::phrase) {
-      dispatcher.dispatch({
+      events.dispatch({
         .type = EventType::playPhrase,
         .play = {.loopRange = range, .track = state.songTrack, .songRow = state.songRow, .chainRow = state.chainRow}
       });
@@ -264,12 +271,12 @@ bool TrackerUI::onInput(Event e) {
   // Play song from music screens (Shift+Play)
   else if (!isPlaying && e.input.keys == (keyPlay | keyShift)) {
     if (playbackLevel == ScreenPlaybackLevel::song) {
-      dispatcher.dispatch({
+      events.dispatch({
         .type = EventType::playSong,
         .play = {.loopRange = range, .songRow = range.enabled ? range.startSongRow : state.songRow, .chainRow = 0}
       });
     } else if (playbackLevel == ScreenPlaybackLevel::chain || playbackLevel == ScreenPlaybackLevel::phrase) {
-      dispatcher.dispatch({
+      events.dispatch({
         .type = EventType::playSong,
         .play = {.loopRange = range, .songRow = state.songRow, .chainRow = range.enabled ? range.startChainRow : state.chainRow}
       });

@@ -12,7 +12,7 @@ class WaveformDisplay {
     ~WaveformDisplay();
 
     // Get waveform bitmap for a track
-    Bitmap* getWaveformBitmap(chipnomad::Engine engine, int trackIdx);
+    Bitmap* getWaveformBitmap(chipnomad::Engine& engine, int trackIdx);
     // Render a sample waveform preview into a bitmap
     void renderSamplePreview(Bitmap* bitmap, uint8_t* sampleData, uint16_t startSample, uint16_t endSample);
     // Render a wavetable preview into a bitmap
