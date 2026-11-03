@@ -228,8 +228,11 @@ void GfxSDL12::print(int x, int y, const char* text) {
   isDirty = 1;
 }
 
-void GfxSDL12::printf(int x, int y, const char* format, va_list args) {
+void GfxSDL12::printf(int x, int y, const char* format, ...) {
+  va_list args;
+  va_start(args, format);
   vsnprintf(printBuffer, PRINT_BUFFER_SIZE, format, args);
+  va_end(args);
   print(x, y, printBuffer);
 }
 

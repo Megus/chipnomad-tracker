@@ -1,5 +1,6 @@
+#include <string.h>
+#include <strings.h>
 #include "screen_project.h"
-#include "common.h"
 #include "file_system.h"
 #include "gfx.h"
 #include "utils.h"
@@ -8,18 +9,10 @@
 #include "pitch_table_utils.h"
 #include "version.h"
 #include "audio_manager.h"
-#include "file_browser.h"
 #include "import/import_vt2.h"
 #include "error.h"
-#include <string.h>
-#include <strings.h>
 
-static int isCharEdit = 0;
-static char* editingString = NULL;
-static int editingStringLength = 0;
-static int tickRateI = 0;
-static uint16_t tickRateF = 0;
-
+/*
 static void onProjectLoaded(const char* path) {
   if (!path) {
     screenSetup(&screenProject, 0);
@@ -90,6 +83,7 @@ static void onProjectCancelled(void) {
   screenSetup(&screenProject, 0);
 }
 
+
 static void doNewProject(void) {
   projectInitAY(&chipnomadState->project);
   projectModified = 0;
@@ -106,71 +100,28 @@ static void doLoadProject(void) {
 static void cancelConfirm(void) {
   screenSetup(&screenProject, 0);
 }
+*/
 
-static void drawRowHeader(int row, CellState state);
-static void drawColHeader(int col, CellState state);
-
-static ScreenData screenProjectCommon = {
-  .rows = 8,
-  .cursorRow = 0,
-  .cursorCol = 0,
-  .topRow = 0,
-  .selectMode = -1,
-  .selectStartRow = 0,
-  .selectStartCol = 0,
-  .selectAnchorRow = 0,
-  .selectAnchorCol = 0,
-  .playbackLevel = ScreenPlaybackLevel::none,
-  .getColumnCount = projectCommonColumnCount,
-  .drawStatic = projectCommonDrawStatic,
-  .drawCursor = projectCommonDrawCursor,
-  .drawSelection = NULL,
-  .drawRowHeader = drawRowHeader,
-  .drawColHeader = drawColHeader,
-  .drawField = projectCommonDrawField,
-  .onEdit = projectCommonOnEdit,
-  .onInput = NULL,
-  .onRawInput = NULL,
-  .isCellValid = NULL,
-  .getLoopRange = NULL,
-};
-
-static ScreenData* projectScreen(void) {
-  ScreenData* data = &screenProjectCommon;
-  if (chipnomadState->project.chipType == ChipType::AY) {
-    data = &screenProjectAY;
-  }
-  data->drawRowHeader = drawRowHeader;
-  data->drawColHeader = drawColHeader;
-
-  return data;
+ScreenProject::ScreenProject(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx): Screen(state, dispatcher, gfx) {
+  partialAY = new ScreenPartialProjectAY(*this, 8);
 }
 
-static void setup(int input) {
-  isCharEdit = 0;
+ScreenProject::~ScreenProject() {
+  delete partialAY;
+}
+
+void ScreenProject::setup(int input) {
   editingString = NULL;
-  editingStringLength = 0;
-  tickRateI = (int)chipnomadState->project.tickRate;
-  tickRateF = (uint16_t)((chipnomadState->project.tickRate - (float)tickRateI) * 1000.f);
+  tickRateI = (int)state.project.tickRate;
+  tickRateF = (uint16_t)((state.project.tickRate - (float)tickRateI) * 1000.f);
+  partial = partialAY; // TODO: Select chip-specific partial
 }
 
-static void fullRedraw(void) {
-  ScreenData* screen = projectScreen();
-  screenFullRedraw(screen);
+int ScreenProject::getRowCount() {
+  return ScreenProject::commonRowCount + partial->getRowCount();
 }
 
-static void draw(void) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// Common part of the form
-//
-
-static void drawRowHeader(int row, CellState state) {}
-static void drawColHeader(int col, CellState state) {}
-
-int projectCommonColumnCount(int row) {
+int ScreenProject::getColumnCount(int row) {
   if (row == 0) {
     return 5; // Load, save, new, export, manage
   } else if (row >= 1 && row <= 3) {
@@ -179,113 +130,118 @@ int projectCommonColumnCount(int row) {
     return 1; // Linear pitch
   } else if (row == 5) {
     return 2; // Tick rate
-  } else if (row > 5) {
+  } else if (row >= 6) {
     return 1; // Chip type, chips count
+  } else {
+    return partial->getColumnCount(row);
   }
-  return 1; // Default value
 }
 
-void projectCommonDrawStatic(void) {
-  const ColorTheme t = appSettings.colorScheme;
+void ScreenProject::drawStatic() {
+  gfx.setFgColor(theme().textTitles);
+  gfx.print(0, 0, "PROJECT");
 
-  gfxSetFgColor(t.textTitles);
-  gfxPrint(0, 0, "PROJECT");
+  gfx.setFgColor(theme().textDefault);
+  gfx.printf(8, 0, "%s v%s (%s)", appTitle, appVersion, appBuild);
 
-  gfxSetFgColor(t.textDefault);
-  gfxPrintf(8, 0, "%s v%s (%s)", appTitle, appVersion, appBuild);
+  gfx.print(0, 3, "File");
+  gfx.print(0, 4, "Title");
+  gfx.print(0, 5, "Author");
 
-  gfxPrint(0, 3, "File");
-  gfxPrint(0, 4, "Title");
-  gfxPrint(0, 5, "Author");
+  gfx.print(0, 7, "Linear pitch");
+  gfx.print(0, 8, "Tick rate");
+  gfx.print(0, 9, "Chip type");
+  gfx.print(0, 10, "Chips count");
 
-  gfxPrint(0, 7, "Linear pitch");
-  gfxPrint(0, 8, "Tick rate");
-  gfxPrint(0, 9, "Chip type");
-  gfxPrint(0, 10, "Chips count");
+  partial->drawStatic();
 }
 
-void projectCommonDrawCursor(int col, int row) {
+void ScreenProject::drawCursor(int col, int row) {
   if (row == 0) {
     if (col == 0) {
-      gfxCursor(7, 2, 4); // Load
+      gfx.cursor(7, 2, 4); // Load
     } else if (col == 1) {
-      gfxCursor(12, 2, 4); // Save
+      gfx.cursor(12, 2, 4); // Save
     } else if (col == 2) {
-      gfxCursor(17, 2, 3); // New
+      gfx.cursor(17, 2, 3); // New
     } else if (col == 3) {
-      gfxCursor(21, 2, 6); // Export
+      gfx.cursor(21, 2, 6); // Export
     } else if (col == 4) {
-      gfxCursor(28, 2, 6); // Manage
+      gfx.cursor(28, 2, 6); // Manage
     }
   } else if (row >= 1 && row <= 3) {
     // Text fields: file name, title, author
-    gfxCursor(7 + col, 2 + row, 1);
+    gfx.cursor(7 + col, 2 + row, 1);
   } else if (row == 4) {
     // Linear pitch
-    gfxCursor(13, 7, 3);
+    gfx.cursor(13, 7, 3);
   } else if (row == 5) {
     // Tick rate
     if (col == 0) {
-      gfxCursor(13, 8, 3);
+      gfx.cursor(13, 8, 3);
     } else {
-      gfxCursor(17, 8, 3);
+      gfx.cursor(17, 8, 3);
     }
   } else if (row == 6) {
     // Chip type
     // TODO: When there will be other chips, change cursor length
-    gfxCursor(13, 9, 5);
+    gfx.cursor(13, 9, 5);
   } else if (row == 7) {
     // Chips count
-    gfxCursor(13, 10, 1);
+    gfx.cursor(13, 10, 1);
+  } else {
+    partial->drawCursor(col, row);
   }
 }
 
-void projectCommonDrawField(int col, int row, CellState state) {
-  gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+void ScreenProject::drawCell(int col, int row, CellState cellState) {
+  gfx.setFgColor(cellState == CellState::focus ? theme().textValue : theme().textDefault);
 
   if (row == 0) {
     if (col == 0) {
-      gfxPrint(7, 2, "Load");
+      gfx.print(7, 2, "Load");
     } else if (col == 1) {
-      gfxPrint(12, 2, "Save");
+      gfx.print(12, 2, "Save");
     } else if (col == 2) {
-      gfxPrint(17, 2, "New");
+      gfx.print(17, 2, "New");
     } else if (col == 3) {
-      gfxPrint(21, 2, "Export");
+      gfx.print(21, 2, "Export");
     } else if (col == 4) {
-      gfxPrint(28, 2, "Manage");
+      gfx.print(28, 2, "Manage");
     }
   } else if (row == 1) {
     // File name
-    gfxClearRect(7, 3, FILENAME_LENGTH, 1);
-    gfxPrintf(7, 3, "%s", appSettings.projectFilename);
+    gfx.clearRect(7, 3, kFileNameLength, 1);
+    gfx.printf(7, 3, "%s", state.settings.projectFilename);
   } else if (row == 2) {
     // Title
-    gfxClearRect(7, 4, PROJECT_TITLE_LENGTH, 1);
-    gfxPrintf(7, 4, "%s", chipnomadState->project.title);
+    gfx.clearRect(7, 4, PROJECT_TITLE_LENGTH, 1);
+    gfx.printf(7, 4, "%s", state.project.title);
   } else if (row == 3) {
     // Author
-    gfxClearRect(7, 5, PROJECT_TITLE_LENGTH, 1);
-    gfxPrintf(7, 5, "%s", chipnomadState->project.author);
+    gfx.clearRect(7, 5, PROJECT_TITLE_LENGTH, 1);
+    gfx.printf(7, 5, "%s", state.project.author);
   } else if (row == 4) {
     // Linear pitch
-    gfxPrint(13, 7, chipnomadState->project.linearPitch ? "ON " : "OFF");
+    gfx.print(13, 7, state.project.linearPitch ? "ON " : "OFF");
   } else if (row == 5) {
     // Tick rate and BPM
-    gfxClearRect(13, 8, 27, 1);
+    gfx.clearRect(13, 8, 27, 1);
     float tickRate = (float)tickRateI + (float)tickRateF / 1000.0f;
     float bpm = tickRate * 60.0f / 24.0f;
-    gfxPrintf(13, 8, "%03d.%03dHz (%.1f BPM)", tickRateI, tickRateF, bpm);
+    gfx.printf(13, 8, "%03d.%03dHz (%.1f BPM)", tickRateI, tickRateF, bpm);
   } else if (row == 6) {
     // Chip type
-    gfxPrint(13, 9, "AY/YM");
+    gfx.print(13, 9, "AY/YM");
   } else if (row == 7) {
     // Chips count
-    gfxPrintf(13, 10, "%d", chipnomadState->project.chipsCount);
+    gfx.printf(13, 10, "%d", state.project.chipsCount);
+  } else {
+    partial->drawCell(col, row, cellState);
   }
 }
 
-int projectCommonOnEdit(int col, int row, enum EditCellAction action) {
+bool ScreenProject::onEdit(int col, int row, EditCellAction action) {
   int handled = 0;
 
   if (row == 0) {
@@ -388,7 +344,7 @@ int projectCommonOnEdit(int col, int row, enum EditCellAction action) {
     handled = edit8noLast(action, (uint8_t*)&chipnomadState->project.chipsCount, 1, 1, 3);
     if (handled) {
       chipnomadState->engine->player.stop();
-      clearNotePreview();
+      gfxClearRect(35, 3, 5, PROJECT_MAX_TRACKS); // Clear the note preview area for all tracks (right side of screen)
       chipnomadState->project.tracksCount = projectGetTotalTracks(&chipnomadState->project);
       audio.reinitChips();
       projectModified = 1;
@@ -398,26 +354,15 @@ int projectCommonOnEdit(int col, int row, enum EditCellAction action) {
   return handled;
 }
 
-void clearNotePreview(void) {
-  // Clear the note preview area for all tracks (right side of screen)
-  gfxClearRect(35, 3, 5, PROJECT_MAX_TRACKS);
-}
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// Input handling
-//
-
-static int inputScreenNavigation(int keys, int tapCount) {
-  if (keys == (keyDown | keyShift)) {
+bool ScreenProject::onNavigationInput(InputEventData e) {
+  if (e.keys == (keyDown | keyShift)) {
     screenSetup(&screenSong, 0);
     return 1;
   }
   return 0;
 }
 
-static int onInput(int isKeyDown, int keys, int tapCount) {
+bool ScreenProject::onEvent(Event e) {
   if (isCharEdit) {
     ScreenData* screen = projectScreen();
     char result = charEditInput(keys, tapCount, editingString, screen->cursorCol, editingStringLength);
@@ -437,17 +382,5 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
     if (screenInput(screen, isKeyDown, keys, tapCount)) return 1;
   }
   return 0;
-}
 
-static ScreenPlaybackLevel getPlaybackLevel(void) {
-  return ScreenPlaybackLevel::song;
 }
-
-const AppScreen screenProject = {
-  .init = NULL,
-  .setup = setup,
-  .fullRedraw = fullRedraw,
-  .draw = draw,
-  .onInput = onInput,
-  .getPlaybackLevel = getPlaybackLevel,
-};

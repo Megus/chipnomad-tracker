@@ -7,11 +7,11 @@
 
 #include "clipboard.h"
 
-void ScreenSong::setup(int input) {
+void ScreenSong::setup(const ScreenData& input) {
   mode = ScreenMode::edit;
 }
 
-Rect ScreenSong::getSelectionRect(Rect range) {
+Rect ScreenSong::getSelectionRect(const Rect& range) {
   int x = 3 + range.x * 3;
   int y = 3 + range.y - topRow;
   int w = 3 * range.w - 1;
@@ -178,9 +178,9 @@ bool ScreenSong::onEdit(int col, int row, EditCellAction action) {
     if (clonedCount > 0) {
       const char* msg = (action == EditCellAction::shallowClone) ? "Shallow-cloned" : "Deep-cloned";
       handled = true;
-      showMessage(true, "%s %d chain%s", msg, clonedCount, clonedCount == 1 ? "" : "s");
+      dispatcher.showTimedMessage("%s %d chain%s", msg, clonedCount, clonedCount == 1 ? "" : "s");
     } else {
-      showMessage(true, "No chains to clone");
+      dispatcher.showTimedMessage("No chains to clone");
     }
   } else if (applyMultiEdit(selection, action, this)) {
     handled = true;
@@ -208,29 +208,29 @@ bool ScreenSong::onEdit(int col, int row, EditCellAction action) {
   return handled;
 }
 
-bool ScreenSong::onNavigationInput(InputEventData e) {
+bool ScreenSong::onNavigationInput(const InputEvent& e) {
   // Fix all bare returns in this function
   // Go to Chain screen
   if (e.keys == (keyRight | keyShift)) {
     int chain = state.project.song[cursorRow][cursorCol];
 
     if (chain == EMPTY_VALUE_16) {
-      showMessage(false, "Enter a chain");
+      dispatcher.showInstantMessage("Enter a chain");
     } else {
-      events.dispatch({.type = EventType::switchScreen, .screen = {.screen = ScreenEnum::chain, .input = -1}});
+      dispatcher.switchScreen(ScreenEnum::chain);
     }
     return true;
   }
 
   // Go to Project screen
   if (e.keys == (keyUp | keyShift)) {
-    events.dispatch({.type = EventType::switchScreen, .screen = {.screen = ScreenEnum::project, .input = 0}});
+    dispatcher.switchScreen(ScreenEnum::project);
     return true;
   }
 
   // Go to Settings screen
   if (e.keys == (keyDown | keyShift)) {
-    events.dispatch({.type = EventType::switchScreen, .screen = {.screen = ScreenEnum::settings, .input = 0}});
+    dispatcher.switchScreen(ScreenEnum::settings);
     return true;
   }
 
@@ -246,7 +246,7 @@ bool ScreenSong::editCell(int col, int row, EditCellAction action) {
         state.project.song[row][col] = nextEmpty;
         lastChainValue = nextEmpty;
       } else {
-        showMessage(true, "No free chains");
+        dispatcher.showTimedMessage("No free chains");
       }
     }
     return 1;
@@ -285,11 +285,11 @@ bool ScreenSong::editCell(int col, int row, EditCellAction action) {
   return edit16withLimit(action, &state.project.song[row][col], &lastChainValue, 16, PROJECT_MAX_CHAINS - 1);
 }
 
-bool ScreenSong::onEvent(Event event) {
+bool ScreenSong::onEvent(const Event& event) {
   bool handled = false;
 
   if (event.type != EventType::input) return false; // This screen only responds to input events
-  InputEventData e = event.input;
+  const InputEvent& e = dynamic_cast<const InputEvent&>(event);
 
   // Only handle mute/solo when not in selection mode
   if (mode == ScreenMode::edit) {
@@ -346,13 +346,13 @@ bool ScreenSong::onEvent(Event event) {
           // SHIFT released first - momentary unmute
           audio.toggleTrackMute(cursorCol);
           muteSoloState = MuteSoloState::optPressed;
-          handled = 1;
+          handled = true;
         } else if (!e.isKeyDown && e.keys == keyShift) {
           // OPT released first - mute sticks
           muteSoloState = MuteSoloState::empty;
-          handled = 1;
+          handled = true;
         } else if (e.keys == (keyOpt | keyShift)) {
-          handled = 1; // Stay in mute state
+          handled = true; // Stay in mute state
         } else if (e.keys == 0) {
           muteSoloState = MuteSoloState::empty;
         }
@@ -363,13 +363,13 @@ bool ScreenSong::onEvent(Event event) {
           // PLAY released first - momentary unsolo
           audio.toggleTrackSolo(cursorCol);
           muteSoloState = MuteSoloState::optPressed;
-          handled = 1;
+          handled = true;
         } else if (!e.isKeyDown && e.keys == keyPlay) {
           // OPT released first - solo sticks
           muteSoloState = MuteSoloState::empty;
-          handled = 1;
+          handled = true;
         } else if (e.keys == (keyOpt | keyPlay)) {
-          handled = 1; // Stay in solo state
+          handled = true; // Stay in solo state
         } else if (e.keys == 0) {
           muteSoloState = MuteSoloState::empty;
         }
@@ -384,9 +384,9 @@ bool ScreenSong::onEvent(Event event) {
           }
           audio.toggleTrackSolo(-1);
           muteSoloState = (e.keys == keyOpt) ? MuteSoloState::optPressed : MuteSoloState::empty;
-          handled = 1;
+          handled = true;
         } else if (e.keys == (keyOpt | keyLeft) || e.keys == (keyOpt | keyRight)) {
-          handled = 1;
+          handled = true;
         }
         break;
     }
@@ -398,13 +398,12 @@ bool ScreenSong::onEvent(Event event) {
   }
 
   // Only call common input handling if we didn't handle Song-specific input
-  if (!handled) handled = commonInputHandler(e);
+  if (!handled) handled = commonEventHandler(event);
 
   state.songRow = cursorRow; // Sync song row with the cursor
 
   return handled;
 }
-
 
 bool ScreenSong::switchSelectionMode() {
   if (isSingleCellSelection(getSelectionRange())) {
@@ -413,4 +412,3 @@ bool ScreenSong::switchSelectionMode() {
   }
   return true;
 }
-

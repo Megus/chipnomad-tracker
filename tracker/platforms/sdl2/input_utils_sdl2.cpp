@@ -66,53 +66,53 @@ static KeyboardLayout detectKeyboardLayout(void) {
   return LAYOUT_QWERTY;
 }
 
-void InputUtilsSDL2::initDefaultKeyMapping(KeyMapping& mapping) {
+void InputUtilsSDL2::initDefaultKeyMapping(KeyMapping* mapping) {
   KeyboardLayout layout = detectKeyboardLayout();
 
   // Keyboard mappings (all platforms)
-  mapping.keyUp[0] = (InputCode){InputDeviceType::keyboard, BTN_UP};
-  mapping.keyDown[0] = (InputCode){InputDeviceType::keyboard, BTN_DOWN};
-  mapping.keyLeft[0] = (InputCode){InputDeviceType::keyboard, BTN_LEFT};
-  mapping.keyRight[0] = (InputCode){InputDeviceType::keyboard, BTN_RIGHT};
-  mapping.keyOpt[0] = (InputCode){InputDeviceType::keyboard, (layout == LAYOUT_QWERTZ) ? SDLK_y : BTN_B};
-  mapping.keyPlay[0] = (InputCode){InputDeviceType::keyboard, BTN_START};
-  mapping.keyShift[0] = (InputCode){InputDeviceType::keyboard, BTN_SELECT};
-  mapping.keyEdit[0] = (InputCode){InputDeviceType::keyboard, BTN_A};
+  mapping->keyUp[0] = (InputCode){InputDeviceType::keyboard, BTN_UP};
+  mapping->keyDown[0] = (InputCode){InputDeviceType::keyboard, BTN_DOWN};
+  mapping->keyLeft[0] = (InputCode){InputDeviceType::keyboard, BTN_LEFT};
+  mapping->keyRight[0] = (InputCode){InputDeviceType::keyboard, BTN_RIGHT};
+  mapping->keyOpt[0] = (InputCode){InputDeviceType::keyboard, (layout == LAYOUT_QWERTZ) ? SDLK_y : BTN_B};
+  mapping->keyPlay[0] = (InputCode){InputDeviceType::keyboard, BTN_START};
+  mapping->keyShift[0] = (InputCode){InputDeviceType::keyboard, BTN_SELECT};
+  mapping->keyEdit[0] = (InputCode){InputDeviceType::keyboard, BTN_A};
 
 #if defined(DESKTOP_BUILD) || defined(ANDROID_BUILD)
   // Gamepad mappings (Desktop and Android only)
-  mapping.keyUp[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_DPAD_UP};
-  mapping.keyDown[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_DPAD_DOWN};
-  mapping.keyLeft[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_DPAD_LEFT};
-  mapping.keyRight[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_DPAD_RIGHT};
-  mapping.keyEdit[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_A};
-  mapping.keyOpt[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_B};
-  mapping.keyPlay[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_START};
-  mapping.keyShift[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_BACK};
+  mapping->keyUp[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_DPAD_UP};
+  mapping->keyDown[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_DPAD_DOWN};
+  mapping->keyLeft[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_DPAD_LEFT};
+  mapping->keyRight[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_DPAD_RIGHT};
+  mapping->keyEdit[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_A};
+  mapping->keyOpt[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_B};
+  mapping->keyPlay[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_START};
+  mapping->keyShift[1] = (InputCode){InputDeviceType::gamepad, SDL_CONTROLLER_BUTTON_BACK};
 #else
   // PortMaster: keyboard only
-  mapping.keyUp[1] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyDown[1] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyLeft[1] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyRight[1] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyEdit[1] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyOpt[1] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyPlay[1] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyShift[1] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyUp[1] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyDown[1] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyLeft[1] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyRight[1] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyEdit[1] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyOpt[1] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyPlay[1] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyShift[1] = (InputCode){InputDeviceType::none, 0};
 #endif
 
   // Slot 2 empty for all platforms
-  mapping.keyUp[2] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyDown[2] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyLeft[2] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyRight[2] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyEdit[2] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyOpt[2] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyPlay[2] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyShift[2] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyUp[2] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyDown[2] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyLeft[2] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyRight[2] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyEdit[2] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyOpt[2] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyPlay[2] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyShift[2] = (InputCode){InputDeviceType::none, 0};
 }
 
-const char* InputUtilsSDL2::getKeyName(InputCode input) {
+const char* InputUtilsSDL2::getKeyName(const InputCode& input) {
   if (input.deviceType == InputDeviceType::none) return "---";
 
   if (input.deviceType == InputDeviceType::gamepad) {

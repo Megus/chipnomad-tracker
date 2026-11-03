@@ -19,7 +19,7 @@ class GfxSDL12 : public Gfx {
     void cursor(int x, int y, int w) override;
     void rect(int x, int y, int w, int h) override;
     void print(int x, int y, const char* text) override;
-    void printf(int x, int y, const char* format, va_list args) override;
+    void printf(int x, int y, const char* format, ...) override;
     Bitmap* bitmapCreate(int widthChars, int heightChars) override;
     void bitmapClear(Bitmap* bitmap) override;
     void bitmapFree(Bitmap* bitmap) override;

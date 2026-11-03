@@ -13,7 +13,7 @@ TrackerApp::TrackerApp(Gfx& gfx, FontManager& fontManager, AudioDevice& audio, F
   audioDevice(audio),
   file(file),
   assets(assets),
-  input(inputUtils),
+  inputUtils(inputUtils),
   state() {
 };
 
@@ -23,7 +23,7 @@ bool TrackerApp::setup() {
   assets.copyAssets();
 
   // Load settings
-  input.initDefaultKeyMapping(state.settings.keyMapping);
+  inputUtils.initDefaultKeyMapping(&state.settings.keyMapping);
   state.settings.loadSettings(file.getSettingsPath());
 
   // Load custom font before gfx.setup so it uses the correct font
@@ -69,7 +69,7 @@ bool TrackerApp::setup() {
 
   audio->resume();
 
-  ui = new TrackerUI(gfx, fontManager, *audio, file, input, *this, state);
+  ui = new TrackerUI(gfx, fontManager, *audio, file, inputUtils, *this, state);
 
   return true;
 }
@@ -87,7 +87,7 @@ void TrackerApp::draw() {
 }
 
 // Event handler
-void TrackerApp::onMainLoopEvent(MainLoopEvent event) {
+void TrackerApp::onMainLoopEvent(const MainLoopEvent& event) {
   static int dPadMask = keyLeft | keyRight | keyUp | keyDown;
   static int doubleTapMask = keyEdit | keyOpt | keyUnmapped;
 
@@ -117,7 +117,7 @@ void TrackerApp::onMainLoopEvent(MainLoopEvent event) {
           keyRepeatCount--;
           if (keyRepeatCount == 0) {
             keyRepeatCount = state.settings.keyRepeatSpeed;
-            dispatch({.type = EventType::input, .input = {.isKeyDown = true, .keys = pressedButtons, .tapCount = 0}});
+            input(true, pressedButtons, 0);
           }
         } else {
           keyRepeatCount = 0;
@@ -133,9 +133,8 @@ void TrackerApp::onMainLoopEvent(MainLoopEvent event) {
       break;
     }
     case MainLoopEventType::keyDown: {
-      int value = input.inputCodeToKey(event.data.input, state.settings.keyMapping);
-
-      dispatch({.type = EventType::rawInput, .rawInput = {.isKeyDown = true, .keyCode = event.data.input}});
+      int value = inputUtils.inputCodeToKey(event.data.input, state.settings.keyMapping);
+      rawInput(true, event.data.input);
 
       if (value == keyEdit || value == keyOpt || value == keyShift) {
         // Edit/Opt/Shift "override" d-pad buttons
@@ -168,18 +167,16 @@ void TrackerApp::onMainLoopEvent(MainLoopEvent event) {
         // As we don't support multiple d-pad keys, keep only the last pressed one
         pressedButtons = (pressedButtons & ~dPadMask) | value;
       }
-      dispatch({.type = EventType::input, .input = {.isKeyDown = true, .keys = pressedButtons, .tapCount = tapCount}});
+      input(true, pressedButtons, tapCount);
 
       break;
     }
     case MainLoopEventType::keyUp: {
-      int value = input.inputCodeToKey(event.data.input, state.settings.keyMapping);
+      int value = inputUtils.inputCodeToKey(event.data.input, state.settings.keyMapping);
 
-      dispatch({.type = EventType::rawInput, .rawInput = {.isKeyDown = false, .keyCode = event.data.input}});
-
+      rawInput(false, event.data.input);
       pressedButtons &= ~value;
-
-      dispatch({.type = EventType::input, .input = {.isKeyDown = false, .keys = pressedButtons, .tapCount = 0}});
+      input(false, pressedButtons, 0);
 
       break;
     }
@@ -202,7 +199,7 @@ void TrackerApp::onMainLoopEvent(MainLoopEvent event) {
       break;
     }
     case MainLoopEventType::fullRedraw: {
-      dispatch({.type = EventType::redrawScreen});
+      redrawScreen();
       break;
     }
   }

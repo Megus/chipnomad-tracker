@@ -10,12 +10,12 @@ class ScreenSong : public Screen, EditCellInterface {
     ScreenSong(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx, AudioManager& audio, Clipboard& clipboard):
       Screen(state, dispatcher, gfx), audio(audio), clipboard(clipboard) {};
 
-    void setup(int input) override;
+    void setup(const ScreenData& input) override;
     bool supportsSelectMode() override { return true; };
     int getRowCount() override { return PROJECT_MAX_LENGTH; };
     int getColumnCount(int row) override { return state.project.tracksCount; };
     ScreenPlaybackLevel getPlaybackLevel() override { return ScreenPlaybackLevel::song; };
-    Rect getSelectionRect(Rect range) override;
+    Rect getSelectionRect(const Rect& range) override;
     chipnomad::LoopRange getLoopRange() override;
 
     void draw() override;
@@ -29,8 +29,8 @@ class ScreenSong : public Screen, EditCellInterface {
 
     bool onEdit(int col, int row, EditCellAction action) override;
     bool editCell(int col, int row, EditCellAction action) override;
-    bool onNavigationInput(InputEventData e) override;
-    bool onEvent(Event e) override;
+    bool onNavigationInput(const InputEvent& e) override;
+    bool onEvent(const Event& e) override;
 
   protected:
     enum class MuteSoloState : int {

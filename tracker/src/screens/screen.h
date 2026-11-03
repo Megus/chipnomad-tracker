@@ -32,10 +32,12 @@ class Screen : public EventHandler {
   ///////////////////////////////////////////////////////////////////////////
   // Methods to override in sub-classes
   public:
-    Screen(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx): state(state), events(dispatcher), gfx(gfx) {}
+    friend class ScreenPartial;
+
+    Screen(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx): state(state), dispatcher(dispatcher), gfx(gfx) {}
     virtual ~Screen() = default;
 
-    virtual void setup(int input) {}; // Setup screen before it's displayed
+    virtual void setup(const ScreenData& input) {}; // Setup screen before it's displayed
 
     virtual bool supportsSelectMode() { return false; }; // Does the screen support selection?
     virtual int getRowCount() { return 0; }; // How many rows on this screen?
@@ -43,22 +45,22 @@ class Screen : public EventHandler {
     virtual ScreenPlaybackLevel getPlaybackLevel() { return ScreenPlaybackLevel::none; }; // Screen playback level. Used with the global playback input handler
 
     virtual bool isValidCell(int col, int row) { return true; }; // Is this cell valid?
-    virtual Rect getSelectionRect(Rect range) { return {0, 0, 0, 0}; }; // Get screen rectangle of the selection
+    virtual Rect getSelectionRect(const Rect& range) { return {0, 0, 0, 0}; }; // Get screen rectangle of the selection
     virtual chipnomad::LoopRange getLoopRange() { return {}; }; // Get playback loop range
 
     virtual void draw() {}; // Called every frame to display highly dynamic content
     virtual void drawStatic() {}; // Draw static content
     virtual void drawCursor(int col, int row) {}; // Draw cursor
-    virtual void drawRowHeader(int row, CellState state) {}; // Draw row header
-    virtual void drawColHeader(int col, CellState state) {}; // Draw column header
-    virtual void drawCell(int col, int row, CellState state) {}; // Draw a cell
+    virtual void drawRowHeader(int row, CellState cellState) {}; // Draw row header
+    virtual void drawColHeader(int col, CellState cellState) {}; // Draw column header
+    virtual void drawCell(int col, int row, CellState cellState) {}; // Draw a cell
     virtual bool isRowVisible(int row) { return true; }; // Is this row visible on the screen?
     virtual bool adjustVerticalScroll(bool pageJump) { return false; }; // Adjust vertical scroll, return true if the screen needs to be scrolled
 
     virtual bool onEdit(int col, int row, EditCellAction action) { return false; }; // Handle edit action
-    virtual bool onNavigationInput(InputEventData eventData) { return false; }; // Navigation input handler. Convenience function
+    virtual bool onNavigationInput(const InputEvent& event) { return false; }; // Navigation input handler. Convenience function
 
-    virtual bool onEvent(Event e) override { return false; }; // Handle events from the EventDispatcher
+    virtual bool onEvent(const Event& event) override { return false; }; // Handle events from the EventDispatcher
 
   protected:
 
@@ -69,7 +71,7 @@ class Screen : public EventHandler {
 
   protected:
     TrackerState& state;
-    EventDispatcher& events;
+    EventDispatcher& dispatcher;
     Gfx& gfx;
 
     ScreenMode mode = ScreenMode::edit; // Edit / Select mode
@@ -86,15 +88,15 @@ class Screen : public EventHandler {
     inline ColorTheme& theme() { return state.settings.colorTheme; }; // Convenience function to get color theme from TrackerState
 
     Rect getSelectionRange(); // Get selection range between cursor and selection start cell
-    void drawSelectionBorder(Rect range, bool draw); // Draw selection border
+    void drawSelectionBorder(const Rect& range, bool draw); // Draw selection border
     bool isSingleColumnSelection(); // Is the selection a single column?
 
     void validateCursorPosition(); // Ensure that cursor is in a valid cell
     void setCellColor(CellState state, int isEmpty, int hasContent); // Set cell color based on state and content
 
-    int isSingleCellSelection(Rect range);
-    int isFullColumnSelection(Rect range, int maxRow);
-    int isFullRowSelection(Rect range, int maxCol);
+    int isSingleCellSelection(const Rect& range);
+    int isFullColumnSelection(const Rect& range, int maxRow);
+    int isFullRowSelection(const Rect& range, int maxCol);
     void selectColumn(int maxRow);
     void selectRow(int maxCol);
     void selectAll(int maxCol, int maxRow);
@@ -103,12 +105,10 @@ class Screen : public EventHandler {
     void moveCursorBelowSelection(); // Move cursor below the selection (or to the last row if selection is at the bottom)
     void drawSelectedCells(); // Draw all selected cells
 
-    bool commonInputHandler(InputEventData eventData); // Common input handler to call from onEvent()
+    bool commonEventHandler(const Event& event); // Common event handler to call from onEvent()
     bool inputEditMode(int keys, int tapCount); // Handles common input in edit mode
     bool inputSelectMode(int keys, int tapCount);
-    void inputCursor(int keys, bool& handled, bool& needsRedraw); // Handles standard cursor movement (left, right, up, down)
-
-    void showMessage(bool timed, const char* format, ...); // Show screen message (dispatches event)
+    void inputCursor(int keys, bool* handled, bool* needsRedraw); // Handles standard cursor movement (left, right, up, down)
 };
 
 #endif // __SCREEN_H__

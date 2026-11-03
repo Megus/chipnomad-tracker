@@ -45,13 +45,13 @@ class InputUtils {
     virtual ~InputUtils() = default;
 
     // Initialize default key mappings into the provided settings, based on platform/keyboard layout
-    virtual void initDefaultKeyMapping(KeyMapping& mapping) = 0;
+    virtual void initDefaultKeyMapping(KeyMapping* mapping) = 0;
 
     // Convert an input code to a human-readable name
-    virtual const char* getKeyName(InputCode input) = 0;
+    virtual const char* getKeyName(const InputCode& input) = 0;
 
     // Convert input code to a key following a mapping
-    int inputCodeToKey(InputCode input, KeyMapping& mapping);
+    int inputCodeToKey(const InputCode& input, const KeyMapping& mapping);
 };
 
 #endif // __INPUT_UTILS_H__

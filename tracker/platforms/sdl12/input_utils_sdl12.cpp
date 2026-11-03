@@ -3,39 +3,39 @@
 #include "keymap.h"
 #include "app_settings.h"
 
-void InputUtilsSDL12::initDefaultKeyMapping(KeyMapping& mapping) {
-  mapping.keyUp[0] = (InputCode){InputDeviceType::keyboard, BTN_UP};
-  mapping.keyDown[0] = (InputCode){InputDeviceType::keyboard, BTN_DOWN};
-  mapping.keyLeft[0] = (InputCode){InputDeviceType::keyboard, BTN_LEFT};
-  mapping.keyRight[0] = (InputCode){InputDeviceType::keyboard, BTN_RIGHT};
-  mapping.keyEdit[0] = (InputCode){InputDeviceType::keyboard, BTN_A};
-  mapping.keyOpt[0] = (InputCode){InputDeviceType::keyboard, BTN_B};
-  mapping.keyPlay[0] = (InputCode){InputDeviceType::keyboard, BTN_START};
-  mapping.keyShift[0] = (InputCode){InputDeviceType::keyboard, BTN_SELECT};
+void InputUtilsSDL12::initDefaultKeyMapping(KeyMapping* mapping) {
+  mapping->keyUp[0] = (InputCode){InputDeviceType::keyboard, BTN_UP};
+  mapping->keyDown[0] = (InputCode){InputDeviceType::keyboard, BTN_DOWN};
+  mapping->keyLeft[0] = (InputCode){InputDeviceType::keyboard, BTN_LEFT};
+  mapping->keyRight[0] = (InputCode){InputDeviceType::keyboard, BTN_RIGHT};
+  mapping->keyEdit[0] = (InputCode){InputDeviceType::keyboard, BTN_A};
+  mapping->keyOpt[0] = (InputCode){InputDeviceType::keyboard, BTN_B};
+  mapping->keyPlay[0] = (InputCode){InputDeviceType::keyboard, BTN_START};
+  mapping->keyShift[0] = (InputCode){InputDeviceType::keyboard, BTN_SELECT};
 
   // Alternate mappings
-  mapping.keyOpt[1] = (InputCode){InputDeviceType::keyboard, BTN_Y};
-  mapping.keyShift[1] = (InputCode){InputDeviceType::keyboard, BTN_R1};
+  mapping->keyOpt[1] = (InputCode){InputDeviceType::keyboard, BTN_Y};
+  mapping->keyShift[1] = (InputCode){InputDeviceType::keyboard, BTN_R1};
 
   // Clear remaining slots
-  mapping.keyUp[1] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyDown[1] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyLeft[1] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyRight[1] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyEdit[1] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyPlay[1] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyUp[1] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyDown[1] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyLeft[1] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyRight[1] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyEdit[1] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyPlay[1] = (InputCode){InputDeviceType::none, 0};
 
-  mapping.keyUp[2] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyDown[2] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyLeft[2] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyRight[2] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyEdit[2] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyOpt[2] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyPlay[2] = (InputCode){InputDeviceType::none, 0};
-  mapping.keyShift[2] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyUp[2] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyDown[2] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyLeft[2] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyRight[2] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyEdit[2] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyOpt[2] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyPlay[2] = (InputCode){InputDeviceType::none, 0};
+  mapping->keyShift[2] = (InputCode){InputDeviceType::none, 0};
 }
 
-const char* InputUtilsSDL12::getKeyName(InputCode input) {
+const char* InputUtilsSDL12::getKeyName(const InputCode& input) {
   if (input.deviceType == InputDeviceType::none) return "---";
 
   static char buf[8];

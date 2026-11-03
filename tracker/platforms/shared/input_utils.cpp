@@ -1,6 +1,6 @@
 #include "input_utils.h"
 
-int InputUtils::inputCodeToKey(InputCode input, KeyMapping& mapping) {
+int InputUtils::inputCodeToKey(const InputCode& input, const KeyMapping& mapping) {
   // Logical buttons are not remappable
   if (input.deviceType == InputDeviceType::logical) {
     return input.code;

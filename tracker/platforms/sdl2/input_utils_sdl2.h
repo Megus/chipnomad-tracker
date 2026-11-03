@@ -5,8 +5,8 @@
 
 class InputUtilsSDL2 : public InputUtils {
   public:
-    void initDefaultKeyMapping(KeyMapping& mapping) override;
-    const char* getKeyName(InputCode input) override;
+    void initDefaultKeyMapping(KeyMapping* mapping) override;
+    const char* getKeyName(const InputCode& input) override;
 };
 
 #endif // __INPUT_SDL2_H__

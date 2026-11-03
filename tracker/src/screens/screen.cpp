@@ -15,7 +15,7 @@ Rect Screen::getSelectionRange() {
   };
 }
 
-void Screen::drawSelectionBorder(Rect range, bool draw) {
+void Screen::drawSelectionBorder(const Rect& range, bool draw) {
   Rect r = getSelectionRect(range);
   if (r.x < 0 || r.y < 0 || r.w <= 0 || r.h <= 0) return; // Rect validation
 
@@ -149,16 +149,18 @@ void Screen::drawSelectedCells() {
 }
 
 
-bool Screen::commonInputHandler(InputEventData e) {
+bool Screen::commonEventHandler(const Event& event) {
+  if (event.type != EventType::input) return false;
+  const InputEvent& i = dynamic_cast<const InputEvent&>(event);
   // Screen navigation
-  if (e.isKeyDown && mode == ScreenMode::edit && onNavigationInput(e)) return true;;
+  if (i.isKeyDown && mode == ScreenMode::edit && onNavigationInput(i)) return true;;
 
   // Common input for edit and select modes
-  if (!e.isKeyDown && e.keys != 0) return false; // Discard key up events unless no buttons are pressed (for existing logic that expects keys == 0)
-  return (mode == ScreenMode::select) ? inputSelectMode(e.keys, e.tapCount) : inputEditMode(e.keys, e.tapCount);
+  if (!i.isKeyDown && i.keys != 0) return false; // Discard key up events unless no buttons are pressed (for existing logic that expects keys == 0)
+  return (mode == ScreenMode::select) ? inputSelectMode(i.keys, i.tapCount) : inputEditMode(i.keys, i.tapCount);
 }
 
-void Screen::inputCursor(int keys, bool& handled, bool& needsRedraw) {
+void Screen::inputCursor(int keys, bool* handled, bool* needsRedraw) {
   if (keys == keyLeft) {
     if (cursorCol > 0) {
       cursorCol--;
@@ -167,7 +169,7 @@ void Screen::inputCursor(int keys, bool& handled, bool& needsRedraw) {
         cursorRow--;
       }
     }
-    handled = true;
+    *handled = true;
   } else if (keys == keyRight) {
     if (cursorCol < getColumnCount(cursorRow) - 1) {
       cursorCol++;
@@ -176,7 +178,7 @@ void Screen::inputCursor(int keys, bool& handled, bool& needsRedraw) {
         cursorRow--;
       }
     }
-    handled = true;
+    *handled = true;
   } else if (keys == keyUp) {
     int origRow = cursorRow;
     while (cursorRow > 0) {
@@ -188,7 +190,7 @@ void Screen::inputCursor(int keys, bool& handled, bool& needsRedraw) {
     if (!isValidCell(cursorCol, cursorRow)) {
       cursorRow = origRow; // Can't move
     }
-    handled = true;
+    *handled = true;
   } else if (keys == keyDown) {
     int origRow = cursorRow;
     while (cursorRow < getRowCount() - 1) {
@@ -200,12 +202,12 @@ void Screen::inputCursor(int keys, bool& handled, bool& needsRedraw) {
     if (!isValidCell(cursorCol, cursorRow)) {
       cursorRow = origRow; // Can't move
     }
-    handled = true;
+    *handled = true;
   }
 
   if (adjustVerticalScroll(false)) {
     // If cursor went beyond the screen, redraw the screen
-    needsRedraw = true;
+    *needsRedraw = true;
   }
 }
 
@@ -215,7 +217,7 @@ bool Screen::inputEditMode(int keys, int tapCount) {
   bool handled = false;
   bool needsRedraw = false;
 
-  inputCursor(keys, handled, needsRedraw);
+  inputCursor(keys, &handled, &needsRedraw);
 
   if (!handled) {
     if (keys == (keyShift | keyOpt) && supportsSelectMode() && mode == ScreenMode::edit) {
@@ -304,7 +306,7 @@ bool Screen::inputSelectMode(int keys, int tapCount) {
   bool handled = false;
   bool needsRedraw = false;
 
-  inputCursor(keys, handled, needsRedraw);
+  inputCursor(keys, &handled, &needsRedraw);
 
   if (!handled) {
     if (keys == (keyShift | keyOpt)) {
@@ -322,7 +324,7 @@ bool Screen::inputSelectMode(int keys, int tapCount) {
       // Copy and exit select mode on Opt release (no keys pressed)
       handled = onEdit(cursorCol, cursorRow, EditCellAction::copy);
       if (handled) {
-        showMessage(true, "Copied selection");
+        dispatcher.showTimedMessage("Copied selection");
         moveCursorBelowSelection();
       }
       mode = ScreenMode::edit;
@@ -339,7 +341,7 @@ bool Screen::inputSelectMode(int keys, int tapCount) {
       // Cut and exit select mode
       handled = onEdit(cursorCol, cursorRow, EditCellAction::cut);
       if (handled) {
-        showMessage(true, "Cut selection");
+        dispatcher.showTimedMessage("Cut selection");
         moveCursorToSelectionStart();
       }
       mode = ScreenMode::edit;
@@ -420,26 +422,15 @@ bool Screen::inputSelectMode(int keys, int tapCount) {
   return handled;
 }
 
-void Screen::showMessage(bool timed, const char* format, ...) {
-  static char messageBuffer[41];
-
-  va_list args;
-  va_start(args, format);
-  vsnprintf(messageBuffer, 41, format, args);
-  va_end(args);
-
-  events.dispatch({.type = EventType::showMessage, .stringValue = std::string(messageBuffer)});
-}
-
-int Screen::isSingleCellSelection(Rect range) {
+int Screen::isSingleCellSelection(const Rect& range) {
   return range.w == 1 && range.h == 1;
 }
 
-int Screen::isFullColumnSelection(Rect range, int maxRow) {
+int Screen::isFullColumnSelection(const Rect& range, int maxRow) {
   return range.w == 1 && range.y == 0 && range.h == maxRow + 1;
 }
 
-int Screen::isFullRowSelection(Rect range, int maxCol) {
+int Screen::isFullRowSelection(const Rect& range, int maxCol) {
   return range.h == 1 && range.x == 0 && range.w == maxCol + 1;
 }
 

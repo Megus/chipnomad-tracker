@@ -30,7 +30,7 @@ class App {
     virtual bool setup() = 0;
     virtual void teardown() = 0;
     virtual void draw() = 0;
-    virtual void onMainLoopEvent(MainLoopEvent event) = 0;
+    virtual void onMainLoopEvent(const MainLoopEvent& event) = 0;
 };
 
 // Main platform loop interface

@@ -20,7 +20,7 @@ class TrackerApp: public App, public EventDispatcher {
     bool setup() override;
     void teardown() override;
     void draw() override;
-    void onMainLoopEvent(MainLoopEvent event) override;
+    void onMainLoopEvent(const MainLoopEvent& event) override;
     void dispatch(Event e) override;
 
   protected:
@@ -31,7 +31,7 @@ class TrackerApp: public App, public EventDispatcher {
     AudioDevice& audioDevice;
     FileSystem& file;
     Assets& assets;
-    InputUtils& input;
+    InputUtils& inputUtils;
 
     TrackerState state;
     AudioManager* audio;
@@ -45,7 +45,7 @@ class TrackerApp: public App, public EventDispatcher {
 
     int autosaveCounter = 0; // Autosave period frame counter
 
-    Event eventQueue[eventQueueMaxLength];
+    Event eventQueue[eventQueueMaxLength] = {};
     int eventQueueLength = 0;
 };
 
