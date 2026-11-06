@@ -60,7 +60,7 @@ uint8_t cnSampleLookupYM[256];
 // =======================================
 
 // Pulse
-static void timerFunctionPulse(ChipNomadState *chipNomadState, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+static void timerFunctionPulse(ChipNomadState *chipNomadState, SoundChip* chip, int chipIdx, int channel, uint16_t period, PlaybackTrackState* track) {
   PlaybackState* state = &chipNomadState->playbackState;
   Instrument *instrument = &state->p->instruments[track->note.instrument];
   if (instrument->type != InstrumentType::AY2) return;
@@ -91,7 +91,7 @@ static void timerFunctionPulse(ChipNomadState *chipNomadState, SoundChip* chip, 
 }
 
 // Sync Tone
-static void timerFunctionSyncTone(ChipNomadState *chipNomadState, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+static void timerFunctionSyncTone(ChipNomadState *chipNomadState, SoundChip* chip, int chipIdx, int channel, uint16_t period, PlaybackTrackState* track) {
   PlaybackState* state = &chipNomadState->playbackState;
   Instrument *instrument = &state->p->instruments[track->note.instrument];
   if (instrument->type != InstrumentType::AY2) return;
@@ -110,7 +110,7 @@ static void timerFunctionSyncTone(ChipNomadState *chipNomadState, SoundChip* chi
 }
 
 // Sync Envelope
-static void timerFunctionSyncEnv(ChipNomadState *chipNomadState, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+static void timerFunctionSyncEnv(ChipNomadState *chipNomadState, SoundChip* chip, int chipIdx, int channel, uint16_t period, PlaybackTrackState* track) {
   PlaybackState* state = &chipNomadState->playbackState;
   Instrument *instrument = &state->p->instruments[track->note.instrument];
   if (instrument->type != InstrumentType::AY2) return;
@@ -124,7 +124,9 @@ static void timerFunctionSyncEnv(ChipNomadState *chipNomadState, SoundChip* chip
 
   // First phase
   if (track->note.chip.ay.softPeriodCounter == 0) {
-    chip->setRegister(13, (shapePair & 0xf0) ? (shapePair & 0xf0) >> 4 : track->note.chip.ay.envShape);
+    uint8_t shape = (shapePair & 0xf0) ? (shapePair & 0xf0) >> 4 : track->note.chip.ay.envShape;
+    chip->setRegister(13, shape);
+    state->chips[chipIdx].ay.envShape = shape;
   }
 
   // Second phase
@@ -136,12 +138,14 @@ static void timerFunctionSyncEnv(ChipNomadState *chipNomadState, SoundChip* chip
   int phase2 = period * pulseWidth / 256;
 
   if (track->note.chip.ay.softPeriodCounter == phase2) {
-    chip->setRegister(13, (shapePair & 0x0f) ? shapePair & 0x0f : track->note.chip.ay.envShape);
+    uint8_t shape = (shapePair & 0x0f) ? shapePair & 0x0f : track->note.chip.ay.envShape;
+    chip->setRegister(13, shape);
+    state->chips[chipIdx].ay.envShape = shape;
   }
 }
 
 // Samples
-static void timerFunctionSample(ChipNomadState *chipNomadState, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+static void timerFunctionSample(ChipNomadState *chipNomadState, SoundChip* chip, int chipIdx, int channel, uint16_t period, PlaybackTrackState* track) {
   PlaybackState* state = &chipNomadState->playbackState;
   Instrument *instrument = &state->p->instruments[track->note.instrument];
   if (instrument->type != InstrumentType::AYSample) return;
@@ -225,7 +229,7 @@ static void timerFunctionSample(ChipNomadState *chipNomadState, SoundChip* chip,
 }
 
 
-void timerFunctionWavetable(ChipNomadState *chipNomadState, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+void timerFunctionWavetable(ChipNomadState *chipNomadState, SoundChip* chip, int chipIdx, int channel, uint16_t period, PlaybackTrackState* track) {
   PlaybackState* state = &chipNomadState->playbackState;
   Instrument *instrument = &state->p->instruments[track->note.instrument];
   if (instrument->type != InstrumentType::AY2) return;
@@ -239,7 +243,7 @@ void timerFunctionWavetable(ChipNomadState *chipNomadState, SoundChip* chip, int
   chip->setRegister(channel + 8, volume);
 }
 
-void timerFunctionToneFM(ChipNomadState *chipNomadState, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+void timerFunctionToneFM(ChipNomadState *chipNomadState, SoundChip* chip, int chipIdx, int channel, uint16_t period, PlaybackTrackState* track) {
   PlaybackState* state = &chipNomadState->playbackState;
   Instrument *instrument = &state->p->instruments[track->note.instrument];
   if (instrument->type != InstrumentType::AY2) return;
@@ -253,7 +257,7 @@ void timerFunctionToneFM(ChipNomadState *chipNomadState, SoundChip* chip, int ch
   chip->setRegister(channel * 2 + 1, (tonePeriod >> 8) & 0xff);
 }
 
-void timerFunctionEnvFM(ChipNomadState *chipNomadState, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+void timerFunctionEnvFM(ChipNomadState *chipNomadState, SoundChip* chip, int chipIdx, int channel, uint16_t period, PlaybackTrackState* track) {
   PlaybackState* state = &chipNomadState->playbackState;
   Instrument *instrument = &state->p->instruments[track->note.instrument];
   if (instrument->type != InstrumentType::AY2) return;
@@ -327,25 +331,25 @@ int timerFunctionAY(SoundChip* chipBase, void* userdata) {
 
     switch (track->note.chip.ay.softType) {
       case AYSoftwareOscType::pulse:
-        timerFunctionPulse(chipNomadState, chip, ch, softOscPeriod, track);
+        timerFunctionPulse(chipNomadState, chip, chipIdx, ch, softOscPeriod, track);
         break;
       case AYSoftwareOscType::syncTone:
-        timerFunctionSyncTone(chipNomadState, chip, ch, softOscPeriod, track);
+        timerFunctionSyncTone(chipNomadState, chip, chipIdx, ch, softOscPeriod, track);
         break;
       case AYSoftwareOscType::syncEnvelope:
-        timerFunctionSyncEnv(chipNomadState, chip, ch, softOscPeriod, track);
+        timerFunctionSyncEnv(chipNomadState, chip, chipIdx, ch, softOscPeriod, track);
         break;
       case AYSoftwareOscType::wavetable:
-        timerFunctionWavetable(chipNomadState, chip, ch, softOscPeriod, track);
+        timerFunctionWavetable(chipNomadState, chip, chipIdx, ch, softOscPeriod, track);
         break;
       case AYSoftwareOscType::toneFM:
-        timerFunctionToneFM(chipNomadState, chip, ch, softOscPeriod, track);
+        timerFunctionToneFM(chipNomadState, chip, chipIdx, ch, softOscPeriod, track);
         break;
       case AYSoftwareOscType::envFM:
-        timerFunctionEnvFM(chipNomadState, chip, ch, softOscPeriod, track);
+        timerFunctionEnvFM(chipNomadState, chip, chipIdx, ch, softOscPeriod, track);
         break;
       case AYSoftwareOscType::sample:
-        timerFunctionSample(chipNomadState, chip, ch, softOscPeriod, track);
+        timerFunctionSample(chipNomadState, chip, chipIdx, ch, softOscPeriod, track);
         break;
       default:
         break;
@@ -785,7 +789,11 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
         // ===========
         // Envelope on
         // ===========
-        envShape = track->note.chip.ay.envShape;
+
+        // Don't set envelope in this tick if it's a SyncEnv oscillator and envelope pair is defined. This oscillator controls the shape
+        if (!(track->note.chip.ay.softType == AYSoftwareOscType::syncEnvelope && p->instruments[track->note.instrument].chip.ay2.oscSoftware.envShapePair != 0)) {
+          envShape = track->note.chip.ay.envShape;
+        }
 
         // Env period calculation
         if (track->note.chip.ay.envAutoN != 0) {
@@ -887,16 +895,14 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
 
   // Chip-wide register writes
 
-  // Env register write
-  if (envShape != 0) {
-    if (envShape != state->chips[chipIdx].ay.envShape) {
-      chip->setRegister(13, envShape);
-      state->chips[chipIdx].ay.envShape = envShape;
-    }
-    if (shouldWriteEnvPeriod) {
-      chip->setRegister(11, envPeriod & 0xff);
-      chip->setRegister(12, (envPeriod & 0xff00) >> 8);
-    }
+  // Env registers write
+  if (envShape != 0 && envShape != state->chips[chipIdx].ay.envShape) {
+    chip->setRegister(13, envShape);
+    state->chips[chipIdx].ay.envShape = envShape;
+  }
+  if (shouldWriteEnvPeriod) {
+    chip->setRegister(11, envPeriod & 0xff);
+    chip->setRegister(12, (envPeriod & 0xff00) >> 8);
   }
 
   // Noise register write
