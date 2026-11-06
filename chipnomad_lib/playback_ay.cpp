@@ -62,7 +62,7 @@ uint8_t cnSampleLookupYM[256];
 // =======================================
 
 // Pulse
-static void timerFunctionPulse(Engine* engine, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+static void timerFunctionPulse(Engine* engine, SoundChip* chip, int chipIdx, int channel, uint16_t period, PlaybackTrackState* track) {
   Project* p = engine->project;
   Instrument *instrument = &p->instruments[track->note.instrument];
   if (instrument->type != InstrumentType::AY2) return;
@@ -93,7 +93,7 @@ static void timerFunctionPulse(Engine* engine, SoundChip* chip, int channel, uin
 }
 
 // Sync Tone
-static void timerFunctionSyncTone(Engine* engine, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+static void timerFunctionSyncTone(Engine* engine, SoundChip* chip, int chipIdx, int channel, uint16_t period, PlaybackTrackState* track) {
   Project* p = engine->project;
   Instrument *instrument = &p->instruments[track->note.instrument];
   if (instrument->type != InstrumentType::AY2) return;
@@ -112,7 +112,7 @@ static void timerFunctionSyncTone(Engine* engine, SoundChip* chip, int channel, 
 }
 
 // Sync Envelope
-static void timerFunctionSyncEnv(Engine* engine, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+static void timerFunctionSyncEnv(Engine* engine, SoundChip* chip, int chipIdx, int channel, uint16_t period, PlaybackTrackState* track) {
   Project* p = engine->project;
   Instrument *instrument = &p->instruments[track->note.instrument];
   if (instrument->type != InstrumentType::AY2) return;
@@ -143,7 +143,7 @@ static void timerFunctionSyncEnv(Engine* engine, SoundChip* chip, int channel, u
 }
 
 // Samples
-static void timerFunctionSample(Engine* engine, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+static void timerFunctionSample(Engine* engine, SoundChip* chip, int chipIdx, int channel, uint16_t period, PlaybackTrackState* track) {
   Project* p = engine->project;
   Instrument *instrument = &p->instruments[track->note.instrument];
   if (instrument->type != InstrumentType::AYSample) return;
@@ -227,7 +227,7 @@ static void timerFunctionSample(Engine* engine, SoundChip* chip, int channel, ui
 }
 
 
-static void timerFunctionWavetable(Engine* engine, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+static void timerFunctionWavetable(Engine* engine, SoundChip* chip, int chipIdx, int channel, uint16_t period, PlaybackTrackState* track) {
   Project* p = engine->project;
   Instrument *instrument = &p->instruments[track->note.instrument];
   if (instrument->type != InstrumentType::AY2) return;
@@ -241,7 +241,7 @@ static void timerFunctionWavetable(Engine* engine, SoundChip* chip, int channel,
   chip->setRegister(channel + 8, volume);
 }
 
-static void timerFunctionToneFM(Engine* engine, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+static void timerFunctionToneFM(Engine* engine, SoundChip* chip, int chipIdx, int channel, uint16_t period, PlaybackTrackState* track) {
   Project* p = engine->project;
   Instrument *instrument = &p->instruments[track->note.instrument];
   if (instrument->type != InstrumentType::AY2) return;
@@ -255,7 +255,7 @@ static void timerFunctionToneFM(Engine* engine, SoundChip* chip, int channel, ui
   chip->setRegister(channel * 2 + 1, (tonePeriod >> 8) & 0xff);
 }
 
-static void timerFunctionEnvFM(Engine* engine, SoundChip* chip, int channel, uint16_t period, PlaybackTrackState* track) {
+static void timerFunctionEnvFM(Engine* engine, SoundChip* chip, int chipIdx, int channel, uint16_t period, PlaybackTrackState* track) {
   Project* p = engine->project;
   Instrument *instrument = &p->instruments[track->note.instrument];
   if (instrument->type != InstrumentType::AY2) return;
@@ -329,25 +329,25 @@ int timerFunctionAY(SoundChip* chipBase, void* userdata) {
 
     switch (track->note.chip.ay.softType) {
       case AYSoftwareOscType::pulse:
-        timerFunctionPulse(engine, chip, ch, softOscPeriod, track);
+        timerFunctionPulse(engine, chip, chipIdx, ch, softOscPeriod, track);
         break;
       case AYSoftwareOscType::syncTone:
-        timerFunctionSyncTone(engine, chip, ch, softOscPeriod, track);
+        timerFunctionSyncTone(engine, chip, chipIdx, ch, softOscPeriod, track);
         break;
       case AYSoftwareOscType::syncEnvelope:
-        timerFunctionSyncEnv(engine, chip, ch, softOscPeriod, track);
+        timerFunctionSyncEnv(engine, chip, chipIdx, ch, softOscPeriod, track);
         break;
       case AYSoftwareOscType::wavetable:
-        timerFunctionWavetable(engine, chip, ch, softOscPeriod, track);
+        timerFunctionWavetable(engine, chip, chipIdx, ch, softOscPeriod, track);
         break;
       case AYSoftwareOscType::toneFM:
-        timerFunctionToneFM(engine, chip, ch, softOscPeriod, track);
+        timerFunctionToneFM(engine, chip, chipIdx, ch, softOscPeriod, track);
         break;
       case AYSoftwareOscType::envFM:
-        timerFunctionEnvFM(engine, chip, ch, softOscPeriod, track);
+        timerFunctionEnvFM(engine, chip, chipIdx, ch, softOscPeriod, track);
         break;
       case AYSoftwareOscType::sample:
-        timerFunctionSample(engine, chip, ch, softOscPeriod, track);
+        timerFunctionSample(engine, chip, chipIdx, ch, softOscPeriod, track);
         break;
       default:
         break;
@@ -778,7 +778,11 @@ void Player::outputRegistersAY(Engine* engine, int trackIdx, int chipIdx) {
         // ===========
         // Envelope on
         // ===========
-        envShape = track->note.chip.ay.envShape;
+
+        // Don't set env shape in this tick if it's SyncEnv osc and its envelope pair is not 0
+        if (!(track->note.chip.ay.softType == AYSoftwareOscType::syncEnvelope && p->instruments[track->note.instrument].chip.ay2.oscSoftware.envShapePair != 0)) {
+          envShape = track->note.chip.ay.envShape;
+        }
 
         // Env period calculation
         if (track->note.chip.ay.envAutoN != 0) {
@@ -880,16 +884,14 @@ void Player::outputRegistersAY(Engine* engine, int trackIdx, int chipIdx) {
 
   // Chip-wide register writes
 
-  // Env register write
-  if (envShape != 0) {
-    if (envShape != chips[chipIdx].ay.envShape) {
-      chip->setRegister(13, envShape);
-      chips[chipIdx].ay.envShape = envShape;
-    }
-    if (shouldWriteEnvPeriod) {
-      chip->setRegister(11, envPeriod & 0xff);
-      chip->setRegister(12, (envPeriod & 0xff00) >> 8);
-    }
+  // Env registers write
+  if (envShape != 0 && envShape != chips[chipIdx].ay.envShape) {
+    chip->setRegister(13, envShape);
+    chips[chipIdx].ay.envShape = envShape;
+  }
+  if (shouldWriteEnvPeriod) {
+    chip->setRegister(11, envPeriod & 0xff);
+    chip->setRegister(12, (envPeriod & 0xff00) >> 8);
   }
 
   // Noise register write
