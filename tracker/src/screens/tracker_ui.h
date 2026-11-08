@@ -46,7 +46,7 @@ class TrackerUI : public EventHandler {
     int screenStackIdx = -1;
 
     int messageTimer = 0;
-    char messageBuffer[41];
+    char messageBuffer[41] = "";
 
     std::unordered_map<ScreenEnum, Screen*> screens;
 };

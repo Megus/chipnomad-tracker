@@ -129,10 +129,11 @@ void TrackerApp::onMainLoopEvent(const MainLoopEvent& event) {
       }
 
       // Send all queued events. Currently TrackerUI is the only receiver
-      for (int c = 0; c < eventQueueLength; c++) {
-        ui->onEvent(eventQueue[c]);
+      while (!eventQueue.empty()) {
+        const auto& event = eventQueue.front();
+        ui->onEvent(*event);
+        eventQueue.pop();
       }
-      eventQueueLength = 0;
 
       break;
     }
@@ -209,11 +210,10 @@ void TrackerApp::onMainLoopEvent(const MainLoopEvent& event) {
   }
 }
 
-void TrackerApp::dispatch(Event e) {
-  eventQueue[eventQueueLength] = e;
-  eventQueueLength++;
+void TrackerApp::dispatch(std::unique_ptr<Event> e) {
+  eventQueue.push(std::move(e));
 }
 
-void TrackerApp::dispatchInstant(Event e) {
-  ui->onEvent(e);
+void TrackerApp::dispatchInstant(std::unique_ptr<Event> e) {
+  ui->onEvent(*e);
 }

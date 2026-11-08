@@ -1,195 +1,145 @@
-#include "screen_project.h"
-#include "gfx.h"
 #include <string.h>
+#include "gfx.h"
 #include "audio_manager.h"
 #include "chipnomad_lib.h"
+#include "screen_project.h"
+#include "chip_ay.h"
 
 int chipClockLength = 0;
 
-static char stereoModes[3][5] = {
-  "ABC",
-  "ACB",
-  "BAC",
-};
+void ScreenPartialProjectAY::drawStatic() {
+  Gfx& gfx = screen.gfx;
 
-static int clockPresets[5] = {
-  750000,    // 0.75 MHz
-  1000000,   // 1 MHz
-  1750000,   // 1.75 MHz
-  1773400,   // 1.7734 MHz
-  2000000    // 2 MHz
-};
-
-static char clockNames[5][11] = {
-  "0.75 MHz",
-  "1 MHz",
-  "1.75 MHz",
-  "1.7734 MHz",
-  "2 MHz"
-};
-
-static int getClockPresetIndex(int clock) {
-  for (int i = 0; i < 5; i++) {
-    if (clockPresets[i] == clock) return i;
-  }
-  return -1; // Not found
+  gfx.setFgColor(screen.theme().textDefault);
+  gfx.print(0, 11, "Subtype");
+  gfx.print(0, 12, "Stereo");
+  gfx.print(0, 13, "Stereo width");
+  gfx.print(0, 14, "PWM range");
+  gfx.print(0, 15, "Chip clock");
+  gfx.print(0, 16, "Pitch table");
 }
 
-static int getColumnCount(int row) {
-  // The first 7 rows come from the common project screen fields
-  if (row < SCR_PROJECT_ROWS) return projectCommonColumnCount(row);
+void ScreenPartialProjectAY::drawCursor(int col, int row) {
+  int startRow = screen.commonRowCount;
+  Gfx& gfx = screen.gfx;
 
-  return 1; // Default
-}
-
-static void drawStatic(void) {
-  projectCommonDrawStatic();
-  gfxSetFgColor(appSettings.colorScheme.textDefault);
-  gfxPrint(0, 11, "Subtype");
-  gfxPrint(0, 12, "Stereo");
-  gfxPrint(0, 13, "Stereo width");
-  gfxPrint(0, 14, "PWM range");
-  gfxPrint(0, 15, "Chip clock");
-  gfxPrint(0, 16, "Pitch table");
-}
-
-static void drawCursor(int col, int row) {
-  if (row < SCR_PROJECT_ROWS) return projectCommonDrawCursor(col, row);
-  if (row == SCR_PROJECT_ROWS) {
+  if (row == startRow) {
     // Chip type
-    gfxCursor(13, 11, chipnomadState->project.chipSetup.ay.isYM ? 7 : 9);
-  } else if (row == SCR_PROJECT_ROWS + 1) {
+    gfx.cursor(13, 11, screen.state.project->chipSetup.ay.isYM ? 7 : 9);
+  } else if (row == startRow + 1) {
     // Panning scheme
-    gfxCursor(13, 12, 3);
-  } else if (row == SCR_PROJECT_ROWS + 2) {
+    gfx.cursor(13, 12, 3);
+  } else if (row == startRow + 2) {
     // Stereo width
-    gfxCursor(13, 13, 4);
-  } else if (row == SCR_PROJECT_ROWS + 3) {
+    gfx.cursor(13, 13, 4);
+  } else if (row == startRow + 3) {
     // PWM range
-    gfxCursor(13, 14, 3);
-  } else if (row == SCR_PROJECT_ROWS + 4) {
+    gfx.cursor(13, 14, 3);
+  } else if (row == startRow + 4) {
     // Chip clock
-    gfxCursor(13, 15, chipClockLength);
-  } else if (row == SCR_PROJECT_ROWS + 5) {
+    gfx.cursor(13, 15, chipClockLength);
+  } else if (row == startRow + 5) {
     // Pitch table
-    gfxCursor(13, 16, strlen(chipnomadState->project.pitchTable.name));
+    gfx.cursor(13, 16, strlen(screen.state.project->pitchTable.name));
   }
 }
 
-static void drawField(int col, int row, CellState state) {
-  if (row < SCR_PROJECT_ROWS) return projectCommonDrawField(col, row, state);
+void ScreenPartialProjectAY::drawCell(int col, int row, CellState state) {
+  int startRow = screen.commonRowCount;
+  Gfx& gfx = screen.gfx;
 
-  gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+  gfx.setFgColor(state == CellState::focus ? screen.theme().textValue : screen.theme().textDefault);
 
-  if (row == SCR_PROJECT_ROWS) {
-    gfxClearRect(13, 11, 9, 1);
-    gfxPrint(13, 11, chipnomadState->project.chipSetup.ay.isYM ? "YM2149F" : "AY-3-8910");
-  } else if (row == SCR_PROJECT_ROWS + 1) {
+  if (row == startRow) {
+    gfx.clearRect(13, 11, 9, 1);
+    gfx.print(13, 11, screen.state.project->chipSetup.ay.isYM ? "YM2149F" : "AY-3-8910");
+  } else if (row == startRow + 1) {
     // Panning scheme
-    gfxClearRect(13, 12, 5, 1);
-    gfxPrint(13, 12, stereoModes[static_cast<int>(chipnomadState->project.chipSetup.ay.stereoMode)]);
-  } else if (row == SCR_PROJECT_ROWS + 2) {
+    gfx.clearRect(13, 12, 5, 1);
+    gfx.print(13, 12, stereoModes[static_cast<int>(screen.state.project->chipSetup.ay.stereoMode)]);
+  } else if (row == startRow + 2) {
     // Stereo width
-    gfxPrintf(13, 13, "%03d%%", chipnomadState->project.chipSetup.ay.stereoSeparation);
-  } else if (row == SCR_PROJECT_ROWS + 3) {
+    gfx.printf(13, 13, "%03d%%", screen.state.project->chipSetup.ay.stereoSeparation);
+  } else if (row == startRow + 3) {
     // PWM range
-    gfxClearRect(13, 14, 3, 1);
-    gfxPrint(13, 14, chipnomadState->project.chipSetup.ay.pwmFullRange ? "256" : "16");
-  } else if (row == SCR_PROJECT_ROWS + 4) {
-    int presetIndex = getClockPresetIndex(chipnomadState->project.chipSetup.ay.clock);
+    gfx.clearRect(13, 14, 3, 1);
+    gfx.print(13, 14, screen.state.project->chipSetup.ay.pwmFullRange ? "256" : "16");
+  } else if (row == startRow + 4) {
+    int presetIndex = getClockPresetIndex(screen.state.project->chipSetup.ay.clock);
     char clockText[20];
 
     if (presetIndex >= 0) {
       strcpy(clockText, clockNames[presetIndex]);
     } else {
-      snprintf(clockText, sizeof(clockText), "%d Hz", chipnomadState->project.chipSetup.ay.clock);
+      snprintf(clockText, sizeof(clockText), "%d Hz", screen.state.project->chipSetup.ay.clock);
     }
 
     chipClockLength = strlen(clockText);
-    gfxClearRect(13, 15, 20, 1);
-    gfxPrint(13, 15, clockText);
-  } else if (row == SCR_PROJECT_ROWS + 5) {
-    gfxClearRect(13, 16, PROJECT_PITCH_TABLE_TITLE_LENGTH, 1);
-    gfxPrint(13, 16, chipnomadState->project.pitchTable.name);
+    gfx.clearRect(13, 15, 20, 1);
+    gfx.print(13, 15, clockText);
+  } else if (row == startRow + 5) {
+    gfx.clearRect(13, 16, PROJECT_PITCH_TABLE_TITLE_LENGTH, 1);
+    gfx.print(13, 16, screen.state.project->pitchTable.name);
   }
 }
 
-static int onEdit(int col, int row, enum EditCellAction action) {
-  if (row < SCR_PROJECT_ROWS) return projectCommonOnEdit(col, row, action);
+bool ScreenPartialProjectAY::onEdit(int col, int row, EditCellAction action) {
+  int startRow = screen.commonRowCount;
+  bool handled = false;
 
-  int handled = 0;
-
-  if (row == SCR_PROJECT_ROWS) {
+  if (row == startRow) {
     // Chip subtype (AY-3-8910 / YM2149F)
-    handled = edit8noLast(action, &chipnomadState->project.chipSetup.ay.isYM, 1, 0, 1);
-    if (handled && chipnomadState) {
-      for (int i = 0; i < chipnomadState->project.chipsCount; i++) {
-        static_cast<SoundChipAY*>(chipnomadState->engine->chips[i])->updateType(chipnomadState->project.chipSetup.ay.isYM);
+    handled = edit8noLast(action, &screen.state.project->chipSetup.ay.isYM, 1, 0, 1);
+    if (handled) {
+      for (int i = 0; i < screen.state.project->chipsCount; i++) {
+        static_cast<chipnomad::SoundChipAY*>(screen.audio.engine.chips[i])->updateType(screen.state.project->chipSetup.ay.isYM);
       }
     }
-  } else if (row == SCR_PROJECT_ROWS + 1) {
+  } else if (row == startRow + 1) {
     // Stereo mode (ABC, ACB, BAC)
-    handled = edit8noLast(action, (uint8_t*)&chipnomadState->project.chipSetup.ay.stereoMode, 1, 0, 2);
-    if (handled && chipnomadState) {
-      for (int i = 0; i < chipnomadState->project.chipsCount; i++) {
-        static_cast<SoundChipAY*>(chipnomadState->engine->chips[i])->updateStereoMode(chipnomadState->project.chipSetup.ay.stereoMode, chipnomadState->project.chipSetup.ay.stereoSeparation);
+    handled = edit8noLast(action, (uint8_t*)&screen.state.project->chipSetup.ay.stereoMode, 1, 0, 2);
+    if (handled) {
+      for (int i = 0; i < screen.state.project->chipsCount; i++) {
+        static_cast<chipnomad::SoundChipAY*>(screen.audio.engine.chips[i])->updateStereoMode(screen.state.project->chipSetup.ay.stereoMode, screen.state.project->chipSetup.ay.stereoSeparation);
       }
     }
-  } else if (row == SCR_PROJECT_ROWS + 2) {
+  } else if (row == startRow + 2) {
     // Stereo width (0-100%)
-    handled = edit8noLast(action, &chipnomadState->project.chipSetup.ay.stereoSeparation, 10, 0, 100);
-    if (handled && chipnomadState) {
-      for (int i = 0; i < chipnomadState->project.chipsCount; i++) {
-        static_cast<SoundChipAY*>(chipnomadState->engine->chips[i])->updateStereoMode(chipnomadState->project.chipSetup.ay.stereoMode, chipnomadState->project.chipSetup.ay.stereoSeparation);
+    handled = edit8noLast(action, &screen.state.project->chipSetup.ay.stereoSeparation, 10, 0, 100);
+    if (handled) {
+      for (int i = 0; i < screen.state.project->chipsCount; i++) {
+        static_cast<chipnomad::SoundChipAY*>(screen.audio.engine.chips[i])->updateStereoMode(screen.state.project->chipSetup.ay.stereoMode, screen.state.project->chipSetup.ay.stereoSeparation);
       }
     }
-  } else if (row == SCR_PROJECT_ROWS + 3) {
+  } else if (row == startRow + 3) {
     // PWM range (16 / 256)
-    handled = edit8noLast(action, &chipnomadState->project.chipSetup.ay.pwmFullRange, 1, 0, 1);
-  } else if (row == SCR_PROJECT_ROWS + 4) {
+    handled = edit8noLast(action, &screen.state.project->chipSetup.ay.pwmFullRange, 1, 0, 1);
+  } else if (row == startRow + 4) {
     // Chip clock presets
-    int presetIndex = getClockPresetIndex(chipnomadState->project.chipSetup.ay.clock);
+    int presetIndex = getClockPresetIndex(screen.state.project->chipSetup.ay.clock);
     if (presetIndex < 0) presetIndex = 0; // Default to first preset if not found
     uint8_t newIndex = presetIndex;
     handled = edit8noLast(action, &newIndex, 1, 0, 4);
-    if (handled && chipnomadState) {
-      chipnomadState->project.chipSetup.ay.clock = clockPresets[newIndex];
-      for (int i = 0; i < chipnomadState->project.chipsCount; i++) {
-        static_cast<SoundChipAY*>(chipnomadState->engine->chips[i])->updateClock(chipnomadState->project.chipSetup.ay.clock);
+    if (handled) {
+      screen.state.project->chipSetup.ay.clock = clockPresets[newIndex];
+      for (int i = 0; i < screen.state.project->chipsCount; i++) {
+        static_cast<chipnomad::SoundChipAY*>(screen.audio.engine.chips[i])->updateClock(screen.state.project->chipSetup.ay.clock);
       }
     }
-  } else if (row == SCR_PROJECT_ROWS + 5) {
+  } else if (row == startRow + 5) {
     // Pitch table - enter pitch table screen
-    screenSetup(&screenPitchTable, 0);
-    handled = 0;
+    screen.dispatcher.pushScreen(ScreenEnum::pitchTable);
+    handled = true;
   }
 
-  if (handled) projectModified = 1;
+  if (handled) screen.state.projectModified = 1;
 
   return handled;
 }
 
-ScreenData screenProjectAY = {
-  .rows = 14,
-  .cursorRow = 0,
-  .cursorCol = 0,
-  .topRow = 0,
-  .selectMode = -1,
-  .selectStartRow = 0,
-  .selectStartCol = 0,
-  .selectAnchorRow = 0,
-  .selectAnchorCol = 0,
-  .playbackLevel = ScreenPlaybackLevel::none,
-  .getColumnCount = getColumnCount,
-  .drawStatic = drawStatic,
-  .drawCursor = drawCursor,
-  .drawSelection = NULL,
-  .drawRowHeader = NULL,
-  .drawColHeader = NULL,
-  .drawField = drawField,
-  .onEdit = onEdit,
-  .onInput = NULL,
-  .onRawInput = NULL,
-  .isCellValid = NULL,
-  .getLoopRange = NULL,
-};
+int ScreenPartialProjectAY::getClockPresetIndex(int clock) {
+  for (int i = 0; i < 5; i++) {
+    if (clockPresets[i] == clock) return i;
+  }
+  return -1; // Not found
+}

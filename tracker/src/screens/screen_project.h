@@ -23,6 +23,8 @@ class ScreenProject : public Screen {
     bool onNavigationInput(const InputEvent& e) override;
     bool onEvent(const Event& e) override;
 
+    friend class ScreenPartialProjectAY;
+
   protected:
     enum class ConfirmValue : int {
       cancel,
@@ -36,7 +38,7 @@ class ScreenProject : public Screen {
 
     int tickRateI = 0; // Integer part of the tick rate
     uint16_t tickRateF = 0; // Fractional part of the tick rate
-    ScreenPartial* partial; // Current partial (chip-specific project settings)
+    ScreenPartial<ScreenProject>* partial; // Current partial (chip-specific project settings)
 
     ScreenPartialProjectAY* partialAY;
 

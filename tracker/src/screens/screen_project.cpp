@@ -304,6 +304,8 @@ bool ScreenProject::onEdit(int col, int row, EditCellAction action) {
       audio.reinitChips();
       state.projectModified = 1;
     }
+  } else {
+    handled = partial->onEdit(col, row, action);
   }
 
   return handled;
@@ -319,6 +321,8 @@ bool ScreenProject::onNavigationInput(const InputEvent& e) {
 
 bool ScreenProject::onEvent(const Event& e) {
   bool handled = commonEventHandler(e);
+  if (handled) return true;
+  handled = partial->onEvent(e);
   if (handled) return true;
 
   if (e.type == EventType::screenOutput) {

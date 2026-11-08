@@ -32,8 +32,6 @@ class Screen : public EventHandler {
   ///////////////////////////////////////////////////////////////////////////
   // Methods to override in sub-classes
   public:
-    friend class ScreenPartial;
-
     Screen(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx): state(state), dispatcher(dispatcher), gfx(gfx) {}
     virtual ~Screen() = default;
 

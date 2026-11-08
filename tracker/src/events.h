@@ -143,8 +143,8 @@ class EventHandler {
 
 class EventDispatcher {
   public:
-    virtual void dispatch(Event e) = 0;
-    virtual void dispatchInstant(Event e) = 0;
+    virtual void dispatch(std::unique_ptr<Event> e) = 0;
+    virtual void dispatchInstant(std::unique_ptr<Event> e) = 0;
 
     // Convenience functions for all events
 

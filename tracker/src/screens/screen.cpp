@@ -1,5 +1,5 @@
 #include "screen.h"
-#include "string_utils.h"
+#include "misc.h"
 
 Rect Screen::getSelectionRange() {
   using namespace chipnomad;

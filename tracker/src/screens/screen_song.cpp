@@ -9,6 +9,9 @@
 
 void ScreenSong::setup(const ScreenData& input) {
   mode = ScreenMode::edit;
+  // Sync the cursor position from the song position in the global state
+  cursorRow = state.songRow;
+  cursorCol = state.songTrack;
 }
 
 Rect ScreenSong::getSelectionRect(const Rect& range) {
@@ -284,7 +287,11 @@ bool ScreenSong::editCell(int col, int row, EditCellAction action) {
 
 bool ScreenSong::onEvent(const Event& event) {
   bool handled = commonEventHandler(event);
-  state.songRow = cursorRow; // Sync song row with the cursor
+
+  // Sync global song position from the cursor position
+  state.songRow = cursorRow;
+  state.songTrack = cursorCol;
+
   if (handled) return true;
   if (event.type != EventType::input) return false;
 

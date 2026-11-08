@@ -1,6 +1,7 @@
 #ifndef __APP_H__
 #define __APP_H__
 
+#include <queue>
 #include "mainloop.h"
 #include "gfx.h"
 #include "font_manager.h"
@@ -21,8 +22,8 @@ class TrackerApp: public App, public EventDispatcher {
     void teardown() override;
     void draw() override;
     void onMainLoopEvent(const MainLoopEvent& event) override;
-    void dispatch(Event e) override;
-    void dispatchInstant(Event e) override;
+    void dispatch(std::unique_ptr<Event> e) override;
+    void dispatchInstant(std::unique_ptr<Event> e) override;
 
   protected:
     static constexpr int eventQueueMaxLength = 16; // Max number of events in the queue
@@ -46,8 +47,7 @@ class TrackerApp: public App, public EventDispatcher {
 
     int autosaveCounter = 0; // Autosave period frame counter
 
-    Event eventQueue[eventQueueMaxLength] = {};
-    int eventQueueLength = 0;
+    std::queue<std::unique_ptr<Event>> eventQueue;
 };
 
 #endif

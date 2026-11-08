@@ -41,59 +41,64 @@ Screen* TrackerUI::getCurrentScreen() {
 void TrackerUI::drawScreenMap() {
   const static int smY = 15;
 
+  // Core screens
   const ColorTheme t = state.settings.colorTheme;
   gfx.setBgColor(t.background);
   gfx.setFgColor(t.textInfo);
   gfx.clearRect(35, smY, 5, 5);
-
-  // Core screens
   gfx.print(35, smY + 1, "SCPIT");
-/*
-  // Additional screens
-  if (currentScreen == &screenSong || currentScreen == &screenProject) {
-    gfx.print(35, smY, "P");
-  } else if (currentScreen == &screenPhrase || currentScreen == &screenGroove) {
-    gfx.print(37, smY, "G");
-  } else if (currentScreen == &screenInstrument || currentScreen == &screenInstrumentPool) {
-    gfx.print(38, smY + 2, "P");
-    gfx.print(38, smY, "M");
-  } else if (currentScreen == &screenModulation) {
-    gfx.print(38, smY + 2, "P");
-  } else if (currentScreen == &screenTable || currentScreen == &screenWavetable) {
-    gfx.print(39, smY + 2, "W");
+
+  Screen* currentScreen = getCurrentScreen();
+  if (currentScreen == nullptr) return;
+
+  ScreenEnum s = ScreenEnum::song;
+  for (const auto& [k, v] : screens) {
+    if (v == currentScreen) {
+      s = k;
+      break;
+    }
   }
 
-  // Show Settings below Song
-  if (currentScreen == &screenSong) {
+  // Additional screens
+  if (s == ScreenEnum::song || s == ScreenEnum::project) {
+    gfx.print(35, smY, "P");
     gfx.print(35, smY + 2, "S");
+  } else if (s == ScreenEnum::phrase || s == ScreenEnum::groove) {
+    gfx.print(37, smY, "G");
+  } else if (s == ScreenEnum::instrument || s == ScreenEnum::instrumentPool) {
+    gfx.print(38, smY, "M");
+    gfx.print(38, smY + 2, "P");
+  } else if (s == ScreenEnum::modulation) {
+    gfx.print(38, smY + 2, "P");
+  } else if (s == ScreenEnum::table || s == ScreenEnum::ayWavetable) {
+    gfx.print(39, smY + 2, "W");
   }
 
   // Highlight current screen
   gfx.setFgColor(t.textDefault);
-  if (currentScreen == &screenSong) {
+  if (s == ScreenEnum::song) {
     gfx.print(35, smY + 1, "S");
-  } else if (currentScreen == &screenChain) {
+  } else if (s == ScreenEnum::chain) {
     gfx.print(36, smY + 1, "C");
-  } else if (currentScreen == &screenPhrase) {
+  } else if (s == ScreenEnum::phrase) {
     gfx.print(37, smY + 1, "P");
-  } else if (currentScreen == &screenInstrument) {
+  } else if (s == ScreenEnum::instrument) {
     gfx.print(38, smY + 1, "I");
-  } else if (currentScreen == &screenInstrumentPool) {
+  } else if (s == ScreenEnum::instrumentPool) {
     gfx.print(38, smY + 2, "P");
-  } else if (currentScreen == &screenModulation) {
+  } else if (s == ScreenEnum::modulation) {
     gfx.print(38, smY, "M");
-  } else if (currentScreen == &screenTable) {
+  } else if (s == ScreenEnum::table) {
     gfx.print(39, smY + 1, "T");
-  } else if (currentScreen == &screenWavetable) {
+  } else if (s == ScreenEnum::ayWavetable) {
     gfx.print(39, smY + 2, "W");
-  } else if (currentScreen == &screenProject) {
+  } else if (s == ScreenEnum::project) {
     gfx.print(35, smY, "P");
-  } else if (currentScreen == &screenGroove) {
+  } else if (s == ScreenEnum::groove) {
     gfx.print(37, smY, "G");
-  } else if (currentScreen == &screenSettings) {
+  } else if (s == ScreenEnum::settings) {
     gfx.print(35, smY + 2, "S");
   }
-*/
 }
 
 void TrackerUI::draw() {
@@ -306,20 +311,3 @@ bool TrackerUI::onScreenEvent(const ScreenEvent& e) {
 
   return false;
 }
-
-
-/*
-void screenDraw() {
-  if (pendingScreen != NULL) {
-    currentScreen = pendingScreen;
-    currentScreen->setup(pendingScreenInput);
-    gfxSetBgColor(appSettings.colorScheme.background);
-    gfxSetCursorColor(appSettings.colorScheme.cursor);
-    gfxClearRect(0, 0, 40, 20);
-    currentScreen->fullRedraw();
-    drawScreenMap();
-
-    pendingScreen = NULL;
-  }
-}
-*/

@@ -1,5 +1,5 @@
 #include "gfx.h"
-#include "string_utils.h"
+#include "misc.h"
 #include <string.h>
 
 // Character keyboard layout

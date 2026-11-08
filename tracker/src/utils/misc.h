@@ -3,5 +3,7 @@
 
 const char* getEnvelopeShapeASCII(int shape);
 
+// Trim leading and trailing spaces from string
+void trimString(char* str);
 
 #endif
