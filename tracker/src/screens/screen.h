@@ -109,6 +109,12 @@ class Screen : public EventHandler {
     bool inputEditMode(int keys, int tapCount); // Handles common input in edit mode
     bool inputSelectMode(int keys, int tapCount);
     void inputCursor(int keys, bool* handled, bool* needsRedraw); // Handles standard cursor movement (left, right, up, down)
+
+    // Common popups:
+    void requestConfirmation(const char* title, int confirmValue, int cancelValue); // Show confirmation popup
+    bool editCharacter(EditCellAction action, char* str, int idx, int maxLen); // Delete a character or open characted edit popup
+    void selectFile(const char* title, const char* startPath, const char* extensions, FilePreviewer* previewer); // File browser: select a file
+    void selectFolder(const char* title, const char* startPath, const char* extensions, const char* filename); // File browser: select a folder
 };
 
 #endif // __SCREEN_H__

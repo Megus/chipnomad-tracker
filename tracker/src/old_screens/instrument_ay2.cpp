@@ -375,7 +375,7 @@ static void drawField(int col, int row, CellState state) {
   }
 }
 
-static int onEdit(int col, int row, CellEditAction action) {
+static int onEdit(int col, int row, EditCellAction action) {
   if (row < 3) return instrumentCommonOnEdit(col, row, action);
 
   int handled = 0;
@@ -518,7 +518,7 @@ static int onEdit(int col, int row, CellEditAction action) {
           uint8_t* p1 = softwareOscP1Ptr(&ay2->oscSoftware);
           if (p1) {
             // Special handling for Clear action on pulse width - reset to 0x80 (50% duty cycle)
-            if (action == CellEditAction::clear && (ay2->oscSoftware.type == AYSoftwareOscType::pulse || ay2->oscSoftware.type == AYSoftwareOscType::syncEnvelope)) {
+            if (action == EditCellAction::clear && (ay2->oscSoftware.type == AYSoftwareOscType::pulse || ay2->oscSoftware.type == AYSoftwareOscType::syncEnvelope)) {
               *p1 = 0x80;
               handled = 1;
               screenMessage(0, "Pulse width %hhu", *p1);

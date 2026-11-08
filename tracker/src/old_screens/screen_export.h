@@ -15,7 +15,7 @@ int exportCommonColumnCount(int row);
 void exportCommonDrawStatic(void);
 void exportCommonDrawCursor(int col, int row);
 void exportCommonDrawField(int col, int row, CellState state);
-int exportCommonOnEdit(int col, int row, CellEditAction action);
+int exportCommonOnEdit(int col, int row, EditCellAction action);
 void generateExportPath(char* outputPath, int maxLen, const char* extension);
 void generatePSGExportPath(char* outputPath, int maxLen);
 

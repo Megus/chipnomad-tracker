@@ -221,8 +221,9 @@ static int loadModulation(FILE* file, Instrument* instrument) {
 }
 
 // Main load function
-int instrumentLoadData(FILE* file, Instrument* instrument, Project* p) {
-  instrumentClear(instrument);
+int instrumentLoadData(FILE* file, Project* p, int instrumentIdx) {
+  p->clearInstrument(instrumentIdx);
+  Instrument* instrument = &p->instruments[instrumentIdx];
 
   // Read common fields first
   while (1) {
@@ -383,8 +384,10 @@ static int saveModulation(FILE* file, Instrument* instrument) {
 }
 
 // Main save function
-int instrumentSaveData(FILE* file, int idx, Instrument* instrument) {
-  fprintf(file, "\n### Instrument %X\n\n", idx);
+int instrumentSaveData(FILE* file, Project* p, int instrumentIdx) {
+  Instrument* instrument = &p->instruments[instrumentIdx];
+
+  fprintf(file, "\n### Instrument %X\n\n", instrumentIdx);
   fprintf(file, "- Name: %s\n", instrument->name);
   fprintf(file, "- Type: %hhd\n", static_cast<uint8_t>(instrument->type));
   fprintf(file, "- Table speed: %hhu\n", instrument->tableSpeed);

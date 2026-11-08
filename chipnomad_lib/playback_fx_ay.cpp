@@ -93,7 +93,7 @@ static void handleFX_ENT(Player* player, PlaybackTrackState* track, int trackIdx
   fx->isOn = 0; // Atomic effect
   if (getInstrumentType(player, trackIdx) != InstrumentType::AY1) return;
 
-  struct Project *p = player->p;
+  Project *p = player->p;
   int note = fx->fxValue + p->pitchTable.octaveSize * 4;  // AY env period is 4 octaves lower
   if (note >= p->pitchTable.length) note = p->pitchTable.length - 1;
 

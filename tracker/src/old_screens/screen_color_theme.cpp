@@ -13,7 +13,7 @@ static void colorThemeDrawCursor(int col, int row);
 static void colorThemeDrawRowHeader(int row, CellState state);
 static void colorThemeDrawColHeader(int col, CellState state);
 static void colorThemeDrawField(int col, int row, CellState state);
-static int colorThemeOnEdit(int col, int row, CellEditAction action);
+static int colorThemeOnEdit(int col, int row, EditCellAction action);
 static void fullRedraw(void);
 
 static ScreenData screenColorThemeData = {
@@ -219,7 +219,7 @@ void colorThemeDrawField(int col, int row, CellState state) {
   }
 }
 
-int colorThemeOnEdit(int col, int row, CellEditAction action) {
+int colorThemeOnEdit(int col, int row, EditCellAction action) {
   if (row < 10) {
     int* colorPtr = getColorPtr(row);
     if (!colorPtr) return 0;
@@ -259,7 +259,7 @@ int colorThemeOnEdit(int col, int row, CellEditAction action) {
     } else if (res > 1) {
       return 1;
     }
-  } else if (row == 11 && action == CellEditAction::tap) {
+  } else if (row == 11 && action == EditCellAction::tap) {
     // Buttons
     if (col == 0) {
       // Save

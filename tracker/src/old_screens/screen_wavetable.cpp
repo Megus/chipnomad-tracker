@@ -56,7 +56,7 @@ static void drawRowHeader(int row, CellState state);
 static void drawColHeader(int col, CellState state);
 static void drawCursor(int col, int row);
 static void drawSelection(int col1, int row1, int col2, int row2);
-static int onEdit(int col, int row, CellEditAction action);
+static int onEdit(int col, int row, EditCellAction action);
 static int inputScreenNavigation(int keys, int tapCount);
 
 // Callbacks for file operations
@@ -378,12 +378,12 @@ static void onSaveCancelled(void) {
   screenSetup(&screenWavetable, wavetableIdx);
 }
 
-static int onEdit(int col, int row, CellEditAction action) {
+static int onEdit(int col, int row, EditCellAction action) {
   if (row == 0) {
     // Buttons row
     if (col == 0 || col == 1) {
       // Load/Save buttons
-      if (action == CellEditAction::tap) {
+      if (action == EditCellAction::tap) {
         if (col == 0) {
           // Load button - open file browser to select .aywave file
           fileBrowserSetup("LOAD WAVETABLES", ".aywave", appSettings.wavetablePath, onLoadFileSelected, onLoadCancelled, onWavetablePreviewStart, onWavetablePreviewStop);
@@ -402,26 +402,26 @@ static int onEdit(int col, int row, CellEditAction action) {
 
       // Use edit function for 16-bit value with range 1-256
       // editIncrease/editDecrease with wraparound
-      if (action == CellEditAction::increase) {
+      if (action == EditCellAction::increase) {
         wavetableSaveCount++;
         if (wavetableSaveCount > 256) wavetableSaveCount = 1;
         return 1;
-      } else if (action == CellEditAction::decrease) {
+      } else if (action == EditCellAction::decrease) {
         wavetableSaveCount--;
         if (wavetableSaveCount < 1) wavetableSaveCount = 256;
         return 1;
-      } else if (action == CellEditAction::increaseBig) {
+      } else if (action == EditCellAction::increaseBig) {
         wavetableSaveCount += 16;
         if (wavetableSaveCount > 256) wavetableSaveCount = 256;
         return 1;
-      } else if (action == CellEditAction::decreaseBig) {
+      } else if (action == EditCellAction::decreaseBig) {
         if (wavetableSaveCount > 16) {
           wavetableSaveCount -= 16;
         } else {
           wavetableSaveCount = 1;
         }
         return 1;
-      } else if (action == CellEditAction::clear) {
+      } else if (action == EditCellAction::clear) {
         wavetableSaveCount = 1;  // Reset to 1 (default)
         return 1;
       }

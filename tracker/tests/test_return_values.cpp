@@ -46,14 +46,14 @@ struct ReturnValueFixture {
 TEST_CASE_FIXTURE(ReturnValueFixture, "projectSave returns 1 on success") {
   const char* testFile = "test_rv_save.cnm";
   projectInitAY(&state->project);
-  int result = projectSave(&state->project, testFile);
+  int result = saveProject(&state->project, testFile);
   CHECK(result == 1);
   std::remove(testFile);
 }
 
 TEST_CASE_FIXTURE(ReturnValueFixture, "projectSave returns 0 on failure") {
   // Try to save to an invalid path (directory that doesn't exist)
-  int result = projectSave(&state->project, "/nonexistent_dir/test.cnm");
+  int result = saveProject(&state->project, "/nonexistent_dir/test.cnm");
   CHECK(result == 0);
 }
 
@@ -61,7 +61,7 @@ TEST_CASE_FIXTURE(ReturnValueFixture, "projectLoad returns 1 on success") {
   // Save a valid project first
   const char* testFile = "test_rv_load.cnm";
   projectInitAY(&state->project);
-  int saveResult = projectSave(&state->project, testFile);
+  int saveResult = saveProject(&state->project, testFile);
   REQUIRE(saveResult == 1);
 
   Project p2;
@@ -116,13 +116,13 @@ TEST_CASE_FIXTURE(ReturnValueFixture, "instrumentSave returns 1 on success") {
   std::strcpy(state->project.instruments[0].name, "TestInst");
 
   const char* testFile = "test_rv_inst.cni";
-  int result = instrumentSave(&state->project, testFile, 0);
+  int result = saveInstrument(&state->project, testFile, 0);
   CHECK(result == 1);
   std::remove(testFile);
 }
 
 TEST_CASE_FIXTURE(ReturnValueFixture, "instrumentSave returns 0 on failure") {
-  int result = instrumentSave(&state->project, "/nonexistent_dir/test.cni", 0);
+  int result = saveInstrument(&state->project, "/nonexistent_dir/test.cni", 0);
   CHECK(result == 0);
 }
 
@@ -131,9 +131,9 @@ TEST_CASE_FIXTURE(ReturnValueFixture, "instrumentLoad returns 1 on success") {
   std::strcpy(state->project.instruments[0].name, "AY2Inst");
 
   const char* testFile = "test_rv_inst_load.cni";
-  instrumentSave(&state->project, testFile, 0);
+  saveInstrument(&state->project, testFile, 0);
 
-  int result = instrumentLoad(&state->project, testFile, 1);
+  int result = loadInstrument(&state->project, testFile, 1);
   CHECK(result == 1);
   CHECK(state->project.instruments[1].type == InstrumentType::AY2);
   CHECK(std::strcmp(state->project.instruments[1].name, "AY2Inst") == 0);
@@ -141,7 +141,7 @@ TEST_CASE_FIXTURE(ReturnValueFixture, "instrumentLoad returns 1 on success") {
 }
 
 TEST_CASE_FIXTURE(ReturnValueFixture, "instrumentLoad returns 0 on missing file") {
-  int result = instrumentLoad(&state->project, "nonexistent.cni", 0);
+  int result = loadInstrument(&state->project, "nonexistent.cni", 0);
   CHECK(result == 0);
 }
 
@@ -151,7 +151,7 @@ TEST_CASE_FIXTURE(ReturnValueFixture, "instrumentLoad returns 0 on invalid file"
   std::fprintf(f, "GARBAGE DATA\n");
   std::fclose(f);
 
-  int result = instrumentLoad(&state->project, testFile, 0);
+  int result = loadInstrument(&state->project, testFile, 0);
   CHECK(result == 0);
   std::remove(testFile);
 }

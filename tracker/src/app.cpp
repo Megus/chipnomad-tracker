@@ -53,14 +53,18 @@ bool TrackerApp::setup() {
   gfx.clear();
 
   // Try to load an auto-saved project
-  if (!projectLoad(&state.project, file.getAutosavePath())) {
+  chipnomad::Project* p = chipnomad::loadProject(file.getAutosavePath());
+  if (p == nullptr) {
     // Failed to load autosave, initialize empty project
-    projectInitAY(state.project);
+    state.project = new chipnomad::Project();
+    state.project->initAYproject();
+  } else {
+    state.project = p;
   }
 
   // Create and configure the audio system
   audio = new AudioManager(audioDevice, state.settings.audioSampleRate, state.settings.audioBufferSize, nullptr);
-  audio->engine.setProject(&state.project);
+  audio->engine.setProject(state.project);
 
   // Set mix volume and dithering from settings
   audio->engine.mixVolume = state.settings.mixVolume;
@@ -96,7 +100,7 @@ void TrackerApp::onMainLoopEvent(const MainLoopEvent& event) {
       // Autosave
       if (++autosaveCounter >= kAutosaveInterval) {
         autosaveCounter = 0;
-        chipnomad::projectSave(&state.project, file.getAutosavePath());
+        chipnomad::saveProject(state.project, file.getAutosavePath());
       }
 
       // Multi-tap timer handling
@@ -182,14 +186,14 @@ void TrackerApp::onMainLoopEvent(const MainLoopEvent& event) {
     }
     case MainLoopEventType::exit: {
       // Auto-save the current project and settings on exit
-      chipnomad::projectSave(&state.project, file.getAutosavePath());
+      chipnomad::saveProject(state.project, file.getAutosavePath());
       state.settings.saveSettings(file.getSettingsPath());
       break;
     }
     case MainLoopEventType::sleep: {
       audio->pause();
       audio->engine.player.stop();
-      chipnomad::projectSave(&state.project, file.getAutosavePath());
+      chipnomad::saveProject(state.project, file.getAutosavePath());
       state.settings.saveSettings(file.getSettingsPath());
       break;
     }
@@ -208,4 +212,8 @@ void TrackerApp::onMainLoopEvent(const MainLoopEvent& event) {
 void TrackerApp::dispatch(Event e) {
   eventQueue[eventQueueLength] = e;
   eventQueueLength++;
+}
+
+void TrackerApp::dispatchInstant(Event e) {
+  ui->onEvent(e);
 }

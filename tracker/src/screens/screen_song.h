@@ -13,7 +13,7 @@ class ScreenSong : public Screen, EditCellInterface {
     void setup(const ScreenData& input) override;
     bool supportsSelectMode() override { return true; };
     int getRowCount() override { return PROJECT_MAX_LENGTH; };
-    int getColumnCount(int row) override { return state.project.tracksCount; };
+    int getColumnCount(int row) override { return state.project->tracksCount; };
     ScreenPlaybackLevel getPlaybackLevel() override { return ScreenPlaybackLevel::song; };
     Rect getSelectionRect(const Rect& range) override;
     chipnomad::LoopRange getLoopRange() override;

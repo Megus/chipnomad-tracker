@@ -5,7 +5,7 @@
 
 class ScreenPartial {
   public:
-    ScreenPartial(Screen& parent, int startRow): parent(parent), startRow(startRow) {};
+    ScreenPartial(Screen& screen, int startRow): screen(screen), startRow(startRow) {};
 
     virtual int getRowCount() { return 0; }; // How many rows on this partial?
     virtual int getColumnCount(int row) { return 0; }; // How many columns in this row?
@@ -20,13 +20,13 @@ class ScreenPartial {
     virtual void drawCell(int col, int row, CellState state) {}; // Draw a cell
 
     virtual bool onEdit(int col, int row, EditCellAction action) { return false; }; // Handle edit action
-    virtual bool onNavigationInput(InputEventData eventData) { return false; }; // Navigation input handler. Convenience function
+    virtual bool onNavigationInput(const InputEvent& e) { return false; }; // Navigation input handler. Convenience function
 
-    virtual bool onEvent(Event e) { return false; }; // Handle events from the EventDispatcher
+    virtual bool onEvent(const Event& e) { return false; }; // Handle events from the EventDispatcher
 
   protected:
+    Screen& screen;
     int startRow;
-    Screen& parent;
 };
 
 #endif // __SCREEN_PARTIAL_H__

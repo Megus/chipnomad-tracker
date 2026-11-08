@@ -21,9 +21,9 @@ int saveBinaryData(FILE* file, const uint8_t* data, uint16_t dataLen);
 int loadBinaryData(FILE* file, uint8_t** outData, uint16_t* outLen, uint16_t maxLen);
 
 // Internal I/O functions (used between project_io.c and project_instruments_io.c)
-int instrumentSaveData(FILE* file, int idx, Instrument* instrument);
-int instrumentLoadData(FILE* file, Instrument* instrument, Project* p);
-int saveTable(FILE* file, int idx, Table* table);
+int instrumentSaveData(FILE* file, Project* p, int instrumentIdx);
+int instrumentLoadData(FILE* file, Project* p, int instrumentIdx);
+int saveTable(FILE* file, Project* p, int idx);
 
 }; // namespace chipnomad
 

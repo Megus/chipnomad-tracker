@@ -335,7 +335,7 @@ static void drawField(int col, int row, CellState state) {
   }
 }
 
-static int onEdit(int col, int row, CellEditAction action) {
+static int onEdit(int col, int row, EditCellAction action) {
   if (row < 3) return instrumentCommonOnEdit(col, row, action);
 
   int handled = 0;
@@ -353,7 +353,7 @@ static int onEdit(int col, int row, CellEditAction action) {
   if (col == 0) {
     switch (row) {
       case 4: // Rate
-        if (action == CellEditAction::clear) {
+        if (action == EditCellAction::clear) {
           smp->sampleRate = 8000;  // Reasonable default rate
           handled = 1;
         } else {
@@ -362,7 +362,7 @@ static int onEdit(int col, int row, CellEditAction action) {
         break;
       case 5: // Start
         {
-          if (action == CellEditAction::clear) {
+          if (action == EditCellAction::clear) {
             smp->sampleStart = 0;  // Start from beginning
             handled = 1;
           } else {
@@ -386,7 +386,7 @@ static int onEdit(int col, int row, CellEditAction action) {
         break;
       case 6: // Length
         {
-          if (action == CellEditAction::clear) {
+          if (action == EditCellAction::clear) {
             smp->sampleLength = smp->fileLength;  // Use full sample
             handled = 1;
           } else {
@@ -419,7 +419,7 @@ static int onEdit(int col, int row, CellEditAction action) {
         break;
       case 7: // Loop Start
         {
-          if (action == CellEditAction::clear) {
+          if (action == EditCellAction::clear) {
             // Set to end of sample (no loop)
             smp->sampleLoopStart = smp->sampleLength;
             handled = 1;

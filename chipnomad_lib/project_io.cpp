@@ -510,7 +510,7 @@ static void projectLoadInstruments(FILE* file, Project* p) {
   while (strncmp(line, "### Instrument", 14) == 0) {
     if (sscanf(line, "### Instrument %X", &idx) != 1) throw instrumentsError;
     consumeLine(file);
-    if (!instrumentLoadData(file, &p->instruments[idx], p)) throw instrumentsError;
+    if (!instrumentLoadData(file, p, idx)) throw instrumentsError;
     line = peekLine(file);
     if (line == NULL) throw instrumentsError;
   }
@@ -629,7 +629,7 @@ static void projectLoadAYWavetables(FILE* file, Project* p) {
   }
 }
 
-int projectLoad(Project* project, const char* path) {
+Project* loadProject(const char* path) {
   static const char* formatError = "Incorrect file format";
 
   // Ensure the FX name table + group counts are initialized before parsing FX,
@@ -643,14 +643,13 @@ int projectLoad(Project* project, const char* path) {
   FILE* file = fopen(path, "rb");
   if (file == NULL) {
     chipnomad::Error::set("Can't open file");
-    return 0;
+    return nullptr;
   }
 
   // Parse project file
+  Project* p = new Project();
   try {
     char buf[128];
-    Project p;
-    projectInit(&p);
 
     char* line = peekLine(file);
     if (line == NULL) throw formatError;
@@ -676,9 +675,9 @@ int projectLoad(Project* project, const char* path) {
     line = peekLine(file);
     if (line == NULL) throw formatError;
     if (!strncmp(line, "- Title:", 8)) {
-      if (sscanf(line, "- Title: %[^\n]", p.title) != 1) {
+      if (sscanf(line, "- Title: %[^\n]", p->title) != 1) {
         // Empty title is valid, just set it to empty string
-        p.title[0] = 0;
+        p->title[0] = 0;
       }
     } else {
       throw "Invalid title";
@@ -688,8 +687,8 @@ int projectLoad(Project* project, const char* path) {
     line = peekLine(file);
     if (line == NULL) throw formatError;
     if (!strncmp(line, "- Author:", 9)) {
-      if (sscanf(line, "- Author: %[^\n]", p.author) != 1) {
-        p.author[0] = 0;
+      if (sscanf(line, "- Author: %[^\n]", p->author) != 1) {
+        p->author[0] = 0;
       }
     }
     consumeLine(file);
@@ -697,12 +696,12 @@ int projectLoad(Project* project, const char* path) {
     chipnomad::Error::clear();
     line = peekLine(file);
     if (line == NULL) throw formatError;
-    if (sscanf(line, "- Frame rate: %f", &p.tickRate) != 1) throw formatError;
+    if (sscanf(line, "- Frame rate: %f", &p->tickRate) != 1) throw formatError;
     consumeLine(file);
 
     line = peekLine(file);
     if (line == NULL) throw formatError;
-    if (sscanf(line, "- Chips count: %d", &p.chipsCount) != 1) throw formatError;
+    if (sscanf(line, "- Chips count: %d", &p->chipsCount) != 1) throw formatError;
     consumeLine(file);
 
     // Try to read linear pitch (optional for backwards compatibility)
@@ -710,7 +709,7 @@ int projectLoad(Project* project, const char* path) {
     if (line == NULL) throw formatError;
     int tempLinearPitch;
     if (sscanf(line, "- Linear pitch: %d", &tempLinearPitch) == 1) {
-      p.linearPitch = (uint8_t)tempLinearPitch;
+      p->linearPitch = (uint8_t)tempLinearPitch;
       consumeLine(file);
       line = peekLine(file);  // Read next line for chip type
       if (line == NULL) throw formatError;
@@ -723,25 +722,25 @@ int projectLoad(Project* project, const char* path) {
     }
 
     if (!strcmp(buf, "AY8910")) {
-      p.chipType = ChipType::AY;
+      p->chipType = ChipType::AY;
     } else {
       throw "Unknown chip type";
     }
     consumeLine(file);
 
     // Chip-specific settings
-    switch (p.chipType) {
+    switch (p->chipType) {
       case ChipType::AY:
         line = peekLine(file);
         if (line == NULL) throw formatError;
-        if (sscanf(line, "- *AY8910* Clock: %d", &p.chipSetup.ay.clock) != 1) throw formatError;
+        if (sscanf(line, "- *AY8910* Clock: %d", &p->chipSetup.ay.clock) != 1) throw formatError;
         consumeLine(file);
 
         int tempIsYM;
         line = peekLine(file);
         if (line == NULL) throw formatError;
         if (sscanf(line, "- *AY8910* AY/YM: %d", &tempIsYM) != 1) throw formatError;
-        p.chipSetup.ay.isYM = (uint8_t)tempIsYM;
+        p->chipSetup.ay.isYM = (uint8_t)tempIsYM;
         consumeLine(file);
 
         line = peekLine(file);
@@ -752,11 +751,11 @@ int projectLoad(Project* project, const char* path) {
             throw "Invalid stereo mode";
           }
           if (!strcmp(buf, "ABC")) {
-            p.chipSetup.ay.stereoMode = StereoModeAY::ABC;
+            p->chipSetup.ay.stereoMode = StereoModeAY::ABC;
           } else if (!strcmp(buf, "ACB")) {
-            p.chipSetup.ay.stereoMode = StereoModeAY::ACB;
+            p->chipSetup.ay.stereoMode = StereoModeAY::ACB;
           } else if (!strcmp(buf, "BAC")) {
-            p.chipSetup.ay.stereoMode = StereoModeAY::BAC;
+            p->chipSetup.ay.stereoMode = StereoModeAY::BAC;
           } else {
             throw "Unknown stereo mode";
           }
@@ -767,54 +766,52 @@ int projectLoad(Project* project, const char* path) {
 
         line = peekLine(file);
         if (line == NULL) throw formatError;
-        if (sscanf(line, "- *AY8910* Stereo separation: %hhu", &p.chipSetup.ay.stereoSeparation) != 1) throw formatError;
+        if (sscanf(line, "- *AY8910* Stereo separation: %hhu", &p->chipSetup.ay.stereoSeparation) != 1) throw formatError;
         consumeLine(file);
 
         // PWM range (optional field for backwards compatibility)
         line = peekLine(file);
         if (line != NULL && strncmp(line, "- *AY8910* PWM range: ", 22) == 0) {
-          if (sscanf(line, "- *AY8910* PWM range: %hhu", &p.chipSetup.ay.pwmFullRange) != 1) throw formatError;
+          if (sscanf(line, "- *AY8910* PWM range: %hhu", &p->chipSetup.ay.pwmFullRange) != 1) throw formatError;
           consumeLine(file);
         } else {
           // Default to 16-step mode for old files
-          p.chipSetup.ay.pwmFullRange = 0;
+          p->chipSetup.ay.pwmFullRange = 0;
         }
         break;
       default:
         break;
     }
 
-    p.tracksCount = projectGetTotalTracks(&p);
+    p->tracksCount = p->getTotalTracksCount();
 
-    projectLoadPitchTable(file, &p);
-    projectLoadSong(file, &p);
-    projectLoadChains(file, &p);
-    projectLoadGrooves(file, &p);
-    projectLoadPhrases(file, &p);
-    projectLoadInstruments(file, &p);
-    projectLoadTables(file, &p);
-    projectLoadAYWavetables(file, &p);
-
-    *project = p;
+    projectLoadPitchTable(file, p);
+    projectLoadSong(file, p);
+    projectLoadChains(file, p);
+    projectLoadGrooves(file, p);
+    projectLoadPhrases(file, p);
+    projectLoadInstruments(file, p);
+    projectLoadTables(file, p);
+    projectLoadAYWavetables(file, p);
   } catch (const char* error) {
     chipnomad::Error::set(error);
     fclose(file);
-    return 0;
+    return nullptr;
   }
 
   fclose(file);
-  return 1;
+  return p;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // Save functions
 
-static int projectSavePitchTable(FILE* file, Project* project) {
+static int projectSavePitchTable(FILE* file, Project* p) {
   fprintf(file, "\n## Pitch table\n\n");
-  fprintf(file, "- Title: %s\n\n```\n", project->pitchTable.name);
+  fprintf(file, "- Title: %s\n\n```\n", p->pitchTable.name);
 
-  for (int c = 0; c < project->pitchTable.length; c++) {
-    fprintf(file, "%s %d\n", project->pitchTable.noteNames[c], project->pitchTable.values[c]);
+  for (int c = 0; c < p->pitchTable.length; c++) {
+    fprintf(file, "%s %d\n", p->pitchTable.noteNames[c], p->pitchTable.values[c]);
   }
 
   fprintf(file, "```\n");
@@ -822,7 +819,7 @@ static int projectSavePitchTable(FILE* file, Project* project) {
   return 1;
 }
 
-static int projectSaveSong(FILE* file, Project* project) {
+static int projectSaveSong(FILE* file, Project* p) {
   extern FXName fxNames[256];
 
   fprintf(file, "\n## Song\n\n```\n");
@@ -831,8 +828,8 @@ static int projectSaveSong(FILE* file, Project* project) {
   int songLength = PROJECT_MAX_LENGTH;
   for (songLength = PROJECT_MAX_LENGTH - 1; songLength >= 0; songLength--) {
     int isEmpty = 1;
-    for (int c = 0; c < project->tracksCount; c++) {
-      if (project->song[songLength][c] != EMPTY_VALUE_16) {
+    for (int c = 0; c < p->tracksCount; c++) {
+      if (p->song[songLength][c] != EMPTY_VALUE_16) {
         isEmpty = 0;
         break;
       }
@@ -844,9 +841,9 @@ static int projectSaveSong(FILE* file, Project* project) {
   songLength++;
 
   for (int c = 0; c < songLength; c++) {
-    for (int d = 0; d < project->tracksCount; d++) {
-      int chain = project->song[c][d];
-      int isHighlighted = project->songHighlight[c][d];
+    for (int d = 0; d < p->tracksCount; d++) {
+      int chain = p->song[c][d];
+      int isHighlighted = p->songHighlight[c][d];
       if (chain == EMPTY_VALUE_16) {
         fprintf(file, "--");
       } else {
@@ -855,7 +852,7 @@ static int projectSaveSong(FILE* file, Project* project) {
       // Add asterisk if highlighted, otherwise space (except after last column)
       if (isHighlighted) {
         fprintf(file, "*");
-      } else if (d < project->tracksCount - 1) {
+      } else if (d < p->tracksCount - 1) {
         fprintf(file, " ");
       }
     }
@@ -867,18 +864,18 @@ static int projectSaveSong(FILE* file, Project* project) {
   return 1;
 }
 
-static int projectSaveChains(FILE* file, Project* project) {
+static int projectSaveChains(FILE* file, Project* p) {
   fprintf(file, "\n## Chains\n");
 
   for (int c = 0; c < PROJECT_MAX_CHAINS; c++) {
-    if (!chainIsEmpty(project, c)) {
+    if (!p->isChainEmpty(c)) {
       fprintf(file, "\n### Chain %X\n\n```\n", c);
       for (int d = 0; d < 16; d++) {
-        int phrase = project->chains[c].rows[d].phrase;
+        int phrase = p->chains[c].rows[d].phrase;
         if (phrase == EMPTY_VALUE_16) {
-          fprintf(file, "--- %s\n", byteToHex(project->chains[c].rows[d].transpose));
+          fprintf(file, "--- %s\n", byteToHex(p->chains[c].rows[d].transpose));
         } else {
-          fprintf(file, "%03X %s\n", project->chains[c].rows[d].phrase, byteToHex(project->chains[c].rows[d].transpose));
+          fprintf(file, "%03X %s\n", p->chains[c].rows[d].phrase, byteToHex(p->chains[c].rows[d].transpose));
         }
       }
       fprintf(file, "```\n");
@@ -888,14 +885,14 @@ static int projectSaveChains(FILE* file, Project* project) {
   return 1;
 }
 
-static int projectSaveGrooves(FILE* file, Project* project) {
+static int projectSaveGrooves(FILE* file, Project* p) {
   fprintf(file, "\n## Grooves\n");
 
   for (int c = 0; c < PROJECT_MAX_GROOVES; c++) {
-    if (!grooveIsEmpty(project, c)) {
+    if (!p->isGrooveEmpty(c)) {
       fprintf(file, "\n### Groove %X\n\n```\n", c);
       for (int d = 0; d < 16; d++) {
-        fprintf(file, "%s\n", byteToHexOrEmpty(project->grooves[c].speed[d]));
+        fprintf(file, "%s\n", byteToHexOrEmpty(p->grooves[c].speed[d]));
       }
       fprintf(file, "```\n");
     }
@@ -904,25 +901,25 @@ static int projectSaveGrooves(FILE* file, Project* project) {
   return 1;
 }
 
-static int projectSavePhrases(FILE* file, Project* project) {
+static int projectSavePhrases(FILE* file, Project* p) {
   extern FXName fxNames[256];
 
   fprintf(file, "\n## Phrases\n\n");
 
   for (int c = 0; c < PROJECT_MAX_PHRASES; c++) {
-    if (!phraseIsEmpty(project, c)) {
+    if (!p->isPhraseEmpty(c)) {
       fprintf(file, "### Phrase %X\n\n```\n", c);
       for (int d = 0; d < 16; d++) {
         fprintf(file, "%s %s %s %s %s %s %s %s %s\n",
-          noteName(project, project->phrases[c].rows[d].note),
-          byteToHexOrEmpty(project->phrases[c].rows[d].instrument),
-          byteToHexOrEmpty(project->phrases[c].rows[d].volume),
-          fxNames[project->phrases[c].rows[d].fx[0][0]].name,
-          byteToHex(project->phrases[c].rows[d].fx[0][1]),
-          fxNames[project->phrases[c].rows[d].fx[1][0]].name,
-          byteToHex(project->phrases[c].rows[d].fx[1][1]),
-          fxNames[project->phrases[c].rows[d].fx[2][0]].name,
-          byteToHex(project->phrases[c].rows[d].fx[2][1])
+          p->noteName(p->phrases[c].rows[d].note),
+          byteToHexOrEmpty(p->phrases[c].rows[d].instrument),
+          byteToHexOrEmpty(p->phrases[c].rows[d].volume),
+          fxNames[p->phrases[c].rows[d].fx[0][0]].name,
+          byteToHex(p->phrases[c].rows[d].fx[0][1]),
+          fxNames[p->phrases[c].rows[d].fx[1][0]].name,
+          byteToHex(p->phrases[c].rows[d].fx[1][1]),
+          fxNames[p->phrases[c].rows[d].fx[2][0]].name,
+          byteToHex(p->phrases[c].rows[d].fx[2][1])
         );
       }
       fprintf(file, "```\n");
@@ -950,31 +947,31 @@ int saveTable(FILE* file, int idx, Table* table) {
   return 1;
 }
 
-static int projectSaveInstruments(FILE* file, Project* project) {
+static int projectSaveInstruments(FILE* file, Project* p) {
   fprintf(file, "\n## Instruments\n");
   for (int c = 0; c < PROJECT_MAX_INSTRUMENTS; c++) {
-    if (!instrumentIsEmpty(project, c)) {
-      instrumentSaveData(file, c, &project->instruments[c]);
+    if (!p->isInstrumentEmpty(c)) {
+      instrumentSaveData(file, p, c);
     }
   }
   return 1;
 }
 
-static int projectSaveTables(FILE* file, Project* project) {
+static int projectSaveTables(FILE* file, Project* p) {
   fprintf(file, "\n## Tables\n");
   for (int c = 0; c < PROJECT_MAX_TABLES; c++) {
-    if (!tableIsEmpty(project, c)) {
-      saveTable(file, c, &project->tables[c]);
+    if (!p->isTableEmpty(c)) {
+      saveTable(file, c, &p->tables[c]);
     }
   }
   return 1;
 }
 
-static int projectSaveAYWavetables(FILE* file, Project* project) {
+static int projectSaveAYWavetables(FILE* file, Project* p) {
   // Count non-empty wavetables
   int count = 0;
   for (int i = 0; i < 256; i++) {
-    if (!wavetableIsEmpty(project, i)) count++;
+    if (!p->isWavetableEmpty(i)) count++;
   }
 
   // Only write section if there are non-empty wavetables
@@ -983,11 +980,11 @@ static int projectSaveAYWavetables(FILE* file, Project* project) {
   fprintf(file, "\n## AY Wavetables\n\n");
 
   for (int i = 0; i < 256; i++) {
-    if (!wavetableIsEmpty(project, i)) {
+    if (!p->isWavetableEmpty(i)) {
       // Write: "XX 0123456789ABCDEF0123456789ABCDEF"
       fprintf(file, "%02X ", i);
       for (int j = 0; j < 32; j++) {
-        fprintf(file, "%X", project->ayWavetables[i][j] & 0x0F);
+        fprintf(file, "%X", p->ayWavetables[i][j] & 0x0F);
       }
       fprintf(file, "\n");
     }
@@ -996,22 +993,22 @@ static int projectSaveAYWavetables(FILE* file, Project* project) {
   return 1;
 }
 
-static int projectSaveInternal(FILE* file, Project* project) {
+static bool projectSaveInternal(FILE* file, Project* p) {
   fprintf(file, "# ChipNomad Tracker Module 2.0\n\n");
 
-  fprintf(file, "- Title: %s\n", project->title);
-  fprintf(file, "- Author: %s\n", project->author);
+  fprintf(file, "- Title: %s\n", p->title);
+  fprintf(file, "- Author: %s\n", p->author);
 
-  fprintf(file, "- Frame rate: %f\n", project->tickRate);
-  fprintf(file, "- Chips count: %d\n", project->chipsCount);
-  fprintf(file, "- Linear pitch: %d\n", project->linearPitch);
-  fprintf(file, "- Chip type: %s\n", chipNames[static_cast<int>(project->chipType)]);
+  fprintf(file, "- Frame rate: %f\n", p->tickRate);
+  fprintf(file, "- Chips count: %d\n", p->chipsCount);
+  fprintf(file, "- Linear pitch: %d\n", p->linearPitch);
+  fprintf(file, "- Chip type: %s\n", chipNames[static_cast<int>(p->chipType)]);
 
-  switch (project->chipType) {
+  switch (p->chipType) {
     case ChipType::AY:
-      fprintf(file, "- *AY8910* Clock: %d\n", project->chipSetup.ay.clock);
-      fprintf(file, "- *AY8910* AY/YM: %d\n", project->chipSetup.ay.isYM);
-      switch (project->chipSetup.ay.stereoMode) {
+      fprintf(file, "- *AY8910* Clock: %d\n", p->chipSetup.ay.clock);
+      fprintf(file, "- *AY8910* AY/YM: %d\n", p->chipSetup.ay.isYM);
+      switch (p->chipSetup.ay.stereoMode) {
       case StereoModeAY::ABC:
         fprintf(file, "- *AY8910* Stereo: ABC\n");
         break;
@@ -1022,26 +1019,26 @@ static int projectSaveInternal(FILE* file, Project* project) {
         fprintf(file, "- *AY8910* Stereo: BAC\n");
         break;
       }
-      fprintf(file, "- *AY8910* Stereo separation: %d\n", project->chipSetup.ay.stereoSeparation);
-      fprintf(file, "- *AY8910* PWM range: %d\n", project->chipSetup.ay.pwmFullRange);
+      fprintf(file, "- *AY8910* Stereo separation: %d\n", p->chipSetup.ay.stereoSeparation);
+      fprintf(file, "- *AY8910* PWM range: %d\n", p->chipSetup.ay.pwmFullRange);
       break;
     default:
       break;
   }
 
-  projectSavePitchTable(file, project);
-  projectSaveSong(file, project);
-  projectSaveChains(file, project);
-  projectSaveGrooves(file, project);
-  projectSavePhrases(file, project);
-  projectSaveInstruments(file, project);
-  projectSaveTables(file, project);
-  projectSaveAYWavetables(file, project);
+  projectSavePitchTable(file, p);
+  projectSaveSong(file, p);
+  projectSaveChains(file, p);
+  projectSaveGrooves(file, p);
+  projectSavePhrases(file, p);
+  projectSaveInstruments(file, p);
+  projectSaveTables(file, p);
+  projectSaveAYWavetables(file, p);
   fprintf(file, "EOF\n");
-  return 1;
+  return true;
 }
 
-int projectSave(Project* p, const char* path) {
+bool saveProject(Project* p, const char* path) {
   // Ensure FX names are initialized before serializing FX columns. Idempotent.
   fillFXNames();
 
@@ -1050,7 +1047,7 @@ int projectSave(Project* p, const char* path) {
   FILE* file = fopen(path, "wb");
   if (file == NULL) return 0;
 
-  int result = projectSaveInternal(file, p);
+  bool result = projectSaveInternal(file, p);
   fclose(file);
   return result;
 }
@@ -1058,24 +1055,24 @@ int projectSave(Project* p, const char* path) {
 ///////////////////////////////////////////////////////////////////////////////
 // Instrument file I/O
 
-int instrumentSave(Project* project, const char* path, int instrumentIdx) {
+bool saveInstrument(Project* p, const char* path, int instrumentIdx) {
   chipnomad::Error::clear();
 
   FILE* file = fopen(path, "wb");
   if (file == NULL) {
     chipnomad::Error::set("Can't open file");
-    return 0;
+    return false;
   }
 
   fprintf(file, "# ChipNomad Instrument 2.0\n\n");
-  instrumentSaveData(file, 0, &project->instruments[instrumentIdx]);
-  saveTable(file, 0, &project->tables[instrumentIdx]);
+  instrumentSaveData(file, p, instrumentIdx);
+  saveTable(file, 0, &p->tables[instrumentIdx]);
 
   fclose(file);
-  return 1;
+  return true;
 }
 
-static void instrumentLoadInternal(FILE* file, Project* project, int instrumentIdx) {
+static void instrumentLoadInternal(FILE* file, Project* p, int instrumentIdx) {
   const char* instrumentError = "Incorrect instrument file format";
 
   char* line = peekLine(file);
@@ -1103,24 +1100,24 @@ static void instrumentLoadInternal(FILE* file, Project* project, int instrumentI
   if (strncmp(line, "### Instrument", 14)) throw instrumentError;
   consumeLine(file);
 
-  if (!instrumentLoadData(file, &project->instruments[instrumentIdx], project)) throw instrumentError;
+  if (!instrumentLoadData(file, p, instrumentIdx)) throw instrumentError;
   // instrumentLoadData leaves the next section header in peek buffer
   chipnomad::Error::set("Invalid table data");
   line = peekLine(file);
   if (line == NULL) throw "Expected table section after instrument data";
   if (strncmp(line, "### Table", 9)) throw "Expected table section after instrument data";
   consumeLine(file);
-  loadTable(file, &project->tables[instrumentIdx], project);
+  loadTable(file, &p->tables[instrumentIdx], p);
 }
 
-int instrumentLoad(Project* project, const char* path, int instrumentIdx) {
+bool loadInstrument(Project* project, const char* path, int instrumentIdx) {
   resetPeekConsume();  // Ensure clean state
   chipnomad::Error::clear();
 
   FILE* file = fopen(path, "rb");
   if (file == NULL) {
     chipnomad::Error::set("Can't open file");
-    return 0;
+    return false;
   }
 
   try {
@@ -1128,10 +1125,10 @@ int instrumentLoad(Project* project, const char* path, int instrumentIdx) {
   } catch (const char* error) {
     chipnomad::Error::set(error);
     fclose(file);
-    return 0;
+    return false;
   }
   fclose(file);
-  return 1;
+  return true;
 }
 
 };

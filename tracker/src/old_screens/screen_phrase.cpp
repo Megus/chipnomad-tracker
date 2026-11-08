@@ -24,7 +24,7 @@ static void drawRowHeader(int row, CellState state);
 static void drawColHeader(int col, CellState state);
 static void drawCursor(int col, int row);
 static void drawSelection(int col1, int row1, int col2, int row2);
-static int onEdit(int col, int row, CellEditAction action);
+static int onEdit(int col, int row, EditCellAction action);
 static LoopRange getLoopRange(void);
 
 static int columnX[] = {3, 7, 10, 13, 16, 19, 22, 25, 28, 31};
@@ -207,24 +207,24 @@ static void draw(void) {
 // Input handling
 //
 
-static int editCell(int col, int row, CellEditAction action) {
+static int editCell(int col, int row, EditCellAction action) {
   int handled = 0;
   uint8_t maxVolume = 15;
 
   if (col == 0) {
     // Note
-    if (action == CellEditAction::clear && phraseRows[row].note == EMPTY_VALUE_8) {
+    if (action == EditCellAction::clear && phraseRows[row].note == EMPTY_VALUE_8) {
       // Insert OFF
       phraseRows[row].note = NOTE_OFF;
       phraseRows[row].instrument = EMPTY_VALUE_8;
       phraseRows[row].volume = EMPTY_VALUE_8;
       handled = 1;
-    } else if (action == CellEditAction::clear) {
+    } else if (action == EditCellAction::clear) {
       // Clear note
       handled = edit8withLimit(action, &phraseRows[row].note, &lastNote, chipnomadState->project.pitchTable.octaveSize, chipnomadState->project.pitchTable.length - 1);
       edit8withLimit(action, &phraseRows[row].instrument, &lastInstrument, 16, PROJECT_MAX_INSTRUMENTS - 1);
       edit8withLimit(action, &phraseRows[row].volume, &lastVolume, 16, maxVolume);
-    } else if (action == CellEditAction::tap && phraseRows[row].note == EMPTY_VALUE_8) {
+    } else if (action == EditCellAction::tap && phraseRows[row].note == EMPTY_VALUE_8) {
       phraseRows[row].note = lastNote;
       phraseRows[row].instrument = lastInstrument;
       phraseRows[row].volume = lastVolume;
@@ -242,7 +242,7 @@ static int editCell(int col, int row, CellEditAction action) {
     }
   } else if (col == 1) {
     // Instrument
-    if (action == CellEditAction::doubleTap) {
+    if (action == EditCellAction::doubleTap) {
       uint8_t nextInstrument = findEmptyInstrument(&chipnomadState->project, 0);
       if (nextInstrument != EMPTY_VALUE_8) {
         phraseRows[row].instrument = nextInstrument;
@@ -294,22 +294,22 @@ static int editCell(int col, int row, CellEditAction action) {
   return handled;
 }
 
-static int onEdit(int col, int row, CellEditAction action) {
+static int onEdit(int col, int row, EditCellAction action) {
   int handled = 0;
 
   int startCol, startRow, endCol, endRow;
   getSelectionRange(&screen, &startCol, &startRow, &endCol, &endRow);
 
-  if (action == CellEditAction::switchSelection) {
+  if (action == EditCellAction::switchSelection) {
     return switchPhraseSelectionMode(&screen);
-  } else if (action == CellEditAction::multiIncrease || action == CellEditAction::multiDecrease) {
+  } else if (action == EditCellAction::multiIncrease || action == EditCellAction::multiDecrease) {
     if (!isSingleColumnSelection(&screen)) return 0;
     handled = applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell);
-  } else if (action == CellEditAction::multiIncreaseBig || action == CellEditAction::multiDecreaseBig) {
+  } else if (action == EditCellAction::multiIncreaseBig || action == EditCellAction::multiDecreaseBig) {
     // Check if full width selection (all columns)
     if (startCol == 0 && endCol == 8) {
       // Rotation mode
-      int direction = (action == CellEditAction::multiIncreaseBig) ? -1 : 1;
+      int direction = (action == EditCellAction::multiIncreaseBig) ? -1 : 1;
       applyPhraseRotation(phraseIdx, startRow, endRow, direction);
       fullRedraw();
       handled = 1;
@@ -327,13 +327,13 @@ static int onEdit(int col, int row, CellEditAction action) {
         handled = applyMultiEdit(startCol, startRow, endCol, endRow, action, editCell);
       }
     }
-  } else if (action == CellEditAction::copy) {
+  } else if (action == EditCellAction::copy) {
     copyPhrase(phraseIdx, startCol, startRow, endCol, endRow, 0);
     handled = 1;
-  } else if (action == CellEditAction::cut) {
+  } else if (action == EditCellAction::cut) {
     copyPhrase(phraseIdx, startCol, startRow, endCol, endRow, 1);
     handled = 1;
-  } else if (action == CellEditAction::paste) {
+  } else if (action == EditCellAction::paste) {
     const int rowsPasted = pastePhrase(phraseIdx, col, row);
     if (rowsPasted > 0) {
       // Move cursor below pasted data, or to last row if paste extends to end
@@ -343,7 +343,7 @@ static int onEdit(int col, int row, CellEditAction action) {
     }
     fullRedraw();
     handled = 1;
-  } else if (action == CellEditAction::shallowClone) {
+  } else if (action == EditCellAction::shallowClone) {
     // Handle instrument column cloning
     if (startCol == 1 && endCol == 1) {
       int distinctCount = cloneInstrumentsInPhrase(phraseIdx, startRow, endRow);

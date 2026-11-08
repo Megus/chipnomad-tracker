@@ -18,6 +18,7 @@ enum class EventType {
   switchScreen,
   pushScreen,
   popScreen,
+  screenOutput,
   showMessage,
 };
 
@@ -41,7 +42,7 @@ enum class ScreenEnum : int {
   confirm,
   fileBrowser,
   createFolder,
-  charEntry,
+  editCharacter,
 };
 
 // Base struct for screen input and output. Most screens only need an int value
@@ -50,6 +51,45 @@ struct ScreenData {
   ScreenData(int intValue): intValue(intValue) {};
   virtual ~ScreenData() = default;
   int intValue;
+};
+
+// Confirmation screen
+struct ConfirmScreenInput : ScreenData {
+  ConfirmScreenInput(const char* title, int confirmValue, int cancelValue): ScreenData(confirmValue), title(title), cancelValue(cancelValue) {};
+  const char* title;
+  int cancelValue;
+};
+
+// File browser
+class FilePreviewer {
+  public:
+    virtual bool startFilePreview(const char* path) = 0;
+    virtual bool stopFilePreview() = 0;
+};
+
+struct FileBrowserInput : ScreenData {
+  FileBrowserInput(bool isFolderMode, const char* title, const char* startPath, const char* extensions, FilePreviewer* previewer, const char* filename):
+    isFolderMode(isFolderMode), title(title), startPath(startPath), extensions(extensions), previewer(previewer), filename(filename) {};
+  bool isFolderMode;
+  const char* title;
+  const char* startPath;
+  const char* extensions;
+  FilePreviewer* previewer;
+  const char* filename;
+};
+
+struct FileBrowserOutput : ScreenData {
+  FileBrowserOutput(bool isFolder, const char* path): isFolder(isFolder), path(path) {};
+  bool isFolder;
+  const char* path;
+};
+
+//
+struct EditCharacterInput : ScreenData {
+  EditCharacterInput(char* str, int charIdx, int maxLength): str(str), charIdx(charIdx), maxLength(maxLength) {};
+  char* str;
+  int charIdx;
+  int maxLength;
 };
 
 // Base event struct
@@ -104,6 +144,7 @@ class EventHandler {
 class EventDispatcher {
   public:
     virtual void dispatch(Event e) = 0;
+    virtual void dispatchInstant(Event e) = 0;
 
     // Convenience functions for all events
 
@@ -120,6 +161,7 @@ class EventDispatcher {
     void redrawScreen();
     void switchScreen(ScreenEnum screen);
     void switchScreen(ScreenEnum screen, const ScreenData& input);
+    void pushScreen(ScreenEnum screen);
     void pushScreen(ScreenEnum screen, const ScreenData& input);
     void popScreen(ScreenEnum screen, const ScreenData& output);
     void showInstantMessage(const char* format, ...);

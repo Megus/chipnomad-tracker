@@ -1,88 +1,11 @@
 #include "project_utils.h"
-#include "pitch_table_utils.h"
 #include <string.h>
-
-void projectInitAY(chipnomad::Project& p) {
-  using namespace chipnomad;
-  projectInit(&p);
-
-  p.linearPitch = 1; // Default to linear pitch table
-  p.tickRate = 50;
-  p.chipType = ChipType::AY;
-  p.chipsCount = 1;
-  p.chipSetup.ay = {
-    .clock = 1773400,
-    .isYM = 0,
-    .stereoMode = StereoModeAY::ABC,
-    .stereoSeparation = 50,
-    .pwmFullRange = 0, // Default to hardware-accurate 16 steps
-  };
-
-  p.tracksCount = projectGetTotalTracks(&p);
-
-  calculateLinearPitchTable12TET(p); // Linear pitch table
-  //calculatePitchTableAY(project); // AY period pitch table
-}
-
-// Does chain have notes?
-int8_t chainHasNotes(chipnomad::Project& p, int chain) {
-  int8_t v = 0;
-  for (int c = 0; c < 16; c++) {
-    int phrase = p.chains[chain].rows[c].phrase;
-    if (phrase != EMPTY_VALUE_16) v = phraseHasNotes(p, phrase);
-    if (v == 1) break;
-  }
-
-  return v;
-}
-
-// Does phrase have notes?
-int8_t phraseHasNotes(chipnomad::Project& p, int phrase) {
-  int8_t v = 0;
-  for (int c = 0; c < 16; c++) {
-    if (p.phrases[phrase].rows[c].note < PROJECT_MAX_PITCHES) {
-      v = 1;
-      break;
-    }
-  }
-
-  return v;
-}
-
-// Instrument name
-const char* instrumentName(chipnomad::Project& p, uint8_t instrument) {
-  using namespace chipnomad;
-  if (p.instruments[instrument].type == InstrumentType::none) return "None";
-  if (strlen(p.instruments[instrument].name) == 0) {
-    return instrumentTypeName(p.instruments[instrument].type);
-  } else {
-    return p.instruments[instrument].name;
-  }
-}
-
-// Instrument type name
-const char* instrumentTypeName(chipnomad::InstrumentType type) {
-  using namespace chipnomad;
-  switch (type) {
-    case InstrumentType::AY1:
-      return "AY Classic";
-    case InstrumentType::AY2:
-      return "AY Plus";
-    case InstrumentType::AYSample:
-      return "AY Sample";
-    case InstrumentType::none:
-      return "None";
-    default:
-      return "";
-  }
-}
 
 // Get first note used with an instrument in the project
 uint8_t instrumentFirstNote(chipnomad::Project& p, uint8_t instrument) {
-  using namespace chipnomad;
   // Search through all phrases for first use of this instrument
   for (int c = 0; c < PROJECT_MAX_PHRASES; c++) {
-    if (phraseIsEmpty(&p, c)) continue;
+    if (p.isPhraseEmpty(c)) continue;
     for (int row = 0; row < 16; row++) {
       if (p.phrases[c].rows[row].instrument == instrument && p.phrases[c].rows[row].note < p.pitchTable.length) {
         return p.phrases[c].rows[row].note;
@@ -161,7 +84,7 @@ static int instrumentIsUsedInPhrases(chipnomad::Project& p, int instrumentIdx) {
 // Find empty chain slot (empty and not used in project)
 int findEmptyChain(chipnomad::Project& p, int start) {
   for (int c = start; c < PROJECT_MAX_CHAINS; c++) {
-    if (chipnomad::chainIsEmpty(&p, c) && !chainIsUsedInSong(p, c)) return c;
+    if (p.isChainEmpty(c) && !chainIsUsedInSong(p, c)) return c;
   }
   return EMPTY_VALUE_16;
 }
@@ -169,7 +92,7 @@ int findEmptyChain(chipnomad::Project& p, int start) {
 // Find empty phrase slot (empty and not used in project)
 int findEmptyPhrase(chipnomad::Project& p, int start) {
   for (int c = start; c < PROJECT_MAX_PHRASES; c++) {
-    if (chipnomad::phraseIsEmpty(&p, c) && !phraseIsUsedInChains(p, c)) return c;
+    if (p.isPhraseEmpty(c) && !phraseIsUsedInChains(p, c)) return c;
   }
   return EMPTY_VALUE_16;
 }
@@ -189,12 +112,12 @@ int cleanupUnusedPhrases(chipnomad::Project& p) {
 
   for (int c = 0; c < PROJECT_MAX_PHRASES; c++) {
     // Skip if phrase is already empty
-    if (phraseIsEmpty(&p, c)) continue;
+    if (p.isPhraseEmpty(c)) continue;
 
     // Check if phrase is used in any chain
     if (!phraseIsUsedInChains(p, c)) {
       // Clear the unused phrase properly
-      chipnomad::phraseClear(&p.phrases[c]);
+      p.clearPhrase(c);
       cleanedCount++;
     }
   }
@@ -208,12 +131,12 @@ int cleanupUnusedChains(chipnomad::Project& p) {
 
   for (int c = 0; c < PROJECT_MAX_CHAINS; c++) {
     // Skip if chain is already empty
-    if (chipnomad::chainIsEmpty(&p, c)) continue;
+    if (p.isChainEmpty(c)) continue;
 
     // Check if chain is used in the song
     if (!chainIsUsedInSong(p, c)) {
       // Clear the unused chain properly
-      chipnomad::chainClear(&p.chains[c]);
+      p.clearChain(c);
       cleanedCount++;
     }
   }
@@ -223,18 +146,17 @@ int cleanupUnusedChains(chipnomad::Project& p) {
 
 // Cleanup unused instruments - returns count of cleaned instruments
 int cleanupUnusedInstruments(chipnomad::Project& p) {
-  using namespace chipnomad;
   int cleanedCount = 0;
 
   for (int c = 0; c < PROJECT_MAX_INSTRUMENTS; c++) {
     // Skip if instrument is already empty
-    if (instrumentIsEmpty(&p, c)) continue;
+    if (p.isInstrumentEmpty(c)) continue;
 
     // Check if instrument is used in any phrase
     if (!instrumentIsUsedInPhrases(p, c)) {
       // Clear the unused instrument and its table properly
-      instrumentClear(&p.instruments[c]);
-      tableClear(&p.tables[c]);
+      p.clearInstrument(c);
+      p.clearTable(c);
       cleanedCount++;
     }
   }
@@ -255,24 +177,23 @@ static void updateChainReferences(chipnomad::Project& p, int oldChain, int newCh
 
 // Remove duplicate chains - returns count of removed duplicates
 int removeDuplicateChains(chipnomad::Project& p) {
-  using namespace chipnomad;
   int removedCount = 0;
 
   for (int c = 0; c < PROJECT_MAX_CHAINS - 1; c++) {
     // Skip if chain is empty
-    if (chainIsEmpty(&p, c)) continue;
+    if (p.isChainEmpty(c)) continue;
 
     for (int d = c + 1; d < PROJECT_MAX_CHAINS; d++) {
       // Skip if chain is empty
-      if (chainIsEmpty(&p, d)) continue;
+      if (p.isChainEmpty(d)) continue;
 
       // Compare chains using memcmp
-      if (memcmp(&p.chains[c], &p.chains[d], sizeof(Chain)) == 0) {
+      if (memcmp(&p.chains[c], &p.chains[d], sizeof(chipnomad::Chain)) == 0) {
         // Update all references to chain j to point to chain i
         updateChainReferences(p, d, c);
 
         // Clear the duplicate chain
-        chainClear(&p.chains[d]);
+        p.clearChain(d);
         removedCount++;
       }
     }
@@ -294,24 +215,23 @@ static void updatePhraseReferences(chipnomad::Project& p, int oldPhrase, int new
 
 // Remove duplicate phrases - returns count of removed duplicates
 int removeDuplicatePhrases(chipnomad::Project& p) {
-  using namespace chipnomad;
   int removedCount = 0;
 
   for (int c = 0; c < PROJECT_MAX_PHRASES - 1; c++) {
     // Skip if phrase is empty
-    if (phraseIsEmpty(&p, c)) continue;
+    if (p.isPhraseEmpty(c)) continue;
 
     for (int d = c + 1; d < PROJECT_MAX_PHRASES; d++) {
       // Skip if phrase is empty
-      if (phraseIsEmpty(&p, d)) continue;
+      if (p.isPhraseEmpty(d)) continue;
 
       // Compare phrases using memcmp
-      if (memcmp(&p.phrases[c], &p.phrases[d], sizeof(Phrase)) == 0) {
+      if (memcmp(&p.phrases[c], &p.phrases[d], sizeof(chipnomad::Phrase)) == 0) {
         // Update all references to phrase j to point to phrase i
         updatePhraseReferences(p, d, c);
 
         // Clear the duplicate phrase
-        phraseClear(&p.phrases[d]);
+        p.clearPhrase(d);
         removedCount++;
       }
     }
@@ -358,17 +278,17 @@ int cleanupUnusedTables(chipnomad::Project& p) {
 
   for (int c = 0; c < PROJECT_MAX_TABLES; c++) {
     // Skip if table is already empty
-    if (tableIsEmpty(&p, c)) continue;
+    if (p.isTableEmpty(c)) continue;
 
     // For 0x00-0x7f range: table is used if corresponding instrument is not None
-    if (c < PROJECT_MAX_INSTRUMENTS && !instrumentIsEmpty(&p, c)) {
+    if (c < PROJECT_MAX_INSTRUMENTS && !p.isInstrumentEmpty(c)) {
       continue; // Table is used as instrument table
     }
 
     // For full range: check if table is used in TBL/TBX commands
     if (!tableIsUsedInCommands(p, c)) {
       // Clear the unused table properly
-      tableClear(&p.tables[c]);
+      p.clearTable(c);
       cleanedCount++;
     }
   }

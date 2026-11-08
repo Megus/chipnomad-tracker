@@ -22,6 +22,7 @@ class TrackerApp: public App, public EventDispatcher {
     void draw() override;
     void onMainLoopEvent(const MainLoopEvent& event) override;
     void dispatch(Event e) override;
+    void dispatchInstant(Event e) override;
 
   protected:
     static constexpr int eventQueueMaxLength = 16; // Max number of events in the queue

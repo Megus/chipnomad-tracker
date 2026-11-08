@@ -42,7 +42,7 @@ chipnomad::LoopRange ScreenSong::getLoopRange() {
 }
 
 void ScreenSong::draw() {
-  for (int c = 0; c < state.project.tracksCount; c++) {
+  for (int c = 0; c < state.project->tracksCount; c++) {
     gfx.clearRect(2 + c * 3, 3, 1, 16);
     if (audio.engine.player.tracks[c].songRow != EMPTY_VALUE_16) {
       int row = audio.engine.player.tracks[c].songRow - topRow;
@@ -91,13 +91,13 @@ void ScreenSong::drawColHeader(int col, CellState state) {
 void ScreenSong::drawCell(int col, int row, CellState cellState) {
   if (!isRowVisible(row)) return;
 
-  int chain = state.project.song[row][col];
-  int isHighlighted = state.project.songHighlight[row][col];
+  int chain = state.project->song[row][col];
+  int isHighlighted = state.project->songHighlight[row][col];
 
   if (isHighlighted) {
     gfx.setFgColor(theme().textTitles);
   } else {
-    setCellColor(cellState, chain == EMPTY_VALUE_16, chain != EMPTY_VALUE_16 && chainHasNotes(state.project, chain));
+    setCellColor(cellState, chain == EMPTY_VALUE_16, chain != EMPTY_VALUE_16 && state.project->chainHasNotes(chain));
   }
   gfx.print(3 + col * 3, 3 + row - topRow, chain == EMPTY_VALUE_16 ? "--" : chipnomad::byteToHex(chain));
 }
@@ -132,8 +132,6 @@ bool ScreenSong::adjustVerticalScroll(bool pageJump) {
   return needsRedraw;
 }
 
-
-
 bool ScreenSong::onEdit(int col, int row, EditCellAction action) {
   bool handled = 0;
   Rect selection = getSelectionRange();
@@ -144,7 +142,7 @@ bool ScreenSong::onEdit(int col, int row, EditCellAction action) {
     if (mode != ScreenMode::select) return false;
 
     if (action == EditCellAction::multiDecreaseBig) {
-      handled = applySongMoveDown(state.project, selection);
+      handled = applySongMoveDown(*state.project, selection);
       if (handled) {
         selectStartRow++;
         cursorRow++;
@@ -154,7 +152,7 @@ bool ScreenSong::onEdit(int col, int row, EditCellAction action) {
         }
       }
     } else {
-      handled = applySongMoveUp(state.project, selection);
+      handled = applySongMoveUp(*state.project, selection);
       if (handled) {
         selectStartRow--;
         cursorRow--;
@@ -185,13 +183,13 @@ bool ScreenSong::onEdit(int col, int row, EditCellAction action) {
   } else if (applyMultiEdit(selection, action, this)) {
     handled = true;
   } else if (action == EditCellAction::copy) {
-    clipboard.copySong(state.project, selection, false);
+    clipboard.copySong(*state.project, selection, false);
     handled = true;
   } else if (action == EditCellAction::cut) {
-    clipboard.copySong(state.project, selection, true);
+    clipboard.copySong(*state.project, selection, true);
     handled = true;
   } else if (action == EditCellAction::paste) {
-    const int rowsPasted = clipboard.pasteSong(state.project, col, row);
+    const int rowsPasted = clipboard.pasteSong(*state.project, col, row);
     if (rowsPasted > 0) {
       // Move cursor below pasted data, or to last row if paste extends to end
       int newRow = row + rowsPasted;
@@ -209,10 +207,9 @@ bool ScreenSong::onEdit(int col, int row, EditCellAction action) {
 }
 
 bool ScreenSong::onNavigationInput(const InputEvent& e) {
-  // Fix all bare returns in this function
   // Go to Chain screen
   if (e.keys == (keyRight | keyShift)) {
-    int chain = state.project.song[cursorRow][cursorCol];
+    int chain = state.project->song[cursorRow][cursorCol];
 
     if (chain == EMPTY_VALUE_16) {
       dispatcher.showInstantMessage("Enter a chain");
@@ -239,11 +236,11 @@ bool ScreenSong::onNavigationInput(const InputEvent& e) {
 
 bool ScreenSong::editCell(int col, int row, EditCellAction action) {
   if (action == EditCellAction::doubleTap) {
-    int current = state.project.song[row][col];
+    int current = state.project->song[row][col];
     if (current != EMPTY_VALUE_16) {
-      int nextEmpty = findEmptyChain(state.project, current + 1);
+      int nextEmpty = findEmptyChain(*state.project, current + 1);
       if (nextEmpty != EMPTY_VALUE_16) {
-        state.project.song[row][col] = nextEmpty;
+        state.project->song[row][col] = nextEmpty;
         lastChainValue = nextEmpty;
       } else {
         dispatcher.showTimedMessage("No free chains");
@@ -251,44 +248,46 @@ bool ScreenSong::editCell(int col, int row, EditCellAction action) {
     }
     return 1;
   } else if (action == EditCellAction::clear) {
-    if (state.project.song[row][col] != EMPTY_VALUE_16) {
+    if (state.project->song[row][col] != EMPTY_VALUE_16) {
       // Clear the value
-      state.project.song[row][col] = EMPTY_VALUE_16;
+      state.project->song[row][col] = EMPTY_VALUE_16;
       return 1;
     } else {
       // Value is already empty, shift column up
-      shiftSongColumnUp(state.project, col, row);
+      shiftSongColumnUp(*state.project, col, row);
       fullRedraw();
       return 1;
     }
   } else if (action == EditCellAction::shallowClone) {
-    int current = state.project.song[row][col];
+    int current = state.project->song[row][col];
     if (current != EMPTY_VALUE_16) {
-      int cloned = clipboard.cloneChainToNext(state.project, current);
+      int cloned = clipboard.cloneChainToNext(*state.project, current);
       if (cloned != EMPTY_VALUE_16) {
-        state.project.song[row][col] = cloned;
+        state.project->song[row][col] = cloned;
         lastChainValue = cloned;
         return 1;
       }
     }
     return 0;
   } else if (action == EditCellAction::deepClone) {
-    int current = state.project.song[row][col];
+    int current = state.project->song[row][col];
     if (current != EMPTY_VALUE_16) {
       // Deep clone the phrases in the existing chain (don't create a new chain)
-      if (clipboard.deepCloneChain(state.project, current)) {
+      if (clipboard.deepCloneChain(*state.project, current)) {
         return 1;
       }
     }
     return 0;
   }
-  return edit16withLimit(action, &state.project.song[row][col], &lastChainValue, 16, PROJECT_MAX_CHAINS - 1);
+  return edit16withLimit(action, &state.project->song[row][col], &lastChainValue, 16, PROJECT_MAX_CHAINS - 1);
 }
 
 bool ScreenSong::onEvent(const Event& event) {
-  bool handled = false;
+  bool handled = commonEventHandler(event);
+  state.songRow = cursorRow; // Sync song row with the cursor
+  if (handled) return true;
+  if (event.type != EventType::input) return false;
 
-  if (event.type != EventType::input) return false; // This screen only responds to input events
   const InputEvent& e = dynamic_cast<const InputEvent&>(event);
 
   // Only handle mute/solo when not in selection mode
@@ -298,7 +297,7 @@ bool ScreenSong::onEvent(const Event& event) {
         if (e.isKeyDown && e.keys == keyOpt) {
           if (e.tapCount == 3) {
             // Toggle highlight on triple-tap Opt
-            state.project.songHighlight[cursorRow][cursorCol] ^= 1;
+            state.project->songHighlight[cursorRow][cursorCol] ^= 1;
             state.projectModified = 1;
             drawCell(cursorCol, cursorRow, CellState::focus);
             drawCursor(cursorCol, cursorRow);
@@ -396,11 +395,6 @@ bool ScreenSong::onEvent(const Event& event) {
   if (e.keys == 0 || mode == ScreenMode::select) {
     muteSoloState = MuteSoloState::empty;
   }
-
-  // Only call common input handling if we didn't handle Song-specific input
-  if (!handled) handled = commonEventHandler(event);
-
-  state.songRow = cursorRow; // Sync song row with the cursor
 
   return handled;
 }

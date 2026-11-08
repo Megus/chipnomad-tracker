@@ -262,12 +262,10 @@ namespace chipnomad {
       void setupInstrumentAY1(int trackIdx);
       void setupInstrumentAY2(int trackIdx);
       void setupInstrumentAYSample(int trackIdx);
-      void setupInstrumentAYWavetable(int trackIdx);
       void setupInstrument(int trackIdx);
       void handleInstrumentAY1(int trackIdx);
       void handleInstrumentAY2(int trackIdx);
       void handleInstrumentAYSample(int trackIdx);
-      void handleInstrumentAYWavetable(int trackIdx);
       void outputRegistersAY(Engine* engine, int trackIdx, int chipIdx);
       void resetTrackAY(int trackIdx);
       void resetOffsetsAY(int trackIdx);

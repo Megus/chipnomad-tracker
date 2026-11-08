@@ -3,12 +3,12 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-#include "project_constants.h"
+#include "chipnomad_constants.h"
 
 namespace chipnomad {
 
 // Forward declarations
-struct Project;
+class Project;
 
 // Instruments
 

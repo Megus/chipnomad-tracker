@@ -3,15 +3,6 @@
 
 #include "chipnomad_lib.h"
 
-void projectInitAY(chipnomad::Project& p);
-// Does chain have notes?
-int8_t chainHasNotes(chipnomad::Project& p, int chain);
-// Does phrase have notes?
-int8_t phraseHasNotes(chipnomad::Project& p, int phrase);
-// Instrument name
-const char* instrumentName(chipnomad::Project& p, uint8_t instrument);
-// Instrument type name
-const char* instrumentTypeName(chipnomad::InstrumentType type);
 // Get first note used with an instrument
 uint8_t instrumentFirstNote(chipnomad::Project& p, uint8_t instrument);
 // Swap two instruments and their default tables

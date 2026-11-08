@@ -42,12 +42,7 @@ namespace chipnomad {
       // Set quality
       void setQuality(EmulationQuality quality);
 
-      /**
-       * Render audio samples
-       * @param buffer Output buffer
-       * @param samples Number of samples to render
-       * @return Number of samples actually rendered
-       */
+      // Render audio samples. Returns the number of samples actually rendered
       int render(float* buffer, int samples);
 
     private:

@@ -1,7 +1,7 @@
 #include "chipnomad_lib.h"
 #include "playback_modulation.h"
 #include "playback_instruments.h"
-#include "project_constants.h"
+#include "chipnomad_constants.h"
 #include "utils.h"
 #include <stdio.h>
 #include <string.h>
@@ -708,7 +708,7 @@ void Player::outputRegistersAY(Engine* engine, int trackIdx, int chipIdx) {
   int shouldWriteEnvPeriod = 0;
   int hasSoftOsc = 0;
 
-  for (int t = trackIdx; t < trackIdx + projectGetChipTracks(p, chipIdx); t++) {
+  for (int t = trackIdx; t < trackIdx + p->getChipTracksCount(chipIdx); t++) {
     // Write flags for channel registers
     int shouldWriteTonePeriod = 0;
     int shouldWriteVolume = 0;

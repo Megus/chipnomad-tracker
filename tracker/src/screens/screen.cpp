@@ -1,4 +1,5 @@
 #include "screen.h"
+#include "string_utils.h"
 
 Rect Screen::getSelectionRange() {
   using namespace chipnomad;
@@ -420,6 +421,30 @@ bool Screen::inputSelectMode(int keys, int tapCount) {
   }
 
   return handled;
+}
+
+void Screen::requestConfirmation(const char* title, int confirmValue, int cancelValue) {
+  dispatcher.pushScreen(ScreenEnum::confirm, ConfirmScreenInput(title, confirmValue, cancelValue));
+}
+
+bool Screen::editCharacter(EditCellAction action, char* str, int idx, int maxLen) {
+  if (action == EditCellAction::clear) {
+    str[idx] = ' ';
+    trimString(str);
+    return true;
+  } else if (action == EditCellAction::tap) {
+    dispatcher.pushScreen(ScreenEnum::editCharacter, EditCharacterInput(str, idx, maxLen));
+    return true;
+  }
+  return false;
+}
+
+void Screen::selectFile(const char* title, const char* startPath, const char* extensions, FilePreviewer* previewer) {
+  dispatcher.pushScreen(ScreenEnum::fileBrowser, FileBrowserInput(false, title, startPath, extensions, previewer, nullptr));
+}
+
+void Screen::selectFolder(const char* title, const char* startPath, const char* extensions, const char* filename) {
+  dispatcher.pushScreen(ScreenEnum::fileBrowser, FileBrowserInput(true, title, startPath, extensions, nullptr, filename));
 }
 
 int Screen::isSingleCellSelection(const Rect& range) {

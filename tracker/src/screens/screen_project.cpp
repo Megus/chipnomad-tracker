@@ -6,10 +6,9 @@
 #include "utils.h"
 #include "chipnomad_lib.h"
 #include "project_utils.h"
-#include "pitch_table_utils.h"
 #include "version.h"
 #include "audio_manager.h"
-#include "import/import_vt2.h"
+#include "import_vt2.h"
 #include "error.h"
 
 /*
@@ -79,30 +78,9 @@ static void onProjectSaved(const char* folderPath) {
   screenSetup(&screenProject, 0);
 }
 
-static void onProjectCancelled(void) {
-  screenSetup(&screenProject, 0);
-}
-
-
-static void doNewProject(void) {
-  projectInitAY(&chipnomadState->project);
-  projectModified = 0;
-  appSettings.projectFilename[0] = 0;
-  screensInitAll();
-  screenSetup(&screenProject, 0);
-}
-
-static void doLoadProject(void) {
-  fileBrowserSetup("LOAD PROJECT", ".cnm,.vt2", appSettings.projectPath, onProjectLoaded, onProjectCancelled);
-  screenSetup(&screenFileBrowser, 0);
-}
-
-static void cancelConfirm(void) {
-  screenSetup(&screenProject, 0);
-}
 */
 
-ScreenProject::ScreenProject(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx): Screen(state, dispatcher, gfx) {
+ScreenProject::ScreenProject(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx, AudioManager& audio): Screen(state, dispatcher, gfx), audio(audio) {
   partialAY = new ScreenPartialProjectAY(*this, 8);
 }
 
@@ -110,10 +88,9 @@ ScreenProject::~ScreenProject() {
   delete partialAY;
 }
 
-void ScreenProject::setup(int input) {
-  editingString = NULL;
-  tickRateI = (int)state.project.tickRate;
-  tickRateF = (uint16_t)((state.project.tickRate - (float)tickRateI) * 1000.f);
+void ScreenProject::setup(const ScreenData& input) {
+  tickRateI = (int)state.project->tickRate;
+  tickRateF = (uint16_t)((state.project->tickRate - (float)tickRateI) * 1000.f);
   partial = partialAY; // TODO: Select chip-specific partial
 }
 
@@ -216,14 +193,14 @@ void ScreenProject::drawCell(int col, int row, CellState cellState) {
   } else if (row == 2) {
     // Title
     gfx.clearRect(7, 4, PROJECT_TITLE_LENGTH, 1);
-    gfx.printf(7, 4, "%s", state.project.title);
+    gfx.printf(7, 4, "%s", state.project->title);
   } else if (row == 3) {
     // Author
     gfx.clearRect(7, 5, PROJECT_TITLE_LENGTH, 1);
-    gfx.printf(7, 5, "%s", state.project.author);
+    gfx.printf(7, 5, "%s", state.project->author);
   } else if (row == 4) {
     // Linear pitch
-    gfx.print(13, 7, state.project.linearPitch ? "ON " : "OFF");
+    gfx.print(13, 7, state.project->linearPitch ? "ON " : "OFF");
   } else if (row == 5) {
     // Tick rate and BPM
     gfx.clearRect(13, 8, 27, 1);
@@ -235,89 +212,67 @@ void ScreenProject::drawCell(int col, int row, CellState cellState) {
     gfx.print(13, 9, "AY/YM");
   } else if (row == 7) {
     // Chips count
-    gfx.printf(13, 10, "%d", state.project.chipsCount);
+    gfx.printf(13, 10, "%d", state.project->chipsCount);
   } else {
     partial->drawCell(col, row, cellState);
   }
 }
 
 bool ScreenProject::onEdit(int col, int row, EditCellAction action) {
-  int handled = 0;
+  bool handled = false;
 
   if (row == 0) {
     // Load/Save/New/Export
     if (col == 0) {
       // Load project
-      if (projectModified) {
-        confirmSetup("Lose unsaved changes?", doLoadProject, cancelConfirm);
-        screenSetup(&screenConfirm, 0);
+      handled = true;
+      if (state.projectModified) {
+        requestConfirmation("Lose unsaved changes?", static_cast<int>(ConfirmValue::loadProject), static_cast<int>(ConfirmValue::cancel));
       } else {
-        doLoadProject();
+        //doLoadProject();
+
       }
     } else if (col == 1) {
       // Save project - check filename first
-      if (strlen(appSettings.projectFilename) == 0) {
-        screenMessage(MESSAGE_TIME, "Enter filename");
-        handled = 1;
+      if (strlen(state.settings.projectFilename) == 0) {
+        dispatcher.showTimedMessage("Enter filename");
       } else {
-        fileBrowserSetupFolderMode("SAVE PROJECT", appSettings.projectPath, appSettings.projectFilename, ".cnm", onProjectSaved, onProjectCancelled);
-        screenSetup(&screenFileBrowser, 0);
+        selectFolder("SAVE PROJECT",  state.settings.projectPath, ".cnm", state.settings.projectFilename);
       }
+      handled = true;
     } else if (col == 2) {
       // New project
-      if (projectModified) {
-        confirmSetup("Lose unsaved changes?", doNewProject, cancelConfirm);
-        screenSetup(&screenConfirm, 0);
+      if (state.projectModified) {
+        requestConfirmation("Lose unsaved changes?", static_cast<int>(ConfirmValue::newProject), static_cast<int>(ConfirmValue::cancel));
       } else {
-        doNewProject();
+        //doNewProject();
       }
-      handled = 1;
+      handled = true;
     } else if (col == 3) {
       // Export - go to export screen
-      screenSetup(&screenExport, 0);
-      handled = 0;
+      dispatcher.pushScreen(ScreenEnum::projectExport);
+      handled = true;
     } else if (col == 4) {
       // Manage - go to manage screen
-      screenSetup(&screenManage, 0);
-      handled = 0;
+      dispatcher.pushScreen(ScreenEnum::manage);
+      handled = true;
     }
   } else if (row == 1) {
     // File name
-    int res = editCharacter(action, appSettings.projectFilename, col, FILENAME_LENGTH);
-    if (res == 1) {
-      isCharEdit = 1;
-      editingString = appSettings.projectFilename;
-      editingStringLength = FILENAME_LENGTH;
-    } else if (res > 1) {
-      handled = 1;
-    }
+    handled = editCharacter(action, state.settings.projectFilename, col, kFileNameLength);
   } else if (row == 2) {
     // Title
-    int res = editCharacter(action, chipnomadState->project.title, col, PROJECT_TITLE_LENGTH);
-    if (res == 1) {
-      isCharEdit = 1;
-      editingString = chipnomadState->project.title;
-      editingStringLength = PROJECT_TITLE_LENGTH;
-    } else if (res > 1) {
-      handled = 1;
-    }
+    handled = editCharacter(action, state.project->title, col, PROJECT_TITLE_LENGTH);
   } else if (row == 3) {
     // Author
-    int res = editCharacter(action, chipnomadState->project.author, col, PROJECT_TITLE_LENGTH);
-    if (res == 1) {
-      isCharEdit = 1;
-      editingString = chipnomadState->project.author;
-      editingStringLength = PROJECT_TITLE_LENGTH;
-    } else if (res > 1) {
-      handled = 1;
-    }
+    handled = editCharacter(action, state.project->author, col, PROJECT_TITLE_LENGTH);
   } else if (row == 4) {
     // Linear pitch (ON/OFF)
-    handled = edit8noLast(action, &chipnomadState->project.linearPitch, 1, 0, 1);
+    handled = edit8noLast(action, &state.project->linearPitch, 1, 0, 1);
     if (handled) {
-      projectModified = 1;
-      chipnomadState->engine->player.stop();
-      reinitializePitchTable(&chipnomadState->project);
+      state.projectModified = 1;
+      dispatcher.stopPlayback();
+      state.project->calculatePitchTable();
     }
   } else if (row == 5) {
     // Tick rate
@@ -336,51 +291,82 @@ bool ScreenProject::onEdit(int col, int row, EditCellAction action) {
 
     if (handled) {
       // Update project tick rate from the two components
-      chipnomadState->project.tickRate = (float)tickRateI + (float)tickRateF / 1000.0f;
-      projectModified = 1;
+      state.project->tickRate = (float)tickRateI + (float)tickRateF / 1000.0f;
+      state.projectModified = 1;
     }
   } else if (row == 7) {
     // Chips count (1-3 for AY)
-    handled = edit8noLast(action, (uint8_t*)&chipnomadState->project.chipsCount, 1, 1, 3);
+    handled = edit8noLast(action, (uint8_t*)&state.project->chipsCount, 1, 1, 3);
     if (handled) {
-      chipnomadState->engine->player.stop();
-      gfxClearRect(35, 3, 5, PROJECT_MAX_TRACKS); // Clear the note preview area for all tracks (right side of screen)
-      chipnomadState->project.tracksCount = projectGetTotalTracks(&chipnomadState->project);
+      dispatcher.stopPlayback();
+      gfx.clearRect(35, 3, 5, PROJECT_MAX_TRACKS); // Clear the note preview area for all tracks (right side of screen)
+      state.project->tracksCount = state.project->getTotalTracksCount();
       audio.reinitChips();
-      projectModified = 1;
+      state.projectModified = 1;
     }
   }
 
   return handled;
 }
 
-bool ScreenProject::onNavigationInput(InputEventData e) {
+bool ScreenProject::onNavigationInput(const InputEvent& e) {
   if (e.keys == (keyDown | keyShift)) {
-    screenSetup(&screenSong, 0);
-    return 1;
+    dispatcher.switchScreen(ScreenEnum::song);
+    return true;
   }
-  return 0;
+  return false;
 }
 
-bool ScreenProject::onEvent(Event e) {
-  if (isCharEdit) {
-    ScreenData* screen = projectScreen();
-    char result = charEditInput(keys, tapCount, editingString, screen->cursorCol, editingStringLength);
+bool ScreenProject::onEvent(const Event& e) {
+  bool handled = commonEventHandler(e);
+  if (handled) return true;
 
-    if (result) {
-      projectModified = 1;
-      isCharEdit = 0;
-      if (screen->cursorCol < editingStringLength - 1) screen->cursorCol++;
-      editingString = NULL;
-      editingStringLength = 0;
-      fullRedraw();
+  if (e.type == EventType::screenOutput) {
+    const ScreenEvent& output = dynamic_cast<const ScreenEvent&>(e);
+    switch (output.screen) {
+      case ScreenEnum::confirm: {
+        ConfirmValue value = static_cast<ConfirmValue>(output.data.intValue);
+        switch (value) {
+          case ConfirmValue::loadProject:
+
+            break;
+          case ConfirmValue::newProject:
+
+            break;
+          default:
+            break;
+        }
+        break;
+      }
+      case ScreenEnum::fileBrowser: {
+
+        break;
+      }
+      case ScreenEnum::editCharacter: {
+        state.projectModified = true;
+        if (cursorCol < output.data.intValue - 1) cursorCol++;
+        dispatcher.redrawScreen();
+        break;
+      }
+      default:
+        break;
     }
-  } else {
-    if (inputScreenNavigation(keys, tapCount)) return 1;
-
-    ScreenData* screen = projectScreen();
-    if (screenInput(screen, isKeyDown, keys, tapCount)) return 1;
   }
-  return 0;
+  return false;
+}
 
+
+void ScreenProject::newProject() {
+  dispatcher.stopPlayback();
+  delete state.project;
+  state.project = new chipnomad::Project();
+  state.project->initAYproject();
+  state.projectModified = 0;
+  state.settings.projectFilename[0] = 0;
+  //screensInitAll(); // TODO: Figure out what kind of initialization I need to do. Maybe it should be an event to set a new project?
+  dispatcher.redrawScreen();
+}
+
+void ScreenProject::loadProject() {
+  selectFile("LOAD PROJECT", state.settings.projectPath, ".cnm,.vt2", nullptr);
 }

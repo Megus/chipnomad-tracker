@@ -56,7 +56,7 @@ namespace chipnomad {
       }
     }
 
-    // Zero the entire chips array for safety
+    // Zero the entire chips array for correct cleanup after
     memset(chips, 0, sizeof(chips));
 
     // Initialize chips based on project's chipsCount

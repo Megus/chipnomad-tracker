@@ -20,7 +20,7 @@ TrackerUI::TrackerUI(Gfx& gfx, FontManager& fontManager, AudioManager& audio, Fi
 {
   // Create all screen objects
   screens[ScreenEnum::song] = new ScreenSong(state, dispatcher, gfx, audio, clipboard);
-  screens[ScreenEnum::project] = new ScreenProject(state, dispatcher, gfx);
+  screens[ScreenEnum::project] = new ScreenProject(state, dispatcher, gfx, audio);
 
   // Remaining initialization
   waveDisplay = new WaveformDisplay(gfx);
@@ -103,7 +103,7 @@ void TrackerUI::draw() {
   // Tracks playback preview
 
   char digit[2] = "0";
-  for (int c = 0; c < state.project.tracksCount; c++) {
+  for (int c = 0; c < state.project->tracksCount; c++) {
     // Draw mute/solo indicator to the left of track number
     gfx.setFgColor(t.textTitles);
     if (audio.trackStates[c] == TrackState::muted) {
@@ -128,7 +128,7 @@ void TrackerUI::draw() {
     }
 
     uint8_t note = audio.engine.player.tracks[c].note.pitchFinal;
-    const char* noteStr = noteName(&state.project, note);
+    const char* noteStr = state.project->noteName(note);
 
     // Use warning color if track warning is active
     int useWarningColor = (state.settings.pitchConflictWarning && audio.engine.trackWarnings[c] > 0);
@@ -301,7 +301,10 @@ bool TrackerUI::onScreenEvent(const ScreenEvent& e) {
     screenStack[0] = screen;
     screenStackIdx = 0;
     redrawScreen();
+    return true;
   }
+
+  return false;
 }
 
 

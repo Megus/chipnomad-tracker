@@ -623,7 +623,7 @@ namespace chipnomad {
 
   static int moveToNextPhraseRow(Player* player, int trackIdx) {
     int stopped = 0;
-    struct Project *p = player->p;
+    Project *p = player->p;
     PlaybackTrackState* track = &player->tracks[trackIdx];
 
     // Check phrase-level loop before incrementing
@@ -909,7 +909,7 @@ namespace chipnomad {
     int hasActiveTracks = 0;
 
     int chipIdx = 0;
-    int chipTracksCount = projectGetChipTracks(p, chipIdx);
+    int chipTracksCount = p->getChipTracksCount(chipIdx);
     int nextChipTrackIdx = chipTracksCount;
 
     // Process all tracks left to right
@@ -917,7 +917,7 @@ namespace chipnomad {
       // Track chip index
       if (trackIdx >= nextChipTrackIdx) {
         chipIdx++;
-        chipTracksCount = projectGetChipTracks(p, chipIdx);
+        chipTracksCount = p->getChipTracksCount(chipIdx);
         nextChipTrackIdx += chipTracksCount;
       }
 
@@ -982,7 +982,7 @@ namespace chipnomad {
 
     // Output registers for all chips
     for (int ci = 0; ci < p->chipsCount; ci++) {
-      outputRegistersAY(engine, ci * projectGetChipTracks(p, ci), ci);
+      outputRegistersAY(engine, ci * p->getChipTracksCount(ci), ci);
     }
 
     return !hasActiveTracks;

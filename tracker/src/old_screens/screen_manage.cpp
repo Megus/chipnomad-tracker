@@ -78,8 +78,8 @@ void manageDrawField(int col, int row, CellState state) {
   }
 }
 
-int manageOnEdit(int col, int row, CellEditAction action) {
-  if (action != CellEditAction::tap && action != CellEditAction::doubleTap) return 0;
+int manageOnEdit(int col, int row, EditCellAction action) {
+  if (action != EditCellAction::tap && action != EditCellAction::doubleTap) return 0;
 
   if (row == 1) {
     // Cleanup phrases and chains

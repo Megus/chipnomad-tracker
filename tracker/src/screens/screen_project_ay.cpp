@@ -3,8 +3,6 @@
 #include <string.h>
 #include "audio_manager.h"
 #include "chipnomad_lib.h"
-#include "common.h"
-
 
 int chipClockLength = 0;
 

@@ -33,7 +33,7 @@ void EventDispatcher::playPhrase(int track, int songRow, int chainRow, const chi
 }
 
 void EventDispatcher::stopPlayback() {
-  dispatch(Event(EventType::stopPlayback));
+  dispatchInstant(Event(EventType::stopPlayback));
 }
 
 void EventDispatcher::redrawScreen() {
@@ -48,12 +48,17 @@ void EventDispatcher::switchScreen(ScreenEnum screen, const ScreenData& input) {
   dispatch(ScreenEvent(EventType::switchScreen, screen, input));
 }
 
+void EventDispatcher::pushScreen(ScreenEnum screen) {
+  dispatch(ScreenEvent(EventType::pushScreen, screen, ScreenData()));
+}
+
 void EventDispatcher::pushScreen(ScreenEnum screen, const ScreenData& input) {
   dispatch(ScreenEvent(EventType::pushScreen, screen, input));
 }
 
 void EventDispatcher::popScreen(ScreenEnum screen, const ScreenData& output) {
   dispatch(ScreenEvent(EventType::popScreen, screen, output));
+  dispatch(ScreenEvent(EventType::screenOutput, screen, output));
 }
 
 void EventDispatcher::showInstantMessage(const char* format, ...) {

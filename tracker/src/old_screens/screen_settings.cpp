@@ -17,7 +17,7 @@ static void settingsDrawCursor(int col, int row);
 static void settingsDrawRowHeader(int row, CellState state);
 static void settingsDrawColHeader(int col, CellState state);
 static void settingsDrawField(int col, int row, CellState state);
-static int settingsOnEdit(int col, int row, CellEditAction action);
+static int settingsOnEdit(int col, int row, EditCellAction action);
 
 static ScreenData screenSettingsData = {
   .rows = 8,
@@ -158,7 +158,7 @@ void settingsDrawField(int col, int row, CellState state) {
   }
 }
 
-int settingsOnEdit(int col, int row, CellEditAction action) {
+int settingsOnEdit(int col, int row, EditCellAction action) {
   if (row == 0 && col == 0) {
     // Pitch conflict warning (0/1)
     return edit8noLast(action, (uint8_t*)&appSettings.pitchConflictWarning, 1, 0, 1);
@@ -188,19 +188,19 @@ int settingsOnEdit(int col, int row, CellEditAction action) {
       chipnomadState->engine->aySampleDithering = appSettings.aySampleDithering;
     }
     return handled;
-  } else if (row == 4 && col == 0 && action == CellEditAction::tap) {
+  } else if (row == 4 && col == 0 && action == EditCellAction::tap) {
     screenSetup(&screenKeyMapping, 0);
     return 0;
-  } else if (row == 5 && col == 0 && action == CellEditAction::tap) {
+  } else if (row == 5 && col == 0 && action == EditCellAction::tap) {
     fileBrowserSetup("LOAD FONT", ".cnfont", appSettings.fontFolderPath,
       (void (*)(const char*))fontLoadCallback,
       (void (*)(void))fontCancelCallback);
     screenSetup(&screenFileBrowser, 0);
     return 0;
-  } else if (row == 6 && col == 0 && action == CellEditAction::tap) {
+  } else if (row == 6 && col == 0 && action == EditCellAction::tap) {
     screenSetup(&screenColorTheme, 0);
     return 0;
-  } else if (row == 7 && col == 0 && action == CellEditAction::tap) {
+  } else if (row == 7 && col == 0 && action == EditCellAction::tap) {
     // Trigger exit event
     mainLoop->triggerQuit();
     return 1;

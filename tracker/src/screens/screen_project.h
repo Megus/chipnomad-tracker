@@ -3,10 +3,11 @@
 
 #include "screen.h"
 #include "screen_project_ay.h"
+#include "audio_manager.h"
 
 class ScreenProject : public Screen {
   public:
-    ScreenProject(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx);
+    ScreenProject(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx, AudioManager& audio);
     ~ScreenProject();
 
     void setup(const ScreenData& input) override;
@@ -23,14 +24,24 @@ class ScreenProject : public Screen {
     bool onEvent(const Event& e) override;
 
   protected:
+    enum class ConfirmValue : int {
+      cancel,
+      newProject,
+      loadProject,
+    };
+
+    AudioManager& audio;
+
     static constexpr int commonRowCount = 8; // Number of common rows on the Project screen (before partial)
 
     int tickRateI = 0; // Integer part of the tick rate
     uint16_t tickRateF = 0; // Fractional part of the tick rate
-    char* editingString = nullptr; // The string being edited (TODO: might drop it and use row number instead)
     ScreenPartial* partial; // Current partial (chip-specific project settings)
 
     ScreenPartialProjectAY* partialAY;
+
+    void newProject();
+    void loadProject();
 };
 
 #endif // __SCREEN_PROJECT_H__

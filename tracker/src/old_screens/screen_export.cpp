@@ -278,7 +278,7 @@ void generateExportPath(char* outputPath, int maxLen, const char* extension) {
   outputPath[maxLen - 1] = 0;
 }
 
-int exportCommonOnEdit(int col, int row, CellEditAction action) {
+int exportCommonOnEdit(int col, int row, EditCellAction action) {
   int handled = 0;
 
   if (row == 0) {
@@ -311,18 +311,18 @@ int exportCommonOnEdit(int col, int row, CellEditAction action) {
     }
     handled = 1;
   } else if (row == 2) {
-    if (action == CellEditAction::increase) {
+    if (action == EditCellAction::increase) {
       currentSampleRateIndex = (currentSampleRateIndex + 1) % 4;
       handled = 1;
-    } else if (action == CellEditAction::decrease) {
+    } else if (action == EditCellAction::decrease) {
       currentSampleRateIndex = (currentSampleRateIndex + 3) % 4;
       handled = 1;
     }
   } else if (row == 3) {
-    if (action == CellEditAction::increase) {
+    if (action == EditCellAction::increase) {
       currentBitDepthIndex = (currentBitDepthIndex + 1) % 3;
       handled = 1;
-    } else if (action == CellEditAction::decrease) {
+    } else if (action == EditCellAction::decrease) {
       currentBitDepthIndex = (currentBitDepthIndex + 2) % 3;
       handled = 1;
     }

@@ -80,7 +80,7 @@ static void drawField(int col, int row, CellState state) {
   }
 }
 
-static int onEdit(int col, int row, CellEditAction action) {
+static int onEdit(int col, int row, EditCellAction action) {
   int handled = 0;
 
   if (row == 0) {

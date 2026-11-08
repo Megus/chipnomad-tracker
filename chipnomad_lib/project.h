@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "project_instruments.h"
-#include "project_constants.h"
+#include "chipnomad_constants.h"
 
 namespace chipnomad {
 
@@ -197,73 +197,79 @@ struct PitchTable {
   char noteNames[PROJECT_MAX_PITCHES][4];
 };
 
-struct Project {
-  char title[PROJECT_TITLE_LENGTH + 1];
-  char author[PROJECT_TITLE_LENGTH + 1];
+class Project {
+  public:
+    Project();
+    ~Project();
 
-  float tickRate;
-  ChipType chipType;
-  ChipSetup chipSetup;
-  int chipsCount;
-  uint8_t linearPitch;
+    char title[PROJECT_TITLE_LENGTH + 1]; // Project title
+    char author[PROJECT_TITLE_LENGTH + 1]; // Project author
 
-  int tracksCount;
+    float tickRate; // Project tick rate
+    ChipType chipType; // Project chip type
+    ChipSetup chipSetup; // Chip configuration
+    int chipsCount; // Number of chips in the project
+    uint8_t linearPitch; // Linear pitch flag
 
-  PitchTable pitchTable;
+    int tracksCount; // Number of tracks
 
-  // Main project data
-  uint16_t song[PROJECT_MAX_LENGTH][PROJECT_MAX_TRACKS];
-  uint8_t songHighlight[PROJECT_MAX_LENGTH][PROJECT_MAX_TRACKS];
-  Chain chains[PROJECT_MAX_CHAINS];
-  Phrase phrases[PROJECT_MAX_PHRASES];
-  Groove grooves[PROJECT_MAX_GROOVES];
-  Instrument instruments[PROJECT_MAX_INSTRUMENTS + 1]; // +1 for instrument preview slot
-  Table tables[PROJECT_MAX_TABLES];
+    PitchTable pitchTable; // Pitch table (cents for linear pitch, period values otherwise)
 
-  // Additional data for different chips
-  uint8_t ayWavetables[256][32]; // 256 AY wavetables with 32 4-bit values each
+    // Main project data
+    uint16_t song[PROJECT_MAX_LENGTH][PROJECT_MAX_TRACKS];
+    uint8_t songHighlight[PROJECT_MAX_LENGTH][PROJECT_MAX_TRACKS];
+    Chain chains[PROJECT_MAX_CHAINS];
+    Phrase phrases[PROJECT_MAX_PHRASES];
+    Groove grooves[PROJECT_MAX_GROOVES];
+    Instrument instruments[PROJECT_MAX_INSTRUMENTS + 1]; // +1 for instrument preview slot
+    Table tables[PROJECT_MAX_TABLES];
+
+    // Additional data for different chips
+    uint8_t ayWavetables[256][32]; // 256 AY wavetables with 32 4-bit values each
+
+    // Project functions
+
+    void initAYproject();
+
+    void calculatePitchTable(); // Calculate pitch table based on linear pitch setting and chip
+
+    const char* noteName(uint8_t note); // Note name in phrase
+    int getChipTracksCount(int chipIndex); // Get number of tracks for a chip at index
+    int getTotalTracksCount(); // Get total number of tracks for the project
+
+    bool isChainEmpty(int chain); // Is chain empty?
+    bool isPhraseEmpty(int phrase); // Is phrase empty?
+    bool isInstrumentEmpty(int instrument); // Is instrument empty?
+    bool isTableEmpty(int table); // Is table empty?
+    bool isGrooveEmpty(int groove); // Is groove empty?
+    bool isWavetableEmpty(int wavetable); // Is wavetable empty?
+
+    void clearPhrase(int phrase); // Clear a phrase
+    void clearChain(int chain); // Clear a chain
+    void clearInstrument(int instrument); // Clear an instrument
+    void clearTable(int table); // Clear a table
+
+    bool chainHasNotes(int chain); // Does chain have notes?
+    bool phraseHasNotes(int phrase); // Does phrase have notes?
+    const char* instrumentName(uint8_t instrument); // Instrument name
+    const char* instrumentTypeName(InstrumentType type); // Instrument type name
+
+  protected:
+    void calculatePitchTableAY(); // Calculate 12TET pitch table for AY chip
+    void calculateLinearPitchTable12TET(); // Calculate 12TET linear pitch table (values in cents, C-4 = 60)
 };
-
 
 // Fill FX names (call this first before loading any projects)
 void fillFXNames();
-// Initialize an empty project
-void projectInit(Project* p);
-// Load project from a file
-int projectLoad(Project* p, const char* path);
-// Save project to a file
-int projectSave(Project* p, const char* path);
-// Save instrument to a file
-int instrumentSave(Project* p, const char* path, int instrumentIdx);
-// Load instrument from a file
-int instrumentLoad(Project* p, const char* path, int instrumentIdx);
 
-// Is chain empty?
-int8_t chainIsEmpty(Project* p, int chain);
-// Is phrase empty?
-int8_t phraseIsEmpty(Project* p, int phrase);
-// Is instrument empty?
-int8_t instrumentIsEmpty(Project* p, int instrument);
-// Is table empty?
-int8_t tableIsEmpty(Project* p, int table);
-// Is groove empty?
-int8_t grooveIsEmpty(Project* p, int groove);
-// Is wavetable empty?
-int8_t wavetableIsEmpty(Project* p, int wavetable);
-// Note name in phrase
-const char* noteName(Project* p, uint8_t note);
-// Get number of tracks for a chip at index
-int projectGetChipTracks(Project* p, int chipIndex);
-// Get total number of tracks for the project
-int projectGetTotalTracks(Project* p);
-// Clear a single phrase with proper initialization
-void phraseClear(Phrase* phrase);
-// Clear a single chain with proper initialization
-void chainClear(Chain* chain);
-// Clear a single instrument with proper initialization
-void instrumentClear(Instrument* instrument);
-// Clear a single table with proper initialization
-void tableClear(Table* table);
+// Load project from a file
+Project* loadProject(const char* path);
+// Save project to a file
+bool saveProject(Project* p, const char* path);
+// Save instrument to a file
+bool saveInstrument(Project* p, const char* path, int instrumentIdx);
+// Load instrument from a file
+bool loadInstrument(Project* p, const char* path, int instrumentIdx);
 
 }; // namespace chipnomad
 

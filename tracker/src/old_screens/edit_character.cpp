@@ -1,4 +1,3 @@
-#include "screens.h"
 #include "gfx.h"
 #include "string_utils.h"
 #include <string.h>
@@ -35,19 +34,6 @@ static const char** getCurrentKeyboardRows() {
   return isUppercase ? keyboardRowsUpper : keyboardRowsLower;
 }
 
-int editCharacter(CellEditAction action, char* str, int idx, int maxLen) {
-  if (action == CellEditAction::clear) {
-    str[idx] = ' ';
-    trimString(str);
-    return 2;
-  } else if (action == CellEditAction::tap) {
-    char current = str[idx];
-    if (idx  >= strlen(str)) current = -1;
-    charEditFullDraw(current);
-    return 1;
-  }
-  return 0;
-}
 
 /**
 * @brief Handle input for character selection screen
@@ -207,6 +193,9 @@ void updateCursorPosition() {
 void charEditFullDraw(char startChar) {
   gfxSetBgColor(appSettings.colorScheme.background);
   gfxClear();
+
+  //char current = str[idx];
+  //if (idx >= strlen(str)) current = -1;
 
   // If a valid startChar is provided, try to select it
   if (startChar != 0 && startChar != ' ') {
