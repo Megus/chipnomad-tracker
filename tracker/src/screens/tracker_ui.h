@@ -26,17 +26,17 @@ class TrackerUI : public EventHandler {
     Screen* getCurrentScreen();
     void drawScreenMap();
     void redrawScreen();
-    void onShowMessage(const MessageEvent& e);
-    bool onInput(const InputEvent& e);
-    bool onPlay(const PlayEvent& e);
-    bool onScreenEvent(const ScreenEvent& e);
+    void onShowMessage(const Event& e);
+    bool onInput(const Event& e);
+    bool onPlay(const Event& e);
+    bool onScreenEvent(const Event& e);
 
     Gfx& gfx;
     FontManager& fontManager;
     AudioManager& audio;
     FileSystem& file;
     InputUtils& input;
-    EventDispatcher& dispatcher;
+    EventDispatcher& events;
     TrackerState& state;
     Clipboard clipboard = Clipboard();
 

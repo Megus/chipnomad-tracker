@@ -121,7 +121,7 @@ void TrackerApp::onMainLoopEvent(const MainLoopEvent& event) {
           keyRepeatCount--;
           if (keyRepeatCount == 0) {
             keyRepeatCount = state.settings.keyRepeatSpeed;
-            input(true, pressedButtons, 0);
+            dispatch(Event::input(true, pressedButtons, 0));
           }
         } else {
           keyRepeatCount = 0;
@@ -130,8 +130,8 @@ void TrackerApp::onMainLoopEvent(const MainLoopEvent& event) {
 
       // Send all queued events. Currently TrackerUI is the only receiver
       while (!eventQueue.empty()) {
-        const auto& event = eventQueue.front();
-        ui->onEvent(*event);
+        const Event& event = eventQueue.front();
+        ui->onEvent(event);
         eventQueue.pop();
       }
 
@@ -139,7 +139,7 @@ void TrackerApp::onMainLoopEvent(const MainLoopEvent& event) {
     }
     case MainLoopEventType::keyDown: {
       int value = inputUtils.inputCodeToKey(event.data.input, state.settings.keyMapping);
-      rawInput(true, event.data.input);
+      dispatch(Event::rawInput(true, event.data.input));
 
       if (value == keyEdit || value == keyOpt || value == keyShift) {
         // Edit/Opt/Shift "override" d-pad buttons
@@ -172,16 +172,16 @@ void TrackerApp::onMainLoopEvent(const MainLoopEvent& event) {
         // As we don't support multiple d-pad keys, keep only the last pressed one
         pressedButtons = (pressedButtons & ~dPadMask) | value;
       }
-      input(true, pressedButtons, tapCount);
+      dispatch(Event::input(true, pressedButtons, tapCount));
 
       break;
     }
     case MainLoopEventType::keyUp: {
       int value = inputUtils.inputCodeToKey(event.data.input, state.settings.keyMapping);
 
-      rawInput(false, event.data.input);
+      dispatch(Event::rawInput(false, event.data.input));
       pressedButtons &= ~value;
-      input(false, pressedButtons, 0);
+      dispatch(Event::input(false, pressedButtons, 0));
 
       break;
     }
@@ -204,16 +204,16 @@ void TrackerApp::onMainLoopEvent(const MainLoopEvent& event) {
       break;
     }
     case MainLoopEventType::fullRedraw: {
-      redrawScreen();
+      dispatch(Event::redrawScreen());
       break;
     }
   }
 }
 
-void TrackerApp::dispatch(std::unique_ptr<Event> e) {
-  eventQueue.push(std::move(e));
+void TrackerApp::dispatch(const Event& e) {
+  eventQueue.push(e);
 }
 
-void TrackerApp::dispatchInstant(std::unique_ptr<Event> e) {
-  ui->onEvent(*e);
+void TrackerApp::dispatchInstant(const Event& e) {
+  ui->onEvent(e);
 }

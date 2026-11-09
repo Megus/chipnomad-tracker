@@ -22,8 +22,8 @@ class TrackerApp: public App, public EventDispatcher {
     void teardown() override;
     void draw() override;
     void onMainLoopEvent(const MainLoopEvent& event) override;
-    void dispatch(std::unique_ptr<Event> e) override;
-    void dispatchInstant(std::unique_ptr<Event> e) override;
+    void dispatch(const Event& e) override;
+    void dispatchInstant(const Event& e) override;
 
   protected:
     static constexpr int eventQueueMaxLength = 16; // Max number of events in the queue
@@ -47,7 +47,7 @@ class TrackerApp: public App, public EventDispatcher {
 
     int autosaveCounter = 0; // Autosave period frame counter
 
-    std::queue<std::unique_ptr<Event>> eventQueue;
+    std::queue<Event> eventQueue;
 };
 
 #endif

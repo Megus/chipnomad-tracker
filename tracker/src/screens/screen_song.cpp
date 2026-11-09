@@ -179,9 +179,9 @@ bool ScreenSong::onEdit(int col, int row, EditCellAction action) {
     if (clonedCount > 0) {
       const char* msg = (action == EditCellAction::shallowClone) ? "Shallow-cloned" : "Deep-cloned";
       handled = true;
-      dispatcher.showTimedMessage("%s %d chain%s", msg, clonedCount, clonedCount == 1 ? "" : "s");
+      events.dispatch(Event::showTimedMessage("%s %d chain%s", msg, clonedCount, clonedCount == 1 ? "" : "s"));
     } else {
-      dispatcher.showTimedMessage("No chains to clone");
+      events.dispatch(Event::showTimedMessage("No chains to clone"));
     }
   } else if (applyMultiEdit(selection, action, this)) {
     handled = true;
@@ -209,28 +209,28 @@ bool ScreenSong::onEdit(int col, int row, EditCellAction action) {
   return handled;
 }
 
-bool ScreenSong::onNavigationInput(const InputEvent& e) {
+bool ScreenSong::onNavigationInput(const Event& e) {
   // Go to Chain screen
   if (e.keys == (keyRight | keyShift)) {
     int chain = state.project->song[cursorRow][cursorCol];
 
     if (chain == EMPTY_VALUE_16) {
-      dispatcher.showInstantMessage("Enter a chain");
+      events.dispatch(Event::showInstantMessage("Enter a chain"));
     } else {
-      dispatcher.switchScreen(ScreenEnum::chain);
+      events.dispatch(Event::switchScreen(ScreenEnum::chain));
     }
     return true;
   }
 
   // Go to Project screen
   if (e.keys == (keyUp | keyShift)) {
-    dispatcher.switchScreen(ScreenEnum::project);
+    events.dispatch(Event::switchScreen(ScreenEnum::project));
     return true;
   }
 
   // Go to Settings screen
   if (e.keys == (keyDown | keyShift)) {
-    dispatcher.switchScreen(ScreenEnum::settings);
+    events.dispatch(Event::switchScreen(ScreenEnum::settings));
     return true;
   }
 
@@ -246,7 +246,7 @@ bool ScreenSong::editCell(int col, int row, EditCellAction action) {
         state.project->song[row][col] = nextEmpty;
         lastChainValue = nextEmpty;
       } else {
-        dispatcher.showTimedMessage("No free chains");
+        events.dispatch(Event::showTimedMessage("No free chains"));
       }
     }
     return 1;
@@ -285,17 +285,15 @@ bool ScreenSong::editCell(int col, int row, EditCellAction action) {
   return edit16withLimit(action, &state.project->song[row][col], &lastChainValue, 16, PROJECT_MAX_CHAINS - 1);
 }
 
-bool ScreenSong::onEvent(const Event& event) {
-  bool handled = commonEventHandler(event);
+bool ScreenSong::onEvent(const Event& e) {
+  bool handled = commonEventHandler(e);
 
   // Sync global song position from the cursor position
   state.songRow = cursorRow;
   state.songTrack = cursorCol;
 
   if (handled) return true;
-  if (event.type != EventType::input) return false;
-
-  const InputEvent& e = dynamic_cast<const InputEvent&>(event);
+  if (e.type != EventType::input) return false;
 
   // Only handle mute/solo when not in selection mode
   if (mode == ScreenMode::edit) {

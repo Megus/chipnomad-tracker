@@ -150,15 +150,14 @@ void Screen::drawSelectedCells() {
 }
 
 
-bool Screen::commonEventHandler(const Event& event) {
-  if (event.type != EventType::input) return false;
-  const InputEvent& i = dynamic_cast<const InputEvent&>(event);
+bool Screen::commonEventHandler(const Event& e) {
+  if (e.type != EventType::input) return false;
   // Screen navigation
-  if (i.isKeyDown && mode == ScreenMode::edit && onNavigationInput(i)) return true;;
+  if (e.isKeyDown && mode == ScreenMode::edit && onNavigationInput(e)) return true;;
 
   // Common input for edit and select modes
-  if (!i.isKeyDown && i.keys != 0) return false; // Discard key up events unless no buttons are pressed (for existing logic that expects keys == 0)
-  return (mode == ScreenMode::select) ? inputSelectMode(i.keys, i.tapCount) : inputEditMode(i.keys, i.tapCount);
+  if (!e.isKeyDown && e.keys != 0) return false; // Discard key up events unless no buttons are pressed (for existing logic that expects keys == 0)
+  return (mode == ScreenMode::select) ? inputSelectMode(e.keys, e.tapCount) : inputEditMode(e.keys, e.tapCount);
 }
 
 void Screen::inputCursor(int keys, bool* handled, bool* needsRedraw) {
@@ -325,7 +324,7 @@ bool Screen::inputSelectMode(int keys, int tapCount) {
       // Copy and exit select mode on Opt release (no keys pressed)
       handled = onEdit(cursorCol, cursorRow, EditCellAction::copy);
       if (handled) {
-        dispatcher.showTimedMessage("Copied selection");
+        events.dispatch(Event::showTimedMessage("Copied selection"));
         moveCursorBelowSelection();
       }
       mode = ScreenMode::edit;
@@ -342,7 +341,7 @@ bool Screen::inputSelectMode(int keys, int tapCount) {
       // Cut and exit select mode
       handled = onEdit(cursorCol, cursorRow, EditCellAction::cut);
       if (handled) {
-        dispatcher.showTimedMessage("Cut selection");
+        events.dispatch(Event::showTimedMessage("Cut selection"));
         moveCursorToSelectionStart();
       }
       mode = ScreenMode::edit;
@@ -424,7 +423,7 @@ bool Screen::inputSelectMode(int keys, int tapCount) {
 }
 
 void Screen::requestConfirmation(const char* title, int confirmValue, int cancelValue) {
-  dispatcher.pushScreen(ScreenEnum::confirm, ConfirmScreenInput(title, confirmValue, cancelValue));
+  events.dispatch(Event::pushScreen(ScreenEnum::confirm, ScreenData::confirm(title, confirmValue, cancelValue)));
 }
 
 bool Screen::editCharacter(EditCellAction action, char* str, int idx, int maxLen) {
@@ -433,18 +432,18 @@ bool Screen::editCharacter(EditCellAction action, char* str, int idx, int maxLen
     trimString(str);
     return true;
   } else if (action == EditCellAction::tap) {
-    dispatcher.pushScreen(ScreenEnum::editCharacter, EditCharacterInput(str, idx, maxLen));
+    events.dispatch(Event::pushScreen(ScreenEnum::editCharacter, ScreenData::editCharacter(str, idx, maxLen)));
     return true;
   }
   return false;
 }
 
 void Screen::selectFile(const char* title, const char* startPath, const char* extensions, FilePreviewer* previewer) {
-  dispatcher.pushScreen(ScreenEnum::fileBrowser, FileBrowserInput(false, title, startPath, extensions, previewer, nullptr));
+  events.dispatch(Event::pushScreen(ScreenEnum::fileBrowser, ScreenData::fileBrowser(false, title, startPath, extensions, previewer, nullptr)));
 }
 
 void Screen::selectFolder(const char* title, const char* startPath, const char* extensions, const char* filename) {
-  dispatcher.pushScreen(ScreenEnum::fileBrowser, FileBrowserInput(true, title, startPath, extensions, nullptr, filename));
+  events.dispatch(Event::pushScreen(ScreenEnum::fileBrowser, ScreenData::fileBrowser(true, title, startPath, extensions, nullptr, filename)));
 }
 
 int Screen::isSingleCellSelection(const Rect& range) {

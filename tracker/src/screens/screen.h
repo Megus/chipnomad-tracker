@@ -32,7 +32,7 @@ class Screen : public EventHandler {
   ///////////////////////////////////////////////////////////////////////////
   // Methods to override in sub-classes
   public:
-    Screen(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx): state(state), dispatcher(dispatcher), gfx(gfx) {}
+    Screen(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx): state(state), events(dispatcher), gfx(gfx) {}
     virtual ~Screen() = default;
 
     virtual void setup(const ScreenData& input) {}; // Setup screen before it's displayed
@@ -56,9 +56,9 @@ class Screen : public EventHandler {
     virtual bool adjustVerticalScroll(bool pageJump) { return false; }; // Adjust vertical scroll, return true if the screen needs to be scrolled
 
     virtual bool onEdit(int col, int row, EditCellAction action) { return false; }; // Handle edit action
-    virtual bool onNavigationInput(const InputEvent& event) { return false; }; // Navigation input handler. Convenience function
+    virtual bool onNavigationInput(const Event& e) { return false; }; // Navigation input handler. Convenience function
 
-    virtual bool onEvent(const Event& event) override { return false; }; // Handle events from the EventDispatcher
+    virtual bool onEvent(const Event& e) override { return commonEventHandler(e); }; // Handle events from the EventDispatcher
 
   protected:
 
@@ -69,7 +69,7 @@ class Screen : public EventHandler {
 
   protected:
     TrackerState& state;
-    EventDispatcher& dispatcher;
+    EventDispatcher& events;
     Gfx& gfx;
 
     ScreenMode mode = ScreenMode::edit; // Edit / Select mode
@@ -103,12 +103,12 @@ class Screen : public EventHandler {
     void moveCursorBelowSelection(); // Move cursor below the selection (or to the last row if selection is at the bottom)
     void drawSelectedCells(); // Draw all selected cells
 
-    bool commonEventHandler(const Event& event); // Common event handler to call from onEvent()
+    bool commonEventHandler(const Event& e); // Common event handler to call from onEvent()
     bool inputEditMode(int keys, int tapCount); // Handles common input in edit mode
     bool inputSelectMode(int keys, int tapCount);
     void inputCursor(int keys, bool* handled, bool* needsRedraw); // Handles standard cursor movement (left, right, up, down)
 
-    // Common popups:
+    // Common popups
     void requestConfirmation(const char* title, int confirmValue, int cancelValue); // Show confirmation popup
     bool editCharacter(EditCellAction action, char* str, int idx, int maxLen); // Delete a character or open characted edit popup
     void selectFile(const char* title, const char* startPath, const char* extensions, FilePreviewer* previewer); // File browser: select a file

@@ -8,24 +8,26 @@
 
 #include "screen_song.h"
 #include "screen_project.h"
+#include "screen_confirm.h"
 
-TrackerUI::TrackerUI(Gfx& gfx, FontManager& fontManager, AudioManager& audio, FileSystem& file, InputUtils& input, EventDispatcher& dispatcher, TrackerState& state):
+TrackerUI::TrackerUI(Gfx& gfx, FontManager& fontManager, AudioManager& audio, FileSystem& file, InputUtils& input, EventDispatcher& events, TrackerState& state):
   gfx(gfx),
   fontManager(fontManager),
   audio(audio),
   file(file),
   input(input),
-  dispatcher(dispatcher),
+  events(events),
   state(state)
 {
   // Create all screen objects
-  screens[ScreenEnum::song] = new ScreenSong(state, dispatcher, gfx, audio, clipboard);
-  screens[ScreenEnum::project] = new ScreenProject(state, dispatcher, gfx, audio);
+  screens[ScreenEnum::song] = new ScreenSong(state, events, gfx, audio, clipboard);
+  screens[ScreenEnum::project] = new ScreenProject(state, events, gfx, audio);
+  screens[ScreenEnum::confirm] = new ScreenConfirm(state, events, gfx);
 
   // Remaining initialization
   waveDisplay = new WaveformDisplay(gfx);
 
-  dispatcher.switchScreen(ScreenEnum::song);
+  events.dispatch(Event::switchScreen(ScreenEnum::song));
 }
 
 TrackerUI::~TrackerUI() {
@@ -178,12 +180,12 @@ bool TrackerUI::onEvent(const Event& e) {
 
   switch (e.type) {
     case EventType::input:
-      handled = onInput(dynamic_cast<const InputEvent&>(e));
+      handled = onInput(e);
       break;
     case EventType::playSong:
     case EventType::playChain:
     case EventType::playPhrase:
-      handled = onPlay(dynamic_cast<const PlayEvent&>(e));
+      handled = onPlay(e);
       break;
     case EventType::playPhraseRow:
       // TODO: Implent play phrase row
@@ -198,10 +200,10 @@ bool TrackerUI::onEvent(const Event& e) {
     case EventType::switchScreen:
     case EventType::pushScreen:
     case EventType::popScreen:
-      handled = onScreenEvent(dynamic_cast<const ScreenEvent&>(e));
+      handled = onScreenEvent(e);
       break;
     case EventType::showMessage:
-      onShowMessage(dynamic_cast<const MessageEvent&>(e));
+      onShowMessage(e);
       handled = true;
       break;
     default:
@@ -214,17 +216,17 @@ bool TrackerUI::onEvent(const Event& e) {
   return handled;
 }
 
-bool TrackerUI::onInput(const InputEvent& e) {
+bool TrackerUI::onInput(const Event& e) {
   using namespace chipnomad;
 
   // All keys are released
   if (!e.isKeyDown && e.keys == 0) {
     // Clear instant screen message
-    dispatcher.showInstantMessage("");
+    events.dispatch(Event::showInstantMessage(""));
 
     // Stop phrase row playback
     if (audio.engine.player.tracks[state.songTrack].mode == PlaybackMode::phraseRow) {
-      dispatcher.stopPlayback();
+      events.dispatchInstant(Event::stopPlayback());
     }
   }
 
@@ -239,7 +241,7 @@ bool TrackerUI::onInput(const InputEvent& e) {
 
   // Stop playback
   if (isPlaying && e.keys == keyPlay) {
-    dispatcher.stopPlayback();
+      events.dispatchInstant(Event::stopPlayback());
     return true;
   }
 
@@ -249,33 +251,33 @@ bool TrackerUI::onInput(const InputEvent& e) {
   // Play song/chain/phrase depending on the screen's playback level
   if (!isPlaying && e.keys == keyPlay) {
     if (playbackLevel == ScreenPlaybackLevel::song) {
-      dispatcher.playSong(range.enabled ? range.startSongRow : state.songRow, 0, range);
+      events.dispatch(Event::playSong(range.enabled ? range.startSongRow : state.songRow, 0, range));
     } else if (playbackLevel == ScreenPlaybackLevel::chain) {
-      dispatcher.playChain(state.songTrack, state.songRow, range.enabled ? range.startChainRow : state.chainRow, range);
+      events.dispatch(Event::playChain(state.songTrack, state.songRow, range.enabled ? range.startChainRow : state.chainRow, range));
     } else if (playbackLevel == ScreenPlaybackLevel::phrase) {
-      dispatcher.playPhrase(state.songTrack, state.songRow, state.chainRow, range);
+      events.dispatch(Event::playPhrase(state.songTrack, state.songRow, state.chainRow, range));
     }
   }
   // Play song from music screens (Shift+Play)
   else if (!isPlaying && e.keys == (keyPlay | keyShift)) {
     if (playbackLevel == ScreenPlaybackLevel::song) {
-      dispatcher.playSong(range.enabled ? range.startSongRow : state.songRow, 0, range);
+      events.dispatch(Event::playSong(range.enabled ? range.startSongRow : state.songRow, 0, range));
     } else if (playbackLevel == ScreenPlaybackLevel::chain || playbackLevel == ScreenPlaybackLevel::phrase) {
-      dispatcher.playSong(state.songRow, range.enabled ? range.startChainRow : state.chainRow, range);
+      events.dispatch(Event::playSong(state.songRow, range.enabled ? range.startChainRow : state.chainRow, range));
     }
   }
   return true;
 }
 
-void TrackerUI::onShowMessage(const MessageEvent& e) {
-  if (messageTimer > 0 && e.message.length() == 0) return; // Don't clear timed messages
+void TrackerUI::onShowMessage(const Event& e) {
+  if (messageTimer > 0 && strlen(e.message) == 0) return; // Don't clear timed messages
   gfx.clearRect(0, 19, 40, 1);
-  messageTimer = e.isTimed ? timedMessageFrames : 0;
-  strncpy(messageBuffer, e.message.c_str(), sizeof(messageBuffer) - 1);
+  messageTimer = e.isTimedMessage ? timedMessageFrames : 0;
+  strncpy(messageBuffer, e.message, sizeof(messageBuffer) - 1);
   messageBuffer[sizeof(messageBuffer) - 1] = 0;
 }
 
-bool TrackerUI::onPlay(const PlayEvent& e) {
+bool TrackerUI::onPlay(const Event& e) {
   chipnomad::Player& player = audio.engine.player;
 
   if (player.isPlaying()) return true;
@@ -298,16 +300,40 @@ bool TrackerUI::onPlay(const PlayEvent& e) {
   return true;
 }
 
-bool TrackerUI::onScreenEvent(const ScreenEvent& e) {
-  if (e.type == EventType::switchScreen) {
-    Screen* screen = screens[e.screen];
-    if (!screen) return true;
-    screen->setup(e.data);
-    screenStack[0] = screen;
-    screenStackIdx = 0;
-    redrawScreen();
-    return true;
+bool TrackerUI::onScreenEvent(const Event& e) {
+  bool handled = false;
+
+  switch (e.type) {
+    case EventType::switchScreen: {
+      Screen* screen = screens[e.screen];
+      if (!screen) return true;
+      screen->setup(e.screenData);
+      screenStack[0] = screen;
+      screenStackIdx = 0;
+      redrawScreen();
+      handled = true;
+      break;
+    }
+    case EventType::pushScreen: {
+      Screen* screen = screens[e.screen];
+      if (!screen) return true;
+      screenStackIdx++;
+      screenStack[screenStackIdx] = screen;
+      screen->setup(e.screenData);
+      redrawScreen();
+      handled = true;
+      break;
+    }
+    case EventType::popScreen: {
+      if (screenStackIdx == 0) break;
+      screenStackIdx--;
+      events.dispatch(Event::screenOutput(e.screen, e.screenData));
+      redrawScreen();
+      break;
+    }
+    default:
+      break;
   }
 
-  return false;
+  return handled;
 }

@@ -45,96 +45,86 @@ enum class ScreenEnum : int {
   editCharacter,
 };
 
-// Base struct for screen input and output. Most screens only need an int value
-struct ScreenData {
-  ScreenData(): intValue(0) {};
-  ScreenData(int intValue): intValue(intValue) {};
-  virtual ~ScreenData() = default;
-  int intValue;
-};
-
-// Confirmation screen
-struct ConfirmScreenInput : ScreenData {
-  ConfirmScreenInput(const char* title, int confirmValue, int cancelValue): ScreenData(confirmValue), title(title), cancelValue(cancelValue) {};
-  const char* title;
-  int cancelValue;
-};
-
-// File browser
 class FilePreviewer {
   public:
     virtual bool startFilePreview(const char* path) = 0;
     virtual bool stopFilePreview() = 0;
 };
 
-struct FileBrowserInput : ScreenData {
-  FileBrowserInput(bool isFolderMode, const char* title, const char* startPath, const char* extensions, FilePreviewer* previewer, const char* filename):
-    isFolderMode(isFolderMode), title(title), startPath(startPath), extensions(extensions), previewer(previewer), filename(filename) {};
-  bool isFolderMode;
-  const char* title;
-  const char* startPath;
-  const char* extensions;
-  FilePreviewer* previewer;
-  const char* filename;
+// Base struct for screen input and output. Most screens only need an int value
+struct ScreenData {
+  static ScreenData confirm(const char* title, int confirmValue, int cancelValue);
+  static ScreenData confirmOutput(int value);
+  static ScreenData editCharacter(char* str, int charIdx, int maxLength);
+  static ScreenData fileBrowser(bool isFolder, const char* title, const char* startPath, const char* extensions, FilePreviewer* previewer, const char* filename);
+
+  int intValue = 0; // Generic input/output int value
+  char* str = nullptr; // Generic input/output string value
+  const char* title = nullptr; // Generic popup title
+
+  // Confirm popup
+  int confirmValue = 0;
+  int cancelValue = 0;
+
+  // Character edit
+  int charIdx = 0;
+  int maxLength = 0;
+
+  // File browser
+  bool isFolder = false; // Input/output for file browser
+  const char* startPath = nullptr;
+  const char* extensions = nullptr;
+  FilePreviewer* previewer = nullptr;
+  const char* filename = nullptr;
 };
 
-struct FileBrowserOutput : ScreenData {
-  FileBrowserOutput(bool isFolder, const char* path): isFolder(isFolder), path(path) {};
-  bool isFolder;
-  const char* path;
-};
-
-//
-struct EditCharacterInput : ScreenData {
-  EditCharacterInput(char* str, int charIdx, int maxLength): str(str), charIdx(charIdx), maxLength(maxLength) {};
-  char* str;
-  int charIdx;
-  int maxLength;
-};
-
-// Base event struct
+// Event struct
 struct Event {
-  Event(): type(EventType::none) {};
-  Event(EventType type): type(type) {};
-  virtual ~Event() = default;
-  EventType type;
-};
+  // Convenient factory methods
+  static Event input(bool isKeyDown, int keys, int tapCount);
+  static Event rawInput(bool isKeyDown, const InputCode& keyCode);
+  static Event playSong(int songRow, int chainRow);
+  static Event playSong(int songRow, int chainRow, const chipnomad::LoopRange& loopRange);
+  static Event playChain(int track, int songRow, int chainRow);
+  static Event playChain(int track, int songRow, int chainRow, const chipnomad::LoopRange& loopRange);
+  static Event playPhrase(int track, int songRow, int chainRow);
+  static Event playPhrase(int track, int songRow, int chainRow, const chipnomad::LoopRange& loopRange);
+  // void playPhraseRow();
+  static Event stopPlayback();
+  static Event redrawScreen();
+  static Event switchScreen(ScreenEnum screen);
+  static Event switchScreen(ScreenEnum screen, const ScreenData& input);
+  static Event pushScreen(ScreenEnum screen);
+  static Event pushScreen(ScreenEnum screen, const ScreenData& input);
+  static Event popScreen(ScreenEnum screen);
+  static Event popScreen(ScreenEnum screen, const ScreenData& output);
+  static Event screenOutput(ScreenEnum screen, const ScreenData& output);
+  static Event showInstantMessage(const char* format, ...);
+  static Event showTimedMessage(const char* format, ...);
 
-struct InputEvent : Event {
-  InputEvent(bool isKeyDown, int keys, int tapCount): Event(EventType::input), isKeyDown(isKeyDown), keys(keys), tapCount(tapCount) {};
-  bool isKeyDown;
-  int keys;
-  int tapCount;
-};
+  EventType type = EventType::none;
+  // All various parameters that can go to the event
 
-struct RawInputEvent : Event {
-  RawInputEvent(bool isKeyDown, InputCode keyCode): Event(EventType::rawInput), isKeyDown(isKeyDown), keyCode(keyCode) {};
-  bool isKeyDown;
+  // Input events
+  bool isKeyDown = false;
+  int keys = 0;
   InputCode keyCode;
+  int tapCount = 0;
+
+  // Play events
+  chipnomad::LoopRange loopRange = {.enabled = false};
+  int track = 0;
+  int songRow = 0;
+  int chainRow = 0;
+
+  // Screen events
+  ScreenEnum screen = ScreenEnum::song;
+  ScreenData screenData;
+
+  // Message
+  bool isTimedMessage = false;
+  const char* message = nullptr;
 };
-
-struct PlayEvent : Event {
-  PlayEvent(EventType type, chipnomad::LoopRange loopRange, int track, int songRow, int chainRow):
-    Event(type), loopRange(loopRange), track(track), songRow(songRow), chainRow(chainRow) {};
-  chipnomad::LoopRange loopRange;
-  int track;
-  int songRow;
-  int chainRow;
-};
-
-struct ScreenEvent : Event {
-  ScreenEvent(EventType type, ScreenEnum screen, ScreenData data): Event(type), screen(screen), data(data) {};
-  ScreenEnum screen;
-  ScreenData data;
-};
-
-
-struct MessageEvent : Event {
-  MessageEvent(bool isTimed, std::string message): Event(EventType::showMessage), isTimed(isTimed), message(message) {};
-  bool isTimed;
-  std::string message;
-};
-
 
 class EventHandler {
   public:
@@ -143,29 +133,8 @@ class EventHandler {
 
 class EventDispatcher {
   public:
-    virtual void dispatch(std::unique_ptr<Event> e) = 0;
-    virtual void dispatchInstant(std::unique_ptr<Event> e) = 0;
-
-    // Convenience functions for all events
-
-    void input(bool isKeyDown, int keys, int tapCount);
-    void rawInput(bool isKeyDown, const InputCode& keyCode);
-    void playSong(int songRow, int chainRow);
-    void playSong(int songRow, int chainRow, const chipnomad::LoopRange& loopRange);
-    void playChain(int track, int songRow, int chainRow);
-    void playChain(int track, int songRow, int chainRow, const chipnomad::LoopRange& loopRange);
-    void playPhrase(int track, int songRow, int chainRow);
-    void playPhrase(int track, int songRow, int chainRow, const chipnomad::LoopRange& loopRange);
-    // void playPhraseRow();
-    void stopPlayback();
-    void redrawScreen();
-    void switchScreen(ScreenEnum screen);
-    void switchScreen(ScreenEnum screen, const ScreenData& input);
-    void pushScreen(ScreenEnum screen);
-    void pushScreen(ScreenEnum screen, const ScreenData& input);
-    void popScreen(ScreenEnum screen, const ScreenData& output);
-    void showInstantMessage(const char* format, ...);
-    void showTimedMessage(const char* format, ...);
+    virtual void dispatch(const Event& e) = 0;
+    virtual void dispatchInstant(const Event& e) = 0;
 };
 
 #endif // __EVENTS_H__

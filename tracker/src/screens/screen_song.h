@@ -29,7 +29,7 @@ class ScreenSong : public Screen, EditCellInterface {
 
     bool onEdit(int col, int row, EditCellAction action) override;
     bool editCell(int col, int row, EditCellAction action) override;
-    bool onNavigationInput(const InputEvent& e) override;
+    bool onNavigationInput(const Event& e) override;
     bool onEvent(const Event& e) override;
 
   protected:

@@ -20,7 +20,7 @@ class ScreenProject : public Screen {
     void drawCell(int col, int row, CellState state) override;
 
     bool onEdit(int col, int row, EditCellAction action) override;
-    bool onNavigationInput(const InputEvent& e) override;
+    bool onNavigationInput(const Event& e) override;
     bool onEvent(const Event& e) override;
 
     friend class ScreenPartialProjectAY;

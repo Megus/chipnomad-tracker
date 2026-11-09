@@ -230,12 +230,11 @@ bool ScreenProject::onEdit(int col, int row, EditCellAction action) {
         requestConfirmation("Lose unsaved changes?", static_cast<int>(ConfirmValue::loadProject), static_cast<int>(ConfirmValue::cancel));
       } else {
         //doLoadProject();
-
       }
     } else if (col == 1) {
       // Save project - check filename first
       if (strlen(state.settings.projectFilename) == 0) {
-        dispatcher.showTimedMessage("Enter filename");
+        events.dispatch(Event::showTimedMessage("Enter filename"));
       } else {
         selectFolder("SAVE PROJECT",  state.settings.projectPath, ".cnm", state.settings.projectFilename);
       }
@@ -250,11 +249,11 @@ bool ScreenProject::onEdit(int col, int row, EditCellAction action) {
       handled = true;
     } else if (col == 3) {
       // Export - go to export screen
-      dispatcher.pushScreen(ScreenEnum::projectExport);
+      events.dispatch(Event::pushScreen(ScreenEnum::projectExport));
       handled = true;
     } else if (col == 4) {
       // Manage - go to manage screen
-      dispatcher.pushScreen(ScreenEnum::manage);
+      events.dispatch(Event::pushScreen(ScreenEnum::manage));
       handled = true;
     }
   } else if (row == 1) {
@@ -271,7 +270,7 @@ bool ScreenProject::onEdit(int col, int row, EditCellAction action) {
     handled = edit8noLast(action, &state.project->linearPitch, 1, 0, 1);
     if (handled) {
       state.projectModified = 1;
-      dispatcher.stopPlayback();
+      events.dispatchInstant(Event::stopPlayback());
       state.project->calculatePitchTable();
     }
   } else if (row == 5) {
@@ -298,7 +297,7 @@ bool ScreenProject::onEdit(int col, int row, EditCellAction action) {
     // Chips count (1-3 for AY)
     handled = edit8noLast(action, (uint8_t*)&state.project->chipsCount, 1, 1, 3);
     if (handled) {
-      dispatcher.stopPlayback();
+      events.dispatchInstant(Event::stopPlayback());
       gfx.clearRect(35, 3, 5, PROJECT_MAX_TRACKS); // Clear the note preview area for all tracks (right side of screen)
       state.project->tracksCount = state.project->getTotalTracksCount();
       audio.reinitChips();
@@ -311,9 +310,9 @@ bool ScreenProject::onEdit(int col, int row, EditCellAction action) {
   return handled;
 }
 
-bool ScreenProject::onNavigationInput(const InputEvent& e) {
+bool ScreenProject::onNavigationInput(const Event& e) {
   if (e.keys == (keyDown | keyShift)) {
-    dispatcher.switchScreen(ScreenEnum::song);
+    events.dispatch(Event::switchScreen(ScreenEnum::song));
     return true;
   }
   return false;
@@ -326,10 +325,9 @@ bool ScreenProject::onEvent(const Event& e) {
   if (handled) return true;
 
   if (e.type == EventType::screenOutput) {
-    const ScreenEvent& output = dynamic_cast<const ScreenEvent&>(e);
-    switch (output.screen) {
+    switch (e.screen) {
       case ScreenEnum::confirm: {
-        ConfirmValue value = static_cast<ConfirmValue>(output.data.intValue);
+        ConfirmValue value = static_cast<ConfirmValue>(e.screenData.intValue);
         switch (value) {
           case ConfirmValue::loadProject:
 
@@ -348,8 +346,8 @@ bool ScreenProject::onEvent(const Event& e) {
       }
       case ScreenEnum::editCharacter: {
         state.projectModified = true;
-        if (cursorCol < output.data.intValue - 1) cursorCol++;
-        dispatcher.redrawScreen();
+        if (cursorCol < e.screenData.intValue - 1) cursorCol++;
+        events.dispatch(Event::redrawScreen());
         break;
       }
       default:
@@ -361,14 +359,14 @@ bool ScreenProject::onEvent(const Event& e) {
 
 
 void ScreenProject::newProject() {
-  dispatcher.stopPlayback();
+  events.dispatchInstant(Event::stopPlayback());
   delete state.project;
   state.project = new chipnomad::Project();
   state.project->initAYproject();
   state.projectModified = 0;
   state.settings.projectFilename[0] = 0;
   //screensInitAll(); // TODO: Figure out what kind of initialization I need to do. Maybe it should be an event to set a new project?
-  dispatcher.redrawScreen();
+  events.dispatch(Event::redrawScreen());
 }
 
 void ScreenProject::loadProject() {

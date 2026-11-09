@@ -128,7 +128,7 @@ bool ScreenPartialProjectAY::onEdit(int col, int row, EditCellAction action) {
     }
   } else if (row == startRow + 5) {
     // Pitch table - enter pitch table screen
-    screen.dispatcher.pushScreen(ScreenEnum::pitchTable);
+    screen.events.dispatch(Event::pushScreen(ScreenEnum::pitchTable));
     handled = true;
   }
 
