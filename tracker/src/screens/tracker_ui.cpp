@@ -8,7 +8,9 @@
 
 #include "screen_song.h"
 #include "screen_project.h"
+
 #include "screen_confirm.h"
+#include "screen_edit_character.h"
 
 TrackerUI::TrackerUI(Gfx& gfx, FontManager& fontManager, AudioManager& audio, FileSystem& file, InputUtils& input, EventDispatcher& events, TrackerState& state):
   gfx(gfx),
@@ -22,7 +24,9 @@ TrackerUI::TrackerUI(Gfx& gfx, FontManager& fontManager, AudioManager& audio, Fi
   // Create all screen objects
   screens[ScreenEnum::song] = new ScreenSong(state, events, gfx, audio, clipboard);
   screens[ScreenEnum::project] = new ScreenProject(state, events, gfx, audio);
+
   screens[ScreenEnum::confirm] = new ScreenConfirm(state, events, gfx);
+  screens[ScreenEnum::editCharacter] = new ScreenEditCharacter(state, events, gfx);
 
   // Remaining initialization
   waveDisplay = new WaveformDisplay(gfx);
@@ -328,7 +332,7 @@ bool TrackerUI::onScreenEvent(const Event& e) {
       if (screenStackIdx == 0) break;
       screenStackIdx--;
       events.dispatch(Event::screenOutput(e.screen, e.screenData));
-      redrawScreen();
+      events.dispatch(Event::redrawScreen());
       break;
     }
     default:

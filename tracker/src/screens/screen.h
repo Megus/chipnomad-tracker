@@ -90,7 +90,7 @@ class Screen : public EventHandler {
     bool isSingleColumnSelection(); // Is the selection a single column?
 
     void validateCursorPosition(); // Ensure that cursor is in a valid cell
-    void setCellColor(CellState state, int isEmpty, int hasContent); // Set cell color based on state and content
+    void setCellColor(CellState state, bool isEmpty, bool hasContent); // Set cell color based on state and content
 
     int isSingleCellSelection(const Rect& range);
     int isFullColumnSelection(const Rect& range, int maxRow);

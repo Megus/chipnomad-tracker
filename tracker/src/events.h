@@ -26,7 +26,7 @@ enum class ScreenEnum : int {
   song,
   project,
   pitchTable,
-  projectExport,
+  exportProject,
   manage,
   settings,
   colorTheme,

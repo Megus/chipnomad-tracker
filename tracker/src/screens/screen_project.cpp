@@ -249,7 +249,7 @@ bool ScreenProject::onEdit(int col, int row, EditCellAction action) {
       handled = true;
     } else if (col == 3) {
       // Export - go to export screen
-      events.dispatch(Event::pushScreen(ScreenEnum::projectExport));
+      events.dispatch(Event::pushScreen(ScreenEnum::exportProject));
       handled = true;
     } else if (col == 4) {
       // Manage - go to manage screen
@@ -346,8 +346,7 @@ bool ScreenProject::onEvent(const Event& e) {
       }
       case ScreenEnum::editCharacter: {
         state.projectModified = true;
-        if (cursorCol < e.screenData.intValue - 1) cursorCol++;
-        events.dispatch(Event::redrawScreen());
+        if (cursorCol < getColumnCount(cursorRow) - 1) cursorCol++;
         break;
       }
       default:

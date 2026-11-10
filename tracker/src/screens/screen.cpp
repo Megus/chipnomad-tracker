@@ -53,7 +53,7 @@ void Screen::validateCursorPosition() {
   }
 }
 
-void Screen::setCellColor(CellState state, int isEmpty, int hasContent) {
+void Screen::setCellColor(CellState state, bool isEmpty, bool hasContent) {
   const ColorTheme& t = theme();
   int color = t.textInfo;
 
