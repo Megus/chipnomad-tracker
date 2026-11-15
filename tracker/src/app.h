@@ -26,8 +26,6 @@ class TrackerApp: public App, public EventDispatcher {
     void dispatchInstant(const Event& e) override;
 
   protected:
-    static constexpr int eventQueueMaxLength = 16; // Max number of events in the queue
-
     Gfx& gfx;
     FontManager& fontManager;
     AudioDevice& audioDevice;

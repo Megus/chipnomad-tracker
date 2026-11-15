@@ -88,8 +88,8 @@ static int getColumnCount(int row) {
 }
 
 static void drawStatic(void) {
-  gfxSetFgColor(appSettings.colorScheme.textTitles);
-  gfxPrintf(0, 0, "PHRASE %03X%c", phraseIdx, isPhraseUsedElsewhere(&chipnomadState->project, phraseIdx, chipnomadState->project.song[*pSongRow][*pSongTrack], *pChainRow) ? '*' : ' ');
+  gfxSetFgColor(theme().textTitles);
+  gfx.printf(0, 0, "PHRASE %03X%c", phraseIdx, isPhraseUsedElsewhere(&chipnomadState->project, phraseIdx, chipnomadState->project.song[*pSongRow][*pSongTrack], *pChainRow) ? '*' : ' ');
 }
 
 static void fullRedraw(void) {
@@ -103,56 +103,56 @@ static void drawField(int col, int row, CellState state) {
     // Note
     uint8_t value = phraseRows[row].note;
     setCellColor(state, value == EMPTY_VALUE_8, 1);
-    gfxPrint(x, y, noteName(&chipnomadState->project, value));
+    gfx.print(x, y, noteName(&chipnomadState->project, value));
   } else if (col == 1 || col == 2) {
     // Instrument and volume
     uint8_t value = (col == 1) ? phraseRows[row].instrument : phraseRows[row].volume;
     setCellColor(state, value == EMPTY_VALUE_8, 1);
-    gfxPrint(x, y, byteToHexOrEmpty(value));
+    gfx.print(x, y, byteToHexOrEmpty(value));
   } else if (col == 3 || col == 5 || col == 7) {
     // FX name
     uint8_t fx = phraseRows[row].fx[(col - 3) / 2][0];
     setCellColor(state, fx == EMPTY_VALUE_8, 1);
-    gfxPrint(x, y, fxNames[fx].name);
+    gfx.print(x, y, fxNames[fx].name);
   } else if (col == 4 || col == 6 || col == 8) {
     // FX value
     uint8_t value = phraseRows[row].fx[(col - 4) / 2][1];
     setCellColor(state, 0, phraseRows[row].fx[(col - 3) / 2][0] != EMPTY_VALUE_8);
-    gfxPrint(x, y, byteToHex(value));
+    gfx.print(x, y, byteToHex(value));
   }
 }
 
 static void drawRowHeader(int row, CellState state) {
-  const ColorTheme t = appSettings.colorScheme;
+  const ColorTheme t = theme();
   gfxSetFgColor((state == CellState::focus) ? t.textDefault : ((row & 3) == 0 ? t.textValue : t.textInfo));
-  gfxPrintf(1, 3 + row, "%X", row);
+  gfx.printf(1, 3 + row, "%X", row);
 }
 
 static void drawColHeader(int col, CellState state) {
-  const ColorTheme t = appSettings.colorScheme;
+  const ColorTheme t = theme();
   gfxSetFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
 
   switch (col) {
     case 0:
-      gfxPrint(3, 2, "N");
+      gfx.print(3, 2, "N");
       break;
     case 1:
-      gfxPrint(7, 2, "I");
+      gfx.print(7, 2, "I");
       break;
     case 2:
-      gfxPrint(10, 2, "V");
+      gfx.print(10, 2, "V");
       break;
     case 3:
     case 4:
-      gfxPrint(13, 2, "FX1");
+      gfx.print(13, 2, "FX1");
       break;
     case 5:
     case 6:
-      gfxPrint(19, 2, "FX2");
+      gfx.print(19, 2, "FX2");
       break;
     case 7:
     case 8:
-      gfxPrint(25, 2, "FX3");
+      gfx.print(25, 2, "FX3");
       break;
     default:
       break;
@@ -178,16 +178,16 @@ static void draw(void) {
   if (isFxEdit) return;
 
   gfxClearRect(0, 3, 1, 16);
-  gfxSetFgColor(appSettings.colorScheme.textInfo);
-  gfxPrint(0, 3 + *pChainRow, "<");
+  gfxSetFgColor(theme().textInfo);
+  gfx.print(0, 3 + *pChainRow, "<");
 
   gfxClearRect(2, 3, 1, 16);
   PlaybackTrackState* track = &chipnomadState->engine->player.tracks[*pSongTrack];
   if (track->mode != PlaybackMode::stopped && track->mode != PlaybackMode::phraseRow && track->songRow != EMPTY_VALUE_16) {
     // Chain row
     if (*pSongRow == track->songRow) {
-      gfxSetFgColor(appSettings.colorScheme.playMarkers);
-      gfxPrint(0, 3 + track->chainRow, "<");
+      gfxSetFgColor(theme().playMarkers);
+      gfx.print(0, 3 + track->chainRow, "<");
     }
 
     // Phrase row
@@ -195,8 +195,8 @@ static void draw(void) {
     if (playingPhrase == phraseIdx) {
       int row = track->phraseRow;
       if (row >= 0 && row < 16) {
-        gfxSetFgColor(appSettings.colorScheme.playMarkers);
-        gfxPrint(2, 3 + row, ">");
+        gfxSetFgColor(theme().playMarkers);
+        gfx.print(2, 3 + row, ">");
       }
     }
   }

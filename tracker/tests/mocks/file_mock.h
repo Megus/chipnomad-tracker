@@ -80,8 +80,7 @@ class FileMock : public IFile {
     // Helper to add a listing entry
     void addEntry(const char* name, int isDirectory) {
       FileEntry e;
-      strncpy(e.name, name, 255);
-      e.name[255] = 0;
+      copyString(e.name, name, 255);
       e.isDirectory = isDirectory;
       listing.push_back(e);
     }

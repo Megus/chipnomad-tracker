@@ -47,3 +47,14 @@ void trimString(char* str) {
     str[end + 1] = 0;
   }
 }
+
+void copyString(char *dest, const char* src, size_t maxLength) {
+  strncpy(dest, src, maxLength - 1);
+  dest[maxLength - 1] = 0; // NULL-terminator to avoid a known bug with strncpy
+}
+
+const char* stringTail(const char* str, int maxLength) {
+  int length = strlen(str);
+  if (length <= maxLength) return str;
+  return str + length - maxLength;
+}

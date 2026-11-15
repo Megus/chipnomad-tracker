@@ -75,8 +75,7 @@ static void onInstrumentLoaded(const char* path) {
     if (lastSeparator) {
       int pathLen = lastSeparator - path;
       if (pathLen < PATH_LENGTH) {
-        strncpy(appSettings.instrumentPath, path, pathLen);
-        appSettings.instrumentPath[pathLen] = 0;
+        copyString(appSettings.instrumentPath, path, pathLen);
       }
     }
   }
@@ -92,8 +91,7 @@ static void onInstrumentSaved(const char* folderPath) {
   snprintf(fullPath, sizeof(fullPath), "%s%s%s.cni", folderPath, PATH_SEPARATOR_STR, filename);
 
   if (instrumentSave(&chipnomadState->project, fullPath, cInstrument) == 0) {
-    strncpy(appSettings.instrumentPath, folderPath, PATH_LENGTH);
-    appSettings.instrumentPath[PATH_LENGTH - 1] = 0;
+    copyString(appSettings.instrumentPath, folderPath, PATH_LENGTH);
   }
   screenSetup(&screenInstrument, cInstrument);
 }
@@ -231,19 +229,19 @@ int instrumentCommonColumnCount(int row) {
 }
 
 void instrumentCommonDrawStatic(void) {
-  const ColorTheme t = appSettings.colorScheme;
+  const ColorTheme t = theme();
 
   gfxSetFgColor(t.textTitles);
-  gfxPrintf(0, 0, "INSTRUMENT %02X", cInstrument);
+  gfx.printf(0, 0, "INSTRUMENT %02X", cInstrument);
 
   gfxSetFgColor(t.textDefault);
-  gfxPrint(0, 2, "Type");
+  gfx.print(0, 2, "Type");
 
   if (chipnomadState->project.instruments[cInstrument].type == InstrumentType::none) return;
 
-  gfxPrint(0, 3, "Name");
-  gfxPrint(0, 4, "Transp.");
-  gfxPrint(17, 4, "Tbl. Tic");
+  gfx.print(0, 3, "Name");
+  gfx.print(0, 4, "Transp.");
+  gfx.print(17, 4, "Tbl. Tic");
 }
 
 void instrumentCommonDrawCursor(int col, int row) {
@@ -269,33 +267,33 @@ void instrumentCommonDrawCursor(int col, int row) {
 }
 
 void instrumentCommonDrawField(int col, int row, CellState state) {
-  gfxSetFgColor(appSettings.colorScheme.textDefault);
+  gfxSetFgColor(theme().textDefault);
 
-  gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+  gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
 
   if (row == 0 && col == 0) {
     // Instrument type
     gfxClearRect(8, 2, 8, 1);
-    gfxPrint(8, 2, instrumentTypeName(chipnomadState->project.instruments[cInstrument].type));
+    gfx.print(8, 2, instrumentTypeName(chipnomadState->project.instruments[cInstrument].type));
   } else if (row == 0 && col == 1) {
     // Load
-    gfxPrint(23, 2, "Load");
+    gfx.print(23, 2, "Load");
   } else if (row == 0 && col == 2) {
     // Save
-    gfxPrint(29, 2, "Save");
+    gfx.print(29, 2, "Save");
   } else if (row == 0 && col == 3) {
     // Save
-    gfxPrint(29, 2, "Save");
+    gfx.print(29, 2, "Save");
   } else if (row == 1) {
     // Instrument name
     gfxClearRect(8, 3, PROJECT_INSTRUMENT_NAME_LENGTH, 1);
-    gfxPrintf(8, 3, "%s", chipnomadState->project.instruments[cInstrument].name);
+    gfx.printf(8, 3, "%s", chipnomadState->project.instruments[cInstrument].name);
   } else if (row == 2 && col == 0) {
     // Transpose
-    gfxPrintf(8, 4, chipnomadState->project.instruments[cInstrument].transposeEnabled ? "On " : "Off");
+    gfx.printf(8, 4, chipnomadState->project.instruments[cInstrument].transposeEnabled ? "On " : "Off");
   } else if (row == 2 && col == 1) {
     // Table tic speed
-    gfxPrint(26, 4, byteToHex(chipnomadState->project.instruments[cInstrument].tableSpeed));
+    gfx.print(26, 4, byteToHex(chipnomadState->project.instruments[cInstrument].tableSpeed));
   }
 }
 

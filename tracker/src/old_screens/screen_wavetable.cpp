@@ -158,23 +158,22 @@ static int getColumnCount(int row) {
 }
 
 static void drawStatic(void) {
-  const ColorTheme t = appSettings.colorScheme;
+  const ColorTheme t = theme();
 
   // Title
   gfxSetFgColor(t.textTitles);
-  gfxPrint(0, 0, "WAVETABLES");
+  gfx.print(0, 0, "WAVETABLES");
 
   // Button labels and text (row 0 is at y=2)
   gfxSetFgColor(t.textDefault);
-  gfxPrint(0, 2, "Load");
-  gfxPrint(7, 2, "Save");
-  gfxPrint(16, 2, "wavetables");  // Static text after the count (moved 1 char right)
+  gfx.print(0, 2, "Load");
+  gfx.print(7, 2, "Save");
+  gfx.print(16, 2, "wavetables");  // Static text after the count (moved 1 char right)
 
   // Update all previews
   updatePreviews();
 
   // Clear all preview areas first (35 chars wide: 2 for index + 32 for data + 1 for safety)
-  gfxSetBgColor(t.background);
   gfxClearRect(0, 4, 35, 2);  // wavetable -2 (2 lines: y 4-5)
   gfxClearRect(0, 6, 35, 2);  // wavetable -1 (2 lines: y 6-7)
   gfxClearRect(0, 8, 35, 3);  // current wavetable preview (3 lines: y 8-10)
@@ -197,27 +196,27 @@ static void drawStatic(void) {
   gfxSetFgColor(t.textInfo);
 
   if (prevIdx2 >= 0) {
-    gfxPrintf(0, 5, "%02X", prevIdx2);  // Bottom line of -2 preview
+    gfx.printf(0, 5, "%02X", prevIdx2);  // Bottom line of -2 preview
   }
   if (prevIdx1 >= 0) {
-    gfxPrintf(0, 7, "%02X", prevIdx1);  // Bottom line of -1 preview
+    gfx.printf(0, 7, "%02X", prevIdx1);  // Bottom line of -1 preview
   }
 
   // Current wavetable index is highlighted with textTitles color (same as screen header)
   gfxSetFgColor(t.textTitles);
-  gfxPrintf(0, 11, "%02X", wavetableIdx);  // Current wavetable (at y=11)
+  gfx.printf(0, 11, "%02X", wavetableIdx);  // Current wavetable (at y=11)
 
   // Back to textInfo for remaining wavetables
   gfxSetFgColor(t.textInfo);
 
   if (nextIdx1 <= 255) {
-    gfxPrintf(0, 13, "%02X", nextIdx1);  // Bottom line of +1 preview
+    gfx.printf(0, 13, "%02X", nextIdx1);  // Bottom line of +1 preview
   }
   if (nextIdx2 <= 255) {
-    gfxPrintf(0, 15, "%02X", nextIdx2);  // Bottom line of +2 preview
+    gfx.printf(0, 15, "%02X", nextIdx2);  // Bottom line of +2 preview
   }
   if (nextIdx3 <= 255) {
-    gfxPrintf(0, 17, "%02X", nextIdx3);  // Bottom line of +3 preview
+    gfx.printf(0, 17, "%02X", nextIdx3);  // Bottom line of +3 preview
   }
 
   // Draw wavetable previews
@@ -281,21 +280,21 @@ static void drawCursor(int col, int row) {
 }
 
 static void drawField(int col, int row, CellState state) {
-  const ColorTheme t = appSettings.colorScheme;
+  const ColorTheme t = theme();
 
   if (row == 0) {
     // Buttons row - need to redraw to clear cursor
     gfxSetFgColor(state == CellState::focus ? t.textValue : t.textDefault);
     if (col == 0) {
       gfxClearRect(0, 2, 4, 1);  // Clear area for "Load" button
-      gfxPrint(0, 2, "Load");
+      gfx.print(0, 2, "Load");
     } else if (col == 1) {
       gfxClearRect(7, 2, 4, 1);  // Clear area for "Save" button
-      gfxPrint(7, 2, "Save");
+      gfx.print(7, 2, "Save");
     } else if (col == 2) {
       // Wavetable count (3 hex digits for 1-256 range, displayed as 001-100 in hex)
       gfxClearRect(12, 2, 3, 1);  // Clear area for count
-      gfxPrintf(12, 2, "%03X", wavetableSaveCount);
+      gfx.printf(12, 2, "%03X", wavetableSaveCount);
     }
   } else if (row == 1) {
     // Wavetable editor row at y=11, starts at x=2
@@ -308,7 +307,7 @@ static void drawField(int col, int row, CellState state) {
     char hex[2];
     hex[0] = "0123456789ABCDEF"[value & 0x0F];
     hex[1] = '\0';
-    gfxPrint(2 + col, 11, hex);
+    gfx.print(2 + col, 11, hex);
   }
 }
 
@@ -324,8 +323,7 @@ static void onLoadFileSelected(const char* path) {
     if (lastSeparator) {
       int pathLen = lastSeparator - path;
       if (pathLen < PATH_LENGTH) {
-        strncpy(appSettings.wavetablePath, path, pathLen);
-        appSettings.wavetablePath[pathLen] = 0;
+        copyString(appSettings.wavetablePath, path, pathLen);
       }
     }
   } else {
@@ -349,8 +347,7 @@ static void onWavetablePreviewStop(void) {
 
 static void onSaveFolderSelected(const char* folderPath) {
   // Store the selected folder and show the filename entry screen
-  strncpy(selectedSaveFolder, folderPath, sizeof(selectedSaveFolder) - 1);
-  selectedSaveFolder[sizeof(selectedSaveFolder) - 1] = 0;
+  copyString(selectedSaveFolder, folderPath, sizeof(selectedSaveFolder) - 1);
 
   enterNameSetup("SAVE WAVETABLES", "File name:", "", onSaveNameEntered, onSaveCancelled);
   screenSetup(&screenEnterName, 0);
@@ -366,8 +363,7 @@ static void onSaveNameEntered(const char* filename) {
     screenMessage(MESSAGE_TIME, "Saved %d wavetable%s from %02X", wavetableSaveCount, wavetableSaveCount == 1 ? "" : "s", wavetableIdx);
 
     // Save the folder path to settings
-    strncpy(appSettings.wavetablePath, selectedSaveFolder, PATH_LENGTH);
-    appSettings.wavetablePath[PATH_LENGTH - 1] = 0;
+    copyString(appSettings.wavetablePath, selectedSaveFolder, PATH_LENGTH);
   } else {
     screenMessage(MESSAGE_TIME, "Failed to save wavetables");
   }
@@ -441,7 +437,7 @@ static int onEdit(int col, int row, EditCellAction action) {
       int isYM = p->chipSetup.ay.isYM;
       if (previewBitmap) {
         renderAYWavetablePreview(previewBitmap, p->ayWavetables[wavetableIdx], isYM);
-        gfxSetFgColor(appSettings.colorScheme.textInfo);
+        gfxSetFgColor(theme().textInfo);
         gfxDrawBitmap(previewBitmap, 2, 8);
       }
     }

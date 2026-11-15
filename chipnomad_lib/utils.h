@@ -8,6 +8,8 @@ namespace chipnomad {
 const char* byteToHex(uint8_t byte);
 const char* byteToHexOrEmpty(uint8_t byte);
 
+void copyString(char *dest, const char* src, size_t maxLength); // Safe version of strncpy
+
 int min(int a, int b);
 int max(int a, int b);
 

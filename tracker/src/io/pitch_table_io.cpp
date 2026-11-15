@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "misc.h"
 
 static char lineBuffer[1024];
 
@@ -61,8 +62,7 @@ int pitchTableLoadCSV(chipnomad::Project& p, const char* path) {
     while (token) {
       stripTrailingWhitespace(token);
       if (col == noteCol) {
-        strncpy(noteName, token, 3);
-        noteName[3] = 0;
+        copyString(noteName, token, 3);
         foundNote = 1;
       } else if (col == valueCol) {
         value = atoi(token);
@@ -74,8 +74,7 @@ int pitchTableLoadCSV(chipnomad::Project& p, const char* path) {
 
     // Add entry if both values were found
     if (foundNote && foundValue && strlen(noteName) > 0) {
-      strncpy(p.pitchTable.noteNames[noteIndex], noteName, 3);
-      p.pitchTable.noteNames[noteIndex][3] = 0;
+      copyString(p.pitchTable.noteNames[noteIndex], noteName, 3);
       p.pitchTable.values[noteIndex] = value;
       noteIndex++;
     }

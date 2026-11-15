@@ -23,8 +23,7 @@ static void onProjectLoaded(const char* path) {
   if (lastSeparator) {
     int pathLen = lastSeparator - path;
     if (pathLen > 0 && pathLen < PATH_LENGTH) {
-      strncpy(appSettings.projectPath, path, pathLen);
-      appSettings.projectPath[pathLen] = '\0';
+      copyString(appSettings.projectPath, path, pathLen);
     }
   } else {
     appSettings.projectPath[0] = '\0';
@@ -72,8 +71,7 @@ static void onProjectSaved(const char* folderPath) {
   if (projectSave(&chipnomadState->project, fullPath)) {
     // Save the directory path
     projectModified = 0; // Clear modified flag after saving
-    strncpy(appSettings.projectPath, folderPath, PATH_LENGTH);
-    appSettings.projectPath[PATH_LENGTH] = 0;
+    copyString(appSettings.projectPath, folderPath, PATH_LENGTH);
   }
   screenSetup(&screenProject, 0);
 }
@@ -95,7 +93,7 @@ void ScreenProject::setup(const ScreenData& input) {
 }
 
 int ScreenProject::getRowCount() {
-  return ScreenProject::commonRowCount + partial->getRowCount();
+  return ScreenProject::kCommonRowCount + partial->getRowCount();
 }
 
 int ScreenProject::getColumnCount(int row) {
@@ -258,13 +256,13 @@ bool ScreenProject::onEdit(int col, int row, EditCellAction action) {
     }
   } else if (row == 1) {
     // File name
-    handled = editCharacter(action, state.settings.projectFilename, col, kFileNameLength);
+    handled = enterCharacter(action, state.settings.projectFilename, col, kFileNameLength);
   } else if (row == 2) {
     // Title
-    handled = editCharacter(action, state.project->title, col, PROJECT_TITLE_LENGTH);
+    handled = enterCharacter(action, state.project->title, col, PROJECT_TITLE_LENGTH);
   } else if (row == 3) {
     // Author
-    handled = editCharacter(action, state.project->author, col, PROJECT_TITLE_LENGTH);
+    handled = enterCharacter(action, state.project->author, col, PROJECT_TITLE_LENGTH);
   } else if (row == 4) {
     // Linear pitch (ON/OFF)
     handled = edit8noLast(action, &state.project->linearPitch, 1, 0, 1);
@@ -344,7 +342,7 @@ bool ScreenProject::onEvent(const Event& e) {
 
         break;
       }
-      case ScreenEnum::editCharacter: {
+      case ScreenEnum::enterCharacter: {
         state.projectModified = true;
         if (cursorCol < getColumnCount(cursorRow) - 1) cursorCol++;
         break;

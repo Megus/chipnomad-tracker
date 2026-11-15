@@ -56,8 +56,7 @@ ExporterWAV::ExporterWAV(const char* path, Project* project, int startRow, int s
   channels = 2;
   totalSamples = 0;
   currentTrack = 0;
-  strncpy(this->basePath, path, sizeof(this->basePath) - 1);
-  this->basePath[sizeof(this->basePath) - 1] = 0;
+  copyString(this->basePath, path, sizeof(this->basePath) - 1);
 
   if (stems) {
     fileCount = project->chipsCount * 3;
@@ -71,8 +70,7 @@ ExporterWAV::ExporterWAV(const char* path, Project* project, int startRow, int s
     if (stems) {
       snprintf(fname, sizeof(fname), "%s-%02d.wav", path, i + 1);
     } else {
-      strncpy(fname, path, sizeof(fname) - 1);
-      fname[sizeof(fname) - 1] = 0;
+      copyString(fname, path, sizeof(fname) - 1);
     }
     files[i] = fopen(fname, "wb");
     if (files[i]) {
@@ -149,8 +147,7 @@ void ExporterWAV::cancel() {
       if (stems) {
         snprintf(fname, sizeof(fname), "%s-%02d.wav", basePath, i + 1);
       } else {
-        strncpy(fname, basePath, sizeof(fname) - 1);
-        fname[sizeof(fname) - 1] = 0;
+        copyString(fname, basePath, sizeof(fname) - 1);
       }
       remove(fname);
     }

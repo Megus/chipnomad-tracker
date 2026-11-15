@@ -75,8 +75,8 @@ static int getColumnCount(int row) {
 }
 
 static void drawStatic(void) {
-  gfxSetFgColor(appSettings.colorScheme.textTitles);
-  gfxPrintf(0, 0, "CHAIN %02X%c", chain, isChainUsedElsewhere(&chipnomadState->project, chain, *pSongTrack, *pSongRow) ? '*' : ' ');
+  gfxSetFgColor(theme().textTitles);
+  gfx.printf(0, 0, "CHAIN %02X%c", chain, isChainUsedElsewhere(&chipnomadState->project, chain, *pSongTrack, *pSongRow) ? '*' : ' ');
 }
 
 static void drawField(int col, int row, CellState state) {
@@ -87,38 +87,38 @@ static void drawField(int col, int row, CellState state) {
     // Phrase
     setCellColor(state, phrase == EMPTY_VALUE_16, hasContent);
     if (phrase == EMPTY_VALUE_16) {
-      gfxPrint(3, 3 + row, "---");
+      gfx.print(3, 3 + row, "---");
     } else {
-      gfxPrintf(3, 3 + row, "%03X", phrase);
+      gfx.printf(3, 3 + row, "%03X", phrase);
     }
     // Also draw transpose to keep colors synchronized (only if not in selection mode)
     if (screen.selectMode == 0) {
       setCellColor(CellState::normal, 0, hasContent);
-      gfxPrint(7, 3 + row, byteToHex(chipnomadState->project.chains[chain].rows[row].transpose));
+      gfx.print(7, 3 + row, byteToHex(chipnomadState->project.chains[chain].rows[row].transpose));
     }
   } else {
     // Transpose
     setCellColor(state, 0, hasContent);
-    gfxPrint(7, 3 + row, byteToHex(chipnomadState->project.chains[chain].rows[row].transpose));
+    gfx.print(7, 3 + row, byteToHex(chipnomadState->project.chains[chain].rows[row].transpose));
   }
 }
 
 static void drawRowHeader(int row, CellState state) {
-  const ColorTheme t = appSettings.colorScheme;
+  const ColorTheme t = theme();
   gfxSetFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
-  gfxPrintf(1, 3 + row, "%X", row);
+  gfx.printf(1, 3 + row, "%X", row);
 }
 
 static void drawColHeader(int col, CellState state) {
-  const ColorTheme t = appSettings.colorScheme;
+  const ColorTheme t = theme();
   gfxSetFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
 
   if (col == 0) {
     // Phrase
-    gfxPrint(3, 2, "P");
+    gfx.print(3, 2, "P");
   } else {
     // Transpose
-    gfxPrint(7, 2, "T");
+    gfx.print(7, 2, "T");
   }
 }
 
@@ -149,8 +149,8 @@ static void draw(void) {
   if (chipnomadState && chipnomadState->engine->player.tracks[*pSongTrack].songRow == *pSongRow) {
     int chainRow = chipnomadState->engine->player.tracks[*pSongTrack].chainRow;
     if (chainRow >= 0 && chainRow < 16) {
-      gfxSetFgColor(appSettings.colorScheme.playMarkers);
-      gfxPrint(2, 3 + chainRow, ">");
+      gfxSetFgColor(theme().playMarkers);
+      gfx.print(2, 3 + chainRow, ">");
     }
   }
 }

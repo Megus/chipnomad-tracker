@@ -6,6 +6,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include "file_system.h"
+#include "misc.h"
 
 #if defined(ANDROID_BUILD) || defined(MACOS_BUILD)
 // Helper: Create directory recursively
@@ -62,6 +63,16 @@ bool FileSystem::directoryExists(const char* path) {
   return (stat(path, &statBuf) == 0 && S_ISDIR(statBuf.st_mode)) ? true : false;
 }
 
+bool FileSystem::fileExists(const char* path) {
+  FILE* file = fopen(path, "r");
+  if (file != NULL) {
+    fclose(file);
+    return true;
+  } else {
+    return false;
+  }
+}
+
 bool FileSystem::createDirectory(const char* path) {
   #ifdef _WIN32
   return mkdir(path) == 0 ? true : false;
@@ -74,30 +85,19 @@ bool FileSystem::deleteFile(const char* path) {
   return remove(path) == 0 ? true : false;
 }
 
-FileEntry* FileSystem::listDirectory(const char* path, const char* extension, int* entryCount) {
+std::vector<FileEntry> FileSystem::listDirectory(const char* path, const char* extension) {
   DIR* dir = opendir(path);
   if (!dir) {
-    *entryCount = 0;
-    return nullptr;
+    return std::vector<FileEntry>();
   }
 
   struct dirent* entry;
-  int capacity = 100;
-  int count = 0;
-  FileEntry* entries = (FileEntry*)malloc(capacity * sizeof(FileEntry));
-
-  if (!entries) {
-    closedir(dir);
-    *entryCount = 0;
-    return nullptr;
-  }
+  std::vector<FileEntry> entries;
 
   // Check first entry - if it's neither "." nor "..", insert ".." (unless at root)
   entry = readdir(dir);
   if (entry && strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0 && strcmp(path, "/") != 0) {
-    strcpy(entries[0].name, "..");
-    entries[0].isDirectory = 1;
-    count = 1;
+    entries.push_back({.name = "..", .isDirectory = true});
   }
 
   // Process entries using do-while to handle first entry
@@ -109,7 +109,7 @@ FileEntry* FileSystem::listDirectory(const char* path, const char* extension, in
         if (strcmp(entry->d_name, "..") != 0) continue;
       }
 
-      char fullPath[2048];
+      char fullPath[kPathMaxLength + 1];
       snprintf(fullPath, sizeof(fullPath), "%s%s%s", path, kPathSeparatorStr, entry->d_name);
 
       struct stat statBuf;
@@ -117,6 +117,7 @@ FileEntry* FileSystem::listDirectory(const char* path, const char* extension, in
 
       int isDir = S_ISDIR(statBuf.st_mode);
 
+      // Filter by extensions (comma-separated list of extensions)
       if (!isDir && extension && extension[0] != '\0') {
         char* dot = strrchr(entry->d_name, '.');
         if (!dot) continue;
@@ -135,54 +136,40 @@ FileEntry* FileSystem::listDirectory(const char* path, const char* extension, in
         if (!match) continue;
       }
 
-      // Resize array if needed
-      if (count >= capacity) {
-        capacity *= 2;
-        FileEntry* newEntries = (FileEntry*)realloc(entries, capacity * sizeof(FileEntry));
-        if (!newEntries) {
-          free(entries);
-          closedir(dir);
-          *entryCount = 0;
-          return NULL;
-        }
-        entries = newEntries;
-      }
-
-      strncpy(entries[count].name, entry->d_name, 255);
-      entries[count].name[255] = 0;
-      entries[count].isDirectory = isDir;
-      count++;
+      FileEntry fileEntry;
+      copyString(fileEntry.name, entry->d_name, kFilenameMaxLength);
+      fileEntry.isDirectory = isDir;
+      entries.push_back(fileEntry);
     } while ((entry = readdir(dir)));
   }
 
   closedir(dir);
-  *entryCount = count;
   return entries;
 }
 
 const char* FileSystem::getAutosavePath(void) {
   static const char* autosaveFilename = "autosave.cnm";
-  static char autosavePath[kPathMaxLength];
+  static char autosavePath[kPathMaxLength + 1];
 
-  char defaultDir[kPathMaxLength];
-  if (!getDefaultDirectory(defaultDir, kPathMaxLength)) return autosaveFilename;
+  char defaultDir[kPathMaxLength + 1];
+  if (!getDefaultDirectory(defaultDir, kPathMaxLength + 1)) return autosaveFilename;
   snprintf(autosavePath, sizeof(autosavePath), "%s%s%s", defaultDir, kPathSeparatorStr, autosaveFilename);
   return autosavePath;
 }
 
 const char* FileSystem::getSettingsPath(void) {
   static const char* settingsFilename = "settings.txt";
-  static char settingsPath[kPathMaxLength];
+  static char settingsPath[kPathMaxLength + 1];
 
-  char defaultDir[kPathMaxLength];
-  if (!getDefaultDirectory(defaultDir, kPathMaxLength)) return settingsFilename;
+  char defaultDir[kPathMaxLength + 1];
+  if (!getDefaultDirectory(defaultDir, kPathMaxLength + 1)) return settingsFilename;
   snprintf(settingsPath, sizeof(settingsPath), "%s%s%s", defaultDir, kPathSeparatorStr, settingsFilename);
   return settingsPath;
 }
 
 void FileSystem::extractFilenameWithoutExtension(const char* path, char* output, int maxLength) {
   // Extract filename from path
-  const char* filename = strrchr(path, kPathSeparator);
+  const char* filename = strrchr(path, kPathSeparatorChar);
   if (filename) {
     filename++; // Skip the separator
   } else {
@@ -190,8 +177,7 @@ void FileSystem::extractFilenameWithoutExtension(const char* path, char* output,
   }
 
   // Copy filename
-  strncpy(output, filename, maxLength - 1);
-  output[maxLength - 1] = 0;
+  copyString(output, filename, maxLength);
 
   // Remove file extension
   char* dot = strrchr(output, '.');

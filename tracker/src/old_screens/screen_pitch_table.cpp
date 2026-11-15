@@ -18,8 +18,7 @@ static void onLoadSelected(const char* path) {
     const char* lastSeparator = strrchr(path, PATH_SEPARATOR);
     if (lastSeparator) {
       int pathLen = lastSeparator - path;
-      strncpy(appSettings.pitchTablePath, path, pathLen);
-      appSettings.pitchTablePath[pathLen] = 0;
+      copyString(appSettings.pitchTablePath, path, pathLen);
     }
     projectModified = 1;
   }
@@ -30,8 +29,7 @@ static void onSaveSelected(const char* folderPath) {
   pitchTableSaveCSV(&chipnomadState->project, folderPath, chipnomadState->project.pitchTable.name);
 
   // Save the directory path
-  strncpy(appSettings.pitchTablePath, folderPath, PATH_LENGTH);
-  appSettings.pitchTablePath[PATH_LENGTH] = 0;
+  copyString(appSettings.pitchTablePath, folderPath, PATH_LENGTH);
 
   screenSetup(&screenPitchTable, 0);
 }
@@ -46,11 +44,11 @@ static int getColumnCount(int row) {
 }
 
 static void drawStatic(void) {
-  gfxSetFgColor(appSettings.colorScheme.textTitles);
-  gfxPrint(0, 0, "PITCH TABLE");
+  gfxSetFgColor(theme().textTitles);
+  gfx.print(0, 0, "PITCH TABLE");
 
-  gfxSetFgColor(appSettings.colorScheme.textDefault);
-  gfxPrint(0, 2, "Name");
+  gfxSetFgColor(theme().textDefault);
+  gfx.print(0, 2, "Name");
 }
 
 static void drawCursor(int col, int row) {
@@ -66,17 +64,17 @@ static void drawCursor(int col, int row) {
 }
 
 static void drawField(int col, int row, CellState state) {
-  gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+  gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
 
   if (row == 0) {
     gfxClearRect(7, 2, PROJECT_PITCH_TABLE_TITLE_LENGTH, 1);
-    gfxPrintf(7, 2, "%s", chipnomadState->project.pitchTable.name);
+    gfx.printf(7, 2, "%s", chipnomadState->project.pitchTable.name);
   } else if (row == 1) {
-    gfxPrint(0, 4, "Load from CSV");
+    gfx.print(0, 4, "Load from CSV");
   } else if (row == 2) {
-    gfxPrint(0, 5, "Save to CSV");
+    gfx.print(0, 5, "Save to CSV");
   } else if (row == 3) {
-    gfxPrint(0, 6, "Generate for current clock");
+    gfx.print(0, 6, "Generate for current clock");
   }
 }
 

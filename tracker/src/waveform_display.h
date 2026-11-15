@@ -19,7 +19,7 @@ class WaveformDisplay {
     void renderAYWavetablePreview(Bitmap* bitmap, uint8_t* wavetable, int isYM);
 
   protected:
-    static constexpr int dimBrightness = 160;
+    static constexpr int kDimBrightness = 160;
 
     void drawVerticalLine(Bitmap* bitmap, int x, int y1, int y2, uint8_t shade);
     void drawAYWaveformSlice(Bitmap* bitmap, int x, int amplitude, int toneHigh, int hasEnvelope, int hasNoise, int noiseShadeBase);

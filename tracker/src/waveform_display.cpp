@@ -62,10 +62,10 @@ void WaveformDisplay::drawAYWaveformSlice(Bitmap* bitmap, int x, int amplitude, 
     bitmap->data[lowY * charW + x] = 255;
 
     if (hasEnvelope) {
-      bitmap->data[y * charW + x] = dimBrightness;
+      bitmap->data[y * charW + x] = kDimBrightness;
       if (prevEnvAmplitude >= 0) {
         int prevY = charH - 1 - prevEnvAmplitude;
-        drawVerticalLine(bitmap, x, y, prevY, dimBrightness);
+        drawVerticalLine(bitmap, x, y, prevY, kDimBrightness);
       }
     }
 

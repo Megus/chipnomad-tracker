@@ -49,14 +49,14 @@ class AppSettings {
     // Names and paths
     char themeName[kThemeNameLength + 1];
     char projectFilename[kFileNameLength + 1];
-    char projectPath[kPathMaxLength + 1];
-    char pitchTablePath[kPathMaxLength + 1];
-    char instrumentPath[kPathMaxLength + 1];
-    char themePath[kPathMaxLength + 1];
-    char fontPath[kPathMaxLength + 1];
-    char fontFolderPath[kPathMaxLength + 1];
-    char samplePath[kPathMaxLength + 1];
-    char wavetablePath[kPathMaxLength + 1];
+    char projectPath[FileSystem::kPathMaxLength + 1];
+    char pitchTablePath[FileSystem::kPathMaxLength + 1];
+    char instrumentPath[FileSystem::kPathMaxLength + 1];
+    char themePath[FileSystem::kPathMaxLength + 1];
+    char fontPath[FileSystem::kPathMaxLength + 1];
+    char fontFolderPath[FileSystem::kPathMaxLength + 1];
+    char samplePath[FileSystem::kPathMaxLength + 1];
+    char wavetablePath[FileSystem::kPathMaxLength + 1];
 
     AppSettings();
     ~AppSettings() = default;

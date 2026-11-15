@@ -15,8 +15,8 @@ static int getColumnCount(int row) {
 
 static void drawStatic(void) {
   exportCommonDrawStatic();
-  gfxSetFgColor(appSettings.colorScheme.textValue);
-  gfxPrint(0, 10, "PSG");
+  gfxSetFgColor(theme().textValue);
+  gfx.print(0, 10, "PSG");
 }
 
 static void drawCursor(int col, int row) {
@@ -29,10 +29,10 @@ static void drawCursor(int col, int row) {
 static void drawField(int col, int row, CellState state) {
   if (row < SCR_EXPORT_ROWS) return exportCommonDrawField(col, row, state);
 
-  gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+  gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
 
   if (row == SCR_EXPORT_ROWS) {
-    gfxPrint(13, 10, "Export");
+    gfx.print(13, 10, "Export");
   }
 }
 

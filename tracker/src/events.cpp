@@ -10,12 +10,24 @@ ScreenData ScreenData::confirmOutput(int value) {
   return {.intValue = value};
 }
 
-ScreenData ScreenData::editCharacter(char* str, int charIdx, int maxLength) {
+ScreenData ScreenData::enterCharacter(char* str, int charIdx, int maxLength) {
   return {.str = str, .charIdx = charIdx, .maxLength = maxLength};
 }
 
+ScreenData ScreenData::enterString(char* str, int maxLength, const char* title, const char* prompt, const char* detail) {
+  return {.str = str, .title = title, .prompt = prompt, .detail = detail, .maxLength = maxLength};
+}
+
+ScreenData ScreenData::enterStringOutput(int value, char* str) {
+  return {.intValue = value, .str = str};
+}
+
 ScreenData ScreenData::fileBrowser(bool isFolder, const char* title, const char* startPath, const char* extensions, FilePreviewer* previewer, const char* filename) {
-  return {.title = title, .isFolder = isFolder, .startPath = startPath, .extensions = extensions, .previewer = previewer, .filename = filename};
+  return {.title = title, .isFolder = isFolder, .folderPath = startPath, .extensions = extensions, .previewer = previewer, .filename = filename};
+}
+
+ScreenData ScreenData::fileBrowserOutput(bool isFolder, const char* filePath, const char* folderPath) {
+  return {.isFolder = isFolder, .filePath = filePath, .folderPath = folderPath};
 }
 
 Event Event::input(bool isKeyDown, int keys, int tapCount) {

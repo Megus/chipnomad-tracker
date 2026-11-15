@@ -149,12 +149,12 @@ int drawGroupHeader(int visibleGroupIdx, int y, int isCurrent) {
 
   // Highlight current group header
   if (isCurrent) {
-    gfxSetFgColor(appSettings.colorScheme.textValue);
+    gfxSetFgColor(theme().textValue);
   } else {
-    gfxSetFgColor(appSettings.colorScheme.textTitles);
+    gfxSetFgColor(theme().textTitles);
   }
 
-  gfxPrint(1, y, group->name);
+  gfx.print(1, y, group->name);
 
   return y + 1;  // Next line after header
 }
@@ -176,12 +176,12 @@ int drawFXList(int visibleGroupIdx, int y) {
     // Highlight current FX if this is the current group
     int isCurrent = (visibleGroupIdx == currentGroup && idx == currentIdx);
     if (isCurrent) {
-      gfxSetFgColor(appSettings.colorScheme.textValue);
+      gfxSetFgColor(theme().textValue);
     } else {
-      gfxSetFgColor(appSettings.colorScheme.textDefault);
+      gfxSetFgColor(theme().textDefault);
     }
 
-    gfxPrint(1 + col * 4, fxY, group->fxList[idx].name);
+    gfx.print(1 + col * 4, fxY, group->fxList[idx].name);
 
     if (isCurrent) {
       gfxCursor(1 + col * 4, fxY, 3);

@@ -34,7 +34,7 @@ class ScreenProject : public Screen {
 
     AudioManager& audio;
 
-    static constexpr int commonRowCount = 8; // Number of common rows on the Project screen (before partial)
+    static constexpr int kCommonRowCount = 8; // Number of common rows on the Project screen (before partial)
 
     int tickRateI = 0; // Integer part of the tick rate
     uint16_t tickRateF = 0; // Fractional part of the tick rate

@@ -1,7 +1,7 @@
 #include <string.h>
 #include "gfx.h"
 #include "misc.h"
-#include "screen_edit_character.h"
+#include "screen_enter_character.h"
 
 // Character keyboard layout
 static const char* keyboardRowsUpper[] = {
@@ -18,7 +18,7 @@ static const char* keyboardRowsLower[] = {
   "zxcvbnm !_",
 };
 
-void ScreenEditCharacter::setup(const ScreenData& input) {
+void ScreenEnterCharacter::setup(const ScreenData& input) {
   str = input.str;
   charIdx = input.charIdx;
   maxLength = input.maxLength;
@@ -54,23 +54,23 @@ void ScreenEditCharacter::setup(const ScreenData& input) {
   }
 }
 
-void ScreenEditCharacter::drawStatic() {
+void ScreenEnterCharacter::drawStatic() {
   gfx.setFgColor(theme().textInfo);
   gfx.print(12, 18, isUppercase ? "SHIFT: lowercase" : "SHIFT: uppercase");
 }
 
-void ScreenEditCharacter::drawCursor(int col, int row) {
+void ScreenEnterCharacter::drawCursor(int col, int row) {
   gfx.cursor(10 + col * 2, 6 + row, 1);
 }
 
-void ScreenEditCharacter::drawCell(int col, int row, CellState state) {
+void ScreenEnterCharacter::drawCell(int col, int row, CellState state) {
   char charStr[2] = {keyboardRows()[row][col], 0};
 
   setCellColor(state, false, true);
   gfx.print(10 + col * 2, 6 + row, charStr);
 }
 
-bool ScreenEditCharacter::onEvent(const Event& e) {
+bool ScreenEnterCharacter::onEvent(const Event& e) {
   if (e.type != EventType::input) return false;
 
   bool handled = false;
@@ -93,7 +93,7 @@ bool ScreenEditCharacter::onEvent(const Event& e) {
     str[charIdx] = selectedChar;
     trimString(str);
 
-    events.dispatch(Event::popScreen(ScreenEnum::editCharacter));
+    events.dispatch(Event::popScreen(ScreenEnum::enterCharacter));
     handled = true;
   } else if ((e.keys & keyShift) && e.isKeyDown && !shiftFlag) {
     // Toggle between uppercase and lowercase
@@ -137,6 +137,6 @@ bool ScreenEditCharacter::onEvent(const Event& e) {
   return handled;
 }
 
-const char** ScreenEditCharacter::keyboardRows() {
+const char** ScreenEnterCharacter::keyboardRows() {
   return isUppercase ? keyboardRowsUpper : keyboardRowsLower;
 }

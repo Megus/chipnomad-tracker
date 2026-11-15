@@ -1,6 +1,7 @@
+#include <math.h>
+#include <string.h>
 #include "utils.h"
 #include "project.h"
-#include <math.h>
 
 namespace chipnomad {
 
@@ -34,6 +35,12 @@ const char* byteToHexOrEmpty(uint8_t byte) {
     return hexBytes[byte];
   }
 }
+
+void copyString(char *dest, const char* src, size_t maxLength) {
+  strncpy(dest, src, maxLength);
+  dest[maxLength - 1] = 0; // Adding NULL-terminator to avoid a known strncpy bug
+}
+
 
 int min(int a, int b) {
   return a < b ? a : b;

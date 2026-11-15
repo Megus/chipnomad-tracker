@@ -64,27 +64,27 @@ static int getColumnCount(int row) {
 }
 
 static void drawStatic(void) {
-  const ColorTheme t = appSettings.colorScheme;
+  const ColorTheme t = theme();
   gfxSetFgColor(t.textTitles);
-  gfxPrintf(0, 0, "GROOVE %02X", groove);
+  gfx.printf(0, 0, "GROOVE %02X", groove);
 }
 
 static void drawField(int col, int row, CellState state) {
   uint8_t value = chipnomadState->project.grooves[groove].speed[row];
   setCellColor(state, value == EMPTY_VALUE_8, value != 0);
-  gfxPrintf(3, 3 + row, byteToHexOrEmpty(value));
+  gfx.printf(3, 3 + row, byteToHexOrEmpty(value));
 }
 
 static void drawRowHeader(int row, CellState state) {
-  const ColorTheme t = appSettings.colorScheme;
+  const ColorTheme t = theme();
   gfxSetFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
-  gfxPrintf(1, 3 + row, "%X", row);
+  gfx.printf(1, 3 + row, "%X", row);
 }
 
 static void drawColHeader(int col, CellState state) {
-  const ColorTheme t = appSettings.colorScheme;
+  const ColorTheme t = theme();
   gfxSetFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
-  gfxPrint(3, 2, "T");  // T for Timing
+  gfx.print(3, 2, "T");  // T for Timing
 }
 
 static void drawCursor(int col, int row) {
@@ -107,8 +107,8 @@ static void draw(void) {
   if (chipnomadState->engine->player.tracks[*pSongTrack].grooveIdx == groove) {
     int row = chipnomadState->engine->player.tracks[*pSongTrack].grooveRow;
     if (row >= 0 && row < 16) {
-      gfxSetFgColor(appSettings.colorScheme.playMarkers);
-      gfxPrint(2, 3 + row, ">");
+      gfxSetFgColor(theme().playMarkers);
+      gfx.print(2, 3 + row, ">");
     }
   }
 }

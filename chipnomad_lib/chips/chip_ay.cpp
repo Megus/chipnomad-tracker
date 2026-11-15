@@ -7,7 +7,7 @@
 
 namespace chipnomad {
   // Scale AY volume to avoid clipping when mixing multiple chips
-  static constexpr float ayVolumeScale = 0.6f;
+  static constexpr float kAYVolumeScale = 0.6f;
 
   static void setPanning(struct ayumi* ay, StereoModeAY stereoMode, uint8_t separation) {
     float sep = (float)separation / 200.0;
@@ -109,8 +109,8 @@ namespace chipnomad {
     for (int c = 0; c < samples; c++) {
       ayumi_process(ay);
       ayumi_remove_dc(ay);
-      *buffer++ = ay->left * ayVolumeScale;
-      *buffer++ = ay->right * ayVolumeScale;
+      *buffer++ = ay->left * kAYVolumeScale;
+      *buffer++ = ay->right * kAYVolumeScale;
     }
   }
 

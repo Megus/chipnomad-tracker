@@ -4,9 +4,10 @@
 #include <stdio.h>
 #include <ctype.h>
 #include "font_manager.h"
+#include "misc.h"
 
-constexpr int textCols = 40;
-constexpr int textRows = 20;
+static constexpr int kTextCols = 40;
+static constexpr int kTextRows = 20;
 
 static const Font defaultFont = {
   .name = "Default",
@@ -39,7 +40,7 @@ const FontResolution* FontManager::selectResolution(const Font* f, int screenWid
   const FontResolution* best = NULL;
   for (int i = f->resolutionCount - 1; i >= 0; i--) {
     const FontResolution* res = &f->resolutions[i];
-    if (screenWidth >= textCols * res->charWidth && screenHeight >= textRows * res->charHeight) {
+    if (screenWidth >= kTextCols * res->charWidth && screenHeight >= kTextRows * res->charHeight) {
       best = res;
       break;
     }
@@ -84,8 +85,7 @@ Font* FontManager::load(const char* path) {
       char* end = p + strlen(p) - 1;
       while (end > p && isspace(*end)) end--;
       *(end + 1) = '\0';
-      strncpy(f->name, p, 15);
-      f->name[15] = '\0';
+      copyString(f->name, p, 15);
       continue;
     }
 

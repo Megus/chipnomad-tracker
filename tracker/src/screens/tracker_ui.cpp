@@ -3,6 +3,7 @@
 #include "chipnomad_lib.h"
 #include "file_system.h"
 #include "utils.h"
+#include "misc.h"
 #include "tracker_ui.h"
 #include "waveform_display.h"
 
@@ -10,7 +11,9 @@
 #include "screen_project.h"
 
 #include "screen_confirm.h"
-#include "screen_edit_character.h"
+#include "screen_enter_character.h"
+#include "screen_enter_string.h"
+#include "screen_file_browser.h"
 
 TrackerUI::TrackerUI(Gfx& gfx, FontManager& fontManager, AudioManager& audio, FileSystem& file, InputUtils& input, EventDispatcher& events, TrackerState& state):
   gfx(gfx),
@@ -26,7 +29,9 @@ TrackerUI::TrackerUI(Gfx& gfx, FontManager& fontManager, AudioManager& audio, Fi
   screens[ScreenEnum::project] = new ScreenProject(state, events, gfx, audio);
 
   screens[ScreenEnum::confirm] = new ScreenConfirm(state, events, gfx);
-  screens[ScreenEnum::editCharacter] = new ScreenEditCharacter(state, events, gfx);
+  screens[ScreenEnum::enterCharacter] = new ScreenEnterCharacter(state, events, gfx);
+  screens[ScreenEnum::enterString] = new ScreenEnterString(state, events, gfx);
+  screens[ScreenEnum::fileBrowser] = new ScreenFileBrowser(state, events, gfx, file);
 
   // Remaining initialization
   waveDisplay = new WaveformDisplay(gfx);
@@ -49,7 +54,6 @@ void TrackerUI::drawScreenMap() {
 
   // Core screens
   const ColorTheme t = state.settings.colorTheme;
-  gfx.setBgColor(t.background);
   gfx.setFgColor(t.textInfo);
   gfx.clearRect(35, smY, 5, 5);
   gfx.print(35, smY + 1, "SCPIT");
@@ -172,7 +176,6 @@ void TrackerUI::draw() {
 }
 
 void TrackerUI::redrawScreen() {
-  gfx.setBgColor(state.settings.colorTheme.background);
   gfx.setCursorColor(state.settings.colorTheme.cursor);
   gfx.clear();
   getCurrentScreen()->fullRedraw();
@@ -276,9 +279,8 @@ bool TrackerUI::onInput(const Event& e) {
 void TrackerUI::onShowMessage(const Event& e) {
   if (messageTimer > 0 && strlen(e.message) == 0) return; // Don't clear timed messages
   gfx.clearRect(0, 19, 40, 1);
-  messageTimer = e.isTimedMessage ? timedMessageFrames : 0;
-  strncpy(messageBuffer, e.message, sizeof(messageBuffer) - 1);
-  messageBuffer[sizeof(messageBuffer) - 1] = 0;
+  messageTimer = e.isTimedMessage ? kTimedMessageFrames : 0;
+  copyString(messageBuffer, e.message, sizeof(messageBuffer) - 1);
 }
 
 bool TrackerUI::onPlay(const Event& e) {

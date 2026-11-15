@@ -64,8 +64,7 @@ ExporterPSG::ExporterPSG(const char* filename, Project* project, int startRow)
   numChips = project->chipsCount;
 
   // Extract base filename (remove .psg extension if present)
-  strncpy(baseFilename, filename, sizeof(baseFilename) - 1);
-  baseFilename[sizeof(baseFilename) - 1] = 0;
+  copyString(baseFilename, filename, sizeof(baseFilename) - 1);
   char* ext = strstr(baseFilename, ".psg");
   if (ext) *ext = 0;
 

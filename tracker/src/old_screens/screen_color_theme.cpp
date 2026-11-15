@@ -52,8 +52,7 @@ static void onThemeLoaded(const char* path) {
     if (lastSeparator) {
       int pathLen = lastSeparator - path;
       if (pathLen < PATH_LENGTH) {
-        strncpy(appSettings.themePath, path, pathLen);
-        appSettings.themePath[pathLen] = 0;
+        copyString(appSettings.themePath, path, pathLen);
       }
     }
     fullRedraw();
@@ -70,8 +69,7 @@ static void onThemeSaved(const char* folderPath) {
   if (saveTheme(fullPath)) {
     screenMessage(MESSAGE_TIME, "Theme saved");
     // Store the directory path
-    strncpy(appSettings.themePath, folderPath, PATH_LENGTH);
-    appSettings.themePath[PATH_LENGTH] = 0;
+    copyString(appSettings.themePath, folderPath, PATH_LENGTH);
   } else {
     screenMessage(MESSAGE_TIME, "Save failed");
   }
@@ -97,16 +95,16 @@ static const char* colorNames[] = {
 
 static int* getColorPtr(int row) {
   switch (row) {
-    case 0: return &appSettings.colorScheme.background;
-    case 1: return &appSettings.colorScheme.textEmpty;
-    case 2: return &appSettings.colorScheme.textInfo;
-    case 3: return &appSettings.colorScheme.textDefault;
-    case 4: return &appSettings.colorScheme.textValue;
-    case 5: return &appSettings.colorScheme.textTitles;
-    case 6: return &appSettings.colorScheme.playMarkers;
-    case 7: return &appSettings.colorScheme.cursor;
-    case 8: return &appSettings.colorScheme.selection;
-    case 9: return &appSettings.colorScheme.warning;
+    case 0: return &theme().background;
+    case 1: return &theme().textEmpty;
+    case 2: return &theme().textInfo;
+    case 3: return &theme().textDefault;
+    case 4: return &theme().textValue;
+    case 5: return &theme().textTitles;
+    case 6: return &theme().playMarkers;
+    case 7: return &theme().cursor;
+    case 8: return &theme().selection;
+    case 9: return &theme().warning;
     default: return NULL;
   }
 }
@@ -134,14 +132,14 @@ int colorThemeColumnCount(int row) {
 }
 
 void colorThemeDrawStatic(void) {
-  const ColorTheme t = appSettings.colorScheme;
+  const ColorTheme t = theme();
 
   gfxSetFgColor(t.textTitles);
-  gfxPrint(0, 0, "COLOR THEME");
+  gfx.print(0, 0, "COLOR THEME");
 
   gfxSetFgColor(t.textDefault);
-  gfxPrint(17, 1, "R  G  B");
-  gfxPrint(0, 17, "Theme name");
+  gfx.print(17, 1, "R  G  B");
+  gfx.print(0, 17, "Theme name");
 }
 
 void colorThemeDrawCursor(int col, int row) {
@@ -168,15 +166,15 @@ void colorThemeDrawCursor(int col, int row) {
 
 void colorThemeDrawRowHeader(int row, CellState state) {
   if (row < 10) {
-    gfxSetFgColor(appSettings.colorScheme.textDefault);
-    gfxPrint(0, row + 2, colorNames[row]);
+    gfxSetFgColor(theme().textDefault);
+    gfx.print(0, row + 2, colorNames[row]);
 
     // Draw color preview as part of row header
     int* colorPtr = getColorPtr(row);
     if (colorPtr) {
       gfxSetBgColor(*colorPtr);
-      gfxPrint(26, row + 2, "   ");
-      gfxSetBgColor(appSettings.colorScheme.background);
+      gfx.print(26, row + 2, "   ");
+      gfxSetBgColor(theme().background);
     }
   }
 }
@@ -185,7 +183,7 @@ void colorThemeDrawColHeader(int col, CellState state) {
 }
 
 void colorThemeDrawField(int col, int row, CellState state) {
-  gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+  gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
 
   if (row < 10) {
     int* colorPtr = getColorPtr(row);
@@ -197,24 +195,24 @@ void colorThemeDrawField(int col, int row, CellState state) {
     uint8_t b = color & 0xFF;
 
     if (col == 0) {
-      gfxPrintf(17, row + 2, "%02X", r);
+      gfx.printf(17, row + 2, "%02X", r);
     } else if (col == 1) {
-      gfxPrintf(20, row + 2, "%02X", g);
+      gfx.printf(20, row + 2, "%02X", g);
     } else if (col == 2) {
-      gfxPrintf(23, row + 2, "%02X", b);
+      gfx.printf(23, row + 2, "%02X", b);
     }
   } else if (row == 10) {
     // Theme name field
     gfxClearRect(17, 17, THEME_NAME_LENGTH, 1);
-    gfxPrintf(17, 17, "%s", appSettings.themeName);
+    gfx.printf(17, 17, "%s", appSettings.themeName);
   } else if (row == 11) {
     // Buttons
     if (col == 0) {
-      gfxPrint(17, 18, "Save");
+      gfx.print(17, 18, "Save");
     } else if (col == 1) {
-      gfxPrint(22, 18, "Load");
+      gfx.print(22, 18, "Load");
     } else if (col == 2) {
-      gfxPrint(27, 18, "Reset");
+      gfx.print(27, 18, "Reset");
     }
   }
 }

@@ -20,8 +20,8 @@ class TrackerUI : public EventHandler {
     bool onEvent(const Event& e) override;
 
   protected:
-    static constexpr int screenStackMaxDepth = 3; // Root screen, 1st popup (e.g. file browser), 2nd popup (e.g. yes/no confirmation)
-    static constexpr int timedMessageFrames = 60; // Duration of a timed message
+    static constexpr int kScreenStackMaxDepth = 8; // Max screen stack depth, with a buffer
+    static constexpr int kTimedMessageFrames = 60; // Duration of a timed message
 
     Screen* getCurrentScreen();
     void drawScreenMap();
@@ -42,7 +42,7 @@ class TrackerUI : public EventHandler {
 
     WaveformDisplay* waveDisplay; // TODO: Maybe this class can be moved to Gfx?
 
-    Screen* screenStack[screenStackMaxDepth];
+    Screen* screenStack[kScreenStackMaxDepth];
     int screenStackIdx = -1;
 
     int messageTimer = 0;

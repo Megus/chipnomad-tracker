@@ -41,8 +41,8 @@ enum class ScreenEnum : int {
   ayWavetable,
   confirm,
   fileBrowser,
-  createFolder,
-  editCharacter,
+  enterCharacter,
+  enterString,
 };
 
 class FilePreviewer {
@@ -51,31 +51,37 @@ class FilePreviewer {
     virtual bool stopFilePreview() = 0;
 };
 
-// Base struct for screen input and output. Most screens only need an int value
+// Screen input and output
 struct ScreenData {
   static ScreenData confirm(const char* title, int confirmValue, int cancelValue);
   static ScreenData confirmOutput(int value);
-  static ScreenData editCharacter(char* str, int charIdx, int maxLength);
+  static ScreenData enterCharacter(char* str, int charIdx, int maxLength);
+  static ScreenData enterString(char* str, int maxLength, const char* title, const char* prompt, const char* detail);
+  static ScreenData enterStringOutput(int value, char* str);
   static ScreenData fileBrowser(bool isFolder, const char* title, const char* startPath, const char* extensions, FilePreviewer* previewer, const char* filename);
+  static ScreenData fileBrowserOutput(bool isFolder, const char* filePath, const char* folderPath);
 
   int intValue = 0; // Generic input/output int value
   char* str = nullptr; // Generic input/output string value
   const char* title = nullptr; // Generic popup title
+  const char* prompt = nullptr; // Generic popup prompt
+  const char* detail = nullptr; // Generic detail string for popups
 
   // Confirm popup
-  int confirmValue = 0;
-  int cancelValue = 0;
+  int confirmValue = 0; // Confirm: return value when confirmed
+  int cancelValue = 0; // Confirm: return value when cancelled
 
-  // Character edit
-  int charIdx = 0;
-  int maxLength = 0;
+  // Character/string edit
+  int charIdx = 0; // Character edit: char index in the string
+  int maxLength = 0; // Character/string edit: max string length
 
   // File browser
-  bool isFolder = false; // Input/output for file browser
-  const char* startPath = nullptr;
-  const char* extensions = nullptr;
-  FilePreviewer* previewer = nullptr;
-  const char* filename = nullptr;
+  bool isFolder = false; // File browser: Input/output for file browser
+  const char* filePath = nullptr; // File browser: Output for full file path
+  const char* folderPath = nullptr; // File browser: Input/output for folder path (without filename)
+  const char* extensions = nullptr; // File browser: Comma-separated list of extensions (.cnm,.vt2)
+  FilePreviewer* previewer = nullptr; // File browser: Pointer to the file previewer
+  const char* filename = nullptr; // File browser: Filename for saving (used for overwrite check)
 };
 
 // Event struct
@@ -106,20 +112,20 @@ struct Event {
   // All various parameters that can go to the event
 
   // Input events
-  bool isKeyDown = false;
-  int keys = 0;
-  InputCode keyCode;
-  int tapCount = 0;
+  bool isKeyDown = false; // Input: Key down or key up?
+  int keys = 0; // Input: Pressed keys (use bit mask)
+  InputCode keyCode; // RawInput: Raw key code
+  int tapCount = 0; // Input: number of taps
 
   // Play events
-  chipnomad::LoopRange loopRange = {.enabled = false};
-  int track = 0;
-  int songRow = 0;
-  int chainRow = 0;
+  chipnomad::LoopRange loopRange = {.enabled = false}; // Play: loop range
+  int track = 0; // Play: track number
+  int songRow = 0; // Play: song row
+  int chainRow = 0; // Play: chain row
 
   // Screen events
-  ScreenEnum screen = ScreenEnum::song;
-  ScreenData screenData;
+  ScreenEnum screen = ScreenEnum::song; // Screen events: screen ID (enum)
+  ScreenData screenData; // Screen events: input/output data
 
   // Message
   bool isTimedMessage = false;
@@ -133,8 +139,8 @@ class EventHandler {
 
 class EventDispatcher {
   public:
-    virtual void dispatch(const Event& e) = 0;
-    virtual void dispatchInstant(const Event& e) = 0;
+    virtual void dispatch(const Event& e) = 0; // Dispatch event asynchronously
+    virtual void dispatchInstant(const Event& e) = 0; // Dispatch event instantly
 };
 
 #endif // __EVENTS_H__

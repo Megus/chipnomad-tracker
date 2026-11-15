@@ -1,6 +1,7 @@
 #include <string.h>
 #include "app_settings.h"
 #include "chipnomad_lib.h"
+#include "misc.h"
 
 AppSettings::AppSettings() {
   screenWidth = 0; // 0 to auto-detect resolution
@@ -31,8 +32,7 @@ AppSettings::AppSettings() {
   colorTheme.warning = 0xff4040;
 
   // String defaults
-  strncpy(themeName, "Default", kThemeNameLength);
-  themeName[kThemeNameLength] = '\0';
+  copyString(themeName, "Default", kThemeNameLength);
   projectFilename[0] = '\0';
   projectPath[0] = '\0';
   pitchTablePath[0] = '\0';
@@ -199,35 +199,25 @@ bool AppSettings::loadSettings(const char* path) {
     } else if (strncmp(line, "colorWarning: ", 14) == 0) {
       sscanf(line + 14, "0x%x", &colorTheme.warning);
     } else if (strncmp(line, "themeName: ", 11) == 0) {
-      strncpy(themeName, line + 11, kThemeNameLength);
-      themeName[kThemeNameLength] = 0;
+      copyString(themeName, line + 11, kThemeNameLength);
     } else if (strncmp(line, "projectFilename: ", 17) == 0) {
-      strncpy(projectFilename, line + 17, kFileNameLength);
-      projectFilename[kFileNameLength] = 0;
+      copyString(projectFilename, line + 17, kFileNameLength);
     } else if (strncmp(line, "projectPath: ", 13) == 0) {
-      strncpy(projectPath, line + 13, kPathMaxLength);
-      projectPath[kPathMaxLength] = 0;
+      copyString(projectPath, line + 13, FileSystem::kPathMaxLength);
     } else if (strncmp(line, "pitchTablePath: ", 16) == 0) {
-      strncpy(pitchTablePath, line + 16, kPathMaxLength);
-      pitchTablePath[kPathMaxLength] = 0;
+      copyString(pitchTablePath, line + 16, FileSystem::kPathMaxLength);
     } else if (strncmp(line, "instrumentPath: ", 16) == 0) {
-      strncpy(instrumentPath, line + 16, kPathMaxLength);
-      instrumentPath[kPathMaxLength] = 0;
+      copyString(instrumentPath, line + 16, FileSystem::kPathMaxLength);
     } else if (strncmp(line, "themePath: ", 11) == 0) {
-      strncpy(themePath, line + 11, kPathMaxLength);
-      themePath[kPathMaxLength] = 0;
+      copyString(themePath, line + 11, FileSystem::kPathMaxLength);
     } else if (strncmp(line, "fontPath: ", 10) == 0) {
-      strncpy(fontPath, line + 10, kPathMaxLength);
-      fontPath[kPathMaxLength] = 0;
+      copyString(fontPath, line + 10, FileSystem::kPathMaxLength);
     } else if (strncmp(line, "fontFolderPath: ", 16) == 0) {
-      strncpy(fontFolderPath, line + 16, kPathMaxLength);
-      fontFolderPath[kPathMaxLength] = 0;
+      copyString(fontFolderPath, line + 16, FileSystem::kPathMaxLength);
     } else if (strncmp(line, "samplePath: ", 12) == 0) {
-      strncpy(samplePath, line + 12, kPathMaxLength);
-      samplePath[kPathMaxLength] = 0;
+      copyString(samplePath, line + 12, FileSystem::kPathMaxLength);
     } else if (strncmp(line, "wavetablePath: ", 15) == 0) {
-      strncpy(wavetablePath, line + 15, kPathMaxLength);
-      wavetablePath[kPathMaxLength] = 0;
+      copyString(wavetablePath, line + 15, FileSystem::kPathMaxLength);
     }
   }
 

@@ -20,7 +20,7 @@ void ScreenPartialProjectAY::drawStatic() {
 }
 
 void ScreenPartialProjectAY::drawCursor(int col, int row) {
-  int startRow = screen.commonRowCount;
+  int startRow = screen.kCommonRowCount;
   Gfx& gfx = screen.gfx;
 
   if (row == startRow) {
@@ -45,7 +45,7 @@ void ScreenPartialProjectAY::drawCursor(int col, int row) {
 }
 
 void ScreenPartialProjectAY::drawCell(int col, int row, CellState state) {
-  int startRow = screen.commonRowCount;
+  int startRow = screen.kCommonRowCount;
   Gfx& gfx = screen.gfx;
 
   gfx.setFgColor(state == CellState::focus ? screen.theme().textValue : screen.theme().textDefault);
@@ -84,7 +84,7 @@ void ScreenPartialProjectAY::drawCell(int col, int row, CellState state) {
 }
 
 bool ScreenPartialProjectAY::onEdit(int col, int row, EditCellAction action) {
-  int startRow = screen.commonRowCount;
+  int startRow = screen.kCommonRowCount;
   bool handled = false;
 
   if (row == startRow) {

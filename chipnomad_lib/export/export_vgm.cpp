@@ -95,8 +95,7 @@ ExporterVGM::ExporterVGM(const char* filename, Project* project, int startRow)
   : Exporter(regDumpChipFactory, 44100) {
   waitSamples = 0;
   totalSamples = 0;
-  strncpy(baseFilename, filename, sizeof(baseFilename) - 1);
-  baseFilename[sizeof(baseFilename) - 1] = 0;
+  copyString(baseFilename, filename, sizeof(baseFilename) - 1);
 
   file = fopen(filename, "wb");
   if (file) {

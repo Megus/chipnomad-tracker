@@ -9,6 +9,7 @@
 #include "import_vts.h"
 #include "pt3_tables.h"
 #include "import_common.h"
+#include "misc.h"
 
 static char lineBuffer[1024];
 
@@ -339,8 +340,7 @@ static void setupPitchTableFromVT2(chipnomad::Project& p, int noteTableIndex) {
 
   const uint16_t* table = PT3ToneTables[noteTableIndex];
 
-  strncpy(p.pitchTable.name, PT3TableNames[noteTableIndex], PROJECT_PITCH_TABLE_TITLE_LENGTH);
-  p.pitchTable.name[PROJECT_PITCH_TABLE_TITLE_LENGTH] = '\0';
+  copyString(p.pitchTable.name, PT3TableNames[noteTableIndex], PROJECT_PITCH_TABLE_TITLE_LENGTH);
 
   p.pitchTable.octaveSize = OCTAVE_SIZE;
   p.pitchTable.length = PT3_TABLE_NOTES;
@@ -598,11 +598,9 @@ static int loadVT2Module(const char* path, VT2Module* module) {
     switch (currentSection) {
       case SECTION_MODULE:
         if (strncmp(line, "Title=", 6) == 0) {
-          strncpy(module->title, line + 6, PROJECT_TITLE_LENGTH);
-          module->title[PROJECT_TITLE_LENGTH] = '\0';
+          copyString(module->title, line + 6, PROJECT_TITLE_LENGTH);
         } else if (strncmp(line, "Author=", 7) == 0) {
-          strncpy(module->author, line + 7, PROJECT_TITLE_LENGTH);
-          module->author[PROJECT_TITLE_LENGTH] = '\0';
+          copyString(module->author, line + 7, PROJECT_TITLE_LENGTH);
         } else if (strncmp(line, "Speed=", 6) == 0) {
           module->speed = atoi(line + 6);
         } else if (strncmp(line, "NoteTable=", 10) == 0) {
@@ -986,8 +984,6 @@ static int cloneInstrumentsForEnvelopes(chipnomad::Project* project, const Instr
 }
 
 bool projectLoadVT2(chipnomad::Project& p, const char* path) {
-  using namespace chipnomad;
-
   VT2Module module;
   if (!loadVT2Module(path, &module)) {
     return false;
@@ -998,10 +994,8 @@ bool projectLoadVT2(chipnomad::Project& p, const char* path) {
 
   setupPitchTableFromVT2(p, module.noteTable);
 
-  strncpy(p.title, module.title, PROJECT_TITLE_LENGTH);
-  p.title[PROJECT_TITLE_LENGTH] = '\0';
-  strncpy(p.author, module.author, PROJECT_TITLE_LENGTH);
-  p.author[PROJECT_TITLE_LENGTH] = '\0';
+  copyString(p.title, module.title, PROJECT_TITLE_LENGTH);
+  copyString(p.author, module.author, PROJECT_TITLE_LENGTH);
 
   p.tracksCount = 3;
 
@@ -1160,8 +1154,7 @@ static bool importVT2Samples(chipnomad::Project& p, const char* path, int sample
     }
 
     if (inSampleSection && sampleLineCount < 64) {
-      strncpy(sampleLines[sampleLineCount], line, 255);
-      sampleLines[sampleLineCount][255] = '\0';
+      copyString(sampleLines[sampleLineCount], line, 255);
       sampleLineCount++;
     }
   }

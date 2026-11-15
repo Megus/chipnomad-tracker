@@ -110,7 +110,8 @@ class Screen : public EventHandler {
 
     // Common popups
     void requestConfirmation(const char* title, int confirmValue, int cancelValue); // Show confirmation popup
-    bool editCharacter(EditCellAction action, char* str, int idx, int maxLen); // Delete a character or open characted edit popup
+    bool enterCharacter(EditCellAction action, char* str, int idx, int maxLen); // Delete a character or open characted edit popup
+    void enterString(char* str, int maxLen, const char* title, const char* prompt, const char* detail); // Enter a string
     void selectFile(const char* title, const char* startPath, const char* extensions, FilePreviewer* previewer); // File browser: select a file
     void selectFolder(const char* title, const char* startPath, const char* extensions, const char* filename); // File browser: select a folder
 };

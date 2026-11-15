@@ -1,8 +1,9 @@
 #include <string.h>
 #include "screen_confirm.h"
+#include "misc.h"
 
 void ScreenConfirm::setup(const ScreenData& input) {
-  strncpy(message, input.title, 41);
+  copyString(message, input.title, 41);
   confirmValue = input.confirmValue;
   cancelValue = input.cancelValue;
   cursorRow = 0;

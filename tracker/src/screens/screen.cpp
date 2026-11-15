@@ -77,7 +77,6 @@ void Screen::setCellColor(CellState state, bool isEmpty, bool hasContent) {
 void Screen::fullRedraw() {
   validateCursorPosition();
 
-  gfx.setBgColor(theme().background);
   gfx.clearRect(0, 0, 35, 19); // Don't clear app-wide HUD area (message, screen map, playback preview)
 
   // Static content
@@ -426,16 +425,20 @@ void Screen::requestConfirmation(const char* title, int confirmValue, int cancel
   events.dispatch(Event::pushScreen(ScreenEnum::confirm, ScreenData::confirm(title, confirmValue, cancelValue)));
 }
 
-bool Screen::editCharacter(EditCellAction action, char* str, int idx, int maxLen) {
+bool Screen::enterCharacter(EditCellAction action, char* str, int idx, int maxLen) {
   if (action == EditCellAction::clear) {
     str[idx] = ' ';
     trimString(str);
     return true;
   } else if (action == EditCellAction::tap) {
-    events.dispatch(Event::pushScreen(ScreenEnum::editCharacter, ScreenData::editCharacter(str, idx, maxLen)));
+    events.dispatch(Event::pushScreen(ScreenEnum::enterCharacter, ScreenData::enterCharacter(str, idx, maxLen)));
     return true;
   }
   return false;
+}
+
+void Screen::enterString(char* str, int maxLen, const char* title, const char* prompt, const char* detail) {
+  events.dispatch(Event::pushScreen(ScreenEnum::enterString, ScreenData::enterString(str, maxLen, title, prompt, detail)));
 }
 
 void Screen::selectFile(const char* title, const char* startPath, const char* extensions, FilePreviewer* previewer) {

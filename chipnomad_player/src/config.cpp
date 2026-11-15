@@ -1,7 +1,8 @@
-#include "config.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "config.h"
+#include "utils.h"
 
 static SDL_Color parseColor(const char* str) {
   if (str && str[0] == '0' && str[1] == 'x') {
@@ -60,7 +61,7 @@ void configLoad(VisualizerConfig* config, const char* filename) {
     } else if (strcmp(key, "fontSize") == 0) {
       config->fontSize = atoi(value);
     } else if (strcmp(key, "fontPath") == 0) {
-      strncpy(config->fontPath, value, sizeof(config->fontPath) - 1);
+      chipnomad::copyString(config->fontPath, value, sizeof(config->fontPath) - 1);
     } else if (strcmp(key, "backgroundColor") == 0) {
       config->backgroundColor = parseColor(value);
     } else if (strcmp(key, "currentRowColor") == 0) {

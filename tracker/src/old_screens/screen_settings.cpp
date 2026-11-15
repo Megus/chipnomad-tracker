@@ -52,16 +52,14 @@ static void fontLoadCallback(const char* path) {
   if (loaded) {
     font->setCurrent(loaded);
     gfxReloadFont();
-    strncpy(appSettings.fontPath, path, PATH_LENGTH);
-    appSettings.fontPath[PATH_LENGTH] = 0;
+    copyString(appSettings.fontPath, path, PATH_LENGTH);
 
     // Extract folder path
     const char* lastSeparator = strrchr(path, PATH_SEPARATOR);
     if (lastSeparator) {
       int pathLen = lastSeparator - path;
       if (pathLen > 0 && pathLen < PATH_LENGTH) {
-        strncpy(appSettings.fontFolderPath, path, pathLen);
-        appSettings.fontFolderPath[pathLen] = '\0';
+        copyString(appSettings.fontFolderPath, path, pathLen);
       }
     }
 
@@ -88,10 +86,10 @@ int settingsColumnCount(int row) {
 }
 
 void settingsDrawStatic(void) {
-  const ColorTheme t = appSettings.colorScheme;
+  const ColorTheme t = theme();
 
   gfxSetFgColor(t.textTitles);
-  gfxPrint(0, 0, "SETTINGS");
+  gfx.print(0, 0, "SETTINGS");
 }
 
 void settingsDrawCursor(int col, int row) {
@@ -122,39 +120,39 @@ void settingsDrawColHeader(int col, CellState state) {
 
 void settingsDrawField(int col, int row, CellState state) {
   if (row == 0 && col == 0) {
-    gfxSetFgColor(appSettings.colorScheme.textDefault);
-    gfxPrint(0, 2, "Pitch conflict warning");
-    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(23, 2, appSettings.pitchConflictWarning ? "ON " : "OFF");
+    gfxSetFgColor(theme().textDefault);
+    gfx.print(0, 2, "Pitch conflict warning");
+    gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+    gfx.print(23, 2, appSettings.pitchConflictWarning ? "ON " : "OFF");
   } else if (row == 1 && col == 0) {
-    gfxSetFgColor(appSettings.colorScheme.textDefault);
-    gfxPrint(0, 3, "Mix volume");
-    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    gfxSetFgColor(theme().textDefault);
+    gfx.print(0, 3, "Mix volume");
+    gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
     int mixVolumePercent = (int)(appSettings.mixVolume * 100.0f + 0.5f);
-    gfxPrintf(23, 3, "%03d%%", mixVolumePercent);
+    gfx.printf(23, 3, "%03d%%", mixVolumePercent);
   } else if (row == 2 && col == 0) {
-    gfxSetFgColor(appSettings.colorScheme.textDefault);
-    gfxPrint(0, 4, "Quality");
-    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    gfxSetFgColor(theme().textDefault);
+    gfx.print(0, 4, "Quality");
+    gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
     const char* qualityNames[] = {"LOW   ", "MEDIUM", "HIGH  ", "BEST  "};
-    gfxPrint(23, 4, qualityNames[appSettings.quality]);
+    gfx.print(23, 4, qualityNames[appSettings.quality]);
   } else if (row == 3 && col == 0) {
-    gfxSetFgColor(appSettings.colorScheme.textDefault);
-    gfxPrint(0, 5, "Sample dithering");
-    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(23, 5, appSettings.aySampleDithering ? "ON " : "OFF");
+    gfxSetFgColor(theme().textDefault);
+    gfx.print(0, 5, "Sample dithering");
+    gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+    gfx.print(23, 5, appSettings.aySampleDithering ? "ON " : "OFF");
   } else if (row == 4 && col == 0) {
-    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(0, 6, "Key mapping");
+    gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+    gfx.print(0, 6, "Key mapping");
   } else if (row == 5 && col == 0) {
-    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(0, 7, "Load font");
+    gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+    gfx.print(0, 7, "Load font");
   } else if (row == 6 && col == 0) {
-    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(0, 8, "Edit color theme");
+    gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+    gfx.print(0, 8, "Edit color theme");
   } else if (row == 7 && col == 0) {
-    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(0, 17, "Quit ChipNomad");
+    gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+    gfx.print(0, 17, "Quit ChipNomad");
   }
 }
 

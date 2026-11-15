@@ -5,6 +5,7 @@
 #include "input_utils_sdl2.h"
 #include "app_settings.h"
 #include "keymap.h"
+#include "misc.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -41,8 +42,7 @@ static KeyboardLayout detectKeyboardLayout(void) {
 
   if (locale) {
     char localeLower[32];
-    strncpy(localeLower, locale, sizeof(localeLower) - 1);
-    localeLower[sizeof(localeLower) - 1] = '\0';
+    copyString(localeLower, locale, sizeof(localeLower) - 1);
     for (int i = 0; localeLower[i]; i++) {
       localeLower[i] = tolower(localeLower[i]);
     }

@@ -4,7 +4,6 @@
 #include "utils.h"
 #include "chipnomad_lib.h"
 #include "gfx.h"
-#include "common.h"
 #include "misc.h"
 
 // Helper function to get modulation type name
@@ -482,16 +481,15 @@ void drawFXHelp(enum FX fxIdx, uint8_t instrumentIdx) {
   int pos = 0;
   int lineStart = 0;
 
-  gfxSetFgColor(appSettings.colorScheme.textValue);
+  gfxSetFgColor(theme().textValue);
 
   while (helpText[pos] && y <= 5) {
     if (helpText[pos] == '\n' || pos - lineStart >= 39) {
       int len = pos - lineStart;
       if (len > 39) len = 39;
-      strncpy(line, &helpText[lineStart], len);
-      line[len] = '\0';
-      gfxPrint(1, y++, line);
-      gfxSetFgColor(appSettings.colorScheme.textDefault);
+      copyString(line, &helpText[lineStart], len);
+      gfx.print(1, y++, line);
+      gfxSetFgColor(theme().textDefault);
 
       if (helpText[pos] == '\n') {
         pos++;
@@ -506,8 +504,7 @@ void drawFXHelp(enum FX fxIdx, uint8_t instrumentIdx) {
   if (lineStart < pos && y <= 5) {
     int len = pos - lineStart;
     if (len > 39) len = 39;
-    strncpy(line, &helpText[lineStart], len);
-    line[len] = '\0';
-    gfxPrint(1, y, line);
+    copyString(line, &helpText[lineStart], len);
+    gfx.print(1, y, line);
   }
 }

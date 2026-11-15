@@ -131,22 +131,22 @@ int exportCommonColumnCount(int row) {
 }
 
 void exportCommonDrawStatic(void) {
-  const ColorTheme t = appSettings.colorScheme;
+  const ColorTheme t = theme();
 
   gfxSetFgColor(t.textTitles);
-  gfxPrint(0, 0, "EXPORT");
+  gfx.print(0, 0, "EXPORT");
 
   gfxSetFgColor(t.textDefault);
-  gfxPrint(0, 2, "Start row");
+  gfx.print(0, 2, "Start row");
 
   gfxSetFgColor(t.textValue);
-  gfxPrint(0, 4, "WAV");
+  gfx.print(0, 4, "WAV");
   gfxSetFgColor(t.textDefault);
-  gfxPrint(0, 5, "Sample rate");
-  gfxPrint(0, 6, "Bit depth");
+  gfx.print(0, 5, "Sample rate");
+  gfx.print(0, 6, "Bit depth");
 
   gfxSetFgColor(t.textValue);
-  gfxPrint(0, 8, "VGM");
+  gfx.print(0, 8, "VGM");
 }
 
 void exportCommonDrawCursor(int col, int row) {
@@ -168,25 +168,25 @@ void exportCommonDrawCursor(int col, int row) {
 }
 
 void exportCommonDrawField(int col, int row, CellState state) {
-  gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+  gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
 
   if (row == 0) {
     gfxClearRect(13, 2, 2, 1);
-    gfxPrintf(13, 2, "%02X", startRow);
+    gfx.printf(13, 2, "%02X", startRow);
   } else if (row == 1) {
     if (col == 0) {
-      gfxPrint(13, 4, "Export");
+      gfx.print(13, 4, "Export");
     } else {
-      gfxPrint(20, 4, "Stems");
+      gfx.print(20, 4, "Stems");
     }
   } else if (row == 2) {
     gfxClearRect(13, 5, 6, 1);
-    gfxPrintf(13, 5, "%d", sampleRates[currentSampleRateIndex]);
+    gfx.printf(13, 5, "%d", sampleRates[currentSampleRateIndex]);
   } else if (row == 3) {
     gfxClearRect(13, 6, 2, 1);
-    gfxPrintf(13, 6, "%d", bitDepths[currentBitDepthIndex]);
+    gfx.printf(13, 6, "%d", bitDepths[currentBitDepthIndex]);
   } else if (row == 4) {
-    gfxPrint(13, 8, "Export");
+    gfx.print(13, 8, "Export");
   }
 }
 
@@ -229,8 +229,7 @@ static void generateMultiFileExportPath(char* outputPath, int maxLen, FileExists
     appSettings.projectPath, PATH_SEPARATOR_STR, appSettings.projectFilename);
 
   if (!checkFunc(basePath, count)) {
-    strncpy(outputPath, basePath, maxLen - 1);
-    outputPath[maxLen - 1] = 0;
+    copyString(outputPath, basePath, maxLen - 1);
     return;
   }
 
@@ -261,8 +260,7 @@ void generateExportPath(char* outputPath, int maxLen, const char* extension) {
     appSettings.projectPath, PATH_SEPARATOR_STR, appSettings.projectFilename, extension);
 
   if (!fileExists(basePath)) {
-    strncpy(outputPath, basePath, maxLen - 1);
-    outputPath[maxLen - 1] = 0;
+    copyString(outputPath, basePath, maxLen - 1);
     return;
   }
 
@@ -274,8 +272,7 @@ void generateExportPath(char* outputPath, int maxLen, const char* extension) {
     }
   }
 
-  strncpy(outputPath, basePath, maxLen - 1);
-  outputPath[maxLen - 1] = 0;
+  copyString(outputPath, basePath, maxLen - 1);
 }
 
 int exportCommonOnEdit(int col, int row, EditCellAction action) {

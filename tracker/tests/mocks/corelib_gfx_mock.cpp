@@ -19,9 +19,9 @@ void gfxUpdateScreen(void) { gfx->updateScreen(); }
 void gfxClearRect(int x, int y, int w, int h) { gfx->clearRect(x, y, w, h); }
 void gfxCursor(int x, int y, int w) { gfx->cursor(x, y, w); }
 void gfxRect(int x, int y, int w, int h) { gfx->rect(x, y, w, h); }
-void gfxPrint(int x, int y, const char* text) { gfx->print(x, y, text); }
+void gfx.print(int x, int y, const char* text) { gfx->print(x, y, text); }
 
-void gfxPrintf(int x, int y, const char* format, ...) {
+void gfx.printf(int x, int y, const char* format, ...) {
   va_list args;
   va_start(args, format);
   gfx->vprintf(x, y, format, args);

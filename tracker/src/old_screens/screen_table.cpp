@@ -91,8 +91,8 @@ static int getColumnCount(int row) {
   return 11; // PitchFlag, Pitch, Volume, FX1, FX1 Value, FX2, FX2 Value, FX3, FX3 Value, FX4, FX4 Value
 }
 static void drawStatic(void) {
-  gfxSetFgColor(appSettings.colorScheme.textTitles);
-  gfxPrintf(0, 0, "TABLE %02X", tableIdx);
+  gfxSetFgColor(theme().textTitles);
+  gfx.printf(0, 0, "TABLE %02X", tableIdx);
 }
 
 static void drawField(int col, int row, CellState state) {
@@ -103,63 +103,63 @@ static void drawField(int col, int row, CellState state) {
     // Pitch flag
     uint8_t pitchFlag = tableRows[row].pitchFlag;
     setCellColor(state, 0, 1);
-    gfxPrint(x, y, pitchFlag ? "=" : "~");
+    gfx.print(x, y, pitchFlag ? "=" : "~");
   } else if (col == 1) {
     // Pitch offset
     uint8_t pitch = tableRows[row].pitchOffset;
     setCellColor(state, 0, 1);
-    gfxPrint(x, y, byteToHex(pitch));
+    gfx.print(x, y, byteToHex(pitch));
   } else if (col == 2) {
     // Volume
     uint8_t volume = tableRows[row].volume;
     setCellColor(state, volume == EMPTY_VALUE_8, 1);
-    gfxPrint(x, y, byteToHexOrEmpty(volume));
+    gfx.print(x, y, byteToHexOrEmpty(volume));
   } else if (col % 2 == 1 && col >= 3) {
     // FX name (columns 3,5,7,9)
     int fxIdx = (col - 3) / 2;
     uint8_t fx = tableRows[row].fx[fxIdx][0];
     setCellColor(state, fx == EMPTY_VALUE_8, 1);
-    gfxPrint(x, y, fxNames[fx].name);
+    gfx.print(x, y, fxNames[fx].name);
   } else if (col % 2 == 0 && col >= 4) {
     // FX value (columns 4,6,8,10)
     int fxIdx = (col - 4) / 2;
     uint8_t value = tableRows[row].fx[fxIdx][1];
     setCellColor(state, 0, tableRows[row].fx[fxIdx][0] != EMPTY_VALUE_8);
-    gfxPrint(x, y, byteToHex(value));
+    gfx.print(x, y, byteToHex(value));
   }
 }
 static void drawRowHeader(int row, CellState state) {
-  const ColorTheme t = appSettings.colorScheme;
+  const ColorTheme t = theme();
   gfxSetFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
-  gfxPrintf(1, 3 + row, "%X", row);
+  gfx.printf(1, 3 + row, "%X", row);
 }
 
 static void drawColHeader(int col, CellState state) {
-  const ColorTheme t = appSettings.colorScheme;
+  const ColorTheme t = theme();
   gfxSetFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
   switch (col) {
     case 0:
     case 1:
-      gfxPrint(3, 2, "P");
+      gfx.print(3, 2, "P");
       break;
     case 2:
-      gfxPrint(7, 2, "V");
+      gfx.print(7, 2, "V");
       break;
     case 3:
     case 4:
-      gfxPrint(10, 2, "FX1");
+      gfx.print(10, 2, "FX1");
       break;
     case 5:
     case 6:
-      gfxPrint(16, 2, "FX2");
+      gfx.print(16, 2, "FX2");
       break;
     case 7:
     case 8:
-      gfxPrint(22, 2, "FX3");
+      gfx.print(22, 2, "FX3");
       break;
     case 9:
     case 10:
-      gfxPrint(28, 2, "FX4");
+      gfx.print(28, 2, "FX4");
       break;
   }
 }
@@ -213,18 +213,18 @@ static void draw(void) {
     }
   }
   if (pTable != NULL) {
-    gfxSetFgColor(appSettings.colorScheme.playMarkers);
+    gfxSetFgColor(theme().playMarkers);
     int row = pTable->rows[0];
     if (row >= 0 && row < 16) {
-      gfxPrint(2, 3 + row, ">");
-      gfxPrint(9, 3 + row, ">");
+      gfx.print(2, 3 + row, ">");
+      gfx.print(9, 3 + row, ">");
     }
     row = pTable->rows[1];
-    gfxPrint(15, 3 + row, ">");
+    gfx.print(15, 3 + row, ">");
     row = pTable->rows[2];
-    gfxPrint(21, 3 + row, ">");
+    gfx.print(21, 3 + row, ">");
     row = pTable->rows[3];
-    gfxPrint(27, 3 + row, ">");
+    gfx.print(27, 3 + row, ">");
   }
 
   screenDrawOverlays(&screen);

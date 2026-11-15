@@ -1,11 +1,11 @@
-#ifndef __SCREEN_EDIT_CHARACTER_H__
-#define __SCREEN_EDIT_CHARACTER_H__
+#ifndef __SCREEN_ENTER_CHARACTER_H__
+#define __SCREEN_ENTER_CHARACTER_H__
 
 #include "screen.h"
 
-class ScreenEditCharacter : public Screen {
+class ScreenEnterCharacter : public Screen {
   public:
-    ScreenEditCharacter(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx): Screen(state, dispatcher, gfx) {};
+    ScreenEnterCharacter(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx): Screen(state, dispatcher, gfx) {};
 
     void setup(const ScreenData& input) override;
     int getRowCount() override { return 4; };

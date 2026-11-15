@@ -32,20 +32,20 @@ static int getColumnCount(int row) {
 static void drawStatic(void) {
   instrumentCommonDrawStatic();
 
-  gfxSetFgColor(appSettings.colorScheme.textDefault);
-  gfxPrint(0, 6, "Tone");
-  gfxPrint(0, 7, "Noise");
-  gfxPrint(0, 8, "Env");
+  gfxSetFgColor(theme().textDefault);
+  gfx.print(0, 6, "Tone");
+  gfx.print(0, 7, "Noise");
+  gfx.print(0, 8, "Env");
 
-  gfxPrint(17, 6, "Auto env period");
-  gfxPrint(17, 7, "Enabled");
-  gfxPrint(17, 8, "Rate");
+  gfx.print(17, 6, "Auto env period");
+  gfx.print(17, 7, "Enabled");
+  gfx.print(17, 8, "Rate");
 
-  gfxPrint(0, 10, "Volume envelope");
-  gfxPrint(0, 11, "Atk");
-  gfxPrint(0, 12, "Dec");
-  gfxPrint(0, 13, "Sus");
-  gfxPrint(0, 14, "Rel");
+  gfx.print(0, 10, "Volume envelope");
+  gfx.print(0, 11, "Atk");
+  gfx.print(0, 12, "Dec");
+  gfx.print(0, 13, "Sus");
+  gfx.print(0, 14, "Rel");
 }
 
 static void drawCursor(int col, int row) {
@@ -83,7 +83,7 @@ static void drawCursor(int col, int row) {
 static void drawField(int col, int row, CellState state) {
   if (row < 3) return instrumentCommonDrawField(col, row, state);
 
-  gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+  gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
 
   uint8_t defaultMixer = chipnomadState->project.instruments[cInstrument].chip.ay.defaultMixer;
   int hasTone = (defaultMixer & 0x01) != 0;
@@ -92,29 +92,29 @@ static void drawField(int col, int row, CellState state) {
   int isAutoEnvEnabled = chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvN != 0;
 
   if (row == 3 && col == 0) {
-    gfxPrintf(8, 6, hasTone ? "On " : "Off");
+    gfx.printf(8, 6, hasTone ? "On " : "Off");
   } else if (row == 4 && col == 0) {
-    gfxPrintf(8, 7, hasNoise ? "On " : "Off");
+    gfx.printf(8, 7, hasNoise ? "On " : "Off");
   } else if (row == 5 && col == 0) {
-    gfxPrintf(8, 8, "%X %s", envShape, getEnvelopeShapeASCII(envShape));
+    gfx.printf(8, 8, "%X %s", envShape, getEnvelopeShapeASCII(envShape));
   } else if (row == 6 && col == 0) {
-    gfxPrint(8, 11, byteToHex(chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p1));  // A
+    gfx.print(8, 11, byteToHex(chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p1));  // A
   } else if (row == 7 && col == 0) {
-    gfxPrint(8, 12, byteToHex(chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p2));  // D
+    gfx.print(8, 12, byteToHex(chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p2));  // D
   } else if (row == 8 && col == 0) {
-    gfxPrint(8, 13, byteToHex(chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p3));  // S
+    gfx.print(8, 13, byteToHex(chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p3));  // S
   } else if (row == 9 && col == 0) {
-    gfxPrint(8, 14, byteToHex(chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p4));  // R
+    gfx.print(8, 14, byteToHex(chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p4));  // R
   } else if (row == 4 && col == 1) {
-    gfxPrintf(26, 7, isAutoEnvEnabled ? "On " : "Off");
-    if (!isAutoEnvEnabled) gfxPrint(26, 8, "   ");
+    gfx.printf(26, 7, isAutoEnvEnabled ? "On " : "Off");
+    if (!isAutoEnvEnabled) gfx.print(26, 8, "   ");
   } else if (row == 5 && col == 1) {
     if (isAutoEnvEnabled) {
-      gfxPrintf(26, 8, "%hhX:", chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvN);
+      gfx.printf(26, 8, "%hhX:", chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvN);
     }
   } else if ((row == 4 || row == 5) && col == 2) {
     if (isAutoEnvEnabled) {
-      gfxPrintf(28, 8, "%hhX", chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvD);
+      gfx.printf(28, 8, "%hhX", chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvD);
     }
   }
 }

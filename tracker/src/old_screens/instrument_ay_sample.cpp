@@ -131,15 +131,13 @@ static void onSampleLoaded(const char* path) {
   const char* dot = strrchr(filename, '.');
   int nameLen = dot ? (int)(dot - filename) : (int)strlen(filename);
   if (nameLen > PROJECT_INSTRUMENT_NAME_LENGTH) nameLen = PROJECT_INSTRUMENT_NAME_LENGTH;
-  strncpy(smp->sampleName, filename, nameLen);
-  smp->sampleName[nameLen] = 0;
+  copyString(smp->sampleName, filename, nameLen);
 
   // Save the directory path
   if (lastSeparator) {
     int pathLen = lastSeparator - path;
     if (pathLen < PATH_LENGTH) {
-      strncpy(appSettings.samplePath, path, pathLen);
-      appSettings.samplePath[pathLen] = 0;
+      copyString(appSettings.samplePath, path, pathLen);
     }
   }
 
@@ -174,7 +172,7 @@ static int getColumnCount(int row) {
 }
 
 static void drawOscillatorHeaders(void) {
-  const ColorTheme t = appSettings.colorScheme;
+  const ColorTheme t = theme();
   InstrumentAYSample* smp = &chipnomadState->project.instruments[cInstrument].chip.aySample;
 
   // Determine oscillator on/off states
@@ -183,49 +181,49 @@ static void drawOscillatorHeaders(void) {
 
   // Tone header (y 8) - color based on on/off state
   gfxSetFgColor(toneOn ? t.textTitles : t.textInfo);
-  gfxPrint(COL_RIGHT_X, 8, "Tone");
+  gfx.print(COL_RIGHT_X, 8, "Tone");
 
   // Noise header (y 12) - color based on on/off state
   gfxSetFgColor(noiseOn ? t.textTitles : t.textInfo);
-  gfxPrint(COL_RIGHT_X, 12, "Noise");
+  gfx.print(COL_RIGHT_X, 12, "Noise");
 }
 
 static void drawStatic(void) {
   instrumentCommonDrawStatic();
 
-  const ColorTheme t = appSettings.colorScheme;
+  const ColorTheme t = theme();
   InstrumentAYSample* smp = &chipnomadState->project.instruments[cInstrument].chip.aySample;
 
   // Sample label (y 6) - use title color like "Tone" and "Noise" (sample is always on)
   gfxSetFgColor(t.textTitles);
-  gfxPrint(COL_LEFT_X, 6, "Sample");
+  gfx.print(COL_LEFT_X, 6, "Sample");
 
   // Sample filename under "Sample" label (y 7) - dimmer color, not editable
   gfxSetFgColor(t.textInfo);
   if (strlen(smp->sampleName) > 0) {
-    gfxPrint(COL_LEFT_X, 7, smp->sampleName);
+    gfx.print(COL_LEFT_X, 7, smp->sampleName);
   }
 
   // Sample params labels (y 8-13)
   gfxSetFgColor(t.textDefault);
-  gfxPrint(COL_LEFT_X, 8, "Rate");
-  gfxPrint(COL_LEFT_X, 9, "Start");
-  gfxPrint(COL_LEFT_X, 10, "Length");
-  gfxPrint(COL_LEFT_X, 11, "LoopSt");
-  gfxPrint(COL_LEFT_X, 12, "Pitch");
-  gfxPrint(COL_LEFT_X, 13, "Fine");
+  gfx.print(COL_LEFT_X, 8, "Rate");
+  gfx.print(COL_LEFT_X, 9, "Start");
+  gfx.print(COL_LEFT_X, 10, "Length");
+  gfx.print(COL_LEFT_X, 11, "LoopSt");
+  gfx.print(COL_LEFT_X, 12, "Pitch");
+  gfx.print(COL_LEFT_X, 13, "Fine");
 
   // Draw oscillator headers with dynamic colors
   drawOscillatorHeaders();
 
   // Tone labels (y 9-10)
   gfxSetFgColor(t.textDefault);
-  gfxPrint(COL_RIGHT_X, 9, "Pitch");
-  gfxPrint(COL_RIGHT_X, 10, "Fine");
+  gfx.print(COL_RIGHT_X, 9, "Pitch");
+  gfx.print(COL_RIGHT_X, 10, "Fine");
 
   // Noise period label (y 13)
   gfxSetFgColor(t.textDefault);
-  gfxPrint(COL_RIGHT_X, 13, "Period");
+  gfx.print(COL_RIGHT_X, 13, "Period");
 
   // Update and draw sample preview
   updateSamplePreview();
@@ -274,12 +272,12 @@ static void drawField(int col, int row, CellState state) {
   InstrumentAYSample* smp = &chipnomadState->project.instruments[cInstrument].chip.aySample;
   int y = rowToY(row);
 
-  gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+  gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
 
   if (row == 3) {
     if (col == 0) {
       // Load button
-      gfxPrint(COL_LEFT_VAL, y, "Load");
+      gfx.print(COL_LEFT_VAL, y, "Load");
     }
     return;
   }
@@ -288,48 +286,48 @@ static void drawField(int col, int row, CellState state) {
     switch (row) {
       case 4: // Rate
         gfxClearRect(COL_LEFT_VAL, y, 5, 1);
-        gfxPrintf(COL_LEFT_VAL, y, "%d", smp->sampleRate);
+        gfx.printf(COL_LEFT_VAL, y, "%d", smp->sampleRate);
         break;
       case 5: // Start
         gfxClearRect(COL_LEFT_VAL, y, 4, 1);
-        gfxPrintf(COL_LEFT_VAL, y, "%04X", smp->sampleStart);
+        gfx.printf(COL_LEFT_VAL, y, "%04X", smp->sampleStart);
         break;
       case 6: // Length
         gfxClearRect(COL_LEFT_VAL, y, 4, 1);
-        gfxPrintf(COL_LEFT_VAL, y, "%04X", smp->sampleLength);
+        gfx.printf(COL_LEFT_VAL, y, "%04X", smp->sampleLength);
         break;
       case 7: // Loop Start
         gfxClearRect(COL_LEFT_VAL, y, 4, 1);
-        gfxPrintf(COL_LEFT_VAL, y, "%04X", smp->sampleLoopStart);
+        gfx.printf(COL_LEFT_VAL, y, "%04X", smp->sampleLoopStart);
         break;
       case 8: // Pitch
         gfxClearRect(COL_LEFT_VAL, y, 2, 1);
-        gfxPrint(COL_LEFT_VAL, y, byteToHex((uint8_t)smp->pitchOffset));
+        gfx.print(COL_LEFT_VAL, y, byteToHex((uint8_t)smp->pitchOffset));
         break;
       case 9: // Fine
         gfxClearRect(COL_LEFT_VAL, y, 2, 1);
-        gfxPrint(COL_LEFT_VAL, y, byteToHex((uint8_t)smp->fineTune));
+        gfx.print(COL_LEFT_VAL, y, byteToHex((uint8_t)smp->fineTune));
         break;
     }
   } else if (col == 1) {
     switch (row) {
       case 4: // Tone on/off
-        gfxPrintf(COL_RIGHT_VAL, y, smp->oscTone.isOn ? "On " : "Off");
+        gfx.printf(COL_RIGHT_VAL, y, smp->oscTone.isOn ? "On " : "Off");
         break;
       case 5: // Tone pitch
         gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
-        gfxPrint(COL_RIGHT_VAL, y, byteToHex((uint8_t)smp->oscTone.pitchOffset));
+        gfx.print(COL_RIGHT_VAL, y, byteToHex((uint8_t)smp->oscTone.pitchOffset));
         break;
       case 6: // Tone fine
         gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
-        gfxPrint(COL_RIGHT_VAL, y, byteToHex((uint8_t)smp->oscTone.fineTune));
+        gfx.print(COL_RIGHT_VAL, y, byteToHex((uint8_t)smp->oscTone.fineTune));
         break;
       case 8: // Noise on/off
-        gfxPrintf(COL_RIGHT_VAL, y, smp->oscNoise.isOn ? "On " : "Off");
+        gfx.printf(COL_RIGHT_VAL, y, smp->oscNoise.isOn ? "On " : "Off");
         break;
       case 9: // Noise period
         gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
-        gfxPrint(COL_RIGHT_VAL, y, byteToHex(smp->oscNoise.noisePeriod));
+        gfx.print(COL_RIGHT_VAL, y, byteToHex(smp->oscNoise.noisePeriod));
         break;
     }
   }
@@ -435,7 +433,7 @@ static int onEdit(int col, int row, EditCellAction action) {
                 samplePreviewBitmap = gfxBitmapCreate(PREVIEW_WIDTH_CHARS, PREVIEW_HEIGHT_CHARS);
               }
               renderSamplePreview(samplePreviewBitmap, smp->sampleData, smp->sampleLoopStart, smp->sampleLength);
-              gfxSetFgColor(appSettings.colorScheme.textInfo);
+              gfxSetFgColor(theme().textInfo);
               gfxDrawBitmap(samplePreviewBitmap, PREVIEW_COL, PREVIEW_ROW);
             }
           }
@@ -493,7 +491,7 @@ static int onEdit(int col, int row, EditCellAction action) {
     if (col == 0 && (row == 5 || row == 6)) {
       updateSamplePreview();
       if (samplePreviewBitmap) {
-        gfxSetFgColor(appSettings.colorScheme.textInfo);
+        gfxSetFgColor(theme().textInfo);
         gfxDrawBitmap(samplePreviewBitmap, PREVIEW_COL, PREVIEW_ROW);
       }
     }
@@ -516,7 +514,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
       isLoopPreview = 0;
       updateSamplePreview();
       if (samplePreviewBitmap) {
-        gfxSetFgColor(appSettings.colorScheme.textInfo);
+        gfxSetFgColor(theme().textInfo);
         gfxDrawBitmap(samplePreviewBitmap, PREVIEW_COL, PREVIEW_ROW);
       }
     }
@@ -533,7 +531,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
         }
         renderSamplePreview(samplePreviewBitmap, smp->sampleData,
                           smp->sampleLoopStart, smp->sampleLength);
-        gfxSetFgColor(appSettings.colorScheme.textInfo);
+        gfxSetFgColor(theme().textInfo);
         gfxDrawBitmap(samplePreviewBitmap, PREVIEW_COL, PREVIEW_ROW);
         isLoopPreview = 1;
       }

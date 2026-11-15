@@ -53,11 +53,11 @@ int manageColumnCount(int row) {
 }
 
 void manageDrawStatic(void) {
-  gfxSetFgColor(appSettings.colorScheme.textTitles);
-  gfxPrint(0, 0, "MANAGE PROJECT");
+  gfxSetFgColor(theme().textTitles);
+  gfx.print(0, 0, "MANAGE PROJECT");
 
-  gfxSetFgColor(appSettings.colorScheme.textDefault);
-  gfxPrint(0, 2, "Clean unused/duplicate:");
+  gfxSetFgColor(theme().textDefault);
+  gfx.print(0, 2, "Clean unused/duplicate:");
 }
 
 void manageDrawCursor(int col, int row) {
@@ -69,12 +69,12 @@ void manageDrawCursor(int col, int row) {
 }
 
 void manageDrawField(int col, int row, CellState state) {
-  gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+  gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
 
   if (row == 1) {
-    gfxPrint(2, 3, "Phrases and Chains");
+    gfx.print(2, 3, "Phrases and Chains");
   } else if (row == 2) {
-    gfxPrint(2, 4, "Instruments and Tables");
+    gfx.print(2, 4, "Instruments and Tables");
   }
 }
 

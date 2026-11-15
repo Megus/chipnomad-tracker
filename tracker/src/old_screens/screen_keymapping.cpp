@@ -60,21 +60,21 @@ static int getColumnCount(int row) {
 }
 
 static void drawStatic(void) {
-  gfxSetFgColor(appSettings.colorScheme.textTitles);
-  gfxPrint(0, 0, "Key Mapping");
+  gfxSetFgColor(theme().textTitles);
+  gfx.print(0, 0, "Key Mapping");
 
-  gfxSetFgColor(appSettings.colorScheme.textDefault);
+  gfxSetFgColor(theme().textDefault);
   for (int i = 0; i < 8; i++) {
-    gfxPrint(0, i + 2, buttonNames[i]);
+    gfx.print(0, i + 2, buttonNames[i]);
   }
 
   if (inputRawCallback) {
-    gfxSetFgColor(appSettings.colorScheme.textValue);
-    gfxPrint(0, 14, "Press any key...");
+    gfxSetFgColor(theme().textValue);
+    gfx.print(0, 14, "Press any key...");
   } else {
-    gfxSetFgColor(appSettings.colorScheme.textInfo);
-    gfxPrint(0, 14, "Tap unmapped key 5x");
-    gfxPrint(0, 15, "to reset defaults");
+    gfxSetFgColor(theme().textInfo);
+    gfx.print(0, 14, "Tap unmapped key 5x");
+    gfx.print(0, 15, "to reset defaults");
   }
 }
 
@@ -95,21 +95,20 @@ static void drawField(int col, int row, CellState state) {
     if (slot) {
       int isEmpty = (slot->deviceType == InputDeviceType::none);
       if (state == CellState::focus) {
-        gfxSetFgColor(appSettings.colorScheme.textValue);
+        gfxSetFgColor(theme().textValue);
       } else if (isEmpty) {
-        gfxSetFgColor(appSettings.colorScheme.textEmpty);
+        gfxSetFgColor(theme().textEmpty);
       } else {
-        gfxSetFgColor(appSettings.colorScheme.textDefault);
+        gfxSetFgColor(theme().textDefault);
       }
       const char* keyName = input->getKeyName(*slot);
       char trimmed[8];
-      strncpy(trimmed, keyName, 7);
-      trimmed[7] = '\0';
-      gfxPrint(11 + col * 8, row + 2, trimmed);
+      copyString(trimmed, keyName, 7);
+      gfx.print(11 + col * 8, row + 2, trimmed);
     }
   } else if (row == 8) {
-    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(0, 11, "Done");
+    gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+    gfx.print(0, 11, "Done");
   }
 }
 

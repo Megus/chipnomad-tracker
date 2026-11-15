@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include "file_system.h"
 #include "import_common.h"
+#include "misc.h"
 
 static char lineBuffer[1024];
 
@@ -222,8 +223,7 @@ static void extractInstrumentName(const char* line, const char* path, char* outN
     const char* filename = strrchr(path, '/');
     filename = filename ? filename + 1 : path;
 
-    strncpy(outName, filename, maxLen - 1);
-    outName[maxLen - 1] = '\0';
+    copyString(outName, filename, maxLen - 1);
 
     char* ext = strstr(outName, ".vts");
     if (ext) *ext = '\0';
@@ -328,20 +328,17 @@ bool instrumentLoadVTS(chipnomad::Project& p, const char* path, int instrumentId
 }
 
 bool instrumentLoadVTSFromMemory(chipnomad::Project& p, char** lines, int lineCount, int instrumentIdx, const char* instrumentName) {
-  using namespace chipnomad;
-
   if (instrumentIdx < 0 || instrumentIdx >= PROJECT_MAX_INSTRUMENTS) {
     return false;
   }
 
-  Instrument* inst = &p.instruments[instrumentIdx];
-  Table* table = &p.tables[instrumentIdx];
+  chipnomad::Instrument* inst = &p.instruments[instrumentIdx];
+  chipnomad::Table* table = &p.tables[instrumentIdx];
 
-  getInstrumentFunctions(InstrumentType::AY1).init(inst);
+  chipnomad::getInstrumentFunctions(chipnomad::InstrumentType::AY1).init(inst);
 
   if (instrumentName != NULL) {
-    strncpy(inst->name, instrumentName, PROJECT_INSTRUMENT_NAME_LENGTH);
-    inst->name[PROJECT_INSTRUMENT_NAME_LENGTH] = '\0';
+    copyString(inst->name, instrumentName, PROJECT_INSTRUMENT_NAME_LENGTH);
   } else {
     snprintf(inst->name, PROJECT_INSTRUMENT_NAME_LENGTH + 1, "Sample%02d", instrumentIdx + 1);
   }
