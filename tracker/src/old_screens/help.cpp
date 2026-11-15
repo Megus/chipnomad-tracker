@@ -481,7 +481,7 @@ void drawFXHelp(enum FX fxIdx, uint8_t instrumentIdx) {
   int pos = 0;
   int lineStart = 0;
 
-  gfxSetFgColor(theme().textValue);
+  gfx.setFgColor(theme().textValue);
 
   while (helpText[pos] && y <= 5) {
     if (helpText[pos] == '\n' || pos - lineStart >= 39) {
@@ -489,7 +489,7 @@ void drawFXHelp(enum FX fxIdx, uint8_t instrumentIdx) {
       if (len > 39) len = 39;
       copyString(line, &helpText[lineStart], len);
       gfx.print(1, y++, line);
-      gfxSetFgColor(theme().textDefault);
+      gfx.setFgColor(theme().textDefault);
 
       if (helpText[pos] == '\n') {
         pos++;

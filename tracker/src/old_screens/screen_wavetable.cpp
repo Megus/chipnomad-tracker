@@ -161,11 +161,11 @@ static void drawStatic(void) {
   const ColorTheme t = theme();
 
   // Title
-  gfxSetFgColor(t.textTitles);
+  gfx.setFgColor(t.textTitles);
   gfx.print(0, 0, "WAVETABLES");
 
   // Button labels and text (row 0 is at y=2)
-  gfxSetFgColor(t.textDefault);
+  gfx.setFgColor(t.textDefault);
   gfx.print(0, 2, "Load");
   gfx.print(7, 2, "Save");
   gfx.print(16, 2, "wavetables");  // Static text after the count (moved 1 char right)
@@ -174,12 +174,12 @@ static void drawStatic(void) {
   updatePreviews();
 
   // Clear all preview areas first (35 chars wide: 2 for index + 32 for data + 1 for safety)
-  gfxClearRect(0, 4, 35, 2);  // wavetable -2 (2 lines: y 4-5)
-  gfxClearRect(0, 6, 35, 2);  // wavetable -1 (2 lines: y 6-7)
-  gfxClearRect(0, 8, 35, 3);  // current wavetable preview (3 lines: y 8-10)
-  gfxClearRect(0, 12, 35, 2); // wavetable +1 (2 lines: y 12-13)
-  gfxClearRect(0, 14, 35, 2); // wavetable +2 (2 lines: y 14-15)
-  gfxClearRect(0, 16, 35, 2); // wavetable +3 (2 lines: y 16-17)
+  gfx.clearRect(0, 4, 35, 2);  // wavetable -2 (2 lines: y 4-5)
+  gfx.clearRect(0, 6, 35, 2);  // wavetable -1 (2 lines: y 6-7)
+  gfx.clearRect(0, 8, 35, 3);  // current wavetable preview (3 lines: y 8-10)
+  gfx.clearRect(0, 12, 35, 2); // wavetable +1 (2 lines: y 12-13)
+  gfx.clearRect(0, 14, 35, 2); // wavetable +2 (2 lines: y 14-15)
+  gfx.clearRect(0, 16, 35, 2); // wavetable +3 (2 lines: y 16-17)
 
   // Wavetable numbers on the left (2 characters wide)
   // Position at the bottom of each preview (aligned with preview bottom line)
@@ -193,7 +193,7 @@ static void drawStatic(void) {
 
   // Draw wavetable indices only if they're valid (within 0-255)
   // Non-current wavetables use textInfo color
-  gfxSetFgColor(t.textInfo);
+  gfx.setFgColor(t.textInfo);
 
   if (prevIdx2 >= 0) {
     gfx.printf(0, 5, "%02X", prevIdx2);  // Bottom line of -2 preview
@@ -203,11 +203,11 @@ static void drawStatic(void) {
   }
 
   // Current wavetable index is highlighted with textTitles color (same as screen header)
-  gfxSetFgColor(t.textTitles);
+  gfx.setFgColor(t.textTitles);
   gfx.printf(0, 11, "%02X", wavetableIdx);  // Current wavetable (at y=11)
 
   // Back to textInfo for remaining wavetables
-  gfxSetFgColor(t.textInfo);
+  gfx.setFgColor(t.textInfo);
 
   if (nextIdx1 <= 255) {
     gfx.printf(0, 13, "%02X", nextIdx1);  // Bottom line of +1 preview
@@ -220,26 +220,26 @@ static void drawStatic(void) {
   }
 
   // Draw wavetable previews
-  gfxSetFgColor(t.textInfo);
+  gfx.setFgColor(t.textInfo);
 
   if (prevIdx2 >= 0 && previewBitmapPrev2) {
-    gfxDrawBitmap(previewBitmapPrev2, 2, 4);  // 2 lines: y 4-5
+    gfx.drawBitmap(previewBitmapPrev2, 2, 4);  // 2 lines: y 4-5
   }
   if (prevIdx1 >= 0 && previewBitmapPrev1) {
-    gfxDrawBitmap(previewBitmapPrev1, 2, 6);  // 2 lines: y 6-7
+    gfx.drawBitmap(previewBitmapPrev1, 2, 6);  // 2 lines: y 6-7
   }
   // Current wavetable preview (3 lines tall)
   if (previewBitmap) {
-    gfxDrawBitmap(previewBitmap, 2, 8);  // 3 lines: y 8-10
+    gfx.drawBitmap(previewBitmap, 2, 8);  // 3 lines: y 8-10
   }
   if (nextIdx1 <= 255 && previewBitmapNext1) {
-    gfxDrawBitmap(previewBitmapNext1, 2, 12);  // 2 lines: y 12-13
+    gfx.drawBitmap(previewBitmapNext1, 2, 12);  // 2 lines: y 12-13
   }
   if (nextIdx2 <= 255 && previewBitmapNext2) {
-    gfxDrawBitmap(previewBitmapNext2, 2, 14);  // 2 lines: y 14-15
+    gfx.drawBitmap(previewBitmapNext2, 2, 14);  // 2 lines: y 14-15
   }
   if (nextIdx3 <= 255 && previewBitmapNext3) {
-    gfxDrawBitmap(previewBitmapNext3, 2, 16);  // 2 lines: y 16-17
+    gfx.drawBitmap(previewBitmapNext3, 2, 16);  // 2 lines: y 16-17
   }
 }
 
@@ -267,15 +267,15 @@ static void drawCursor(int col, int row) {
   if (row == 0) {
     // Buttons row at y=2
     if (col == 0) {
-      gfxCursor(0, 2, 4);  // Load
+      gfx.cursor(0, 2, 4);  // Load
     } else if (col == 1) {
-      gfxCursor(7, 2, 4);  // Save
+      gfx.cursor(7, 2, 4);  // Save
     } else if (col == 2) {
-      gfxCursor(12, 2, 3); // Count (3 hex digits)
+      gfx.cursor(12, 2, 3); // Count (3 hex digits)
     }
   } else if (row == 1) {
     // Wavetable editor row at y=11, starts at x=2 (directly after 2-char index)
-    gfxCursor(2 + col, 11, 1);
+    gfx.cursor(2 + col, 11, 1);
   }
 }
 
@@ -284,16 +284,16 @@ static void drawField(int col, int row, CellState state) {
 
   if (row == 0) {
     // Buttons row - need to redraw to clear cursor
-    gfxSetFgColor(state == CellState::focus ? t.textValue : t.textDefault);
+    gfx.setFgColor(state == CellState::focus ? t.textValue : t.textDefault);
     if (col == 0) {
-      gfxClearRect(0, 2, 4, 1);  // Clear area for "Load" button
+      gfx.clearRect(0, 2, 4, 1);  // Clear area for "Load" button
       gfx.print(0, 2, "Load");
     } else if (col == 1) {
-      gfxClearRect(7, 2, 4, 1);  // Clear area for "Save" button
+      gfx.clearRect(7, 2, 4, 1);  // Clear area for "Save" button
       gfx.print(7, 2, "Save");
     } else if (col == 2) {
       // Wavetable count (3 hex digits for 1-256 range, displayed as 001-100 in hex)
-      gfxClearRect(12, 2, 3, 1);  // Clear area for count
+      gfx.clearRect(12, 2, 3, 1);  // Clear area for count
       gfx.printf(12, 2, "%03X", wavetableSaveCount);
     }
   } else if (row == 1) {
@@ -301,7 +301,7 @@ static void drawField(int col, int row, CellState state) {
     uint8_t* wavetable = chipnomadState->project.ayWavetables[wavetableIdx];
     uint8_t value = wavetable[col];
 
-    gfxSetFgColor(state == CellState::focus ? t.textValue : t.textDefault);
+    gfx.setFgColor(state == CellState::focus ? t.textValue : t.textDefault);
 
     // Each wavetable value is 4-bit (0-15), display as single hex digit
     char hex[2];
@@ -437,8 +437,8 @@ static int onEdit(int col, int row, EditCellAction action) {
       int isYM = p->chipSetup.ay.isYM;
       if (previewBitmap) {
         renderAYWavetablePreview(previewBitmap, p->ayWavetables[wavetableIdx], isYM);
-        gfxSetFgColor(theme().textInfo);
-        gfxDrawBitmap(previewBitmap, 2, 8);
+        gfx.setFgColor(theme().textInfo);
+        gfx.drawBitmap(previewBitmap, 2, 8);
       }
     }
     return handled;

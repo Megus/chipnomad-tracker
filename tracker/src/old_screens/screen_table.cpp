@@ -91,7 +91,7 @@ static int getColumnCount(int row) {
   return 11; // PitchFlag, Pitch, Volume, FX1, FX1 Value, FX2, FX2 Value, FX3, FX3 Value, FX4, FX4 Value
 }
 static void drawStatic(void) {
-  gfxSetFgColor(theme().textTitles);
+  gfx.setFgColor(theme().textTitles);
   gfx.printf(0, 0, "TABLE %02X", tableIdx);
 }
 
@@ -130,13 +130,13 @@ static void drawField(int col, int row, CellState state) {
 }
 static void drawRowHeader(int row, CellState state) {
   const ColorTheme t = theme();
-  gfxSetFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
+  gfx.setFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
   gfx.printf(1, 3 + row, "%X", row);
 }
 
 static void drawColHeader(int col, CellState state) {
   const ColorTheme t = theme();
-  gfxSetFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
+  gfx.setFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
   switch (col) {
     case 0:
     case 1:
@@ -176,7 +176,7 @@ static void drawCursor(int col, int row) {
     width = 3;
   }
 
-  gfxCursor(x, 3 + row, width);
+  gfx.cursor(x, 3 + row, width);
 }
 
 static void drawSelection(int col1, int row1, int col2, int row2) {
@@ -185,7 +185,7 @@ static void drawSelection(int col1, int row1, int col2, int row2) {
   int y = 3 + row1;
   int h = row2 - row1 + 1;
   if (col2 == 0 || col2 == 3 || col2 == 5 || col2 == 7  || col2 == 9) w++;
-  gfxRect(x, y, w, h);
+  gfx.rect(x, y, w, h);
 }
 
 static void fullRedraw(void) {
@@ -195,11 +195,11 @@ static void fullRedraw(void) {
 static void draw(void) {
   if (isFxEdit) return;
 
-  gfxClearRect(2, 3, 1, 16);
-  gfxClearRect(9, 3, 1, 16);
-  gfxClearRect(15, 3, 1, 16);
-  gfxClearRect(21, 3, 1, 16);
-  gfxClearRect(27, 3, 1, 16);
+  gfx.clearRect(2, 3, 1, 16);
+  gfx.clearRect(9, 3, 1, 16);
+  gfx.clearRect(15, 3, 1, 16);
+  gfx.clearRect(21, 3, 1, 16);
+  gfx.clearRect(27, 3, 1, 16);
 
   PlaybackTrackState* track = &chipnomadState->engine->player.tracks[*pSongTrack];
   struct PlaybackTableState* pTable = NULL;
@@ -213,7 +213,7 @@ static void draw(void) {
     }
   }
   if (pTable != NULL) {
-    gfxSetFgColor(theme().playMarkers);
+    gfx.setFgColor(theme().playMarkers);
     int row = pTable->rows[0];
     if (row >= 0 && row < 16) {
       gfx.print(2, 3 + row, ">");

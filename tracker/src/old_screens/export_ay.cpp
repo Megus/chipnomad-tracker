@@ -15,21 +15,21 @@ static int getColumnCount(int row) {
 
 static void drawStatic(void) {
   exportCommonDrawStatic();
-  gfxSetFgColor(theme().textValue);
+  gfx.setFgColor(theme().textValue);
   gfx.print(0, 10, "PSG");
 }
 
 static void drawCursor(int col, int row) {
   if (row < SCR_EXPORT_ROWS) return exportCommonDrawCursor(col, row);
   if (row == SCR_EXPORT_ROWS) {
-    gfxCursor(13, 10, 6);
+    gfx.cursor(13, 10, 6);
   }
 }
 
 static void drawField(int col, int row, CellState state) {
   if (row < SCR_EXPORT_ROWS) return exportCommonDrawField(col, row, state);
 
-  gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+  gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
 
   if (row == SCR_EXPORT_ROWS) {
     gfx.print(13, 10, "Export");

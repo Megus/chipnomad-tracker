@@ -184,7 +184,7 @@ static int getColumnCount(int row) {
 static void drawStatic(void) {
   const ColorTheme t = theme();
 
-  gfxSetFgColor(t.textTitles);
+  gfx.setFgColor(t.textTitles);
   gfx.printf(0, 0, "MODULATION %02X", cInstrument);
 
   if (chipnomadState->project.instruments[cInstrument].type == InstrumentType::none) return;
@@ -192,11 +192,11 @@ static void drawStatic(void) {
   for (int block = 0; block < 2; block++) {
     int baseY = block == 0 ? 2 : 10;
 
-    gfxSetFgColor(t.textTitles);
+    gfx.setFgColor(t.textTitles);
     gfx.printf(COL_LEFT_X, baseY, "Mod%d", block == 0 ? 1 : 2);
     gfx.printf(COL_RIGHT_X, baseY, "Mod%d", block == 0 ? 3 : 4);
 
-    gfxSetFgColor(t.textDefault);
+    gfx.setFgColor(t.textDefault);
     gfx.print(COL_LEFT_X, baseY + 1, "Dest");
     gfx.print(COL_LEFT_X, baseY + 2, "Amt");
     gfx.print(COL_RIGHT_X, baseY + 1, "Dest");
@@ -212,14 +212,14 @@ static void drawCursor(int col, int row) {
   Modulation* mod = &chipnomadState->project.instruments[cInstrument].modulation[modIdx];
 
   switch (modRow) {
-    case 0: gfxCursor(valX, y, 4); break; // Type
-    case 1: gfxCursor(valX, y, 8); break; // Dest
-    case 2: gfxCursor(valX, y, 2); break; // Amt
+    case 0: gfx.cursor(valX, y, 4); break; // Type
+    case 1: gfx.cursor(valX, y, 8); break; // Dest
+    case 2: gfx.cursor(valX, y, 2); break; // Amt
     default:
       if (mod->type == ModulationType::LFO && (modRow - 3) <= 1) {
-        gfxCursor(valX, y, 6); // LFO shape/trig names
+        gfx.cursor(valX, y, 6); // LFO shape/trig names
       } else {
-        gfxCursor(valX, y, 2); // Hex values
+        gfx.cursor(valX, y, 2); // Hex values
       }
       break;
   }
@@ -235,14 +235,14 @@ static void drawField(int col, int row, CellState state) {
   int modIdx = getModIndex(col, row);
   Modulation* mod = &chipnomadState->project.instruments[cInstrument].modulation[modIdx];
 
-  gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+  gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
 
   switch (modRow) {
     case 0: // Type (on header row)
       gfx.print(valX, y, modTypeName(mod->type));
       break;
     case 1: // Destination
-      gfxClearRect(valX, y, 8, 1);
+      gfx.clearRect(valX, y, 8, 1);
       {
         Instrument* inst = &chipnomadState->project.instruments[cInstrument];
         InstrumentFunctions funcs = getInstrumentFunctions(inst->type);
@@ -252,7 +252,7 @@ static void drawField(int col, int row, CellState state) {
       }
       break;
     case 2: // Amount
-      gfxClearRect(valX, y, 2, 1);
+      gfx.clearRect(valX, y, 2, 1);
       gfx.print(valX, y, byteToHex(mod->amount));
       break;
     default: {
@@ -260,14 +260,14 @@ static void drawField(int col, int row, CellState state) {
       if (paramIdx >= paramCount(mod->type)) break;
 
       // Draw the label
-      gfxSetFgColor(theme().textDefault);
-      gfxClearRect(labelX, y, 6, 1);
+      gfx.setFgColor(theme().textDefault);
+      gfx.clearRect(labelX, y, 6, 1);
       const char* label = paramLabel(mod->type, paramIdx);
       if (label) gfx.print(labelX, y, label);
 
       // Draw the value
-      gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
-      gfxClearRect(valX, y, 6, 1);
+      gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+      gfx.clearRect(valX, y, 6, 1);
 
       if (mod->type == ModulationType::AHD || mod->type == ModulationType::ADSR) {
         uint8_t* params = &mod->p1;

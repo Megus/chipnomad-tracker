@@ -231,10 +231,10 @@ int instrumentCommonColumnCount(int row) {
 void instrumentCommonDrawStatic(void) {
   const ColorTheme t = theme();
 
-  gfxSetFgColor(t.textTitles);
+  gfx.setFgColor(t.textTitles);
   gfx.printf(0, 0, "INSTRUMENT %02X", cInstrument);
 
-  gfxSetFgColor(t.textDefault);
+  gfx.setFgColor(t.textDefault);
   gfx.print(0, 2, "Type");
 
   if (chipnomadState->project.instruments[cInstrument].type == InstrumentType::none) return;
@@ -247,33 +247,33 @@ void instrumentCommonDrawStatic(void) {
 void instrumentCommonDrawCursor(int col, int row) {
   if (row == 0 && col == 0) {
     // Type
-    gfxCursor(8, 2, strlen(instrumentTypeName(chipnomadState->project.instruments[cInstrument].type)));
+    gfx.cursor(8, 2, strlen(instrumentTypeName(chipnomadState->project.instruments[cInstrument].type)));
   } else if (row == 0 && col == 1) {
     // Load
-    gfxCursor(23, 2, 4);
+    gfx.cursor(23, 2, 4);
   } else if (row == 0 && col == 2) {
     // Save
-    gfxCursor(29, 2, 4);
+    gfx.cursor(29, 2, 4);
   } else if (row == 1) {
     // Instrument name
-    gfxCursor(8 + col, 3, 1);
+    gfx.cursor(8 + col, 3, 1);
   } else if (row == 2 && col == 0) {
     // Transpose on/off
-    gfxCursor(8, 4, 3);
+    gfx.cursor(8, 4, 3);
   } else if (row == 2 && col == 1) {
     // Table tic speed
-    gfxCursor(26, 4, 2);
+    gfx.cursor(26, 4, 2);
   }
 }
 
 void instrumentCommonDrawField(int col, int row, CellState state) {
-  gfxSetFgColor(theme().textDefault);
+  gfx.setFgColor(theme().textDefault);
 
-  gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+  gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
 
   if (row == 0 && col == 0) {
     // Instrument type
-    gfxClearRect(8, 2, 8, 1);
+    gfx.clearRect(8, 2, 8, 1);
     gfx.print(8, 2, instrumentTypeName(chipnomadState->project.instruments[cInstrument].type));
   } else if (row == 0 && col == 1) {
     // Load
@@ -286,7 +286,7 @@ void instrumentCommonDrawField(int col, int row, CellState state) {
     gfx.print(29, 2, "Save");
   } else if (row == 1) {
     // Instrument name
-    gfxClearRect(8, 3, PROJECT_INSTRUMENT_NAME_LENGTH, 1);
+    gfx.clearRect(8, 3, PROJECT_INSTRUMENT_NAME_LENGTH, 1);
     gfx.printf(8, 3, "%s", chipnomadState->project.instruments[cInstrument].name);
   } else if (row == 2 && col == 0) {
     // Transpose

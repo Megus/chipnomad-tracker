@@ -180,11 +180,11 @@ static void drawOscillatorHeaders(void) {
   int noiseOn = smp->oscNoise.isOn;
 
   // Tone header (y 8) - color based on on/off state
-  gfxSetFgColor(toneOn ? t.textTitles : t.textInfo);
+  gfx.setFgColor(toneOn ? t.textTitles : t.textInfo);
   gfx.print(COL_RIGHT_X, 8, "Tone");
 
   // Noise header (y 12) - color based on on/off state
-  gfxSetFgColor(noiseOn ? t.textTitles : t.textInfo);
+  gfx.setFgColor(noiseOn ? t.textTitles : t.textInfo);
   gfx.print(COL_RIGHT_X, 12, "Noise");
 }
 
@@ -195,17 +195,17 @@ static void drawStatic(void) {
   InstrumentAYSample* smp = &chipnomadState->project.instruments[cInstrument].chip.aySample;
 
   // Sample label (y 6) - use title color like "Tone" and "Noise" (sample is always on)
-  gfxSetFgColor(t.textTitles);
+  gfx.setFgColor(t.textTitles);
   gfx.print(COL_LEFT_X, 6, "Sample");
 
   // Sample filename under "Sample" label (y 7) - dimmer color, not editable
-  gfxSetFgColor(t.textInfo);
+  gfx.setFgColor(t.textInfo);
   if (strlen(smp->sampleName) > 0) {
     gfx.print(COL_LEFT_X, 7, smp->sampleName);
   }
 
   // Sample params labels (y 8-13)
-  gfxSetFgColor(t.textDefault);
+  gfx.setFgColor(t.textDefault);
   gfx.print(COL_LEFT_X, 8, "Rate");
   gfx.print(COL_LEFT_X, 9, "Start");
   gfx.print(COL_LEFT_X, 10, "Length");
@@ -217,19 +217,19 @@ static void drawStatic(void) {
   drawOscillatorHeaders();
 
   // Tone labels (y 9-10)
-  gfxSetFgColor(t.textDefault);
+  gfx.setFgColor(t.textDefault);
   gfx.print(COL_RIGHT_X, 9, "Pitch");
   gfx.print(COL_RIGHT_X, 10, "Fine");
 
   // Noise period label (y 13)
-  gfxSetFgColor(t.textDefault);
+  gfx.setFgColor(t.textDefault);
   gfx.print(COL_RIGHT_X, 13, "Period");
 
   // Update and draw sample preview
   updateSamplePreview();
   if (samplePreviewBitmap) {
-    gfxSetFgColor(t.textInfo);
-    gfxDrawBitmap(samplePreviewBitmap, PREVIEW_COL, PREVIEW_ROW);
+    gfx.setFgColor(t.textInfo);
+    gfx.drawBitmap(samplePreviewBitmap, PREVIEW_COL, PREVIEW_ROW);
   }
 }
 
@@ -241,27 +241,27 @@ static void drawCursor(int col, int row) {
   if (row == 3) {
     if (col == 0) {
       // Load button
-      gfxCursor(COL_LEFT_VAL, y, 4);
+      gfx.cursor(COL_LEFT_VAL, y, 4);
     }
     return;
   }
 
   if (col == 0) {
     switch (row) {
-      case 4: gfxCursor(COL_LEFT_VAL, y, 5); break;  // Rate (decimal, up to 5 digits)
-      case 5: gfxCursor(COL_LEFT_VAL, y, 4); break;  // Start
-      case 6: gfxCursor(COL_LEFT_VAL, y, 4); break;  // Length
-      case 7: gfxCursor(COL_LEFT_VAL, y, 4); break;  // Loop Start
-      case 8: gfxCursor(COL_LEFT_VAL, y, 2); break;  // Pitch (hex)
-      case 9: gfxCursor(COL_LEFT_VAL, y, 2); break;  // Fine (hex)
+      case 4: gfx.cursor(COL_LEFT_VAL, y, 5); break;  // Rate (decimal, up to 5 digits)
+      case 5: gfx.cursor(COL_LEFT_VAL, y, 4); break;  // Start
+      case 6: gfx.cursor(COL_LEFT_VAL, y, 4); break;  // Length
+      case 7: gfx.cursor(COL_LEFT_VAL, y, 4); break;  // Loop Start
+      case 8: gfx.cursor(COL_LEFT_VAL, y, 2); break;  // Pitch (hex)
+      case 9: gfx.cursor(COL_LEFT_VAL, y, 2); break;  // Fine (hex)
     }
   } else if (col == 1) {
     switch (row) {
-      case 4: gfxCursor(COL_RIGHT_VAL, y, 3); break; // Tone on/off
-      case 5: gfxCursor(COL_RIGHT_VAL, y, 2); break; // Tone pitch (hex)
-      case 6: gfxCursor(COL_RIGHT_VAL, y, 2); break; // Tone fine (hex)
-      case 8: gfxCursor(COL_RIGHT_VAL, y, 3); break; // Noise on/off
-      case 9: gfxCursor(COL_RIGHT_VAL, y, 2); break; // Noise period
+      case 4: gfx.cursor(COL_RIGHT_VAL, y, 3); break; // Tone on/off
+      case 5: gfx.cursor(COL_RIGHT_VAL, y, 2); break; // Tone pitch (hex)
+      case 6: gfx.cursor(COL_RIGHT_VAL, y, 2); break; // Tone fine (hex)
+      case 8: gfx.cursor(COL_RIGHT_VAL, y, 3); break; // Noise on/off
+      case 9: gfx.cursor(COL_RIGHT_VAL, y, 2); break; // Noise period
     }
   }
 }
@@ -272,7 +272,7 @@ static void drawField(int col, int row, CellState state) {
   InstrumentAYSample* smp = &chipnomadState->project.instruments[cInstrument].chip.aySample;
   int y = rowToY(row);
 
-  gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+  gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
 
   if (row == 3) {
     if (col == 0) {
@@ -285,27 +285,27 @@ static void drawField(int col, int row, CellState state) {
   if (col == 0) {
     switch (row) {
       case 4: // Rate
-        gfxClearRect(COL_LEFT_VAL, y, 5, 1);
+        gfx.clearRect(COL_LEFT_VAL, y, 5, 1);
         gfx.printf(COL_LEFT_VAL, y, "%d", smp->sampleRate);
         break;
       case 5: // Start
-        gfxClearRect(COL_LEFT_VAL, y, 4, 1);
+        gfx.clearRect(COL_LEFT_VAL, y, 4, 1);
         gfx.printf(COL_LEFT_VAL, y, "%04X", smp->sampleStart);
         break;
       case 6: // Length
-        gfxClearRect(COL_LEFT_VAL, y, 4, 1);
+        gfx.clearRect(COL_LEFT_VAL, y, 4, 1);
         gfx.printf(COL_LEFT_VAL, y, "%04X", smp->sampleLength);
         break;
       case 7: // Loop Start
-        gfxClearRect(COL_LEFT_VAL, y, 4, 1);
+        gfx.clearRect(COL_LEFT_VAL, y, 4, 1);
         gfx.printf(COL_LEFT_VAL, y, "%04X", smp->sampleLoopStart);
         break;
       case 8: // Pitch
-        gfxClearRect(COL_LEFT_VAL, y, 2, 1);
+        gfx.clearRect(COL_LEFT_VAL, y, 2, 1);
         gfx.print(COL_LEFT_VAL, y, byteToHex((uint8_t)smp->pitchOffset));
         break;
       case 9: // Fine
-        gfxClearRect(COL_LEFT_VAL, y, 2, 1);
+        gfx.clearRect(COL_LEFT_VAL, y, 2, 1);
         gfx.print(COL_LEFT_VAL, y, byteToHex((uint8_t)smp->fineTune));
         break;
     }
@@ -315,18 +315,18 @@ static void drawField(int col, int row, CellState state) {
         gfx.printf(COL_RIGHT_VAL, y, smp->oscTone.isOn ? "On " : "Off");
         break;
       case 5: // Tone pitch
-        gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
+        gfx.clearRect(COL_RIGHT_VAL, y, 2, 1);
         gfx.print(COL_RIGHT_VAL, y, byteToHex((uint8_t)smp->oscTone.pitchOffset));
         break;
       case 6: // Tone fine
-        gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
+        gfx.clearRect(COL_RIGHT_VAL, y, 2, 1);
         gfx.print(COL_RIGHT_VAL, y, byteToHex((uint8_t)smp->oscTone.fineTune));
         break;
       case 8: // Noise on/off
         gfx.printf(COL_RIGHT_VAL, y, smp->oscNoise.isOn ? "On " : "Off");
         break;
       case 9: // Noise period
-        gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
+        gfx.clearRect(COL_RIGHT_VAL, y, 2, 1);
         gfx.print(COL_RIGHT_VAL, y, byteToHex(smp->oscNoise.noisePeriod));
         break;
     }
@@ -433,8 +433,8 @@ static int onEdit(int col, int row, EditCellAction action) {
                 samplePreviewBitmap = gfxBitmapCreate(PREVIEW_WIDTH_CHARS, PREVIEW_HEIGHT_CHARS);
               }
               renderSamplePreview(samplePreviewBitmap, smp->sampleData, smp->sampleLoopStart, smp->sampleLength);
-              gfxSetFgColor(theme().textInfo);
-              gfxDrawBitmap(samplePreviewBitmap, PREVIEW_COL, PREVIEW_ROW);
+              gfx.setFgColor(theme().textInfo);
+              gfx.drawBitmap(samplePreviewBitmap, PREVIEW_COL, PREVIEW_ROW);
             }
           }
         }
@@ -491,8 +491,8 @@ static int onEdit(int col, int row, EditCellAction action) {
     if (col == 0 && (row == 5 || row == 6)) {
       updateSamplePreview();
       if (samplePreviewBitmap) {
-        gfxSetFgColor(theme().textInfo);
-        gfxDrawBitmap(samplePreviewBitmap, PREVIEW_COL, PREVIEW_ROW);
+        gfx.setFgColor(theme().textInfo);
+        gfx.drawBitmap(samplePreviewBitmap, PREVIEW_COL, PREVIEW_ROW);
       }
     }
   }
@@ -514,8 +514,8 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
       isLoopPreview = 0;
       updateSamplePreview();
       if (samplePreviewBitmap) {
-        gfxSetFgColor(theme().textInfo);
-        gfxDrawBitmap(samplePreviewBitmap, PREVIEW_COL, PREVIEW_ROW);
+        gfx.setFgColor(theme().textInfo);
+        gfx.drawBitmap(samplePreviewBitmap, PREVIEW_COL, PREVIEW_ROW);
       }
     }
   } else if (keys & keyEdit) {
@@ -531,8 +531,8 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
         }
         renderSamplePreview(samplePreviewBitmap, smp->sampleData,
                           smp->sampleLoopStart, smp->sampleLength);
-        gfxSetFgColor(theme().textInfo);
-        gfxDrawBitmap(samplePreviewBitmap, PREVIEW_COL, PREVIEW_ROW);
+        gfx.setFgColor(theme().textInfo);
+        gfx.drawBitmap(samplePreviewBitmap, PREVIEW_COL, PREVIEW_ROW);
         isLoopPreview = 1;
       }
     }

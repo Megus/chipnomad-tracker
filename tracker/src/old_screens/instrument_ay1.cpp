@@ -32,7 +32,7 @@ static int getColumnCount(int row) {
 static void drawStatic(void) {
   instrumentCommonDrawStatic();
 
-  gfxSetFgColor(theme().textDefault);
+  gfx.setFgColor(theme().textDefault);
   gfx.print(0, 6, "Tone");
   gfx.print(0, 7, "Noise");
   gfx.print(0, 8, "Env");
@@ -53,29 +53,29 @@ static void drawCursor(int col, int row) {
 
   if (col == 0) {
     if (row == 3) {
-      gfxCursor(8, 6, 3);
+      gfx.cursor(8, 6, 3);
     } else if (row == 4) {
-      gfxCursor(8, 7, 3);
+      gfx.cursor(8, 7, 3);
     } else if (row == 5) {
-      gfxCursor(8, 8, 1);
+      gfx.cursor(8, 8, 1);
     } else if (row == 6) {
-      gfxCursor(8, 11, 2);
+      gfx.cursor(8, 11, 2);
     } else if (row == 7) {
-      gfxCursor(8, 12, 2);
+      gfx.cursor(8, 12, 2);
     } else if (row == 8) {
-      gfxCursor(8, 13, 2);
+      gfx.cursor(8, 13, 2);
     } else if (row == 9) {
-      gfxCursor(8, 14, 2);
+      gfx.cursor(8, 14, 2);
     }
   } else if (col == 1) {
     if (row == 4) {
-      gfxCursor(26, 7, 3);
+      gfx.cursor(26, 7, 3);
     } else if (row == 5) {
-      gfxCursor(26, 8, 1);
+      gfx.cursor(26, 8, 1);
     }
   } else if (col == 2) {
     if (row == 4 || row == 5) {
-      gfxCursor(28, 8, 1);
+      gfx.cursor(28, 8, 1);
     }
   }
 }
@@ -83,7 +83,7 @@ static void drawCursor(int col, int row) {
 static void drawField(int col, int row, CellState state) {
   if (row < 3) return instrumentCommonDrawField(col, row, state);
 
-  gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+  gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
 
   uint8_t defaultMixer = chipnomadState->project.instruments[cInstrument].chip.ay.defaultMixer;
   int hasTone = (defaultMixer & 0x01) != 0;

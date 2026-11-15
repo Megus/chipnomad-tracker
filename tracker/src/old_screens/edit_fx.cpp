@@ -149,9 +149,9 @@ int drawGroupHeader(int visibleGroupIdx, int y, int isCurrent) {
 
   // Highlight current group header
   if (isCurrent) {
-    gfxSetFgColor(theme().textValue);
+    gfx.setFgColor(theme().textValue);
   } else {
-    gfxSetFgColor(theme().textTitles);
+    gfx.setFgColor(theme().textTitles);
   }
 
   gfx.print(1, y, group->name);
@@ -176,15 +176,15 @@ int drawFXList(int visibleGroupIdx, int y) {
     // Highlight current FX if this is the current group
     int isCurrent = (visibleGroupIdx == currentGroup && idx == currentIdx);
     if (isCurrent) {
-      gfxSetFgColor(theme().textValue);
+      gfx.setFgColor(theme().textValue);
     } else {
-      gfxSetFgColor(theme().textDefault);
+      gfx.setFgColor(theme().textDefault);
     }
 
     gfx.print(1 + col * 4, fxY, group->fxList[idx].name);
 
     if (isCurrent) {
-      gfxCursor(1 + col * 4, fxY, 3);
+      gfx.cursor(1 + col * 4, fxY, 3);
     }
   }
 
@@ -194,7 +194,7 @@ int drawFXList(int visibleGroupIdx, int y) {
 }
 
 void fxEditFullDraw(uint8_t currentFX, uint8_t instrumentIdx) {
-  gfxClearRect(0, 0, 35, 20);
+  gfx.clearRect(0, 0, 35, 20);
 
   // Store instrument index for this session
   currentInstrumentIdx = instrumentIdx;

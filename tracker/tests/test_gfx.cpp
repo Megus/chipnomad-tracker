@@ -22,7 +22,7 @@ TEST_CASE("legacy gfx forwarders dispatch to the global gfx (which is a mock her
   GfxMock mock;
   gfx = &mock;
 
-  gfxSetFgColor(0xABCDEF);
+  gfx.setFgColor(0xABCDEF);
   CHECK(mock.fgColor == 0xABCDEF);
 
   // Variadic forwarder path must reach vprintf without crashing

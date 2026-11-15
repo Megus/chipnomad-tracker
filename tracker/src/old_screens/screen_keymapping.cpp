@@ -60,19 +60,19 @@ static int getColumnCount(int row) {
 }
 
 static void drawStatic(void) {
-  gfxSetFgColor(theme().textTitles);
+  gfx.setFgColor(theme().textTitles);
   gfx.print(0, 0, "Key Mapping");
 
-  gfxSetFgColor(theme().textDefault);
+  gfx.setFgColor(theme().textDefault);
   for (int i = 0; i < 8; i++) {
     gfx.print(0, i + 2, buttonNames[i]);
   }
 
   if (inputRawCallback) {
-    gfxSetFgColor(theme().textValue);
+    gfx.setFgColor(theme().textValue);
     gfx.print(0, 14, "Press any key...");
   } else {
-    gfxSetFgColor(theme().textInfo);
+    gfx.setFgColor(theme().textInfo);
     gfx.print(0, 14, "Tap unmapped key 5x");
     gfx.print(0, 15, "to reset defaults");
   }
@@ -82,24 +82,24 @@ static void drawCursor(int col, int row) {
   if (row < 8) {
     InputCode* slot = getKeySlot(row, col);
     int width = slot ? strlen(input->getKeyName(*slot)) : 3;
-    gfxCursor(11 + col * 8, row + 2, width);
+    gfx.cursor(11 + col * 8, row + 2, width);
   } else if (row == 8) {
-    gfxCursor(0, 11, 4);
+    gfx.cursor(0, 11, 4);
   }
 }
 
 static void drawField(int col, int row, CellState state) {
   if (row < 8) {
-    gfxClearRect(11 + col * 8, row + 2, 7, 1);
+    gfx.clearRect(11 + col * 8, row + 2, 7, 1);
     InputCode* slot = getKeySlot(row, col);
     if (slot) {
       int isEmpty = (slot->deviceType == InputDeviceType::none);
       if (state == CellState::focus) {
-        gfxSetFgColor(theme().textValue);
+        gfx.setFgColor(theme().textValue);
       } else if (isEmpty) {
-        gfxSetFgColor(theme().textEmpty);
+        gfx.setFgColor(theme().textEmpty);
       } else {
-        gfxSetFgColor(theme().textDefault);
+        gfx.setFgColor(theme().textDefault);
       }
       const char* keyName = input->getKeyName(*slot);
       char trimmed[8];
@@ -107,7 +107,7 @@ static void drawField(int col, int row, CellState state) {
       gfx.print(11 + col * 8, row + 2, trimmed);
     }
   } else if (row == 8) {
-    gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+    gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
     gfx.print(0, 11, "Done");
   }
 }

@@ -134,10 +134,10 @@ int colorThemeColumnCount(int row) {
 void colorThemeDrawStatic(void) {
   const ColorTheme t = theme();
 
-  gfxSetFgColor(t.textTitles);
+  gfx.setFgColor(t.textTitles);
   gfx.print(0, 0, "COLOR THEME");
 
-  gfxSetFgColor(t.textDefault);
+  gfx.setFgColor(t.textDefault);
   gfx.print(17, 1, "R  G  B");
   gfx.print(0, 17, "Theme name");
 }
@@ -145,28 +145,28 @@ void colorThemeDrawStatic(void) {
 void colorThemeDrawCursor(int col, int row) {
   if (row < 10) {
     if (col == 0) {
-      gfxCursor(17, row + 2, 2); // R column
+      gfx.cursor(17, row + 2, 2); // R column
     } else if (col == 1) {
-      gfxCursor(20, row + 2, 2); // G column
+      gfx.cursor(20, row + 2, 2); // G column
     } else if (col == 2) {
-      gfxCursor(23, row + 2, 2); // B column
+      gfx.cursor(23, row + 2, 2); // B column
     }
   } else if (row == 10) {
-    gfxCursor(17 + col, 17, 1); // Theme name field
+    gfx.cursor(17 + col, 17, 1); // Theme name field
   } else if (row == 11) {
     if (col == 0) {
-      gfxCursor(17, 18, 4); // Save
+      gfx.cursor(17, 18, 4); // Save
     } else if (col == 1) {
-      gfxCursor(22, 18, 4); // Load
+      gfx.cursor(22, 18, 4); // Load
     } else if (col == 2) {
-      gfxCursor(27, 18, 5); // Reset
+      gfx.cursor(27, 18, 5); // Reset
     }
   }
 }
 
 void colorThemeDrawRowHeader(int row, CellState state) {
   if (row < 10) {
-    gfxSetFgColor(theme().textDefault);
+    gfx.setFgColor(theme().textDefault);
     gfx.print(0, row + 2, colorNames[row]);
 
     // Draw color preview as part of row header
@@ -183,7 +183,7 @@ void colorThemeDrawColHeader(int col, CellState state) {
 }
 
 void colorThemeDrawField(int col, int row, CellState state) {
-  gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+  gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
 
   if (row < 10) {
     int* colorPtr = getColorPtr(row);
@@ -203,7 +203,7 @@ void colorThemeDrawField(int col, int row, CellState state) {
     }
   } else if (row == 10) {
     // Theme name field
-    gfxClearRect(17, 17, THEME_NAME_LENGTH, 1);
+    gfx.clearRect(17, 17, THEME_NAME_LENGTH, 1);
     gfx.printf(17, 17, "%s", appSettings.themeName);
   } else if (row == 11) {
     // Buttons

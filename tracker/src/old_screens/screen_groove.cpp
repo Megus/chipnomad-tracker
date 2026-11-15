@@ -65,7 +65,7 @@ static int getColumnCount(int row) {
 
 static void drawStatic(void) {
   const ColorTheme t = theme();
-  gfxSetFgColor(t.textTitles);
+  gfx.setFgColor(t.textTitles);
   gfx.printf(0, 0, "GROOVE %02X", groove);
 }
 
@@ -77,22 +77,22 @@ static void drawField(int col, int row, CellState state) {
 
 static void drawRowHeader(int row, CellState state) {
   const ColorTheme t = theme();
-  gfxSetFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
+  gfx.setFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
   gfx.printf(1, 3 + row, "%X", row);
 }
 
 static void drawColHeader(int col, CellState state) {
   const ColorTheme t = theme();
-  gfxSetFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
+  gfx.setFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
   gfx.print(3, 2, "T");  // T for Timing
 }
 
 static void drawCursor(int col, int row) {
-  gfxCursor(3, 3 + row, 2);
+  gfx.cursor(3, 3 + row, 2);
 }
 
 static void drawSelection(int col1, int row1, int col2, int row2) {
-  gfxRect(3, 3 + row1, 2, row2 - row1 + 1);
+  gfx.rect(3, 3 + row1, 2, row2 - row1 + 1);
 }
 
 static void fullRedraw(void) {
@@ -101,13 +101,13 @@ static void fullRedraw(void) {
 
 static void draw(void) {
   // Clear the marker column
-  gfxClearRect(2, 3, 1, 16);
+  gfx.clearRect(2, 3, 1, 16);
 
   // Show play position if this groove is currently playing
   if (chipnomadState->engine->player.tracks[*pSongTrack].grooveIdx == groove) {
     int row = chipnomadState->engine->player.tracks[*pSongTrack].grooveRow;
     if (row >= 0 && row < 16) {
-      gfxSetFgColor(theme().playMarkers);
+      gfx.setFgColor(theme().playMarkers);
       gfx.print(2, 3 + row, ">");
     }
   }

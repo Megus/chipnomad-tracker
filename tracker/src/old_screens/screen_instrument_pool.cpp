@@ -35,10 +35,10 @@ static void setup(int input) {
 static void fullRedraw(void) {
   const ColorTheme t = theme();
 
-  gfxSetFgColor(t.textTitles);
+  gfx.setFgColor(t.textTitles);
   gfx.printf(0, 0, "INSTRUMENT POOL");
 
-  gfxSetFgColor(t.textInfo);
+  gfx.setFgColor(t.textInfo);
   gfx.print(0, 2, "    Name            Type");
 
   // Draw instruments
@@ -50,11 +50,11 @@ static void fullRedraw(void) {
 
     // Set color based on cursor position and instrument state
     if (i == cursorRow) {
-      gfxSetFgColor(t.textValue);
+      gfx.setFgColor(t.textValue);
     } else if (instrumentIsEmpty(&chipnomadState->project, i)) {
-      gfxSetFgColor(t.textEmpty);
+      gfx.setFgColor(t.textEmpty);
     } else {
-      gfxSetFgColor(t.textDefault);
+      gfx.setFgColor(t.textDefault);
     }
 
     // Draw cursor indicator and instrument number
@@ -73,14 +73,14 @@ static void fullRedraw(void) {
     }
 
     // Draw instrument type
-    gfxClearRect(20, y, 14, 1);
+    gfx.clearRect(20, y, 14, 1);
     gfx.print(20, y, instrumentTypeName(chipnomadState->project.instruments[i].type));
   }
 }
 
 static void draw(void) {
   // Clear playback markers
-  gfxClearRect(3, 3, 1, 16);
+  gfx.clearRect(3, 3, 1, 16);
 
   // Draw playback markers for currently playing instruments
   for (int track = 0; track < chipnomadState->project.tracksCount; track++) {
@@ -89,7 +89,7 @@ static void draw(void) {
       int instrument = trackState->note.instrument;
       if (instrument >= topRow && instrument < topRow + 16) {
         int y = 3 + (instrument - topRow);
-        gfxSetFgColor(theme().playMarkers);
+        gfx.setFgColor(theme().playMarkers);
         gfx.print(3, y, "*");
       }
     }
@@ -230,9 +230,9 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
     int oldY = 3 + (oldCursorRow - oldTopRow);
     if (oldCursorRow >= oldTopRow && oldCursorRow < oldTopRow + 16) {
       if (instrumentIsEmpty(&chipnomadState->project, oldCursorRow)) {
-        gfxSetFgColor(theme().textEmpty);
+        gfx.setFgColor(theme().textEmpty);
       } else {
-        gfxSetFgColor(theme().textDefault);
+        gfx.setFgColor(theme().textDefault);
       }
       gfx.print(0, oldY, " ");
       gfx.printf(1, oldY, "%02X", oldCursorRow);
@@ -241,13 +241,13 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
       } else {
         gfx.print(4, oldY, "               ");
       }
-      gfxClearRect(20, oldY, 14, 1);
+      gfx.clearRect(20, oldY, 14, 1);
       gfx.print(20, oldY, instrumentTypeName(chipnomadState->project.instruments[oldCursorRow].type));
     }
 
     // Draw new cursor line
     int newY = 3 + (cursorRow - topRow);
-    gfxSetFgColor(theme().textValue);
+    gfx.setFgColor(theme().textValue);
     gfx.print(0, newY, ">");
     gfx.printf(1, newY, "%02X", cursorRow);
     if (!instrumentIsEmpty(&chipnomadState->project, cursorRow)) {
@@ -255,7 +255,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
     } else {
       gfx.print(4, newY, "               ");
     }
-    gfxClearRect(20, newY, 14, 1);
+    gfx.clearRect(20, newY, 14, 1);
     gfx.print(20, newY, instrumentTypeName(chipnomadState->project.instruments[cursorRow].type));
   }
   return 0;

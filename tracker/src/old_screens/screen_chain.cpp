@@ -75,7 +75,7 @@ static int getColumnCount(int row) {
 }
 
 static void drawStatic(void) {
-  gfxSetFgColor(theme().textTitles);
+  gfx.setFgColor(theme().textTitles);
   gfx.printf(0, 0, "CHAIN %02X%c", chain, isChainUsedElsewhere(&chipnomadState->project, chain, *pSongTrack, *pSongRow) ? '*' : ' ');
 }
 
@@ -105,13 +105,13 @@ static void drawField(int col, int row, CellState state) {
 
 static void drawRowHeader(int row, CellState state) {
   const ColorTheme t = theme();
-  gfxSetFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
+  gfx.setFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
   gfx.printf(1, 3 + row, "%X", row);
 }
 
 static void drawColHeader(int col, CellState state) {
   const ColorTheme t = theme();
-  gfxSetFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
+  gfx.setFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
 
   if (col == 0) {
     // Phrase
@@ -125,10 +125,10 @@ static void drawColHeader(int col, CellState state) {
 static void drawCursor(int col, int row) {
   if (col == 0) {
     // Phrase
-    gfxCursor(3, 3 + row, 3);
+    gfx.cursor(3, 3 + row, 3);
   } else {
     // Transpose
-    gfxCursor(7, 3 + row, 2);
+    gfx.cursor(7, 3 + row, 2);
   }
 }
 
@@ -137,7 +137,7 @@ static void drawSelection(int col1, int row1, int col2, int row2) {
   int w = (col2 - col1 == 1) ? 6 : (col1 == 0 ? 3 : 2);
   int y = 3 + row1;
   int h = row2 - row1 + 1;
-  gfxRect(x, y, w, h);
+  gfx.rect(x, y, w, h);
 }
 
 static void fullRedraw(void) {
@@ -145,11 +145,11 @@ static void fullRedraw(void) {
 }
 
 static void draw(void) {
-  gfxClearRect(2, 3, 1, 16);
+  gfx.clearRect(2, 3, 1, 16);
   if (chipnomadState && chipnomadState->engine->player.tracks[*pSongTrack].songRow == *pSongRow) {
     int chainRow = chipnomadState->engine->player.tracks[*pSongTrack].chainRow;
     if (chainRow >= 0 && chainRow < 16) {
-      gfxSetFgColor(theme().playMarkers);
+      gfx.setFgColor(theme().playMarkers);
       gfx.print(2, 3 + chainRow, ">");
     }
   }

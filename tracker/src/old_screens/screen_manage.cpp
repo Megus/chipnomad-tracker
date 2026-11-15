@@ -53,23 +53,23 @@ int manageColumnCount(int row) {
 }
 
 void manageDrawStatic(void) {
-  gfxSetFgColor(theme().textTitles);
+  gfx.setFgColor(theme().textTitles);
   gfx.print(0, 0, "MANAGE PROJECT");
 
-  gfxSetFgColor(theme().textDefault);
+  gfx.setFgColor(theme().textDefault);
   gfx.print(0, 2, "Clean unused/duplicate:");
 }
 
 void manageDrawCursor(int col, int row) {
   if (row == 1) {
-    gfxCursor(2, 3, 18); // "Phrases and Chains"
+    gfx.cursor(2, 3, 18); // "Phrases and Chains"
   } else if (row == 2) {
-    gfxCursor(2, 4, 22); // "Instruments and Tables"
+    gfx.cursor(2, 4, 22); // "Instruments and Tables"
   }
 }
 
 void manageDrawField(int col, int row, CellState state) {
-  gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+  gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
 
   if (row == 1) {
     gfx.print(2, 3, "Phrases and Chains");

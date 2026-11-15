@@ -88,7 +88,7 @@ static int getColumnCount(int row) {
 }
 
 static void drawStatic(void) {
-  gfxSetFgColor(theme().textTitles);
+  gfx.setFgColor(theme().textTitles);
   gfx.printf(0, 0, "PHRASE %03X%c", phraseIdx, isPhraseUsedElsewhere(&chipnomadState->project, phraseIdx, chipnomadState->project.song[*pSongRow][*pSongTrack], *pChainRow) ? '*' : ' ');
 }
 
@@ -124,13 +124,13 @@ static void drawField(int col, int row, CellState state) {
 
 static void drawRowHeader(int row, CellState state) {
   const ColorTheme t = theme();
-  gfxSetFgColor((state == CellState::focus) ? t.textDefault : ((row & 3) == 0 ? t.textValue : t.textInfo));
+  gfx.setFgColor((state == CellState::focus) ? t.textDefault : ((row & 3) == 0 ? t.textValue : t.textInfo));
   gfx.printf(1, 3 + row, "%X", row);
 }
 
 static void drawColHeader(int col, CellState state) {
   const ColorTheme t = theme();
-  gfxSetFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
+  gfx.setFgColor((state == CellState::focus) ? t.textDefault : t.textInfo);
 
   switch (col) {
     case 0:
@@ -162,7 +162,7 @@ static void drawColHeader(int col, CellState state) {
 static void drawCursor(int col, int row) {
   int width = 2;
   if (col == 0 || col == 3 || col == 5 || col == 7) width = 3;
-  gfxCursor(col == 0 ? 3 : 4 + col * 3, 3 + row, width);
+  gfx.cursor(col == 0 ? 3 : 4 + col * 3, 3 + row, width);
 }
 
 static void drawSelection(int col1, int row1, int col2, int row2) {
@@ -171,22 +171,22 @@ static void drawSelection(int col1, int row1, int col2, int row2) {
   int y = 3 + row1;
   int h = row2 - row1 + 1;
   if (col2 == 3 || col2 == 5 || col2 == 7) w++;
-  gfxRect(x, y, w, h);
+  gfx.rect(x, y, w, h);
 }
 
 static void draw(void) {
   if (isFxEdit) return;
 
-  gfxClearRect(0, 3, 1, 16);
-  gfxSetFgColor(theme().textInfo);
+  gfx.clearRect(0, 3, 1, 16);
+  gfx.setFgColor(theme().textInfo);
   gfx.print(0, 3 + *pChainRow, "<");
 
-  gfxClearRect(2, 3, 1, 16);
+  gfx.clearRect(2, 3, 1, 16);
   PlaybackTrackState* track = &chipnomadState->engine->player.tracks[*pSongTrack];
   if (track->mode != PlaybackMode::stopped && track->mode != PlaybackMode::phraseRow && track->songRow != EMPTY_VALUE_16) {
     // Chain row
     if (*pSongRow == track->songRow) {
-      gfxSetFgColor(theme().playMarkers);
+      gfx.setFgColor(theme().playMarkers);
       gfx.print(0, 3 + track->chainRow, "<");
     }
 
@@ -195,7 +195,7 @@ static void draw(void) {
     if (playingPhrase == phraseIdx) {
       int row = track->phraseRow;
       if (row >= 0 && row < 16) {
-        gfxSetFgColor(theme().playMarkers);
+        gfx.setFgColor(theme().playMarkers);
         gfx.print(2, 3 + row, ">");
       }
     }

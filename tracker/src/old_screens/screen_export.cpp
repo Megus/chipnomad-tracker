@@ -133,45 +133,45 @@ int exportCommonColumnCount(int row) {
 void exportCommonDrawStatic(void) {
   const ColorTheme t = theme();
 
-  gfxSetFgColor(t.textTitles);
+  gfx.setFgColor(t.textTitles);
   gfx.print(0, 0, "EXPORT");
 
-  gfxSetFgColor(t.textDefault);
+  gfx.setFgColor(t.textDefault);
   gfx.print(0, 2, "Start row");
 
-  gfxSetFgColor(t.textValue);
+  gfx.setFgColor(t.textValue);
   gfx.print(0, 4, "WAV");
-  gfxSetFgColor(t.textDefault);
+  gfx.setFgColor(t.textDefault);
   gfx.print(0, 5, "Sample rate");
   gfx.print(0, 6, "Bit depth");
 
-  gfxSetFgColor(t.textValue);
+  gfx.setFgColor(t.textValue);
   gfx.print(0, 8, "VGM");
 }
 
 void exportCommonDrawCursor(int col, int row) {
   if (row == 0) {
-    gfxCursor(13, 2, 2);
+    gfx.cursor(13, 2, 2);
   } else if (row == 1) {
     if (col == 0) {
-      gfxCursor(13, 4, 6);
+      gfx.cursor(13, 4, 6);
     } else {
-      gfxCursor(20, 4, 5);
+      gfx.cursor(20, 4, 5);
     }
   } else if (row == 2) {
-    gfxCursor(13, 5, 5);
+    gfx.cursor(13, 5, 5);
   } else if (row == 3) {
-    gfxCursor(13, 6, 2);
+    gfx.cursor(13, 6, 2);
   } else if (row == 4) {
-    gfxCursor(13, 8, 6);
+    gfx.cursor(13, 8, 6);
   }
 }
 
 void exportCommonDrawField(int col, int row, CellState state) {
-  gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+  gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
 
   if (row == 0) {
-    gfxClearRect(13, 2, 2, 1);
+    gfx.clearRect(13, 2, 2, 1);
     gfx.printf(13, 2, "%02X", startRow);
   } else if (row == 1) {
     if (col == 0) {
@@ -180,10 +180,10 @@ void exportCommonDrawField(int col, int row, CellState state) {
       gfx.print(20, 4, "Stems");
     }
   } else if (row == 2) {
-    gfxClearRect(13, 5, 6, 1);
+    gfx.clearRect(13, 5, 6, 1);
     gfx.printf(13, 5, "%d", sampleRates[currentSampleRateIndex]);
   } else if (row == 3) {
-    gfxClearRect(13, 6, 2, 1);
+    gfx.clearRect(13, 6, 2, 1);
     gfx.printf(13, 6, "%d", bitDepths[currentBitDepthIndex]);
   } else if (row == 4) {
     gfx.print(13, 8, "Export");

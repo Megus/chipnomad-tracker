@@ -44,30 +44,30 @@ static int getColumnCount(int row) {
 }
 
 static void drawStatic(void) {
-  gfxSetFgColor(theme().textTitles);
+  gfx.setFgColor(theme().textTitles);
   gfx.print(0, 0, "PITCH TABLE");
 
-  gfxSetFgColor(theme().textDefault);
+  gfx.setFgColor(theme().textDefault);
   gfx.print(0, 2, "Name");
 }
 
 static void drawCursor(int col, int row) {
   if (row == 0) {
-    gfxCursor(7 + col, 2, 1);
+    gfx.cursor(7 + col, 2, 1);
   } else if (row == 1) {
-    gfxCursor(0, 4, 13);
+    gfx.cursor(0, 4, 13);
   } else if (row == 2) {
-    gfxCursor(0, 5, 11);
+    gfx.cursor(0, 5, 11);
   } else if (row == 3) {
-    gfxCursor(0, 6, 26);
+    gfx.cursor(0, 6, 26);
   }
 }
 
 static void drawField(int col, int row, CellState state) {
-  gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+  gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
 
   if (row == 0) {
-    gfxClearRect(7, 2, PROJECT_PITCH_TABLE_TITLE_LENGTH, 1);
+    gfx.clearRect(7, 2, PROJECT_PITCH_TABLE_TITLE_LENGTH, 1);
     gfx.printf(7, 2, "%s", chipnomadState->project.pitchTable.name);
   } else if (row == 1) {
     gfx.print(0, 4, "Load from CSV");

@@ -151,15 +151,15 @@ static void drawOscillatorHeaders(void) {
   int softwareOscOn = (ay2->oscSoftware.type != AYSoftwareOscType::none);
 
   // Top block headers (y 6)
-  gfxSetFgColor(toneOn ? t.textTitles : t.textInfo);
+  gfx.setFgColor(toneOn ? t.textTitles : t.textInfo);
   gfx.print(COL_LEFT_X, 6, "Tone");
-  gfxSetFgColor(envelopeOn ? t.textTitles : t.textInfo);
+  gfx.setFgColor(envelopeOn ? t.textTitles : t.textInfo);
   gfx.print(COL_RIGHT_X, 6, "Envelope");
 
   // Bottom block headers (y 11)
-  gfxSetFgColor(noiseOn ? t.textTitles : t.textInfo);
+  gfx.setFgColor(noiseOn ? t.textTitles : t.textInfo);
   gfx.print(COL_LEFT_X, 11, "Noise");
-  gfxSetFgColor(softwareOscOn ? t.textTitles : t.textInfo);
+  gfx.setFgColor(softwareOscOn ? t.textTitles : t.textInfo);
   gfx.print(COL_RIGHT_X, 11, "Soft osc");
 }
 
@@ -178,14 +178,14 @@ static void drawStatic(void) {
   drawOscillatorHeaders();
 
   // Top block labels (y 7-9)
-  gfxSetFgColor(t.textDefault);
+  gfx.setFgColor(t.textDefault);
   gfx.print(COL_LEFT_X, 7, "Pitch");
   gfx.print(COL_LEFT_X, 8, "Fine");
   gfx.print(COL_RIGHT_X, 7, "Mode");
   // Row 8-9 labels are dynamic (Pitch/N and Fine/D or N and D)
 
   // Bottom block labels (y 12-14)
-  gfxSetFgColor(cs.textDefault);
+  gfx.setFgColor(cs.textDefault);
   gfx.print(COL_LEFT_X, 12, "Period");
   gfx.print(COL_RIGHT_X, 12, "Pitch");
   gfx.print(COL_RIGHT_X, 13, "Fine");
@@ -193,8 +193,8 @@ static void drawStatic(void) {
 
   // P1/P2 labels (y 15-16) - conditional based on osc type
   // Clear the areas first to remove any stale labels
-  gfxClearRect(COL_RIGHT_X, 15, 14, 1);
-  gfxClearRect(COL_RIGHT_X, 16, 14, 1);
+  gfx.clearRect(COL_RIGHT_X, 15, 14, 1);
+  gfx.clearRect(COL_RIGHT_X, 16, 14, 1);
 
   if (softwareOscHasP1(ay2->oscSoftware.type)) {
     gfx.print(COL_RIGHT_X, 15, softwareOscP1Name(ay2->oscSoftware.type));
@@ -211,28 +211,28 @@ static void drawCursor(int col, int row) {
 
   if (col == 0) {
     switch (row) {
-      case 3: gfxCursor(COL_LEFT_VAL, y, 3); break;  // Tone on/off
-      case 4: gfxCursor(COL_LEFT_VAL, y, 2); break;  // Tone pitch (hex)
-      case 5: gfxCursor(COL_LEFT_VAL, y, 2); break;  // Tone fine (hex)
-      case 7: gfxCursor(COL_LEFT_VAL, y, 3); break;  // Noise on/off
-      case 8: gfxCursor(COL_LEFT_VAL, y, 2); break;  // Noise period
+      case 3: gfx.cursor(COL_LEFT_VAL, y, 3); break;  // Tone on/off
+      case 4: gfx.cursor(COL_LEFT_VAL, y, 2); break;  // Tone pitch (hex)
+      case 5: gfx.cursor(COL_LEFT_VAL, y, 2); break;  // Tone fine (hex)
+      case 7: gfx.cursor(COL_LEFT_VAL, y, 3); break;  // Noise on/off
+      case 8: gfx.cursor(COL_LEFT_VAL, y, 2); break;  // Noise period
     }
   } else if (col == 1) {
     switch (row) {
-      case 3: gfxCursor(COL_RIGHT_VAL, y, 1); break;  // Env shape (single hex digit)
-      case 4: gfxCursor(COL_RIGHT_VAL, y, 6); break;  // Env mode
+      case 3: gfx.cursor(COL_RIGHT_VAL, y, 1); break;  // Env shape (single hex digit)
+      case 4: gfx.cursor(COL_RIGHT_VAL, y, 6); break;  // Env mode
       case 5: // Env pitch/N
-        gfxCursor(COL_RIGHT_VAL, y, 2);  // Always 2 chars for hex
+        gfx.cursor(COL_RIGHT_VAL, y, 2);  // Always 2 chars for hex
         break;
       case 6: // Env fine/D
-        gfxCursor(COL_RIGHT_VAL, y, 2);  // Always 2 chars for hex
+        gfx.cursor(COL_RIGHT_VAL, y, 2);  // Always 2 chars for hex
         break;
-      case 7: gfxCursor(COL_RIGHT_VAL, y, 8); break;  // Soft osc type
-      case 8: gfxCursor(COL_RIGHT_VAL, y, 2); break;  // Soft osc pitch (hex)
-      case 9: gfxCursor(COL_RIGHT_VAL, y, 2); break;  // Soft osc fine (hex)
-      case 10: gfxCursor(COL_RIGHT_VAL, y, 2); break; // FM depth (hex)
-      case 11: gfxCursor(COL_RIGHT_VAL, y, 2); break; // Soft osc P1 (hex)
-      case 12: gfxCursor(COL_RIGHT_VAL, y, 2); break; // Soft osc P2 (hex)
+      case 7: gfx.cursor(COL_RIGHT_VAL, y, 8); break;  // Soft osc type
+      case 8: gfx.cursor(COL_RIGHT_VAL, y, 2); break;  // Soft osc pitch (hex)
+      case 9: gfx.cursor(COL_RIGHT_VAL, y, 2); break;  // Soft osc fine (hex)
+      case 10: gfx.cursor(COL_RIGHT_VAL, y, 2); break; // FM depth (hex)
+      case 11: gfx.cursor(COL_RIGHT_VAL, y, 2); break; // Soft osc P1 (hex)
+      case 12: gfx.cursor(COL_RIGHT_VAL, y, 2); break; // Soft osc P2 (hex)
     }
   }
 }
@@ -243,7 +243,7 @@ static void drawField(int col, int row, CellState state) {
   InstrumentAY2* ay2 = &chipnomadState->project.instruments[cInstrument].chip.ay2;
   int y = rowToY(row);
 
-  gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+  gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
 
   if (col == 0) {
     switch (row) {
@@ -251,18 +251,18 @@ static void drawField(int col, int row, CellState state) {
         gfx.printf(COL_LEFT_VAL, y, ay2->oscTone.isOn ? "On " : "Off");
         break;
       case 4: // Tone pitch
-        gfxClearRect(COL_LEFT_VAL, y, 2, 1);
+        gfx.clearRect(COL_LEFT_VAL, y, 2, 1);
         gfx.print(COL_LEFT_VAL, y, byteToHex((uint8_t)ay2->oscTone.pitchOffset));
         break;
       case 5: // Tone fine
-        gfxClearRect(COL_LEFT_VAL, y, 2, 1);
+        gfx.clearRect(COL_LEFT_VAL, y, 2, 1);
         gfx.print(COL_LEFT_VAL, y, byteToHex((uint8_t)ay2->oscTone.fineTune));
         break;
       case 7: // Noise on/off
         gfx.printf(COL_LEFT_VAL, y, ay2->oscNoise.isOn ? "On " : "Off");
         break;
       case 8: // Noise period
-        gfxClearRect(COL_LEFT_VAL, y, 2, 1);
+        gfx.clearRect(COL_LEFT_VAL, y, 2, 1);
         gfx.print(COL_LEFT_VAL, y, byteToHex(ay2->oscNoise.noisePeriod));
         break;
     }
@@ -271,7 +271,7 @@ static void drawField(int col, int row, CellState state) {
 
     switch (row) {
       case 3: // Envelope shape
-        gfxClearRect(COL_RIGHT_VAL, y, 6, 1);
+        gfx.clearRect(COL_RIGHT_VAL, y, 6, 1);
         if (ay2->oscEnvelope.shape == 0) {
           gfx.print(COL_RIGHT_VAL, y, "0 Off ");
         } else {
@@ -279,16 +279,16 @@ static void drawField(int col, int row, CellState state) {
         }
         break;
       case 4: // Envelope mode
-        gfxClearRect(COL_RIGHT_VAL, y, 7, 1);
+        gfx.clearRect(COL_RIGHT_VAL, y, 7, 1);
         gfx.print(COL_RIGHT_VAL, y, isAutoEnv ? "AutoEnv" : "Osc   ");
         break;
       case 5: // Envelope pitch/N
         // Draw the label for this row
-        gfxSetFgColor(theme().textDefault);
+        gfx.setFgColor(theme().textDefault);
         gfx.print(COL_RIGHT_X, y, isAutoEnv ? "N    " : "Pitch");
         // Draw the value
-        gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
-        gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
+        gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+        gfx.clearRect(COL_RIGHT_VAL, y, 2, 1);
         if (isAutoEnv) {
           gfx.print(COL_RIGHT_VAL, y, byteToHex(ay2->oscEnvelope.autoEnvN));
         } else {
@@ -297,11 +297,11 @@ static void drawField(int col, int row, CellState state) {
         break;
       case 6: // Envelope fine/D
         // Draw the label for this row
-        gfxSetFgColor(theme().textDefault);
+        gfx.setFgColor(theme().textDefault);
         gfx.print(COL_RIGHT_X, y, isAutoEnv ? "D    " : "Fine ");
         // Draw the value
-        gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
-        gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
+        gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+        gfx.clearRect(COL_RIGHT_VAL, y, 2, 1);
         if (isAutoEnv) {
           gfx.print(COL_RIGHT_VAL, y, byteToHex(ay2->oscEnvelope.autoEnvD));
         } else {
@@ -312,26 +312,26 @@ static void drawField(int col, int row, CellState state) {
         gfx.print(COL_RIGHT_VAL, y, softwareOscTypeName(ay2->oscSoftware.type));
         break;
       case 8: // Software osc pitch
-        gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
+        gfx.clearRect(COL_RIGHT_VAL, y, 2, 1);
         gfx.print(COL_RIGHT_VAL, y, byteToHex((uint8_t)ay2->oscSoftware.pitchOffset));
         break;
       case 9: // Software osc fine
-        gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
+        gfx.clearRect(COL_RIGHT_VAL, y, 2, 1);
         gfx.print(COL_RIGHT_VAL, y, byteToHex((uint8_t)ay2->oscSoftware.fineTune));
         break;
       case 10: // FM depth (visible for all soft osc types)
         // Draw the value
-        gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+        gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
         gfx.print(COL_RIGHT_VAL, y, byteToHex(ay2->oscSoftware.fmDepth));
         break;
       case 11: // Software osc P1
         if (softwareOscHasP1(ay2->oscSoftware.type)) {
           // Draw the label for this row
-          gfxSetFgColor(theme().textDefault);
+          gfx.setFgColor(theme().textDefault);
           gfx.print(COL_RIGHT_X, y, softwareOscP1Name(ay2->oscSoftware.type));
           // Draw the value
-          gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
-          gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
+          gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+          gfx.clearRect(COL_RIGHT_VAL, y, 2, 1);
           uint8_t* p1 = softwareOscP1Ptr(&ay2->oscSoftware);
           if (p1) gfx.print(COL_RIGHT_VAL, y, byteToHex(*p1));
 
@@ -344,31 +344,31 @@ static void drawField(int col, int row, CellState state) {
               renderAYWavetablePreview(wavetablePreviewBitmap, p->ayWavetables[*p1], isYM);
 
               // Draw preview after the value (at x=29, 2 chars after value at x=26-27)
-              gfxSetFgColor(theme().textInfo);
-              gfxDrawBitmap(wavetablePreviewBitmap, 29, y);
+              gfx.setFgColor(theme().textInfo);
+              gfx.drawBitmap(wavetablePreviewBitmap, 29, y);
             }
           } else {
             // Clear preview area for non-wavetable types
-            gfxClearRect(29, y, 2, 1);
+            gfx.clearRect(29, y, 2, 1);
           }
         } else {
           // Clear entire P1 area when not available
-          gfxClearRect(COL_RIGHT_X, y, 14, 1);
+          gfx.clearRect(COL_RIGHT_X, y, 14, 1);
         }
         break;
       case 12: // Software osc P2
         if (softwareOscHasP2(ay2->oscSoftware.type)) {
           // Draw the label for this row
-          gfxSetFgColor(theme().textDefault);
+          gfx.setFgColor(theme().textDefault);
           gfx.print(COL_RIGHT_X, y, softwareOscP2Name(ay2->oscSoftware.type));
           // Draw the value
-          gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
-          gfxClearRect(COL_RIGHT_VAL, y, 2, 1);
+          gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+          gfx.clearRect(COL_RIGHT_VAL, y, 2, 1);
           uint8_t* p2 = softwareOscP2Ptr(&ay2->oscSoftware);
           if (p2) gfx.print(COL_RIGHT_VAL, y, byteToHex(*p2));
         } else {
           // Clear entire P2 area when not available
-          gfxClearRect(COL_RIGHT_X, y, 14, 1);
+          gfx.clearRect(COL_RIGHT_X, y, 14, 1);
         }
         break;
     }
@@ -484,9 +484,9 @@ static int onEdit(int col, int row, EditCellAction action) {
             // Clear P1 and P2 display areas (including labels, values, and wavetable preview)
             int y11 = rowToY(11);
             int y12 = rowToY(12);
-            gfxClearRect(COL_RIGHT_X, y11, 14, 1);  // Clear label + value area for P1 (row 11)
-            gfxClearRect(29, y11, 2, 1);            // Clear wavetable preview area for P1
-            gfxClearRect(COL_RIGHT_X, y12, 14, 1);  // Clear label + value area for P2 (row 12)
+            gfx.clearRect(COL_RIGHT_X, y11, 14, 1);  // Clear label + value area for P1 (row 11)
+            gfx.clearRect(29, y11, 2, 1);            // Clear wavetable preview area for P1
+            gfx.clearRect(COL_RIGHT_X, y12, 14, 1);  // Clear label + value area for P2 (row 12)
 
             // Redraw all affected rows
             drawField(1, 10, CellState::normal);  // FM depth (always visible, might need refresh)
@@ -543,8 +543,8 @@ static int onEdit(int col, int row, EditCellAction action) {
                     renderAYWavetablePreview(wavetablePreviewBitmap, p->ayWavetables[*p1], isYM);
 
                     int y = rowToY(11);
-                    gfxSetFgColor(theme().textInfo);
-                    gfxDrawBitmap(wavetablePreviewBitmap, 29, y);
+                    gfx.setFgColor(theme().textInfo);
+                    gfx.drawBitmap(wavetablePreviewBitmap, 29, y);
                   }
                 }
               }

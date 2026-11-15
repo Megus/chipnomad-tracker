@@ -88,27 +88,27 @@ int settingsColumnCount(int row) {
 void settingsDrawStatic(void) {
   const ColorTheme t = theme();
 
-  gfxSetFgColor(t.textTitles);
+  gfx.setFgColor(t.textTitles);
   gfx.print(0, 0, "SETTINGS");
 }
 
 void settingsDrawCursor(int col, int row) {
   if (row == 0 && col == 0) {
-    gfxCursor(23, 2, 3);
+    gfx.cursor(23, 2, 3);
   } else if (row == 1 && col == 0) {
-    gfxCursor(23, 3, 4);
+    gfx.cursor(23, 3, 4);
   } else if (row == 2 && col == 0) {
-    gfxCursor(23, 4, 6);
+    gfx.cursor(23, 4, 6);
   } else if (row == 3 && col == 0) {
-    gfxCursor(23, 5, 3);
+    gfx.cursor(23, 5, 3);
   } else if (row == 4 && col == 0) {
-    gfxCursor(0, 6, 11);
+    gfx.cursor(0, 6, 11);
   } else if (row == 5 && col == 0) {
-    gfxCursor(0, 7, 9);
+    gfx.cursor(0, 7, 9);
   } else if (row == 6 && col == 0) {
-    gfxCursor(0, 8, 16);
+    gfx.cursor(0, 8, 16);
   } else if (row == 7 && col == 0) {
-    gfxCursor(0, 17, 14);
+    gfx.cursor(0, 17, 14);
   }
 }
 
@@ -120,38 +120,38 @@ void settingsDrawColHeader(int col, CellState state) {
 
 void settingsDrawField(int col, int row, CellState state) {
   if (row == 0 && col == 0) {
-    gfxSetFgColor(theme().textDefault);
+    gfx.setFgColor(theme().textDefault);
     gfx.print(0, 2, "Pitch conflict warning");
-    gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+    gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
     gfx.print(23, 2, appSettings.pitchConflictWarning ? "ON " : "OFF");
   } else if (row == 1 && col == 0) {
-    gfxSetFgColor(theme().textDefault);
+    gfx.setFgColor(theme().textDefault);
     gfx.print(0, 3, "Mix volume");
-    gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+    gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
     int mixVolumePercent = (int)(appSettings.mixVolume * 100.0f + 0.5f);
     gfx.printf(23, 3, "%03d%%", mixVolumePercent);
   } else if (row == 2 && col == 0) {
-    gfxSetFgColor(theme().textDefault);
+    gfx.setFgColor(theme().textDefault);
     gfx.print(0, 4, "Quality");
-    gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+    gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
     const char* qualityNames[] = {"LOW   ", "MEDIUM", "HIGH  ", "BEST  "};
     gfx.print(23, 4, qualityNames[appSettings.quality]);
   } else if (row == 3 && col == 0) {
-    gfxSetFgColor(theme().textDefault);
+    gfx.setFgColor(theme().textDefault);
     gfx.print(0, 5, "Sample dithering");
-    gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+    gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
     gfx.print(23, 5, appSettings.aySampleDithering ? "ON " : "OFF");
   } else if (row == 4 && col == 0) {
-    gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+    gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
     gfx.print(0, 6, "Key mapping");
   } else if (row == 5 && col == 0) {
-    gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+    gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
     gfx.print(0, 7, "Load font");
   } else if (row == 6 && col == 0) {
-    gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+    gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
     gfx.print(0, 8, "Edit color theme");
   } else if (row == 7 && col == 0) {
-    gfxSetFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
+    gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
     gfx.print(0, 17, "Quit ChipNomad");
   }
 }
