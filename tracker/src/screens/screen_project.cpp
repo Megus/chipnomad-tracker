@@ -163,7 +163,7 @@ bool ScreenProject::onEdit(int col, int row, EditCellAction action) {
     } else if (col == 1) {
       // Save project - check filename first
       if (strlen(state.settings.projectFilename) == 0) {
-        events.dispatch(Event::showTimedMessage("Enter filename"));
+        showTimedMessage("Enter filename");
       } else {
         selectFolder("SAVE PROJECT", state.settings.projectPath, ".cnm", state.settings.projectFilename);
       }
@@ -331,7 +331,7 @@ void ScreenProject::loadProject(const char* filePath, const char* folderPath) {
     file.extractFilenameWithoutExtension(filePath, state.settings.projectFilename, sizeof(state.settings.projectFilename) - 1);
     setup(ScreenData());
   } else {
-    events.dispatch(Event::showTimedMessage("%s", chipnomad::Error::message));
+    showTimedMessage("%s", chipnomad::Error::message);
   }
 }
 

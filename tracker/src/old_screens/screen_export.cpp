@@ -47,7 +47,7 @@ static ScreenData screenExportCommon = {
 
 static ScreenData* exportScreen(void) {
   ScreenData* data = &screenExportCommon;
-  if (chipnomadState->project.chipType == ChipType::AY) {
+  if (state.project->chipType == ChipType::AY) {
     data = &screenExportAY;
   }
   return data;
@@ -246,12 +246,12 @@ static void generateMultiFileExportPath(char* outputPath, int maxLen, FileExists
 }
 
 void generateStemsExportPath(char* outputPath, int maxLen) {
-  int trackCount = chipnomadState->project.chipsCount * 3;
+  int trackCount = state.project->chipsCount * 3;
   generateMultiFileExportPath(outputPath, maxLen, stemsFilesExist, trackCount);
 }
 
 void generatePSGExportPath(char* outputPath, int maxLen) {
-  generateMultiFileExportPath(outputPath, maxLen, psgFilesExist, chipnomadState->project.chipsCount);
+  generateMultiFileExportPath(outputPath, maxLen, psgFilesExist, state.project->chipsCount);
 }
 
 void generateExportPath(char* outputPath, int maxLen, const char* extension) {
@@ -301,7 +301,7 @@ int exportCommonOnEdit(int col, int row, EditCellAction action) {
 
     currentExporter = new ExporterWAV(basePath, &chipnomadState->project, startRow, sampleRates[currentSampleRateIndex], bitDepths[currentBitDepthIndex], appSettings.mixVolume, true);
     if (currentExporter) {
-      int trackCount = chipnomadState->project.chipsCount * 3;
+      int trackCount = state.project->chipsCount * 3;
       screenMessage(MESSAGE_TIME, "Starting stems export (%d files)...", trackCount);
     } else {
       screenMessage(MESSAGE_TIME, "Export failed to start");

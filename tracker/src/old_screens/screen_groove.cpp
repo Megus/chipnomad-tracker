@@ -70,7 +70,7 @@ static void drawStatic(void) {
 }
 
 static void drawField(int col, int row, CellState state) {
-  uint8_t value = chipnomadState->project.grooves[groove].speed[row];
+  uint8_t value = state.project->grooves[groove].speed[row];
   setCellColor(state, value == EMPTY_VALUE_8, value != 0);
   gfx.printf(3, 3 + row, byteToHexOrEmpty(value));
 }
@@ -104,8 +104,8 @@ static void draw(void) {
   gfx.clearRect(2, 3, 1, 16);
 
   // Show play position if this groove is currently playing
-  if (chipnomadState->engine->player.tracks[*pSongTrack].grooveIdx == groove) {
-    int row = chipnomadState->engine->player.tracks[*pSongTrack].grooveRow;
+  if (chipnomadState->engine->player.tracks[state.songTrack].grooveIdx == groove) {
+    int row = chipnomadState->engine->player.tracks[state.songTrack].grooveRow;
     if (row >= 0 && row < 16) {
       gfx.setFgColor(theme().playMarkers);
       gfx.print(2, 3 + row, ">");
@@ -114,7 +114,7 @@ static void draw(void) {
 }
 
 static int editCell(int col, int row, EditCellAction action) {
-  return edit8withLimit(action, &chipnomadState->project.grooves[groove].speed[row], &lastValue, 16, EMPTY_VALUE_8 - 1);
+  return edit8withLimit(action, &state.project->grooves[groove].speed[row], &lastValue, 16, EMPTY_VALUE_8 - 1);
 }
 
 static int onEdit(int col, int row, EditCellAction action) {
@@ -129,8 +129,8 @@ static int onEdit(int col, int row, EditCellAction action) {
     // Groove nudge: work in row pairs (0-1, 2-3, 4-5, etc.)
     int firstRow = row & ~1;
     int secondRow = firstRow + 1;
-    uint8_t* firstValue = &chipnomadState->project.grooves[groove].speed[firstRow];
-    uint8_t* secondValue = &chipnomadState->project.grooves[groove].speed[secondRow];
+    uint8_t* firstValue = &state.project->grooves[groove].speed[firstRow];
+    uint8_t* secondValue = &state.project->grooves[groove].speed[secondRow];
 
     if (*firstValue == EMPTY_VALUE_8 || *secondValue == EMPTY_VALUE_8) {
       return 0;

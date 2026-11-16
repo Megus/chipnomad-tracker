@@ -17,7 +17,7 @@ static int getColumnCount(int row) {
     return 2;
   }
   if (row == 5) {
-    int isAutoEnvEnabled = chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvN != 0;
+    int isAutoEnvEnabled = state.project->instruments[cInstrument].chip.ay.autoEnvN != 0;
     return isAutoEnvEnabled ? 3 : 1;
   }
 
@@ -85,11 +85,11 @@ static void drawField(int col, int row, CellState state) {
 
   gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
 
-  uint8_t defaultMixer = chipnomadState->project.instruments[cInstrument].chip.ay.defaultMixer;
+  uint8_t defaultMixer = state.project->instruments[cInstrument].chip.ay.defaultMixer;
   int hasTone = (defaultMixer & 0x01) != 0;
   int hasNoise = (defaultMixer & 0x02) != 0;
   int envShape = (defaultMixer >> 4) & 0x0F;
-  int isAutoEnvEnabled = chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvN != 0;
+  int isAutoEnvEnabled = state.project->instruments[cInstrument].chip.ay.autoEnvN != 0;
 
   if (row == 3 && col == 0) {
     gfx.printf(8, 6, hasTone ? "On " : "Off");
@@ -98,23 +98,23 @@ static void drawField(int col, int row, CellState state) {
   } else if (row == 5 && col == 0) {
     gfx.printf(8, 8, "%X %s", envShape, getEnvelopeShapeASCII(envShape));
   } else if (row == 6 && col == 0) {
-    gfx.print(8, 11, byteToHex(chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p1));  // A
+    gfx.print(8, 11, byteToHex(state.project->instruments[cInstrument].chip.ay.volumeEnvelope.p1));  // A
   } else if (row == 7 && col == 0) {
-    gfx.print(8, 12, byteToHex(chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p2));  // D
+    gfx.print(8, 12, byteToHex(state.project->instruments[cInstrument].chip.ay.volumeEnvelope.p2));  // D
   } else if (row == 8 && col == 0) {
-    gfx.print(8, 13, byteToHex(chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p3));  // S
+    gfx.print(8, 13, byteToHex(state.project->instruments[cInstrument].chip.ay.volumeEnvelope.p3));  // S
   } else if (row == 9 && col == 0) {
-    gfx.print(8, 14, byteToHex(chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p4));  // R
+    gfx.print(8, 14, byteToHex(state.project->instruments[cInstrument].chip.ay.volumeEnvelope.p4));  // R
   } else if (row == 4 && col == 1) {
     gfx.printf(26, 7, isAutoEnvEnabled ? "On " : "Off");
     if (!isAutoEnvEnabled) gfx.print(26, 8, "   ");
   } else if (row == 5 && col == 1) {
     if (isAutoEnvEnabled) {
-      gfx.printf(26, 8, "%hhX:", chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvN);
+      gfx.printf(26, 8, "%hhX:", state.project->instruments[cInstrument].chip.ay.autoEnvN);
     }
   } else if ((row == 4 || row == 5) && col == 2) {
     if (isAutoEnvEnabled) {
-      gfx.printf(28, 8, "%hhX", chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvD);
+      gfx.printf(28, 8, "%hhX", state.project->instruments[cInstrument].chip.ay.autoEnvD);
     }
   }
 }
@@ -123,7 +123,7 @@ static int onEdit(int col, int row, enum EditCellAction action) {
   if (row < 3) return instrumentCommonOnEdit(col, row, action);
 
   int handled = 0;
-  uint8_t* defaultMixer = &chipnomadState->project.instruments[cInstrument].chip.ay.defaultMixer;
+  uint8_t* defaultMixer = &state.project->instruments[cInstrument].chip.ay.defaultMixer;
 
   if (col == 0) {
     if (row == 3) {
@@ -145,33 +145,33 @@ static int onEdit(int col, int row, enum EditCellAction action) {
         *defaultMixer = (*defaultMixer & 0x0F) | (envShape << 4);
       }
     } else if (row == 6) {
-      handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p1, 16, 0, 255);  // A
+      handled = edit8noLast(action, &state.project->instruments[cInstrument].chip.ay.volumeEnvelope.p1, 16, 0, 255);  // A
     } else if (row == 7) {
-      handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p2, 16, 0, 255);  // D
+      handled = edit8noLast(action, &state.project->instruments[cInstrument].chip.ay.volumeEnvelope.p2, 16, 0, 255);  // D
     } else if (row == 8) {
-      handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p3, 1, 0, 15);   // S
+      handled = edit8noLast(action, &state.project->instruments[cInstrument].chip.ay.volumeEnvelope.p3, 1, 0, 15);   // S
     } else if (row == 9) {
-      handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].chip.ay.volumeEnvelope.p4, 16, 0, 255);  // R
+      handled = edit8noLast(action, &state.project->instruments[cInstrument].chip.ay.volumeEnvelope.p4, 16, 0, 255);  // R
     }
   } else if (col == 1) {
     if (row == 4) {
-      uint8_t value = chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvN != 0;
+      uint8_t value = state.project->instruments[cInstrument].chip.ay.autoEnvN != 0;
       uint8_t oldValue = value;
       handled = edit8noLast(action, &value, 1, 0, 1);
       if (oldValue != value && value == 1) {
-        chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvN = 1;
-        chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvD = 1;
+        state.project->instruments[cInstrument].chip.ay.autoEnvN = 1;
+        state.project->instruments[cInstrument].chip.ay.autoEnvD = 1;
         drawField(1, 5, CellState::normal);
         drawField(2, 5, CellState::normal);
       } else if (oldValue != value && value == 0) {
-        chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvN = 0;
-        chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvD = 0;
+        state.project->instruments[cInstrument].chip.ay.autoEnvN = 0;
+        state.project->instruments[cInstrument].chip.ay.autoEnvD = 0;
       }
     } else if (row == 5) {
-      handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvN, 16, 1, 15);
+      handled = edit8noLast(action, &state.project->instruments[cInstrument].chip.ay.autoEnvN, 16, 1, 15);
     }
   } else if (col == 2 && (row == 4 || row == 5)) {
-    handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].chip.ay.autoEnvD, 16, 1, 15);
+    handled = edit8noLast(action, &state.project->instruments[cInstrument].chip.ay.autoEnvD, 16, 1, 15);
   }
 
   if (handled) projectModified = 1;

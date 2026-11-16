@@ -1,4 +1,3 @@
-#include <string.h>
 #include "screen_confirm.h"
 #include "misc.h"
 

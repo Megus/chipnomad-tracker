@@ -13,15 +13,15 @@ TEST_SUITE("edit_common") {
 
 static TrackerState testState;
 
-#define S(r, c) chipnomadState->project.song[r][c]
-#define H(r, c) chipnomadState->project.songHighlight[r][c]
+#define S(r, c) state.project->song[r][c]
+#define H(r, c) state.project->songHighlight[r][c]
 
 // Test fixture for common setup/teardown
 struct EditCommonFixture {
   EditCommonFixture() {
     chipnomadState = &testState;
     projectInit(&chipnomadState->project);
-    chipnomadState->project.tracksCount = 3;
+    state.project->tracksCount = 3;
   }
   ~EditCommonFixture() {
     chipnomadState = nullptr;

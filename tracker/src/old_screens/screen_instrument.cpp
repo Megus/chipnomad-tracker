@@ -20,8 +20,8 @@ int cInstrument = 0;
 static int isCharEdit = 0;
 
 static void getInstrumentFilename(char* filename, int size) {
-  if (strlen(chipnomadState->project.instruments[cInstrument].name) > 0) {
-    snprintf(filename, size, "%s", chipnomadState->project.instruments[cInstrument].name);
+  if (strlen(state.project->instruments[cInstrument].name) > 0) {
+    snprintf(filename, size, "%s", state.project->instruments[cInstrument].name);
   } else {
     snprintf(filename, size, "instrument_%02X", cInstrument);
   }
@@ -111,7 +111,7 @@ static void onInstrumentPreviewStop(void) {
   Project* p = &chipnomadState->project;
 
   // Stop preview playback
-  chipnomadState->engine->player.stopPreview(*pSongTrack);
+  chipnomadState->engine->player.stopPreview(state.songTrack);
 
   // Free preview instrument data (handles AYSample sampleData)
   getInstrumentFunctions(p->instruments[previewIdx].type).free(&p->instruments[previewIdx]);
@@ -141,7 +141,7 @@ static int onInstrumentPreviewStart(const char* path) {
 
   // Preview on current track with C-4
   uint8_t note = p->pitchTable.octaveSize * 4;
-  chipnomadState->engine->player.previewNote(*pSongTrack, note, previewIdx);
+  chipnomadState->engine->player.previewNote(state.songTrack, note, previewIdx);
   return 1;
 }
 
@@ -177,7 +177,7 @@ static ScreenData screenInstrumentNone = {
 
 static ScreenData* instrumentScreen(void) {
   ScreenData* data = &screenInstrumentNone;
-  switch (chipnomadState->project.instruments[cInstrument].type) {
+  switch (state.project->instruments[cInstrument].type) {
     case InstrumentType::AY1:         data = &screenInstrumentAY; break;
     case InstrumentType::AY2:         data = &screenInstrumentAY2; break;
     case InstrumentType::AYSample:    data = &screenInstrumentAYSample; break;
@@ -237,7 +237,7 @@ void instrumentCommonDrawStatic(void) {
   gfx.setFgColor(t.textDefault);
   gfx.print(0, 2, "Type");
 
-  if (chipnomadState->project.instruments[cInstrument].type == InstrumentType::none) return;
+  if (state.project->instruments[cInstrument].type == InstrumentType::none) return;
 
   gfx.print(0, 3, "Name");
   gfx.print(0, 4, "Transp.");
@@ -247,7 +247,7 @@ void instrumentCommonDrawStatic(void) {
 void instrumentCommonDrawCursor(int col, int row) {
   if (row == 0 && col == 0) {
     // Type
-    gfx.cursor(8, 2, strlen(instrumentTypeName(chipnomadState->project.instruments[cInstrument].type)));
+    gfx.cursor(8, 2, strlen(instrumentTypeName(state.project->instruments[cInstrument].type)));
   } else if (row == 0 && col == 1) {
     // Load
     gfx.cursor(23, 2, 4);
@@ -274,7 +274,7 @@ void instrumentCommonDrawField(int col, int row, CellState state) {
   if (row == 0 && col == 0) {
     // Instrument type
     gfx.clearRect(8, 2, 8, 1);
-    gfx.print(8, 2, instrumentTypeName(chipnomadState->project.instruments[cInstrument].type));
+    gfx.print(8, 2, instrumentTypeName(state.project->instruments[cInstrument].type));
   } else if (row == 0 && col == 1) {
     // Load
     gfx.print(23, 2, "Load");
@@ -287,13 +287,13 @@ void instrumentCommonDrawField(int col, int row, CellState state) {
   } else if (row == 1) {
     // Instrument name
     gfx.clearRect(8, 3, PROJECT_INSTRUMENT_NAME_LENGTH, 1);
-    gfx.printf(8, 3, "%s", chipnomadState->project.instruments[cInstrument].name);
+    gfx.printf(8, 3, "%s", state.project->instruments[cInstrument].name);
   } else if (row == 2 && col == 0) {
     // Transpose
-    gfx.printf(8, 4, chipnomadState->project.instruments[cInstrument].transposeEnabled ? "On " : "Off");
+    gfx.printf(8, 4, state.project->instruments[cInstrument].transposeEnabled ? "On " : "Off");
   } else if (row == 2 && col == 1) {
     // Table tic speed
-    gfx.print(26, 4, byteToHex(chipnomadState->project.instruments[cInstrument].tableSpeed));
+    gfx.print(26, 4, byteToHex(state.project->instruments[cInstrument].tableSpeed));
   }
 }
 
@@ -301,18 +301,18 @@ int instrumentCommonOnEdit(int col, int row, enum EditCellAction action) {
   int handled = 0;
   if (row == 0 && col == 0) {
     // Instrument type
-    InstrumentType oldType = chipnomadState->project.instruments[cInstrument].type;
-    handled = edit8noLast(action, reinterpret_cast<uint8_t*>(&chipnomadState->project.instruments[cInstrument].type), 1, 0, 3);
-    InstrumentType newType = chipnomadState->project.instruments[cInstrument].type;
+    InstrumentType oldType = state.project->instruments[cInstrument].type;
+    handled = edit8noLast(action, reinterpret_cast<uint8_t*>(&state.project->instruments[cInstrument].type), 1, 0, 3);
+    InstrumentType newType = state.project->instruments[cInstrument].type;
 
     if (oldType != newType) {
       // Free old instrument data (critical for sample instruments to prevent memory leaks!)
       // Note: free() will zero the entire struct including the type field
-      getInstrumentFunctions(oldType).free(&chipnomadState->project.instruments[cInstrument]);
+      getInstrumentFunctions(oldType).free(&state.project->instruments[cInstrument]);
 
       // Restore the new type and initialize
-      chipnomadState->project.instruments[cInstrument].type = newType;
-      getInstrumentFunctions(newType).init(&chipnomadState->project.instruments[cInstrument]);
+      state.project->instruments[cInstrument].type = newType;
+      getInstrumentFunctions(newType).init(&state.project->instruments[cInstrument]);
 
       fullRedraw();
     }
@@ -324,7 +324,7 @@ int instrumentCommonOnEdit(int col, int row, enum EditCellAction action) {
     // Save instrument
     if (instrumentIsEmpty(&chipnomadState->project, cInstrument)) {
       screenMessage(MESSAGE_TIME, "Cannot save empty instrument");
-    } else if (strlen(chipnomadState->project.instruments[cInstrument].name) == 0) {
+    } else if (strlen(state.project->instruments[cInstrument].name) == 0) {
       screenMessage(MESSAGE_TIME, "Enter instrument name");
     } else {
       char filename[32];
@@ -334,7 +334,7 @@ int instrumentCommonOnEdit(int col, int row, enum EditCellAction action) {
     }
   } else if (row == 1) {
     // Instrument name
-    int res = editCharacter(action, chipnomadState->project.instruments[cInstrument].name, col, PROJECT_INSTRUMENT_NAME_LENGTH);
+    int res = editCharacter(action, state.project->instruments[cInstrument].name, col, PROJECT_INSTRUMENT_NAME_LENGTH);
     if (res == 1) {
       isCharEdit = 1;
     } else if (res > 1) {
@@ -342,10 +342,10 @@ int instrumentCommonOnEdit(int col, int row, enum EditCellAction action) {
     }
   } else if (row == 2 && col == 0) {
     // Transpose
-    handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].transposeEnabled, 1, 0, 1);
+    handled = edit8noLast(action, &state.project->instruments[cInstrument].transposeEnabled, 1, 0, 1);
   } else if (row == 2 && col == 1) {
     // Table tic speed
-    handled = edit8noLast(action, &chipnomadState->project.instruments[cInstrument].tableSpeed, 16, 1, 255);
+    handled = edit8noLast(action, &state.project->instruments[cInstrument].tableSpeed, 16, 1, 255);
   }
 
   if (handled) projectModified = 1;
@@ -378,7 +378,7 @@ static int inputScreenNavigation(int keys, int tapCount) {
     // To the previous instrument
     if (cInstrument != 0) {
       cInstrument--;
-      chipnomadState->engine->player.stopPreview(*pSongTrack);
+      chipnomadState->engine->player.stopPreview(state.songTrack);
       fullRedraw();
     }
     return 1;
@@ -386,7 +386,7 @@ static int inputScreenNavigation(int keys, int tapCount) {
     // To the next instrument
     if (cInstrument != PROJECT_MAX_INSTRUMENTS - 1) {
       cInstrument++;
-      chipnomadState->engine->player.stopPreview(*pSongTrack);
+      chipnomadState->engine->player.stopPreview(state.songTrack);
       fullRedraw();
     }
     return 1;
@@ -394,21 +394,21 @@ static int inputScreenNavigation(int keys, int tapCount) {
     // +16 instruments
     cInstrument += 16;
     if (cInstrument >= PROJECT_MAX_INSTRUMENTS) cInstrument = PROJECT_MAX_INSTRUMENTS - 1;
-    chipnomadState->engine->player.stopPreview(*pSongTrack);
+    chipnomadState->engine->player.stopPreview(state.songTrack);
     fullRedraw();
     return 1;
   } else if (keys == (keyOpt | keyDown)) {
     // -16 instruments
     cInstrument -= 16;
     if (cInstrument < 0) cInstrument = 0;
-    chipnomadState->engine->player.stopPreview(*pSongTrack);
+    chipnomadState->engine->player.stopPreview(state.songTrack);
     fullRedraw();
     return 1;
   } else if (keys == (keyEdit | keyPlay)) {
     // Preview instrument
     if (!instrumentIsEmpty(&chipnomadState->project, cInstrument) && !chipnomadState->engine->player.isPlaying()) {
       uint8_t note = instrumentFirstNote(&chipnomadState->project, cInstrument);
-      chipnomadState->engine->player.previewNote(*pSongTrack, note, cInstrument);
+      chipnomadState->engine->player.previewNote(state.songTrack, note, cInstrument);
     }
     return 1;
   } else if (keys == (keyShift | keyOpt)) {
@@ -428,12 +428,12 @@ static int inputScreenNavigation(int keys, int tapCount) {
 static int onInput(int isKeyDown, int keys, int tapCount) {
   // Stop preview when keys are released
   if (keys == 0) {
-    chipnomadState->engine->player.stopPreview(*pSongTrack);
+    chipnomadState->engine->player.stopPreview(state.songTrack);
   }
 
   if (isCharEdit) {
     ScreenData* screen = instrumentScreen();
-    char result = charEditInput(keys, tapCount, chipnomadState->project.instruments[cInstrument].name, screen->cursorCol, PROJECT_INSTRUMENT_NAME_LENGTH);
+    char result = charEditInput(keys, tapCount, state.project->instruments[cInstrument].name, screen->cursorCol, PROJECT_INSTRUMENT_NAME_LENGTH);
     if (result) {
       isCharEdit = 0;
       if (screen->cursorCol < 15) screen->cursorCol++;

@@ -67,14 +67,14 @@ static void fullRedraw(void) {
 
     // Draw instrument name
     if (!instrumentIsEmpty(&chipnomadState->project, i)) {
-      gfx.printf(4, y, "%-15s", chipnomadState->project.instruments[i].name);
+      gfx.printf(4, y, "%-15s", state.project->instruments[i].name);
     } else {
       gfx.print(4, y, "               ");
     }
 
     // Draw instrument type
     gfx.clearRect(20, y, 14, 1);
-    gfx.print(20, y, instrumentTypeName(chipnomadState->project.instruments[i].type));
+    gfx.print(20, y, instrumentTypeName(state.project->instruments[i].type));
   }
 }
 
@@ -83,7 +83,7 @@ static void draw(void) {
   gfx.clearRect(3, 3, 1, 16);
 
   // Draw playback markers for currently playing instruments
-  for (int track = 0; track < chipnomadState->project.tracksCount; track++) {
+  for (int track = 0; track < state.project->tracksCount; track++) {
     PlaybackTrackState* trackState = &chipnomadState->engine->player.tracks[track];
     if (trackState->mode != PlaybackMode::stopped && trackState->note.instrument < PROJECT_MAX_INSTRUMENTS) {
       int instrument = trackState->note.instrument;
@@ -116,7 +116,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
 
   // Handle key-up
   if (!isKeyDown && keys == 0) {
-    chipnomadState->engine->player.stopPreview(*pSongTrack);
+    chipnomadState->engine->player.stopPreview(state.songTrack);
     if (poolState == POOL_EDIT_PRESSED) {
       poolState = POOL_NORMAL;
       screenSetup(&screenInstrument, cursorRow);
@@ -203,7 +203,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
     poolState = POOL_PREVIEWING;
     if (!instrumentIsEmpty(&chipnomadState->project, cursorRow) && !chipnomadState->engine->player.isPlaying()) {
       uint8_t note = instrumentFirstNote(&chipnomadState->project, cursorRow);
-      chipnomadState->engine->player.previewNote(*pSongTrack, note, cursorRow);
+      chipnomadState->engine->player.previewNote(state.songTrack, note, cursorRow);
     }
     return 1;
   } else if (keys == (keyShift | keyOpt)) {
@@ -221,7 +221,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
 
   // Stop preview when cursor moves
   if (oldCursorRow != cursorRow) {
-    chipnomadState->engine->player.stopPreview(*pSongTrack);
+    chipnomadState->engine->player.stopPreview(state.songTrack);
   }
 
   // Redraw only cursor if position changed
@@ -237,12 +237,12 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
       gfx.print(0, oldY, " ");
       gfx.printf(1, oldY, "%02X", oldCursorRow);
       if (!instrumentIsEmpty(&chipnomadState->project, oldCursorRow)) {
-        gfx.printf(4, oldY, "%-15s", chipnomadState->project.instruments[oldCursorRow].name);
+        gfx.printf(4, oldY, "%-15s", state.project->instruments[oldCursorRow].name);
       } else {
         gfx.print(4, oldY, "               ");
       }
       gfx.clearRect(20, oldY, 14, 1);
-      gfx.print(20, oldY, instrumentTypeName(chipnomadState->project.instruments[oldCursorRow].type));
+      gfx.print(20, oldY, instrumentTypeName(state.project->instruments[oldCursorRow].type));
     }
 
     // Draw new cursor line
@@ -251,12 +251,12 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
     gfx.print(0, newY, ">");
     gfx.printf(1, newY, "%02X", cursorRow);
     if (!instrumentIsEmpty(&chipnomadState->project, cursorRow)) {
-      gfx.printf(4, newY, "%-15s", chipnomadState->project.instruments[cursorRow].name);
+      gfx.printf(4, newY, "%-15s", state.project->instruments[cursorRow].name);
     } else {
       gfx.print(4, newY, "               ");
     }
     gfx.clearRect(20, newY, 14, 1);
-    gfx.print(20, newY, instrumentTypeName(chipnomadState->project.instruments[cursorRow].type));
+    gfx.print(20, newY, instrumentTypeName(state.project->instruments[cursorRow].type));
   }
   return 0;
 }

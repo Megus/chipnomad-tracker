@@ -9,7 +9,7 @@ EditCellAction convertMultiAction(EditCellAction action) {
   return action;
 }
 
-static bool isMultiAction(EditCellAction action) {
+bool isMultiAction(EditCellAction action) {
   return action == EditCellAction::multiIncrease || action == EditCellAction::multiDecrease || action == EditCellAction::multiIncreaseBig || action == EditCellAction::multiDecreaseBig;
 }
 

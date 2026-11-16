@@ -1,7 +1,6 @@
 #ifndef __SCREEN_H__
 #define __SCREEN_H__
 
-#include "input_utils.h"
 #include "gfx.h"
 #include "chipnomad_lib.h"
 #include "tracker_state.h"
@@ -32,10 +31,10 @@ class Screen : public EventHandler {
   ///////////////////////////////////////////////////////////////////////////
   // Methods to override in sub-classes
   public:
-    Screen(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx): state(state), events(dispatcher), gfx(gfx) {}
+    Screen(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx);
     virtual ~Screen() = default;
 
-    virtual void resetState() {}; // Reset internal screen state for a new/loaded project
+    virtual void resetState(); // Reset internal screen state for a new/loaded project
     virtual void setup(const ScreenData& input) {}; // Setup screen before it's displayed
 
     virtual bool supportsSelectMode() { return false; }; // Does the screen support selection?
@@ -45,6 +44,7 @@ class Screen : public EventHandler {
 
     virtual bool isValidCell(int col, int row) { return true; }; // Is this cell valid?
     virtual Rect getSelectionRect(const Rect& range) { return {0, 0, 0, 0}; }; // Get screen rectangle of the selection
+    virtual bool switchSelectionRange() { return false; }; // Switch selection range. Return false to exit selection mode
     virtual chipnomad::LoopRange getLoopRange() { return {}; }; // Get playback loop range
 
     virtual void draw() {}; // Called every frame to display highly dynamic content
@@ -109,12 +109,17 @@ class Screen : public EventHandler {
     bool inputSelectMode(int keys, int tapCount);
     void inputCursor(int keys, bool* handled, bool* needsRedraw); // Handles standard cursor movement (left, right, up, down)
 
-    // Common popups
+    // Common popups (convenience wrappers around dispatching events)
     void requestConfirmation(const char* title, int confirmValue, int cancelValue); // Show confirmation popup
     bool enterCharacter(EditCellAction action, char* str, int idx, int maxLen); // Delete a character or open characted edit popup
     void enterString(char* str, int maxLen, const char* title, const char* prompt, const char* detail); // Enter a string
     void selectFile(const char* title, const char* startPath, const char* extensions, FilePreviewer* previewer); // File browser: select a file
     void selectFolder(const char* title, const char* startPath, const char* extensions, const char* filename); // File browser: select a folder
+
+    // Message functions (convenience wrappers around dispatching events)
+    char messageBuffer[41];
+    void showInstantMessage(const char* format, ...);
+    void showTimedMessage(const char* format, ...);
 };
 
 #endif // __SCREEN_H__

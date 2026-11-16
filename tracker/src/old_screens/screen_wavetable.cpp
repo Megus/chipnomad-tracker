@@ -298,7 +298,7 @@ static void drawField(int col, int row, CellState state) {
     }
   } else if (row == 1) {
     // Wavetable editor row at y=11, starts at x=2
-    uint8_t* wavetable = chipnomadState->project.ayWavetables[wavetableIdx];
+    uint8_t* wavetable = state.project->ayWavetables[wavetableIdx];
     uint8_t value = wavetable[col];
 
     gfx.setFgColor(state == CellState::focus ? t.textValue : t.textDefault);
@@ -313,7 +313,7 @@ static void drawField(int col, int row, CellState state) {
 
 // Callbacks for file operations
 static void onLoadFileSelected(const char* path) {
-  int loaded = wavetableLoad(path, chipnomadState->project.ayWavetables, wavetableIdx);
+  int loaded = wavetableLoad(path, state.project->ayWavetables, wavetableIdx);
   if (loaded > 0) {
     screenMessage(MESSAGE_TIME, "Loaded %d wavetable%s from %02X", loaded, loaded == 1 ? "" : "s", wavetableIdx);
     projectModified = 1;
@@ -337,7 +337,7 @@ static void onLoadCancelled(void) {
 }
 
 static int onWavetablePreviewStart(const char* path) {
-  int isYM = chipnomadState->project.chipSetup.ay.isYM;
+  int isYM = state.project->chipSetup.ay.isYM;
   return audio.startWavetablePreview(path, isYM);
 }
 
@@ -358,7 +358,7 @@ static void onSaveNameEntered(const char* filename) {
   char fullPath[2048];
   snprintf(fullPath, sizeof(fullPath), "%s%s%s.aywave", selectedSaveFolder, PATH_SEPARATOR_STR, filename);
 
-  int success = wavetableSave(fullPath, chipnomadState->project.ayWavetables, wavetableIdx, wavetableSaveCount);
+  int success = wavetableSave(fullPath, state.project->ayWavetables, wavetableIdx, wavetableSaveCount);
   if (success) {
     screenMessage(MESSAGE_TIME, "Saved %d wavetable%s from %02X", wavetableSaveCount, wavetableSaveCount == 1 ? "" : "s", wavetableIdx);
 
@@ -426,7 +426,7 @@ static int onEdit(int col, int row, EditCellAction action) {
     return 0;
   } else if (row == 1) {
     // Wavetable editor row
-    uint8_t* wavetable = chipnomadState->project.ayWavetables[wavetableIdx];
+    uint8_t* wavetable = state.project->ayWavetables[wavetableIdx];
 
     int handled = edit8noLast(action, &wavetable[col], 8, 0, 15);
     if (handled) {

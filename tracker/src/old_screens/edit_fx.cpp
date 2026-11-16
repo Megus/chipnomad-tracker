@@ -11,7 +11,7 @@ uint8_t currentInstrumentIdx;  // Current instrument index for context-aware hel
 // Helper to get instrument type from stored instrument index
 static InstrumentType getCurrentInstrumentType() {
   if (currentInstrumentIdx != EMPTY_VALUE_8 && currentInstrumentIdx < PROJECT_MAX_INSTRUMENTS) {
-    return chipnomadState->project.instruments[currentInstrumentIdx].type;
+    return state.project->instruments[currentInstrumentIdx].type;
   }
   return InstrumentType::none;
 }
@@ -65,7 +65,7 @@ int editFXValue(EditCellAction action, uint8_t* fx, uint8_t* lastFX, int isTable
   uint8_t bigStep = 16;
   if (fx[0] == fxENT || fx[0] == fxTNN || fx[0] == fxENN || fx[0] == fxSFN) {
     // Note-setting FX: use octave size for big step
-    bigStep = chipnomadState->project.pitchTable.octaveSize;
+    bigStep = state.project->pitchTable.octaveSize;
   }
 
   int handled = edit8noLimit(action, &fx[1], &lastFX[1], bigStep);
@@ -202,7 +202,7 @@ void fxEditFullDraw(uint8_t currentFX, uint8_t instrumentIdx) {
   // Get instrument type for filtering groups
   InstrumentType instType = InstrumentType::none;
   if (instrumentIdx != EMPTY_VALUE_8 && instrumentIdx < PROJECT_MAX_INSTRUMENTS) {
-    instType = chipnomadState->project.instruments[instrumentIdx].type;
+    instType = state.project->instruments[instrumentIdx].type;
   }
 
   // Get visible groups

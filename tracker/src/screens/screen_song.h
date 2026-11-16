@@ -11,11 +11,13 @@ class ScreenSong : public Screen, EditCellInterface {
       Screen(state, dispatcher, gfx), audio(audio), clipboard(clipboard) {};
 
     void setup(const ScreenData& input) override;
+    void resetState() override;
     bool supportsSelectMode() override { return true; };
     int getRowCount() override { return PROJECT_MAX_LENGTH; };
     int getColumnCount(int row) override { return state.project->tracksCount; };
     ScreenPlaybackLevel getPlaybackLevel() override { return ScreenPlaybackLevel::song; };
     Rect getSelectionRect(const Rect& range) override;
+    bool switchSelectionRange() override;
     chipnomad::LoopRange getLoopRange() override;
 
     void draw() override;
@@ -48,8 +50,6 @@ class ScreenSong : public Screen, EditCellInterface {
     int topRow = 0;
     uint16_t lastChainValue = 0;
     MuteSoloState muteSoloState = MuteSoloState::empty;
-
-    bool switchSelectionMode();
 };
 
 #endif // __SCREEN_SONG_H__

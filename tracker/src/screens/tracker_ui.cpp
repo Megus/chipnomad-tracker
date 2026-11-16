@@ -1,4 +1,3 @@
-#include <stdarg.h>
 #include <string.h>
 #include "chipnomad_lib.h"
 #include "file_system.h"
@@ -9,6 +8,7 @@
 
 #include "screen_song.h"
 #include "screen_project.h"
+#include "screen_chain.h"
 
 #include "screen_confirm.h"
 #include "screen_enter_character.h"
@@ -27,6 +27,7 @@ TrackerUI::TrackerUI(Gfx& gfx, FontManager& fontManager, AudioManager& audio, Fi
   // Create all screen objects
   screens[ScreenEnum::song] = new ScreenSong(state, events, gfx, audio, clipboard);
   screens[ScreenEnum::project] = new ScreenProject(state, events, gfx, audio, file);
+  screens[ScreenEnum::chain] = new ScreenChain(state, events, gfx, audio, clipboard);
 
   screens[ScreenEnum::confirm] = new ScreenConfirm(state, events, gfx);
   screens[ScreenEnum::enterCharacter] = new ScreenEnterCharacter(state, events, gfx);

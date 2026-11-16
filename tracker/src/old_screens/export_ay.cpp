@@ -51,8 +51,8 @@ static int onEdit(int col, int row, enum EditCellAction action) {
 
     currentExporter = new ExporterPSG(exportPath, &chipnomadState->project, startRow);
     if (currentExporter) {
-      if (chipnomadState->project.chipsCount > 1) {
-        screenMessage(MESSAGE_TIME, "Starting export (%d files)...", chipnomadState->project.chipsCount);
+      if (state.project->chipsCount > 1) {
+        screenMessage(MESSAGE_TIME, "Starting export (%d files)...", state.project->chipsCount);
       } else {
         screenMessage(MESSAGE_TIME, "Starting export...");
       }

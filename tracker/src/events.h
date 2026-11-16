@@ -1,7 +1,6 @@
 #ifndef __EVENTS_H__
 #define __EVENTS_H__
 
-#include <string>
 #include "input_utils.h"
 #include "chipnomad_lib.h"
 
@@ -106,8 +105,8 @@ struct Event {
   static Event popScreen(ScreenEnum screen);
   static Event popScreen(ScreenEnum screen, const ScreenData& output);
   static Event screenOutput(ScreenEnum screen, const ScreenData& output);
-  static Event showInstantMessage(const char* format, ...);
-  static Event showTimedMessage(const char* format, ...);
+  static Event showInstantMessage(const char* message);
+  static Event showTimedMessage(const char* message);
   static Event setProject(chipnomad::Project* project);
 
   EventType type = EventType::none;

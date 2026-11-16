@@ -139,7 +139,7 @@ static int getColumnCount(int row) {
 
 static void drawOscillatorHeaders(void) {
   const ColorTheme t = theme();
-  InstrumentAY2* ay2 = &chipnomadState->project.instruments[cInstrument].chip.ay2;
+  InstrumentAY2* ay2 = &state.project->instruments[cInstrument].chip.ay2;
 
   // Determine oscillator on/off states
   int toneOn = ay2->oscTone.isOn;
@@ -172,7 +172,7 @@ static void drawStatic(void) {
   }
 
   const ColorTheme t = theme();
-  InstrumentAY2* ay2 = &chipnomadState->project.instruments[cInstrument].chip.ay2;
+  InstrumentAY2* ay2 = &state.project->instruments[cInstrument].chip.ay2;
 
   // Draw oscillator headers with dynamic colors
   drawOscillatorHeaders();
@@ -240,7 +240,7 @@ static void drawCursor(int col, int row) {
 static void drawField(int col, int row, CellState state) {
   if (row < 3) return instrumentCommonDrawField(col, row, state);
 
-  InstrumentAY2* ay2 = &chipnomadState->project.instruments[cInstrument].chip.ay2;
+  InstrumentAY2* ay2 = &state.project->instruments[cInstrument].chip.ay2;
   int y = rowToY(row);
 
   gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
@@ -379,7 +379,7 @@ static int onEdit(int col, int row, EditCellAction action) {
   if (row < 3) return instrumentCommonOnEdit(col, row, action);
 
   int handled = 0;
-  InstrumentAY2* ay2 = &chipnomadState->project.instruments[cInstrument].chip.ay2;
+  InstrumentAY2* ay2 = &state.project->instruments[cInstrument].chip.ay2;
 
   if (col == 0) {
     switch (row) {
@@ -390,7 +390,7 @@ static int onEdit(int col, int row, EditCellAction action) {
         }
         break;
       case 4: // Tone pitch
-        handled = editSigned8(action, &ay2->oscTone.pitchOffset, chipnomadState->project.pitchTable.octaveSize, -128, 127);
+        handled = editSigned8(action, &ay2->oscTone.pitchOffset, state.project->pitchTable.octaveSize, -128, 127);
         if (handled) {
           screenMessage(0, "Tone pitch offset %hhd", ay2->oscTone.pitchOffset);
         }
@@ -450,7 +450,7 @@ static int onEdit(int col, int row, EditCellAction action) {
             screenMessage(0, "Envelope auto N %hhu", ay2->oscEnvelope.autoEnvN);
           }
         } else {
-          handled = editSigned8(action, &ay2->oscEnvelope.pitchOffset, chipnomadState->project.pitchTable.octaveSize, -128, 127);
+          handled = editSigned8(action, &ay2->oscEnvelope.pitchOffset, state.project->pitchTable.octaveSize, -128, 127);
           if (handled) {
             screenMessage(0, "Envelope pitch offset %hhd", ay2->oscEnvelope.pitchOffset);
           }
@@ -496,7 +496,7 @@ static int onEdit(int col, int row, EditCellAction action) {
         }
         break;
       case 8: // Software osc pitch
-        handled = editSigned8(action, &ay2->oscSoftware.pitchOffset, chipnomadState->project.pitchTable.octaveSize, -128, 127);
+        handled = editSigned8(action, &ay2->oscSoftware.pitchOffset, state.project->pitchTable.octaveSize, -128, 127);
         if (handled) {
           screenMessage(0, "Soft osc pitch offset %hhd", ay2->oscSoftware.pitchOffset);
         }
@@ -590,7 +590,7 @@ static int isCellValid(int col, int row) {
   // Row 10 (FM depth) is always valid for col 1
   // Row 11 (P1) and row 12 (P2) col 1 are only valid if the osc type supports them
   if (col == 1) {
-    InstrumentAY2* ay2 = &chipnomadState->project.instruments[cInstrument].chip.ay2;
+    InstrumentAY2* ay2 = &state.project->instruments[cInstrument].chip.ay2;
     if (row == 11 && !softwareOscHasP1(ay2->oscSoftware.type)) return 0;
     if (row == 12 && !softwareOscHasP2(ay2->oscSoftware.type)) return 0;
   }

@@ -12,7 +12,7 @@ static int editingStringLength = 0;
 
 static void onLoadSelected(const char* path) {
   if (pitchTableLoadCSV(&chipnomadState->project, path)) {
-    extractFilenameWithoutExtension(path, chipnomadState->project.pitchTable.name, PROJECT_PITCH_TABLE_TITLE_LENGTH + 1);
+    extractFilenameWithoutExtension(path, state.project->pitchTable.name, PROJECT_PITCH_TABLE_TITLE_LENGTH + 1);
 
     // Save the directory path
     const char* lastSeparator = strrchr(path, PATH_SEPARATOR);
@@ -26,7 +26,7 @@ static void onLoadSelected(const char* path) {
 }
 
 static void onSaveSelected(const char* folderPath) {
-  pitchTableSaveCSV(&chipnomadState->project, folderPath, chipnomadState->project.pitchTable.name);
+  pitchTableSaveCSV(&chipnomadState->project, folderPath, state.project->pitchTable.name);
 
   // Save the directory path
   copyString(appSettings.pitchTablePath, folderPath, PATH_LENGTH);
@@ -68,7 +68,7 @@ static void drawField(int col, int row, CellState state) {
 
   if (row == 0) {
     gfx.clearRect(7, 2, PROJECT_PITCH_TABLE_TITLE_LENGTH, 1);
-    gfx.printf(7, 2, "%s", chipnomadState->project.pitchTable.name);
+    gfx.printf(7, 2, "%s", state.project->pitchTable.name);
   } else if (row == 1) {
     gfx.print(0, 4, "Load from CSV");
   } else if (row == 2) {
@@ -83,10 +83,10 @@ static int onEdit(int col, int row, EditCellAction action) {
 
   if (row == 0) {
     // Name editing
-    int res = editCharacter(action, chipnomadState->project.pitchTable.name, col, PROJECT_PITCH_TABLE_TITLE_LENGTH);
+    int res = editCharacter(action, state.project->pitchTable.name, col, PROJECT_PITCH_TABLE_TITLE_LENGTH);
     if (res == 1) {
       isCharEdit = 1;
-      editingString = chipnomadState->project.pitchTable.name;
+      editingString = state.project->pitchTable.name;
       editingStringLength = PROJECT_PITCH_TABLE_TITLE_LENGTH;
     } else if (res > 1) {
       handled = 1;
@@ -97,11 +97,11 @@ static int onEdit(int col, int row, EditCellAction action) {
     screenSetup(&screenFileBrowser, 0);
   } else if (row == 2) {
     // Save to CSV
-    fileBrowserSetupFolderMode("SAVE PITCH TABLE", appSettings.pitchTablePath, chipnomadState->project.pitchTable.name, ".csv", onSaveSelected, onCancelled);
+    fileBrowserSetupFolderMode("SAVE PITCH TABLE", appSettings.pitchTablePath, state.project->pitchTable.name, ".csv", onSaveSelected, onCancelled);
     screenSetup(&screenFileBrowser, 0);
   } else if (row == 3) {
     // Generate for current clock
-    if (chipnomadState->project.linearPitch) {
+    if (state.project->linearPitch) {
       calculateLinearPitchTable12TET(&chipnomadState->project);
     } else {
       calculatePitchTableAY(&chipnomadState->project);

@@ -1,8 +1,8 @@
-#include "sample_utils.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include "sample_utils.h"
 
 // Fixed parameters for sample lift algorithm
 #define ATTACK_FREQ_HZ 200.0f

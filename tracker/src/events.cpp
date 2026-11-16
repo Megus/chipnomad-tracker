@@ -1,7 +1,5 @@
 #include "events.h"
 
-static char messageBuffer[41]; // Static buffer for message events
-
 ScreenData ScreenData::confirm(const char* title, int confirmValue, int cancelValue) {
   return {.title = title, .confirmValue = confirmValue, .cancelValue = cancelValue};
 }
@@ -98,22 +96,12 @@ Event Event::screenOutput(ScreenEnum screen, const ScreenData& output) {
   return {.type = EventType::screenOutput, .screen = screen, .screenData = output};
 }
 
-Event Event::showInstantMessage(const char* format, ...) {
-  va_list args;
-  va_start(args, format);
-  vsnprintf(messageBuffer, 41, format, args);
-  va_end(args);
-
-  return {.type = EventType::showMessage, .isTimedMessage = false, .message = messageBuffer};
+Event Event::showInstantMessage(const char* message) {
+  return {.type = EventType::showMessage, .isTimedMessage = false, .message = message};
 }
 
-Event Event::showTimedMessage(const char* format, ...) {
-  va_list args;
-  va_start(args, format);
-  vsnprintf(messageBuffer, 41, format, args);
-  va_end(args);
-
-  return {.type = EventType::showMessage, .isTimedMessage = true, .message = messageBuffer};
+Event Event::showTimedMessage(const char* message) {
+  return {.type = EventType::showMessage, .isTimedMessage = true, .message = message};
 }
 
 Event Event::setProject(chipnomad::Project* project) {

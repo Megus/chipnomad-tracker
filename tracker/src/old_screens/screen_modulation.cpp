@@ -166,13 +166,13 @@ static int paramCount(ModulationType type) {
 }
 
 static int isCellValid(int col, int row) {
-  if (chipnomadState->project.instruments[cInstrument].type == InstrumentType::none) return 0;
+  if (state.project->instruments[cInstrument].type == InstrumentType::none) return 0;
 
   int modRow = getModRow(row);
   if (modRow <= 2) return 1; // Type, Dest, Amt always valid
 
   int modIdx = getModIndex(col, row);
-  Modulation* mod = &chipnomadState->project.instruments[cInstrument].modulation[modIdx];
+  Modulation* mod = &state.project->instruments[cInstrument].modulation[modIdx];
   int paramIdx = modRow - 3;
   return paramIdx < paramCount(mod->type);
 }
@@ -187,7 +187,7 @@ static void drawStatic(void) {
   gfx.setFgColor(t.textTitles);
   gfx.printf(0, 0, "MODULATION %02X", cInstrument);
 
-  if (chipnomadState->project.instruments[cInstrument].type == InstrumentType::none) return;
+  if (state.project->instruments[cInstrument].type == InstrumentType::none) return;
 
   for (int block = 0; block < 2; block++) {
     int baseY = block == 0 ? 2 : 10;
@@ -209,7 +209,7 @@ static void drawCursor(int col, int row) {
   int valX = col == 0 ? COL_LEFT_VAL : COL_RIGHT_VAL;
   int modRow = getModRow(row);
   int modIdx = getModIndex(col, row);
-  Modulation* mod = &chipnomadState->project.instruments[cInstrument].modulation[modIdx];
+  Modulation* mod = &state.project->instruments[cInstrument].modulation[modIdx];
 
   switch (modRow) {
     case 0: gfx.cursor(valX, y, 4); break; // Type
@@ -226,14 +226,14 @@ static void drawCursor(int col, int row) {
 }
 
 static void drawField(int col, int row, CellState state) {
-  if (chipnomadState->project.instruments[cInstrument].type == InstrumentType::none) return;
+  if (state.project->instruments[cInstrument].type == InstrumentType::none) return;
 
   int y = rowToY(row);
   int valX = col == 0 ? COL_LEFT_VAL : COL_RIGHT_VAL;
   int labelX = col == 0 ? COL_LEFT_X : COL_RIGHT_X;
   int modRow = getModRow(row);
   int modIdx = getModIndex(col, row);
-  Modulation* mod = &chipnomadState->project.instruments[cInstrument].modulation[modIdx];
+  Modulation* mod = &state.project->instruments[cInstrument].modulation[modIdx];
 
   gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
 
@@ -244,7 +244,7 @@ static void drawField(int col, int row, CellState state) {
     case 1: // Destination
       gfx.clearRect(valX, y, 8, 1);
       {
-        Instrument* inst = &chipnomadState->project.instruments[cInstrument];
+        Instrument* inst = &state.project->instruments[cInstrument];
         InstrumentFunctions funcs = getInstrumentFunctions(inst->type);
         if (funcs.modName) {
           gfx.print(valX, y, funcs.modName(mod->destination));
@@ -287,12 +287,12 @@ static void drawField(int col, int row, CellState state) {
 }
 
 static int onEdit(int col, int row, enum EditCellAction action) {
-  if (chipnomadState->project.instruments[cInstrument].type == InstrumentType::none) return 0;
+  if (state.project->instruments[cInstrument].type == InstrumentType::none) return 0;
 
   int handled = 0;
   int modRow = getModRow(row);
   int modIdx = getModIndex(col, row);
-  Modulation* mod = &chipnomadState->project.instruments[cInstrument].modulation[modIdx];
+  Modulation* mod = &state.project->instruments[cInstrument].modulation[modIdx];
 
   switch (modRow) {
     case 0: { // Type
@@ -310,7 +310,7 @@ static int onEdit(int col, int row, enum EditCellAction action) {
       break;
     }
     case 1: { // Destination
-      Instrument* inst = &chipnomadState->project.instruments[cInstrument];
+      Instrument* inst = &state.project->instruments[cInstrument];
       InstrumentFunctions funcs = getInstrumentFunctions(inst->type);
       handled = edit8noLast(action, &mod->destination, 1, 0, funcs.modDestinationsCount);
       break;
@@ -377,7 +377,7 @@ static void fullRedraw(void) {
 
 static int onInput(int isKeyDown, int keys, int tapCount) {
   if (keys == 0) {
-    chipnomadState->engine->player.stopPreview(*pSongTrack);
+    chipnomadState->engine->player.stopPreview(state.songTrack);
   }
 
   if (keys == (keyDown | keyShift)) {
@@ -387,33 +387,33 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   } else if (keys == (keyOpt | keyLeft)) {
     if (cInstrument != 0) {
       cInstrument--;
-      chipnomadState->engine->player.stopPreview(*pSongTrack);
+      chipnomadState->engine->player.stopPreview(state.songTrack);
       fullRedraw();
     }
     return 1;
   } else if (keys == (keyOpt | keyRight)) {
     if (cInstrument != PROJECT_MAX_INSTRUMENTS - 1) {
       cInstrument++;
-      chipnomadState->engine->player.stopPreview(*pSongTrack);
+      chipnomadState->engine->player.stopPreview(state.songTrack);
       fullRedraw();
     }
     return 1;
   } else if (keys == (keyOpt | keyUp)) {
     cInstrument += 16;
     if (cInstrument >= PROJECT_MAX_INSTRUMENTS) cInstrument = PROJECT_MAX_INSTRUMENTS - 1;
-    chipnomadState->engine->player.stopPreview(*pSongTrack);
+    chipnomadState->engine->player.stopPreview(state.songTrack);
     fullRedraw();
     return 1;
   } else if (keys == (keyOpt | keyDown)) {
     cInstrument -= 16;
     if (cInstrument < 0) cInstrument = 0;
-    chipnomadState->engine->player.stopPreview(*pSongTrack);
+    chipnomadState->engine->player.stopPreview(state.songTrack);
     fullRedraw();
     return 1;
   } else if (keys == (keyEdit | keyPlay)) {
     if (!instrumentIsEmpty(&chipnomadState->project, cInstrument) && !chipnomadState->engine->player.isPlaying()) {
       uint8_t note = instrumentFirstNote(&chipnomadState->project, cInstrument);
-      chipnomadState->engine->player.previewNote(*pSongTrack, note, cInstrument);
+      chipnomadState->engine->player.previewNote(state.songTrack, note, cInstrument);
     }
     return 1;
   }

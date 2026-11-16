@@ -72,8 +72,8 @@ static void init(void) {
 }
 
 static void setup(int input) {
-  phraseIdx = chipnomadState->project.chains[chipnomadState->project.song[*pSongRow][*pSongTrack]].rows[*pChainRow].phrase;
-  phraseRows = chipnomadState->project.phrases[phraseIdx].rows;
+  phraseIdx = state.project->chains[state.project->song[state.songRow][state.songTrack]].rows[*pChainRow].phrase;
+  phraseRows = state.project->phrases[phraseIdx].rows;
   screen.selectMode = 0;
   isFxEdit = 0;
 }
@@ -89,7 +89,7 @@ static int getColumnCount(int row) {
 
 static void drawStatic(void) {
   gfx.setFgColor(theme().textTitles);
-  gfx.printf(0, 0, "PHRASE %03X%c", phraseIdx, isPhraseUsedElsewhere(&chipnomadState->project, phraseIdx, chipnomadState->project.song[*pSongRow][*pSongTrack], *pChainRow) ? '*' : ' ');
+  gfx.printf(0, 0, "PHRASE %03X%c", phraseIdx, isPhraseUsedElsewhere(&chipnomadState->project, phraseIdx, state.project->song[state.songRow][state.songTrack], *pChainRow) ? '*' : ' ');
 }
 
 static void fullRedraw(void) {
@@ -182,16 +182,16 @@ static void draw(void) {
   gfx.print(0, 3 + *pChainRow, "<");
 
   gfx.clearRect(2, 3, 1, 16);
-  PlaybackTrackState* track = &chipnomadState->engine->player.tracks[*pSongTrack];
+  PlaybackTrackState* track = &chipnomadState->engine->player.tracks[state.songTrack];
   if (track->mode != PlaybackMode::stopped && track->mode != PlaybackMode::phraseRow && track->songRow != EMPTY_VALUE_16) {
     // Chain row
-    if (*pSongRow == track->songRow) {
+    if (state.songRow == track->songRow) {
       gfx.setFgColor(theme().playMarkers);
       gfx.print(0, 3 + track->chainRow, "<");
     }
 
     // Phrase row
-    int playingPhrase = chipnomadState->project.chains[chipnomadState->project.song[track->songRow][*pSongTrack]].rows[track->chainRow].phrase;
+    int playingPhrase = state.project->chains[state.project->song[track->songRow][state.songTrack]].rows[track->chainRow].phrase;
     if (playingPhrase == phraseIdx) {
       int row = track->phraseRow;
       if (row >= 0 && row < 16) {
@@ -221,7 +221,7 @@ static int editCell(int col, int row, EditCellAction action) {
       handled = 1;
     } else if (action == EditCellAction::clear) {
       // Clear note
-      handled = edit8withLimit(action, &phraseRows[row].note, &lastNote, chipnomadState->project.pitchTable.octaveSize, chipnomadState->project.pitchTable.length - 1);
+      handled = edit8withLimit(action, &phraseRows[row].note, &lastNote, state.project->pitchTable.octaveSize, state.project->pitchTable.length - 1);
       edit8withLimit(action, &phraseRows[row].instrument, &lastInstrument, 16, PROJECT_MAX_INSTRUMENTS - 1);
       edit8withLimit(action, &phraseRows[row].volume, &lastVolume, 16, maxVolume);
     } else if (action == EditCellAction::tap && phraseRows[row].note == EMPTY_VALUE_8) {
@@ -230,7 +230,7 @@ static int editCell(int col, int row, EditCellAction action) {
       phraseRows[row].volume = lastVolume;
       handled = 1;
     } else if (phraseRows[row].note != NOTE_OFF) {
-      handled = edit8withLimit(action, &phraseRows[row].note, &lastNote, chipnomadState->project.pitchTable.octaveSize, chipnomadState->project.pitchTable.length - 1);
+      handled = edit8withLimit(action, &phraseRows[row].note, &lastNote, state.project->pitchTable.octaveSize, state.project->pitchTable.length - 1);
       if (handled) {
         lastInstrument = phraseRows[row].instrument;
         lastVolume = phraseRows[row].volume;
@@ -262,7 +262,7 @@ static int editCell(int col, int row, EditCellAction action) {
     // FX
     int fxIdx = (col - 3) / 2;
     // Get instrument number from current phrase row or traverse back
-    uint8_t instrumentNum = lookupInstrument(&chipnomadState->project, *pSongRow, *pChainRow, row, *pSongTrack);
+    uint8_t instrumentNum = lookupInstrument(&chipnomadState->project, state.songRow, *pChainRow, row, state.songTrack);
     int result = editFX(action, phraseRows[row].fx[fxIdx], lastFX, 0, instrumentNum);
     if (result == 2) {
       drawField(col + 1, row, CellState::normal);
@@ -275,19 +275,19 @@ static int editCell(int col, int row, EditCellAction action) {
     // FX value
     int fxIdx = (col - 4) / 2;
     if (phraseRows[row].fx[fxIdx][0] != EMPTY_VALUE_8) {
-      uint8_t instrumentNum = lookupInstrument(&chipnomadState->project, *pSongRow, *pChainRow, row, *pSongTrack);
+      uint8_t instrumentNum = lookupInstrument(&chipnomadState->project, state.songRow, *pChainRow, row, state.songTrack);
       handled = editFXValue(action, phraseRows[row].fx[fxIdx], lastFX, 0, instrumentNum);
     }
   }
 
-  if (handled && (!chipnomadState->engine->player.isPlaying() || chipnomadState->engine->player.tracks[*pSongTrack].mode == PlaybackMode::phraseRow)) {
+  if (handled && (!chipnomadState->engine->player.isPlaying() || chipnomadState->engine->player.tracks[state.songTrack].mode == PlaybackMode::phraseRow)) {
     PhraseRow* row = &phraseRows[screen.cursorRow];
     if (row->note != EMPTY_VALUE_8 && row->note != NOTE_OFF && row->instrument == EMPTY_VALUE_8) {
       PhraseRow previewRow = *row;
-      previewRow.instrument = lookupInstrument(&chipnomadState->project, *pSongRow, *pChainRow, screen.cursorRow, *pSongTrack);
-      chipnomadState->engine->player.playPhraseRow(*pSongTrack, &previewRow);
+      previewRow.instrument = lookupInstrument(&chipnomadState->project, state.songRow, *pChainRow, screen.cursorRow, state.songTrack);
+      chipnomadState->engine->player.playPhraseRow(state.songTrack, &previewRow);
     } else {
-      chipnomadState->engine->player.playPhraseRow(*pSongTrack, row);
+      chipnomadState->engine->player.playPhraseRow(state.songTrack, row);
     }
   }
 
@@ -319,7 +319,7 @@ static int onEdit(int col, int row, EditCellAction action) {
         // FX type column: show FX selection
         int fxIdx = (startCol - 3) / 2;
         // Get instrument index from current phrase row or traverse back
-        uint8_t instrumentNum = lookupInstrument(&chipnomadState->project, *pSongRow, *pChainRow, screen.cursorRow, *pSongTrack);
+        uint8_t instrumentNum = lookupInstrument(&chipnomadState->project, state.songRow, *pChainRow, screen.cursorRow, state.songTrack);
         fxEditFullDraw(phraseRows[screen.cursorRow].fx[fxIdx][0], instrumentNum);
         isFxEdit = 1;
       } else {
@@ -407,11 +407,11 @@ static int inputScreenNavigation(int keys, int tapCount) {
     return 1;
   } else if (keys == (keyLeft | keyOpt)) {
     // Previous track
-    if (*pSongTrack == 0) return 1;
-    uint16_t chain = chipnomadState->project.song[*pSongRow][*pSongTrack - 1];
+    if (state.songTrack == 0) return 1;
+    uint16_t chain = state.project->song[state.songRow][state.songTrack - 1];
     if (chain != EMPTY_VALUE_16 && !chainIsEmpty(&chipnomadState->project, chain)) {
-      *pSongTrack -= 1;
-      while (chipnomadState->project.chains[chain].rows[*pChainRow].phrase == EMPTY_VALUE_16) {
+      state.songTrack -= 1;
+      while (state.project->chains[chain].rows[*pChainRow].phrase == EMPTY_VALUE_16) {
         *pChainRow -= 1;
         if (*pChainRow == 0) break;
       }
@@ -421,11 +421,11 @@ static int inputScreenNavigation(int keys, int tapCount) {
     return 1;
   } else if (keys == (keyRight | keyOpt)) {
     // Next track
-    if (*pSongTrack == chipnomadState->project.tracksCount - 1) return 1;
-    uint16_t chain = chipnomadState->project.song[*pSongRow][*pSongTrack + 1];
+    if (state.songTrack == state.project->tracksCount - 1) return 1;
+    uint16_t chain = state.project->song[state.songRow][state.songTrack + 1];
     if (chain != EMPTY_VALUE_16 && !chainIsEmpty(&chipnomadState->project, chain)) {
-      *pSongTrack += 1;
-      while (chipnomadState->project.chains[chain].rows[*pChainRow].phrase == EMPTY_VALUE_16) {
+      state.songTrack += 1;
+      while (state.project->chains[chain].rows[*pChainRow].phrase == EMPTY_VALUE_16) {
         *pChainRow -= 1;
         if (*pChainRow == 0) break;
       }
@@ -436,22 +436,22 @@ static int inputScreenNavigation(int keys, int tapCount) {
   } else if ((keys == (keyUp | keyOpt)) || (keys == keyUp && screen.cursorRow == 0)) {
     // Previous phrase in the chain
     if (*pChainRow == 0) return 1;
-    if (chipnomadState->project.chains[chipnomadState->project.song[*pSongRow][*pSongTrack]].rows[*pChainRow - 1].phrase != EMPTY_VALUE_16) {
+    if (state.project->chains[state.project->song[state.songRow][state.songTrack]].rows[*pChainRow - 1].phrase != EMPTY_VALUE_16) {
       *pChainRow -= 1;
       if (keys == keyUp) screen.cursorRow = 15;
       setup(-1);
-      chipnomadState->engine->player.queuePhrase(*pSongTrack, *pSongRow, *pChainRow);
+      chipnomadState->engine->player.queuePhrase(state.songTrack, state.songRow, *pChainRow);
       fullRedraw();
     }
     return 1;
   } else if (keys == (keyDown | keyOpt) || (keys == keyDown && screen.cursorRow == 15)) {
     // Next phrase in the chain
     if (*pChainRow == 15) return 1;
-    if (chipnomadState->project.chains[chipnomadState->project.song[*pSongRow][*pSongTrack]].rows[*pChainRow + 1].phrase != EMPTY_VALUE_16) {
+    if (state.project->chains[state.project->song[state.songRow][state.songTrack]].rows[*pChainRow + 1].phrase != EMPTY_VALUE_16) {
       *pChainRow += 1;
       if (keys == keyDown) screen.cursorRow = 0;
       setup(-1);
-      chipnomadState->engine->player.queuePhrase(*pSongTrack, *pSongRow, *pChainRow);
+      chipnomadState->engine->player.queuePhrase(state.songTrack, state.songRow, *pChainRow);
       fullRedraw();
     }
     return 1;
@@ -495,10 +495,10 @@ static LoopRange getLoopRange(void) {
     getSelectionRange(&screen, &startCol, &startRow, &endCol, &endRow);
     range.enabled = 1;
     range.level = 2;
-    range.startSongRow = *pSongRow;
+    range.startSongRow = state.songRow;
     range.startChainRow = *pChainRow;
     range.startPhraseRow = startRow;
-    range.endSongRow = *pSongRow;
+    range.endSongRow = state.songRow;
     range.endChainRow = *pChainRow;
     range.endPhraseRow = endRow;
   }
@@ -525,6 +525,7 @@ LoopRange phraseScreenGetLoopRange(void) {
 
 
 int switchPhraseSelectionMode(ScreenData* screen) {
+  // TODO: invert returns for switchSelectionRange
   int startCol, startRow, endCol, endRow;
   getSelectionRange(screen, &startCol, &startRow, &endCol, &endRow);
 

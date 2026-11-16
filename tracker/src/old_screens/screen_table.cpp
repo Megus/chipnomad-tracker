@@ -23,7 +23,7 @@ static uint8_t getTableInstrumentIdx() {
   }
 
   // Tables 80-FE are aux tables - get instrument from current phrase context
-  uint8_t instrumentNum = lookupInstrument(&chipnomadState->project, *pSongRow, *pChainRow, 0, *pSongTrack);
+  uint8_t instrumentNum = lookupInstrument(&chipnomadState->project, state.songRow, *pChainRow, 0, state.songTrack);
   return instrumentNum;
 }
 
@@ -82,7 +82,7 @@ static void init(void) {
 static void setup(int input) {
   isFxEdit = 0;
   tableIdx = input & 0xff;
-  tableRows = chipnomadState->project.tables[tableIdx].rows;
+  tableRows = state.project->tables[tableIdx].rows;
   backToPhrase = (input & 0x1000) != 0;
   screen.selectMode = 0;
 }
@@ -201,7 +201,7 @@ static void draw(void) {
   gfx.clearRect(21, 3, 1, 16);
   gfx.clearRect(27, 3, 1, 16);
 
-  PlaybackTrackState* track = &chipnomadState->engine->player.tracks[*pSongTrack];
+  PlaybackTrackState* track = &chipnomadState->engine->player.tracks[state.songTrack];
   struct PlaybackTableState* pTable = NULL;
   if (track->mode != PlaybackMode::stopped) {
     int instrumentTableIdx = track->note.instrumentTable.tableIdx;
@@ -243,7 +243,7 @@ static int editCell(int col, int row, enum EditCellAction action) {
     }
   } else if (col == 1) {
     // Pitch offset
-    handled = edit8noLimit(action, &tableRows[row].pitchOffset, &lastPitchValue, chipnomadState->project.pitchTable.octaveSize);
+    handled = edit8noLimit(action, &tableRows[row].pitchOffset, &lastPitchValue, state.project->pitchTable.octaveSize);
     if (handled) {
       if (tableRows[row].pitchFlag == 1) {
         screenMessage(0, "Note %s", noteName(&chipnomadState->project, tableRows[row].pitchOffset));
@@ -422,6 +422,7 @@ const AppScreen screenTable = {
 
 
 int switchTableSelectionMode(ScreenData* screen) {
+  // TODO: invert returns for switchSelectionRange
   int startCol, startRow, endCol, endRow;
   getSelectionRange(screen, &startCol, &startRow, &endCol, &endRow);
 

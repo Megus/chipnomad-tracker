@@ -1,5 +1,5 @@
-#include "project_utils.h"
 #include <string.h>
+#include "project_utils.h"
 
 // Get first note used with an instrument in the project
 uint8_t instrumentFirstNote(chipnomad::Project& p, uint8_t instrument) {

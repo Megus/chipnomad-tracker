@@ -67,7 +67,7 @@ static int rowToY(int row) {
 }
 
 void updateSamplePreview(void) {
-  InstrumentAYSample* smp = &chipnomadState->project.instruments[cInstrument].chip.aySample;
+  InstrumentAYSample* smp = &state.project->instruments[cInstrument].chip.aySample;
 
   if (!samplePreviewBitmap) {
     samplePreviewBitmap = gfxBitmapCreate(PREVIEW_WIDTH_CHARS, PREVIEW_HEIGHT_CHARS);
@@ -88,7 +88,7 @@ void updateSamplePreview(void) {
 }
 
 static void onSampleLoaded(const char* path) {
-  InstrumentAYSample* smp = &chipnomadState->project.instruments[cInstrument].chip.aySample;
+  InstrumentAYSample* smp = &state.project->instruments[cInstrument].chip.aySample;
 
   // Load the WAV file
   WavFile wav(path);
@@ -173,7 +173,7 @@ static int getColumnCount(int row) {
 
 static void drawOscillatorHeaders(void) {
   const ColorTheme t = theme();
-  InstrumentAYSample* smp = &chipnomadState->project.instruments[cInstrument].chip.aySample;
+  InstrumentAYSample* smp = &state.project->instruments[cInstrument].chip.aySample;
 
   // Determine oscillator on/off states
   int toneOn = smp->oscTone.isOn;
@@ -192,7 +192,7 @@ static void drawStatic(void) {
   instrumentCommonDrawStatic();
 
   const ColorTheme t = theme();
-  InstrumentAYSample* smp = &chipnomadState->project.instruments[cInstrument].chip.aySample;
+  InstrumentAYSample* smp = &state.project->instruments[cInstrument].chip.aySample;
 
   // Sample label (y 6) - use title color like "Tone" and "Noise" (sample is always on)
   gfx.setFgColor(t.textTitles);
@@ -269,7 +269,7 @@ static void drawCursor(int col, int row) {
 static void drawField(int col, int row, CellState state) {
   if (row < 3) return instrumentCommonDrawField(col, row, state);
 
-  InstrumentAYSample* smp = &chipnomadState->project.instruments[cInstrument].chip.aySample;
+  InstrumentAYSample* smp = &state.project->instruments[cInstrument].chip.aySample;
   int y = rowToY(row);
 
   gfx.setFgColor(state == CellState::focus ? theme().textValue : theme().textDefault);
@@ -337,7 +337,7 @@ static int onEdit(int col, int row, EditCellAction action) {
   if (row < 3) return instrumentCommonOnEdit(col, row, action);
 
   int handled = 0;
-  InstrumentAYSample* smp = &chipnomadState->project.instruments[cInstrument].chip.aySample;
+  InstrumentAYSample* smp = &state.project->instruments[cInstrument].chip.aySample;
 
   if (row == 3) {
     if (col == 0) {
@@ -440,7 +440,7 @@ static int onEdit(int col, int row, EditCellAction action) {
         }
         break;
       case 8: // Pitch
-        handled = editSigned8(action, &smp->pitchOffset, chipnomadState->project.pitchTable.octaveSize, -128, 127);
+        handled = editSigned8(action, &smp->pitchOffset, state.project->pitchTable.octaveSize, -128, 127);
         if (handled) {
           screenMessage(0, "Sample pitch offset %hhd", smp->pitchOffset);
         }
@@ -461,7 +461,7 @@ static int onEdit(int col, int row, EditCellAction action) {
         }
         break;
       case 5: // Tone pitch
-        handled = editSigned8(action, &smp->oscTone.pitchOffset, chipnomadState->project.pitchTable.octaveSize, -128, 127);
+        handled = editSigned8(action, &smp->oscTone.pitchOffset, state.project->pitchTable.octaveSize, -128, 127);
         if (handled) {
           screenMessage(0, "Tone pitch offset %hhd", smp->oscTone.pitchOffset);
         }
@@ -522,7 +522,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
     // EDIT is held - check if we're on loop start field
     if (screenInstrumentAYSample.cursorCol == 0 &&
         screenInstrumentAYSample.cursorRow == 7) {
-      InstrumentAYSample* smp = &chipnomadState->project.instruments[cInstrument].chip.aySample;
+      InstrumentAYSample* smp = &state.project->instruments[cInstrument].chip.aySample;
 
       // Show loop preview if not already showing, we have valid loop data, and loop is not at the end
       if (!isLoopPreview && smp->sampleData && smp->sampleLength > 0 && smp->sampleLoopStart < smp->sampleLength) {

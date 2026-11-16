@@ -1,5 +1,4 @@
 #include <string.h>
-#include <stdlib.h>
 #include <algorithm>
 #include "screen_file_browser.h"
 #include "file_system.h"

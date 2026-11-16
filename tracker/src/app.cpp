@@ -1,4 +1,3 @@
-#include <string.h>
 #include "app.h"
 #include "tracker_ui.h"
 #include "chipnomad_lib.h"

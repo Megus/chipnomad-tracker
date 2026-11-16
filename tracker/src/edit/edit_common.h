@@ -18,7 +18,6 @@ enum class EditCellAction : int {
   copy,
   cut,
   paste,
-  switchSelection,
   multiIncrease,
   multiDecrease,
   multiIncreaseBig,
@@ -46,5 +45,6 @@ bool applySongMoveDown(chipnomad::Project& p, Rect range);
 bool applySongMoveUp(chipnomad::Project& p, Rect range);
 void shiftSongColumnUp(chipnomad::Project &project, int col, int startRow);
 EditCellAction convertMultiAction(EditCellAction action);
+bool isMultiAction(EditCellAction action);
 
 #endif // __EDIT_COMMON_H__

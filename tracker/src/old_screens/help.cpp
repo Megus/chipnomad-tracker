@@ -75,7 +75,7 @@ const char* helpFXHint(uint8_t* fx, int isTable, uint8_t instrumentIdx) {
       snprintf(buffer, bufferSize, "Vibrato: speed %hhu, depth %hhu", (fx[1] & 0xf0) >> 4, (fx[1] & 0xf));
       break;
     case fxPBN: // Pitch bend
-      if (chipnomadState->project.linearPitch) {
+      if (state.project->linearPitch) {
         // Linear pitch mode: show in semitones (value * 25 cents / 100 cents per semitone)
         float semitones = (int8_t)fx[1] * 0.25f;
         snprintf(buffer, bufferSize, "Pitch bend %+.2f semitones per step", semitones);
@@ -157,7 +157,7 @@ const char* helpFXHint(uint8_t* fx, int isTable, uint8_t instrumentIdx) {
       // Amount FX
       int modSlot = (fx[0] - fxM1A) / 5; // 0-3
       if (instrumentIdx != EMPTY_VALUE_8 && instrumentIdx < PROJECT_MAX_INSTRUMENTS) {
-        ModulationType modType = chipnomadState->project.instruments[instrumentIdx].modulation[modSlot].type;
+        ModulationType modType = state.project->instruments[instrumentIdx].modulation[modSlot].type;
         snprintf(buffer, bufferSize, "Mod %d %s amount %+hhd (relative)", modSlot + 1, getModulationTypeName(modType), (int8_t)fx[1]);
       } else {
         snprintf(buffer, bufferSize, "Mod %d amount %+hhd (relative)", modSlot + 1, (int8_t)fx[1]);
@@ -172,7 +172,7 @@ const char* helpFXHint(uint8_t* fx, int isTable, uint8_t instrumentIdx) {
       int modSlot = (fx[0] - fxM1A) / 5; // 0-3
       int paramIdx = (fx[0] - fxM1A) % 5 - 1; // 0-3 (subtract 1 because M1A is amount)
       if (instrumentIdx != EMPTY_VALUE_8 && instrumentIdx < PROJECT_MAX_INSTRUMENTS) {
-        ModulationType modType = chipnomadState->project.instruments[instrumentIdx].modulation[modSlot].type;
+        ModulationType modType = state.project->instruments[instrumentIdx].modulation[modSlot].type;
         const char* paramName = getModulationParamName(modType, paramIdx);
         snprintf(buffer, bufferSize, "Mod %d %s %s: %+hhd (relative)", modSlot + 1, getModulationTypeName(modType), paramName, (int8_t)fx[1]);
       } else {
@@ -222,8 +222,8 @@ const char* helpFXHint(uint8_t* fx, int isTable, uint8_t instrumentIdx) {
       break;
     case fxENT: // Envelope note
       note = fx[1];
-      if (note >= chipnomadState->project.pitchTable.length - chipnomadState->project.pitchTable.octaveSize * 4)
-        note = chipnomadState->project.pitchTable.length - 1 - chipnomadState->project.pitchTable.octaveSize * 4;
+      if (note >= state.project->pitchTable.length - state.project->pitchTable.octaveSize * 4)
+        note = state.project->pitchTable.length - 1 - state.project->pitchTable.octaveSize * 4;
       snprintf(buffer, bufferSize, "Envelope note %s", noteName(&chipnomadState->project, note));
       break;
     case fxEPT: // Envelope period offset
@@ -238,8 +238,8 @@ const char* helpFXHint(uint8_t* fx, int isTable, uint8_t instrumentIdx) {
     // Common AY FX
     case fxTNN: // Tone specific note
       note = fx[1];
-      if (note >= chipnomadState->project.pitchTable.length)
-        note = chipnomadState->project.pitchTable.length - 1;
+      if (note >= state.project->pitchTable.length)
+        note = state.project->pitchTable.length - 1;
       snprintf(buffer, bufferSize, "Tone note %s", noteName(&chipnomadState->project, note));
       break;
     case fxTNP: // Tone pitch offset
@@ -253,8 +253,8 @@ const char* helpFXHint(uint8_t* fx, int isTable, uint8_t instrumentIdx) {
       break;
     case fxENN: // Envelope specific note
       note = fx[1];
-      if (note >= chipnomadState->project.pitchTable.length)
-        note = chipnomadState->project.pitchTable.length - 1;
+      if (note >= state.project->pitchTable.length)
+        note = state.project->pitchTable.length - 1;
       snprintf(buffer, bufferSize, "Envelope note %s", noteName(&chipnomadState->project, note));
       break;
     case fxENP: // Envelope pitch offset
@@ -275,8 +275,8 @@ const char* helpFXHint(uint8_t* fx, int isTable, uint8_t instrumentIdx) {
     }
     case fxSFN: // Software oscillator specific note
       note = fx[1];
-      if (note >= chipnomadState->project.pitchTable.length)
-        note = chipnomadState->project.pitchTable.length - 1;
+      if (note >= state.project->pitchTable.length)
+        note = state.project->pitchTable.length - 1;
       snprintf(buffer, bufferSize, "Software osc note %s", noteName(&chipnomadState->project, note));
       break;
     case fxSFP: // Software oscillator pitch offset
@@ -414,7 +414,7 @@ const char* helpFXDescription(enum FX fxIdx, uint8_t instrumentIdx) {
     if (paramIdx == 0) {
       // Amount FX
       if (instrumentIdx != EMPTY_VALUE_8 && instrumentIdx < PROJECT_MAX_INSTRUMENTS) {
-        ModulationType modType = chipnomadState->project.instruments[instrumentIdx].modulation[modSlot].type;
+        ModulationType modType = state.project->instruments[instrumentIdx].modulation[modSlot].type;
         snprintf(buffer, bufferSize, "Mod %d Amount (relative)\n%s: Offsets modulation\namount",
                 modSlot + 1, getModulationTypeName(modType));
       } else {
@@ -423,7 +423,7 @@ const char* helpFXDescription(enum FX fxIdx, uint8_t instrumentIdx) {
     } else {
       // Parameter FX
       if (instrumentIdx != EMPTY_VALUE_8 && instrumentIdx < PROJECT_MAX_INSTRUMENTS) {
-        ModulationType modType = chipnomadState->project.instruments[instrumentIdx].modulation[modSlot].type;
+        ModulationType modType = state.project->instruments[instrumentIdx].modulation[modSlot].type;
 
         // Generate context-specific description
         switch (modType) {

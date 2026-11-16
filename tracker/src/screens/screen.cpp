@@ -1,6 +1,16 @@
 #include "screen.h"
 #include "misc.h"
 
+Screen::Screen(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx): state(state), events(dispatcher), gfx(gfx) {
+  resetState();
+}
+
+void Screen::resetState() {
+  cursorRow = 0;
+  cursorCol = 0;
+  mode = ScreenMode::edit;
+}
+
 Rect Screen::getSelectionRange() {
   using namespace chipnomad;
   if (!supportsSelectMode() || mode != ScreenMode::select) return {0, 0, 0, 0};
@@ -310,7 +320,7 @@ bool Screen::inputSelectMode(int keys, int tapCount) {
   if (!handled) {
     if (keys == (keyShift | keyOpt)) {
       // Switch selection mode
-      bool exitSelection = onEdit(cursorCol, cursorRow, EditCellAction::switchSelection);
+      bool exitSelection = !switchSelectionRange();
       if (exitSelection) {
         // Exit selection mode
         mode = ScreenMode::edit;
@@ -323,7 +333,7 @@ bool Screen::inputSelectMode(int keys, int tapCount) {
       // Copy and exit select mode on Opt release (no keys pressed)
       handled = onEdit(cursorCol, cursorRow, EditCellAction::copy);
       if (handled) {
-        events.dispatch(Event::showTimedMessage("Copied selection"));
+        showTimedMessage("Copied selection");
         moveCursorBelowSelection();
       }
       mode = ScreenMode::edit;
@@ -340,7 +350,7 @@ bool Screen::inputSelectMode(int keys, int tapCount) {
       // Cut and exit select mode
       handled = onEdit(cursorCol, cursorRow, EditCellAction::cut);
       if (handled) {
-        events.dispatch(Event::showTimedMessage("Cut selection"));
+        showTimedMessage("Cut selection");
         moveCursorToSelectionStart();
       }
       mode = ScreenMode::edit;
@@ -448,6 +458,23 @@ void Screen::selectFile(const char* title, const char* startPath, const char* ex
 void Screen::selectFolder(const char* title, const char* startPath, const char* extensions, const char* filename) {
   events.dispatch(Event::pushScreen(ScreenEnum::fileBrowser, ScreenData::fileBrowser(true, title, startPath, extensions, nullptr, filename)));
 }
+
+void Screen::showInstantMessage(const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  vsnprintf(messageBuffer, 41, format, args);
+  va_end(args);
+  events.dispatch(Event::showInstantMessage(messageBuffer));
+}
+
+void Screen::showTimedMessage(const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  vsnprintf(messageBuffer, 41, format, args);
+  va_end(args);
+  events.dispatch(Event::showTimedMessage(messageBuffer));
+}
+
 
 int Screen::isSingleCellSelection(const Rect& range) {
   return range.w == 1 && range.h == 1;

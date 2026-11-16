@@ -1,4 +1,3 @@
-#include <string.h>
 #include "screen_song.h"
 #include "utils.h"
 #include "chipnomad_lib.h"
@@ -12,6 +11,14 @@ void ScreenSong::setup(const ScreenData& input) {
   // Sync the cursor position from the song position in the global state
   cursorRow = state.songRow;
   cursorCol = state.songTrack;
+  adjustVerticalScroll(false);
+}
+
+void ScreenSong::resetState() {
+  Screen::resetState();
+  lastChainValue = 0;
+  topRow = 0;
+  muteSoloState = MuteSoloState::empty;
 }
 
 Rect ScreenSong::getSelectionRect(const Rect& range) {
@@ -26,6 +33,14 @@ Rect ScreenSong::getSelectionRect(const Rect& range) {
   if (y2 > (3 + 15)) y2 = (3 + 15); // Bottom row is below the screen
 
   return {.x = x, .y = y, .w = w, .h = y2 - y + 1};
+}
+
+bool ScreenSong::switchSelectionRange() {
+  if (isSingleCellSelection(getSelectionRange())) {
+    selectRow(getColumnCount(0) - 1);
+    return true;
+  }
+  return false;
 }
 
 chipnomad::LoopRange ScreenSong::getLoopRange() {
@@ -139,9 +154,7 @@ bool ScreenSong::onEdit(int col, int row, EditCellAction action) {
   bool handled = 0;
   Rect selection = getSelectionRange();
 
-  if (action == EditCellAction::switchSelection) {
-    return switchSelectionMode();
-  } else if (action == EditCellAction::multiIncreaseBig || action == EditCellAction::multiDecreaseBig) {
+  if (action == EditCellAction::multiIncreaseBig || action == EditCellAction::multiDecreaseBig) {
     if (mode != ScreenMode::select) return false;
 
     if (action == EditCellAction::multiDecreaseBig) {
@@ -179,9 +192,9 @@ bool ScreenSong::onEdit(int col, int row, EditCellAction action) {
     if (clonedCount > 0) {
       const char* msg = (action == EditCellAction::shallowClone) ? "Shallow-cloned" : "Deep-cloned";
       handled = true;
-      events.dispatch(Event::showTimedMessage("%s %d chain%s", msg, clonedCount, clonedCount == 1 ? "" : "s"));
+      showTimedMessage("%s %d chain%s", msg, clonedCount, clonedCount == 1 ? "" : "s");
     } else {
-      events.dispatch(Event::showTimedMessage("No chains to clone"));
+      showTimedMessage("No chains to clone");
     }
   } else if (applyMultiEdit(selection, action, this)) {
     handled = true;
@@ -215,7 +228,7 @@ bool ScreenSong::onNavigationInput(const Event& e) {
     int chain = state.project->song[cursorRow][cursorCol];
 
     if (chain == EMPTY_VALUE_16) {
-      events.dispatch(Event::showInstantMessage("Enter a chain"));
+      showInstantMessage("Enter a chain");
     } else {
       events.dispatch(Event::switchScreen(ScreenEnum::chain));
     }
@@ -246,7 +259,7 @@ bool ScreenSong::editCell(int col, int row, EditCellAction action) {
         state.project->song[row][col] = nextEmpty;
         lastChainValue = nextEmpty;
       } else {
-        events.dispatch(Event::showTimedMessage("No free chains"));
+        showTimedMessage("No free chains");
       }
     }
     return 1;
@@ -402,12 +415,4 @@ bool ScreenSong::onEvent(const Event& e) {
   }
 
   return handled;
-}
-
-bool ScreenSong::switchSelectionMode() {
-  if (isSingleCellSelection(getSelectionRange())) {
-    selectRow(getColumnCount(0) - 1);
-    return false;
-  }
-  return true;
 }
