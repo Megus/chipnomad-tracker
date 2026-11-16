@@ -34,17 +34,15 @@ int ScreenFileBrowser::getRowCount() {
 
 void ScreenFileBrowser::draw() {
   if (scrollState == ScrollState::none) return;
-
-  /*if (fileBrowserUpdate()) {
+  if (scrollUpdate()) {
     drawCell(0, cursorRow, CellState::normal);
-  }*/
+  }
 }
 
 void ScreenFileBrowser::drawStatic() {
   gfx.setFgColor(theme().textTitles);
   gfx.print(0, 0, title);
 
-  // Current path. Trim if needed
   gfx.setFgColor(theme().textInfo);
   if (strlen(currentPath) <= 80) {
     gfx.print(0, 1, currentPath);
@@ -188,7 +186,7 @@ bool ScreenFileBrowser::onEvent(const Event& e) {
         if (cursorRow >= topRow + 16) topRow = cursorRow - 16 + 1;
       }
 
-      //resetScrollStateOnSelectionChange();
+      resetScrollState();
 
       if (topRow != oldTopRow) {
         events.dispatch(Event::redrawScreen());
@@ -216,7 +214,7 @@ bool ScreenFileBrowser::onEvent(const Event& e) {
     // Handle output from popups
     if (e.screen == ScreenEnum::confirm && e.screenData.intValue == 1) {
       // Overwrite file
-      events.dispatch(Event::popScreen(ScreenEnum::fileBrowser, ScreenData::fileBrowserOutput(false, outputPath, currentPath)));
+      events.dispatch(Event::popScreen(ScreenEnum::fileBrowser, ScreenData::fileBrowserOutput(true, outputPath, currentPath)));
     } else if (e.screen == ScreenEnum::enterString && e.screenData.str != nullptr) {
       // Create folder
       if (e.screenData.intValue) {
@@ -230,6 +228,60 @@ bool ScreenFileBrowser::onEvent(const Event& e) {
     return true;
   }
   return false;
+}
+
+// Perform the EDIT action (file select / directory enter / save)
+void ScreenFileBrowser::onEntrySelected() {
+  // Save to...
+  if (isFolderMode && cursorRow == 0) {
+    // Construct full save path
+    snprintf(outputPath, sizeof(outputPath), "%s%s%s%s", currentPath, FileSystem::kPathSeparatorStr, saveFilename, extensions);
+    if (file.fileExists(outputPath)) {
+      // File exists, ask for overwrite confirmation
+      events.dispatch(Event::pushScreen(ScreenEnum::confirm, ScreenData::confirm("Overwrite existing file?", 1, 0)));
+    } else {
+      // File doesn't exist, good to save
+      events.dispatch(Event::popScreen(ScreenEnum::fileBrowser, ScreenData::fileBrowserOutput(true, outputPath, currentPath)));
+    }
+  } else if (isFolderMode && cursorRow == 1) {
+    // Create folder
+    createFolderName[0] = 0; // Clear the string
+    enterString(createFolderName, 32, "CREATE FOLDER", "Enter folder name:", ""); // TODO: Also pass the trimmed current path for convenience
+  } else {
+    // File list entry
+    int entryIdx = getEntryIndexForRow(cursorRow);
+    if (entries[entryIdx].isDirectory) {
+      // Enter directory
+      if (strcmp(entries[entryIdx].name, "..") == 0) {
+        // Go up one level
+        char* lastSeparator = strrchr(currentPath, FileSystem::kPathSeparatorChar);
+        if (lastSeparator && lastSeparator != currentPath) {
+          *lastSeparator = 0;
+          loadFolder(nullptr); // TODO: Point to the folder we left
+          events.dispatch(Event::redrawScreen());
+        } else if (strlen(currentPath) > 1) {
+          // Go to root (doesn't work on Windows...)
+          strcpy(currentPath, FileSystem::kPathSeparatorStr);
+          loadFolder(nullptr);
+          events.dispatch(Event::redrawScreen());
+        }
+      } else {
+        // Enter subdirectory
+        int len = strlen(currentPath);
+        if (len > 0 && currentPath[len - 1] != FileSystem::kPathSeparatorChar) {
+          strcat(currentPath, FileSystem::kPathSeparatorStr);
+        }
+        strcat(currentPath, entries[entryIdx].name);
+      }
+      loadFolder(nullptr);
+      events.dispatch(Event::redrawScreen());
+    } else if (!isFolderMode && entryIdx >= 0) {
+      // Select file (only in file mode)
+      stopPreview();
+      snprintf(outputPath, sizeof(outputPath), "%s%s%s", currentPath, FileSystem::kPathSeparatorStr, entries[entryIdx].name);
+      events.dispatch(Event::popScreen(ScreenEnum::fileBrowser, ScreenData::fileBrowserOutput(false, outputPath, currentPath)));
+    }
+  }
 }
 
 void ScreenFileBrowser::loadFolder(const char* selectName) {
@@ -257,104 +309,8 @@ void ScreenFileBrowser::loadFolder(const char* selectName) {
       }
     }
   }
-}
 
-int ScreenFileBrowser::getEntryIndexForRow(int itemIndex) {
-  if (isFolderMode && (itemIndex == 0 || itemIndex == 1)) return -1;
-  return isFolderMode ? itemIndex - 2 : itemIndex;
-}
-
-int ScreenFileBrowser::getMaxDisplayForEntry(int entryIdx) {
-  return entries[entryIdx].isDirectory ? kMaxLenDir : kMaxLenFile;
-}
-
-/*
-static void resetScrollState(void) {
-  scrollState.selectionFrameCount = 0;
-  scrollState.scrollOffset = 0;
-  scrollState.scrollDirection = 1;
-}
-
-static void resetScrollStateOnSelectionChange(void) {
-  scrollState.lastSelectedIndex = -1;
   resetScrollState();
-}
-
-static int handleBoundaryWait(int isAtStart, int isAtEnd) {
-  if (scrollState.selectionFrameCount < BOUNDARY_WAIT_FRAMES) {
-    return 1;
-  }
-
-  if (isAtStart) {
-    scrollState.scrollDirection = 1;
-  } else {
-    scrollState.scrollDirection = -1;
-  }
-  scrollState.selectionFrameCount = SCROLL_DELAY_FRAMES;
-  return 1;
-}
-*/
-
-/*
-static int fileBrowserUpdate(void) {
-  if (selectedIndex != scrollState.lastSelectedIndex) {
-    scrollState.lastSelectedIndex = selectedIndex;
-    resetScrollState();
-    return 0;
-  }
-
-  int entryIdx = getEntryInderForRow(cursorRow);
-  if (entryIdx < 0 || entryIdx >= entryCount) {
-    resetScrollState();
-    return 0;
-  }
-
-  int nameLen = strlen(entries[entryIdx].name);
-  int maxDisplay = getMaxDisplayForEntry(entryIdx);
-  int maxScroll = nameLen - maxDisplay;
-
-  if (maxScroll <= 0) {
-    scrollState.scrollOffset = 0;
-    return 0;
-  }
-
-  scrollState.selectionFrameCount++;
-
-  if (scrollState.selectionFrameCount < SCROLL_DELAY_FRAMES) {
-    return 0;
-  }
-
-  int isAtStart = scrollState.scrollOffset == 0 && scrollState.scrollDirection == -1;
-  int isAtEnd = scrollState.scrollOffset >= maxScroll && scrollState.scrollDirection == 1;
-
-  if (isAtStart || isAtEnd) {
-    handleBoundaryWait(isAtStart, isAtEnd);
-    return 0;
-  }
-
-  int oldOffset = scrollState.scrollOffset;
-  int scrollFrames = scrollState.selectionFrameCount - SCROLL_DELAY_FRAMES;
-  if (scrollFrames % SCROLL_SPEED_FRAMES == 0) {
-    int newOffset = scrollState.scrollOffset + scrollState.scrollDirection;
-    if (newOffset < 0) {
-      scrollState.scrollOffset = 0;
-      scrollState.selectionFrameCount = SCROLL_DELAY_FRAMES;
-    } else if (newOffset > maxScroll) {
-      scrollState.scrollOffset = maxScroll;
-      scrollState.selectionFrameCount = SCROLL_DELAY_FRAMES;
-    } else {
-      scrollState.scrollOffset = newOffset;
-    }
-  }
-  return scrollState.scrollOffset != oldOffset;
-}
-*/
-
-void ScreenFileBrowser::stopPreview() {
-  if (previewer != nullptr) {
-    previewer->stopFilePreview();
-  }
-  state = State::normal;
 }
 
 void ScreenFileBrowser::startPreview() {
@@ -367,56 +323,84 @@ void ScreenFileBrowser::startPreview() {
   state = started ? State::previewing : State::normal;
 }
 
-// Perform the EDIT action (file select / directory enter / save)
-void ScreenFileBrowser::onEntrySelected() {
-  // Save to...
-  if (isFolderMode && cursorRow == 0) {
-    // Construct full save path
-    snprintf(outputPath, sizeof(outputPath), "%s%s%s%s", currentPath, FileSystem::kPathSeparatorStr, saveFilename, extensions);
-    if (file.fileExists(outputPath)) {
-      // File exists, ask for overwrite confirmation
-      events.dispatch(Event::pushScreen(ScreenEnum::confirm, ScreenData::confirm("Overwrite existing file?", 1, 0)));
-    } else {
-      // File doesn't exist, good to save
-      events.dispatch(Event::popScreen(ScreenEnum::fileBrowser, ScreenData::fileBrowserOutput(false, outputPath, currentPath)));
-    }
-  } else if (isFolderMode && cursorRow == 1) {
-    // Create folder
-    createFolderName[0] = 0; // Clear the string
-    enterString(createFolderName, 32, "CREATE FOLDER", "Enter folder name:", ""); // TODO: Also pass the trimmed current path for convenience
-  } else {
-    // File list entry
-    int entryIdx = getEntryIndexForRow(cursorRow);
-    if (entries[entryIdx].isDirectory) {
-      // Enter directory
-      if (strcmp(entries[entryIdx].name, "..") == 0) {
-        // Go up one level
-        char* lastSeparator = strrchr(currentPath, FileSystem::kPathSeparatorChar);
-        if (lastSeparator && lastSeparator != currentPath) {
-          *lastSeparator = 0;
-          loadFolder(nullptr);
-          events.dispatch(Event::redrawScreen());
-        } else if (strlen(currentPath) > 1) {
-          // Go to root (doesn't work on Windows...)
-          strcpy(currentPath, FileSystem::kPathSeparatorStr);
-          loadFolder(nullptr);
-          events.dispatch(Event::redrawScreen());
-        }
-      } else {
-        // Enter subdirectory
-        int len = strlen(currentPath);
-        if (len > 0 && currentPath[len - 1] != FileSystem::kPathSeparatorChar) {
-          strcat(currentPath, FileSystem::kPathSeparatorStr);
-        }
-        strcat(currentPath, entries[entryIdx].name);
-      }
-      loadFolder(nullptr);
-      events.dispatch(Event::redrawScreen());
-    } else if (!isFolderMode && entryIdx >= 0) {
-      // Select file (only in file mode)
-      stopPreview();
-      snprintf(outputPath, sizeof(outputPath), "%s%s%s", currentPath, FileSystem::kPathSeparatorStr, entries[entryIdx].name);
-      events.dispatch(Event::popScreen(ScreenEnum::fileBrowser, ScreenData::fileBrowserOutput(false, outputPath, currentPath)));
-    }
+void ScreenFileBrowser::stopPreview() {
+  if (previewer != nullptr) {
+    previewer->stopFilePreview();
   }
+  state = State::normal;
+}
+
+int ScreenFileBrowser::getEntryIndexForRow(int itemIndex) {
+  if (isFolderMode && (itemIndex == 0 || itemIndex == 1)) return -1;
+  return isFolderMode ? itemIndex - 2 : itemIndex;
+}
+
+int ScreenFileBrowser::getMaxDisplayForEntry(int entryIdx) {
+  return entries[entryIdx].isDirectory ? kMaxLenDir : kMaxLenFile;
+}
+
+void ScreenFileBrowser::resetScrollState() {
+  int idx = getEntryIndexForRow(cursorRow);
+  if (idx < 0) {
+    scrollState = ScrollState::none; // No scrolling of non-file items
+    return;
+  }
+
+  const char* name = entries[idx].name;
+  int maxDisplay = getMaxDisplayForEntry(idx);
+  int length = strlen(name);
+  if (length <= maxDisplay) {
+    scrollState = ScrollState::none; // No scrolling for short items
+    return;
+  }
+
+  scrollItemLength = length;
+  scrollIdemDisplayLength = maxDisplay;
+  scrollPosition = 0;
+  scrollState = ScrollState::initialWait;
+  scrollTimer = kScrollDelayFrames;
+}
+
+bool ScreenFileBrowser::scrollUpdate() {
+  if (scrollTimer > 0) {
+    scrollTimer--;
+    return false;
+  }
+
+  switch (scrollState) {
+    case ScrollState::initialWait:
+      scrollState = ScrollState::scrollLeft;
+      scrollTimer = kScrollSpeedFrames;
+      break;
+    case ScrollState::scrollLeft:
+      if (scrollPosition < (scrollItemLength - scrollIdemDisplayLength)) {
+        scrollTimer = kScrollSpeedFrames;
+        scrollPosition++;
+      } else {
+        scrollState = ScrollState::waitEnd;
+        scrollTimer = kScrollBoundaryWaitFrames;
+      }
+      break;
+    case ScrollState::waitEnd:
+      scrollState = ScrollState::scrollRight;
+      scrollTimer = kScrollSpeedFrames;
+      break;
+    case ScrollState::scrollRight:
+      if (scrollPosition > 0) {
+        scrollTimer = kScrollSpeedFrames;
+        scrollPosition--;
+      } else {
+        scrollState = ScrollState::waitStart;
+        scrollTimer = kScrollBoundaryWaitFrames;
+      }
+      break;
+    case ScrollState::waitStart:
+      scrollState = ScrollState::scrollLeft;
+      scrollTimer = kScrollSpeedFrames;
+      break;
+    default:
+      scrollState = ScrollState::none;
+      break;
+  }
+  return true;
 }

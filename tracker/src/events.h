@@ -20,6 +20,7 @@ enum class EventType {
   popScreen,
   screenOutput,
   showMessage,
+  setProject,
 };
 
 enum class ScreenEnum : int {
@@ -107,6 +108,7 @@ struct Event {
   static Event screenOutput(ScreenEnum screen, const ScreenData& output);
   static Event showInstantMessage(const char* format, ...);
   static Event showTimedMessage(const char* format, ...);
+  static Event setProject(chipnomad::Project* project);
 
   EventType type = EventType::none;
   // All various parameters that can go to the event
@@ -130,6 +132,9 @@ struct Event {
   // Message
   bool isTimedMessage = false;
   const char* message = nullptr;
+
+  // Project
+  chipnomad::Project* project = nullptr;
 };
 
 class EventHandler {

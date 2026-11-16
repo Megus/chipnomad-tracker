@@ -115,3 +115,7 @@ Event Event::showTimedMessage(const char* format, ...) {
 
   return {.type = EventType::showMessage, .isTimedMessage = true, .message = messageBuffer};
 }
+
+Event Event::setProject(chipnomad::Project* project) {
+  return {.type = EventType::setProject, .project = project};
+}

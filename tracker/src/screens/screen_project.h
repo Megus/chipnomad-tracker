@@ -4,10 +4,11 @@
 #include "screen.h"
 #include "screen_project_ay.h"
 #include "audio_manager.h"
+#include "file_system.h"
 
 class ScreenProject : public Screen {
   public:
-    ScreenProject(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx, AudioManager& audio);
+    ScreenProject(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx, AudioManager& audio, FileSystem& file);
     ~ScreenProject();
 
     void setup(const ScreenData& input) override;
@@ -33,6 +34,7 @@ class ScreenProject : public Screen {
     };
 
     AudioManager& audio;
+    FileSystem& file;
 
     static constexpr int kCommonRowCount = 8; // Number of common rows on the Project screen (before partial)
 
@@ -43,7 +45,9 @@ class ScreenProject : public Screen {
     ScreenPartialProjectAY* partialAY;
 
     void newProject();
-    void loadProject();
+    void selectFileToLoad();
+    void loadProject(const char* filePath, const char* folderPath);
+    void saveProject(const char* filePath, const char* folderPath);
 };
 
 #endif // __SCREEN_PROJECT_H__

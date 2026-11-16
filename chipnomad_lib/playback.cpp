@@ -783,6 +783,11 @@ namespace chipnomad {
     // Initialize loop range as disabled
     loopRange.enabled = 0;
 
+    // Reset FX states
+    for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
+      memset(tracks[i].note.fx, 0, sizeof(tracks[i].note.fx));
+    }
+
     // TODO: Properly initialize other global chip states, but for now it's AY only
     for (int c = 0; c < PROJECT_MAX_CHIPS; c++) {
       chips[c].ay.envShape = 0;

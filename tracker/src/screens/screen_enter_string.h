@@ -16,6 +16,7 @@ class ScreenEnterString : public Screen {
     void drawCursor(int col, int row) override;
 
     bool onEdit(int col, int row, EditCellAction action) override;
+    bool onEvent(const Event& e) override;
 
   protected:
     char title[41]; // Screen title

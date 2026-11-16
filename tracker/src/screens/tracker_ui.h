@@ -30,6 +30,7 @@ class TrackerUI : public EventHandler {
     bool onInput(const Event& e);
     bool onPlay(const Event& e);
     bool onScreenEvent(const Event& e);
+    void setProject(chipnomad::Project* project);
 
     Gfx& gfx;
     FontManager& fontManager;

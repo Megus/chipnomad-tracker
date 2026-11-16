@@ -20,9 +20,9 @@ class ScreenFileBrowser : public Screen {
     bool onEvent(const Event& e) override;
 
   protected:
-    static constexpr int kScrollDelayFrames = 120;
+    static constexpr int kScrollDelayFrames = 60;
     static constexpr int kScrollSpeedFrames = 8;
-    static constexpr int kBoundaryWaitFrames = kScrollSpeedFrames * 2;
+    static constexpr int kScrollBoundaryWaitFrames = kScrollSpeedFrames * 2;
     static constexpr int kMaxLenDir = 31; // Maximal string length for directory name
     static constexpr int kMaxLenFile = 33; // Maximal string length for file name
 
@@ -69,6 +69,9 @@ class ScreenFileBrowser : public Screen {
     void startPreview();
     void stopPreview();
     void onEntrySelected();
+
+    void resetScrollState();
+    bool scrollUpdate();
 };
 
 #endif // __FILE_BROWSER_H__

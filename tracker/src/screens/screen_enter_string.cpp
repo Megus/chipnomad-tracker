@@ -73,3 +73,12 @@ bool ScreenEnterString::onEdit(int col, int row, EditCellAction action) {
   }
   return false;
 }
+
+bool ScreenEnterString::onEvent(const Event& e) {
+  if (commonEventHandler(e)) return true;
+  if (e.type == EventType::screenOutput && e.screen == ScreenEnum::enterCharacter) {
+    if (cursorCol < getColumnCount(cursorRow) - 1) cursorCol++;
+    return true;
+  }
+  return false;
+}

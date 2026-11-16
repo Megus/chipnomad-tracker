@@ -35,6 +35,7 @@ class Screen : public EventHandler {
     Screen(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx): state(state), events(dispatcher), gfx(gfx) {}
     virtual ~Screen() = default;
 
+    virtual void resetState() {}; // Reset internal screen state for a new/loaded project
     virtual void setup(const ScreenData& input) {}; // Setup screen before it's displayed
 
     virtual bool supportsSelectMode() { return false; }; // Does the screen support selection?

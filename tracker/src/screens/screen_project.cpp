@@ -1,84 +1,15 @@
 #include <string.h>
 #include <strings.h>
 #include "screen_project.h"
-#include "file_system.h"
-#include "gfx.h"
 #include "utils.h"
-#include "chipnomad_lib.h"
 #include "project_utils.h"
 #include "version.h"
-#include "audio_manager.h"
 #include "import_vt2.h"
 #include "error.h"
+#include "misc.h"
 
-/*
-static void onProjectLoaded(const char* path) {
-  if (!path) {
-    screenSetup(&screenProject, 0);
-    return;
-  }
-
-  // Store the directory path from the selected file
-  const char* lastSeparator = strrchr(path, PATH_SEPARATOR);
-  if (lastSeparator) {
-    int pathLen = lastSeparator - path;
-    if (pathLen > 0 && pathLen < PATH_LENGTH) {
-      copyString(appSettings.projectPath, path, pathLen);
-    }
-  } else {
-    appSettings.projectPath[0] = '\0';
-  }
-
-  chipnomadState->engine->player.stop();
-
-  // Check file extension to determine loader
-  const char* ext = strrchr(path, '.');
-  int success = 0;
-
-  if (ext != NULL && strcasecmp(ext, ".vt2") == 0) {
-    // Load VT2 file
-    success = projectLoadVT2(path);
-  } else {
-    // No extension, try native format
-    success = projectLoad(&chipnomadState->project, path);
-  }
-
-  if (success) {
-    projectModified = 0; // Clear modified flag after loading
-    audio.reinitChips();
-
-    // Store filename without extension
-    extractFilenameWithoutExtension(path, appSettings.projectFilename, FILENAME_LENGTH + 1);
-
-    // Reset all screen states (including song position)
-    screensInitAll();
-    // Clear FX states for all tracks
-    // TODO: Make it a cleaner solution and have it somewhere in chipnomad_lib
-    for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
-      memset(&chipnomadState->engine->player.tracks[i].note.fx, 0, sizeof(chipnomadState->engine->player.tracks[i].note.fx));
-    }
-  } else {
-    screenMessage(MESSAGE_TIME, "%s", chipnomad::Error::message);
-  }
-
-  screenSetup(&screenProject, 0);
-}
-
-static void onProjectSaved(const char* folderPath) {
-  char fullPath[2048];
-  snprintf(fullPath, sizeof(fullPath), "%s%s%s.cnm", folderPath, PATH_SEPARATOR_STR, appSettings.projectFilename);
-
-  if (projectSave(&chipnomadState->project, fullPath)) {
-    // Save the directory path
-    projectModified = 0; // Clear modified flag after saving
-    copyString(appSettings.projectPath, folderPath, PATH_LENGTH);
-  }
-  screenSetup(&screenProject, 0);
-}
-
-*/
-
-ScreenProject::ScreenProject(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx, AudioManager& audio): Screen(state, dispatcher, gfx), audio(audio) {
+ScreenProject::ScreenProject(TrackerState& state, EventDispatcher& dispatcher, Gfx& gfx, AudioManager& audio, FileSystem& file):
+  Screen(state, dispatcher, gfx), audio(audio), file(file) {
   partialAY = new ScreenPartialProjectAY(*this, 8);
 }
 
@@ -223,18 +154,18 @@ bool ScreenProject::onEdit(int col, int row, EditCellAction action) {
     // Load/Save/New/Export
     if (col == 0) {
       // Load project
-      handled = true;
       if (state.projectModified) {
         requestConfirmation("Lose unsaved changes?", static_cast<int>(ConfirmValue::loadProject), static_cast<int>(ConfirmValue::cancel));
       } else {
-        //doLoadProject();
+        selectFileToLoad();
       }
+      handled = true;
     } else if (col == 1) {
       // Save project - check filename first
       if (strlen(state.settings.projectFilename) == 0) {
         events.dispatch(Event::showTimedMessage("Enter filename"));
       } else {
-        selectFolder("SAVE PROJECT",  state.settings.projectPath, ".cnm", state.settings.projectFilename);
+        selectFolder("SAVE PROJECT", state.settings.projectPath, ".cnm", state.settings.projectFilename);
       }
       handled = true;
     } else if (col == 2) {
@@ -242,7 +173,7 @@ bool ScreenProject::onEdit(int col, int row, EditCellAction action) {
       if (state.projectModified) {
         requestConfirmation("Lose unsaved changes?", static_cast<int>(ConfirmValue::newProject), static_cast<int>(ConfirmValue::cancel));
       } else {
-        //doNewProject();
+        newProject();
       }
       handled = true;
     } else if (col == 3) {
@@ -328,44 +259,85 @@ bool ScreenProject::onEvent(const Event& e) {
         ConfirmValue value = static_cast<ConfirmValue>(e.screenData.intValue);
         switch (value) {
           case ConfirmValue::loadProject:
-
+            selectFileToLoad();
             break;
           case ConfirmValue::newProject:
-
+            newProject();
             break;
           default:
             break;
         }
+        handled = true;
         break;
       }
       case ScreenEnum::fileBrowser: {
-
+        if (e.screenData.filePath == nullptr) break; // Browser closed without selection
+        if (e.screenData.isFolder) {
+          saveProject(e.screenData.filePath, e.screenData.folderPath);
+        } else {
+          loadProject(e.screenData.filePath, e.screenData.folderPath);
+        }
+        handled = true;
         break;
       }
       case ScreenEnum::enterCharacter: {
         state.projectModified = true;
         if (cursorCol < getColumnCount(cursorRow) - 1) cursorCol++;
+        handled = true;
         break;
       }
       default:
         break;
     }
   }
-  return false;
+  return handled;
 }
 
 
 void ScreenProject::newProject() {
-  events.dispatchInstant(Event::stopPlayback());
-  delete state.project;
-  state.project = new chipnomad::Project();
-  state.project->initAYproject();
-  state.projectModified = 0;
-  state.settings.projectFilename[0] = 0;
-  //screensInitAll(); // TODO: Figure out what kind of initialization I need to do. Maybe it should be an event to set a new project?
-  events.dispatch(Event::redrawScreen());
+  chipnomad::Project* p = new chipnomad::Project();
+  p->initAYproject();
+  events.dispatch(Event::setProject(p));
+  state.settings.projectFilename[0] = 0; // Reset filename
 }
 
-void ScreenProject::loadProject() {
+void ScreenProject::selectFileToLoad() {
   selectFile("LOAD PROJECT", state.settings.projectPath, ".cnm,.vt2", nullptr);
+}
+
+void ScreenProject::loadProject(const char* filePath, const char* folderPath) {
+  chipnomad::Project* project = nullptr;
+
+  copyString(state.settings.projectPath, folderPath, FileSystem::kPathMaxLength);
+
+  // Check file extension to determine loader
+  const char* ext = strrchr(filePath, '.');
+  bool success = false;
+
+  if (ext != NULL && strcasecmp(ext, ".vt2") == 0) {
+    // Load VT2 file
+    project = new chipnomad::Project();
+    project->initAYproject();
+    success = projectLoadVT2(*project, filePath);
+  } else {
+    // Load ChipNomad project
+    project = chipnomad::loadProject(filePath);
+    if (project) success = true;
+  }
+
+  if (success) {
+    events.dispatch(Event::setProject(project));
+    // Store filename without extension
+    file.extractFilenameWithoutExtension(filePath, state.settings.projectFilename, sizeof(state.settings.projectFilename) - 1);
+    setup(ScreenData());
+  } else {
+    events.dispatch(Event::showTimedMessage("%s", chipnomad::Error::message));
+  }
+}
+
+void ScreenProject::saveProject(const char* filePath, const char* folderPath) {
+  if (chipnomad::saveProject(state.project, filePath)) {
+    state.projectModified = false; // Clear modified flag after saving
+    copyString(state.settings.projectPath, folderPath, FileSystem::kPathMaxLength);
+  }
 }

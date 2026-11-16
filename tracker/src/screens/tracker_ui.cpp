@@ -26,7 +26,7 @@ TrackerUI::TrackerUI(Gfx& gfx, FontManager& fontManager, AudioManager& audio, Fi
 {
   // Create all screen objects
   screens[ScreenEnum::song] = new ScreenSong(state, events, gfx, audio, clipboard);
-  screens[ScreenEnum::project] = new ScreenProject(state, events, gfx, audio);
+  screens[ScreenEnum::project] = new ScreenProject(state, events, gfx, audio, file);
 
   screens[ScreenEnum::confirm] = new ScreenConfirm(state, events, gfx);
   screens[ScreenEnum::enterCharacter] = new ScreenEnterCharacter(state, events, gfx);
@@ -213,6 +213,10 @@ bool TrackerUI::onEvent(const Event& e) {
       onShowMessage(e);
       handled = true;
       break;
+    case EventType::setProject:
+      setProject(e.project);
+      handled = true;
+      break;
     default:
       break;
   }
@@ -342,4 +346,26 @@ bool TrackerUI::onScreenEvent(const Event& e) {
   }
 
   return handled;
+}
+
+void TrackerUI::setProject(chipnomad::Project* project) {
+  events.dispatchInstant(Event::stopPlayback());
+  delete state.project;
+  state.project = project;
+  state.projectModified = false;
+  audio.engine.setProject(project);
+  clipboard.resetClipboard();
+
+  // Reset song position
+  state.songRow = 0;
+  state.chainRow = 0;
+  state.songTrack = 0;
+
+  // Reset internal screen states for the new project
+  for (const auto& pair : screens) {
+    pair.second->resetState();
+  }
+
+  // Redraw the current screen to reflect the project change
+  events.dispatch(Event::redrawScreen());
 }
