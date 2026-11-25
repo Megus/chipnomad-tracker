@@ -43,6 +43,7 @@ enum class ScreenEnum : int {
   fileBrowser,
   enterCharacter,
   enterString,
+  selectFX,
 };
 
 class FilePreviewer {
@@ -60,6 +61,7 @@ struct ScreenData {
   static ScreenData enterStringOutput(int value, char* str);
   static ScreenData fileBrowser(bool isFolder, const char* title, const char* startPath, const char* extensions, FilePreviewer* previewer, const char* filename);
   static ScreenData fileBrowserOutput(bool isFolder, const char* filePath, const char* folderPath);
+  static ScreenData editFX(int fxIdx, int instrumentIdx);
 
   int intValue = 0; // Generic input/output int value
   char* str = nullptr; // Generic input/output string value
@@ -82,6 +84,9 @@ struct ScreenData {
   const char* extensions = nullptr; // File browser: Comma-separated list of extensions (.cnm,.vt2)
   FilePreviewer* previewer = nullptr; // File browser: Pointer to the file previewer
   const char* filename = nullptr; // File browser: Filename for saving (used for overwrite check)
+
+  // FX Edit
+  int instrumentIdx = 0; // FX Edit: Instrument index, defines the FX groups set
 };
 
 // Event struct

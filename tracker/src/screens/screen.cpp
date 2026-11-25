@@ -34,11 +34,6 @@ void Screen::drawSelectionBorder(const Rect& range, bool draw) {
   gfx.rect(r);
 }
 
-bool Screen::isSingleColumnSelection() {
-  if (!supportsSelectMode() || mode != ScreenMode::select) return false;
-  return selectStartCol == cursorCol;
-}
-
 void Screen::validateCursorPosition() {
   // Validate row number
   int rowCount = getRowCount();
@@ -476,15 +471,19 @@ void Screen::showTimedMessage(const char* format, ...) {
 }
 
 
-int Screen::isSingleCellSelection(const Rect& range) {
+bool Screen::isSingleColumnSelection(const Rect& range) {
+  return range.w == 1;
+}
+
+bool Screen::isSingleCellSelection(const Rect& range) {
   return range.w == 1 && range.h == 1;
 }
 
-int Screen::isFullColumnSelection(const Rect& range, int maxRow) {
+bool Screen::isFullColumnSelection(const Rect& range, int maxRow) {
   return range.w == 1 && range.y == 0 && range.h == maxRow + 1;
 }
 
-int Screen::isFullRowSelection(const Rect& range, int maxCol) {
+bool Screen::isFullRowSelection(const Rect& range, int maxCol) {
   return range.h == 1 && range.x == 0 && range.w == maxCol + 1;
 }
 

@@ -23,7 +23,7 @@ static uint8_t getTableInstrumentIdx() {
   }
 
   // Tables 80-FE are aux tables - get instrument from current phrase context
-  uint8_t instrumentNum = lookupInstrument(&chipnomadState->project, state.songRow, *pChainRow, 0, state.songTrack);
+  uint8_t instrumentNum = lookupInstrument(state.project, state.songRow, state.chainRow, 0, state.songTrack);
   return instrumentNum;
 }
 
@@ -201,7 +201,7 @@ static void draw(void) {
   gfx.clearRect(21, 3, 1, 16);
   gfx.clearRect(27, 3, 1, 16);
 
-  PlaybackTrackState* track = &chipnomadState->engine->player.tracks[state.songTrack];
+  PlaybackTrackState* track = &audio.engine.player.tracks[state.songTrack];
   struct PlaybackTableState* pTable = NULL;
   if (track->mode != PlaybackMode::stopped) {
     int instrumentTableIdx = track->note.instrumentTable.tableIdx;
@@ -246,7 +246,7 @@ static int editCell(int col, int row, enum EditCellAction action) {
     handled = edit8noLimit(action, &tableRows[row].pitchOffset, &lastPitchValue, state.project->pitchTable.octaveSize);
     if (handled) {
       if (tableRows[row].pitchFlag == 1) {
-        screenMessage(0, "Note %s", noteName(&chipnomadState->project, tableRows[row].pitchOffset));
+        screenMessage(0, "Note %s", noteName(state.project, tableRows[row].pitchOffset));
       } else {
         screenMessage(0, "Pitch offset %hhd", tableRows[row].pitchOffset);
       }

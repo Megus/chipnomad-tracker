@@ -224,7 +224,7 @@ const char* helpFXHint(uint8_t* fx, int isTable, uint8_t instrumentIdx) {
       note = fx[1];
       if (note >= state.project->pitchTable.length - state.project->pitchTable.octaveSize * 4)
         note = state.project->pitchTable.length - 1 - state.project->pitchTable.octaveSize * 4;
-      snprintf(buffer, bufferSize, "Envelope note %s", noteName(&chipnomadState->project, note));
+      snprintf(buffer, bufferSize, "Envelope note %s", noteName(state.project, note));
       break;
     case fxEPT: // Envelope period offset
       snprintf(buffer, bufferSize, "Envelope period: %+hhd (relative)", fx[1]);
@@ -240,7 +240,7 @@ const char* helpFXHint(uint8_t* fx, int isTable, uint8_t instrumentIdx) {
       note = fx[1];
       if (note >= state.project->pitchTable.length)
         note = state.project->pitchTable.length - 1;
-      snprintf(buffer, bufferSize, "Tone note %s", noteName(&chipnomadState->project, note));
+      snprintf(buffer, bufferSize, "Tone note %s", noteName(state.project, note));
       break;
     case fxTNP: // Tone pitch offset
       snprintf(buffer, bufferSize, "Tone pitch: %+hhd (relative)", (int8_t)fx[1]);
@@ -255,7 +255,7 @@ const char* helpFXHint(uint8_t* fx, int isTable, uint8_t instrumentIdx) {
       note = fx[1];
       if (note >= state.project->pitchTable.length)
         note = state.project->pitchTable.length - 1;
-      snprintf(buffer, bufferSize, "Envelope note %s", noteName(&chipnomadState->project, note));
+      snprintf(buffer, bufferSize, "Envelope note %s", noteName(state.project, note));
       break;
     case fxENP: // Envelope pitch offset
       snprintf(buffer, bufferSize, "Envelope pitch: %+hhd (relative)", (int8_t)fx[1]);
@@ -277,7 +277,7 @@ const char* helpFXHint(uint8_t* fx, int isTable, uint8_t instrumentIdx) {
       note = fx[1];
       if (note >= state.project->pitchTable.length)
         note = state.project->pitchTable.length - 1;
-      snprintf(buffer, bufferSize, "Software osc note %s", noteName(&chipnomadState->project, note));
+      snprintf(buffer, bufferSize, "Software osc note %s", noteName(state.project, note));
       break;
     case fxSFP: // Software oscillator pitch offset
       snprintf(buffer, bufferSize, "Software osc pitch: %+hhd (relative)", (int8_t)fx[1]);

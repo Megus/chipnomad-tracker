@@ -84,7 +84,7 @@ int manageOnEdit(int col, int row, EditCellAction action) {
   if (row == 1) {
     // Cleanup phrases and chains
     int phrasesFreed, chainsFreed;
-    cleanupPhrasesAndChains(&chipnomadState->project, &phrasesFreed, &chainsFreed);
+    cleanupPhrasesAndChains(state.project, &phrasesFreed, &chainsFreed);
     if (phrasesFreed > 0 || chainsFreed > 0) {
       screenMessage(MESSAGE_TIME, "Freed %d phrases, %d chains", phrasesFreed, chainsFreed);
       projectModified = 1;
@@ -94,7 +94,7 @@ int manageOnEdit(int col, int row, EditCellAction action) {
   } else if (row == 2) {
     // Cleanup instruments and tables
     int instrumentsFreed, tablesFreed;
-    cleanupInstrumentsAndTables(&chipnomadState->project, &instrumentsFreed, &tablesFreed);
+    cleanupInstrumentsAndTables(state.project, &instrumentsFreed, &tablesFreed);
     if (instrumentsFreed > 0 || tablesFreed > 0) {
       screenMessage(MESSAGE_TIME, "Freed %d instruments, %d tables", instrumentsFreed, tablesFreed);
       projectModified = 1;

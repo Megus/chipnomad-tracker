@@ -11,7 +11,7 @@ static char* editingString = NULL;
 static int editingStringLength = 0;
 
 static void onLoadSelected(const char* path) {
-  if (pitchTableLoadCSV(&chipnomadState->project, path)) {
+  if (pitchTableLoadCSV(state.project, path)) {
     extractFilenameWithoutExtension(path, state.project->pitchTable.name, PROJECT_PITCH_TABLE_TITLE_LENGTH + 1);
 
     // Save the directory path
@@ -26,7 +26,7 @@ static void onLoadSelected(const char* path) {
 }
 
 static void onSaveSelected(const char* folderPath) {
-  pitchTableSaveCSV(&chipnomadState->project, folderPath, state.project->pitchTable.name);
+  pitchTableSaveCSV(state.project, folderPath, state.project->pitchTable.name);
 
   // Save the directory path
   copyString(appSettings.pitchTablePath, folderPath, PATH_LENGTH);
@@ -102,9 +102,9 @@ static int onEdit(int col, int row, EditCellAction action) {
   } else if (row == 3) {
     // Generate for current clock
     if (state.project->linearPitch) {
-      calculateLinearPitchTable12TET(&chipnomadState->project);
+      calculateLinearPitchTable12TET(state.project);
     } else {
-      calculatePitchTableAY(&chipnomadState->project);
+      calculatePitchTableAY(state.project);
     }
 
     projectModified = 1;

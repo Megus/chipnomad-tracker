@@ -377,7 +377,7 @@ static void fullRedraw(void) {
 
 static int onInput(int isKeyDown, int keys, int tapCount) {
   if (keys == 0) {
-    chipnomadState->engine->player.stopPreview(state.songTrack);
+    audio.engine.player.stopPreview(state.songTrack);
   }
 
   if (keys == (keyDown | keyShift)) {
@@ -387,33 +387,33 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   } else if (keys == (keyOpt | keyLeft)) {
     if (cInstrument != 0) {
       cInstrument--;
-      chipnomadState->engine->player.stopPreview(state.songTrack);
+      audio.engine.player.stopPreview(state.songTrack);
       fullRedraw();
     }
     return 1;
   } else if (keys == (keyOpt | keyRight)) {
     if (cInstrument != PROJECT_MAX_INSTRUMENTS - 1) {
       cInstrument++;
-      chipnomadState->engine->player.stopPreview(state.songTrack);
+      audio.engine.player.stopPreview(state.songTrack);
       fullRedraw();
     }
     return 1;
   } else if (keys == (keyOpt | keyUp)) {
     cInstrument += 16;
     if (cInstrument >= PROJECT_MAX_INSTRUMENTS) cInstrument = PROJECT_MAX_INSTRUMENTS - 1;
-    chipnomadState->engine->player.stopPreview(state.songTrack);
+    audio.engine.player.stopPreview(state.songTrack);
     fullRedraw();
     return 1;
   } else if (keys == (keyOpt | keyDown)) {
     cInstrument -= 16;
     if (cInstrument < 0) cInstrument = 0;
-    chipnomadState->engine->player.stopPreview(state.songTrack);
+    audio.engine.player.stopPreview(state.songTrack);
     fullRedraw();
     return 1;
   } else if (keys == (keyEdit | keyPlay)) {
-    if (!instrumentIsEmpty(&chipnomadState->project, cInstrument) && !chipnomadState->engine->player.isPlaying()) {
-      uint8_t note = instrumentFirstNote(&chipnomadState->project, cInstrument);
-      chipnomadState->engine->player.previewNote(state.songTrack, note, cInstrument);
+    if (!instrumentIsEmpty(state.project, cInstrument) && !audio.engine.player.isPlaying()) {
+      uint8_t note = instrumentFirstNote(state.project, cInstrument);
+      audio.engine.player.previewNote(state.songTrack, note, cInstrument);
     }
     return 1;
   }

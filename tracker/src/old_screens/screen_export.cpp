@@ -286,7 +286,7 @@ int exportCommonOnEdit(int col, int row, EditCellAction action) {
     char exportPath[1024];
     generateExportPath(exportPath, sizeof(exportPath), "wav");
 
-    currentExporter = new ExporterWAV(exportPath, &chipnomadState->project, startRow, sampleRates[currentSampleRateIndex], bitDepths[currentBitDepthIndex], appSettings.mixVolume);
+    currentExporter = new ExporterWAV(exportPath, state.project, startRow, sampleRates[currentSampleRateIndex], bitDepths[currentBitDepthIndex], appSettings.mixVolume);
     if (currentExporter) {
       screenMessage(MESSAGE_TIME, "Starting export...");
     } else {
@@ -299,7 +299,7 @@ int exportCommonOnEdit(int col, int row, EditCellAction action) {
     char basePath[512];
     generateStemsExportPath(basePath, sizeof(basePath));
 
-    currentExporter = new ExporterWAV(basePath, &chipnomadState->project, startRow, sampleRates[currentSampleRateIndex], bitDepths[currentBitDepthIndex], appSettings.mixVolume, true);
+    currentExporter = new ExporterWAV(basePath, state.project, startRow, sampleRates[currentSampleRateIndex], bitDepths[currentBitDepthIndex], appSettings.mixVolume, true);
     if (currentExporter) {
       int trackCount = state.project->chipsCount * 3;
       screenMessage(MESSAGE_TIME, "Starting stems export (%d files)...", trackCount);
@@ -329,7 +329,7 @@ int exportCommonOnEdit(int col, int row, EditCellAction action) {
     char exportPath[1024];
     generateExportPath(exportPath, sizeof(exportPath), "vgm");
 
-    currentExporter = new ExporterVGM(exportPath, &chipnomadState->project, startRow);
+    currentExporter = new ExporterVGM(exportPath, state.project, startRow);
     if (currentExporter) {
       screenMessage(MESSAGE_TIME, "Starting VGM export...");
     } else {

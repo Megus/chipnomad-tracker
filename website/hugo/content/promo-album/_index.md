@@ -15,11 +15,11 @@ I want more chiptune enthusiasts to learn about ChipNomad. I'm inviting all musi
   <a href="https://discord.gg/PJarAn2QCW" target="_blank">ChipNomad Discord server</a> or by
   <a href="mailto:megus.sugem@gmail.com" target="_blank">email</a>
   </strong><br />
-  The submission deadline is <strong>December 1st, 2026</strong>
+  The submission deadline is <strong>December 31st, 2026</strong>
 </p>
 <p style="text-align: center;">
-  <strong>Progress as of July 25, 2026</strong>:
-  <strong>2</strong> tracks submitted, <strong>8</strong> authors agreed to participate
+  <strong>Progress as of November 22, 2026</strong>:
+  <strong>7</strong> tracks submitted, <strong>14</strong> authors expressed the wish to participate.
 </p>
 
 ---

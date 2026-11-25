@@ -49,7 +49,7 @@ static int onEdit(int col, int row, enum EditCellAction action) {
     generatePSGExportPath(exportPath, sizeof(exportPath));
     strcat(exportPath, ".psg");
 
-    currentExporter = new ExporterPSG(exportPath, &chipnomadState->project, startRow);
+    currentExporter = new ExporterPSG(exportPath, state.project, startRow);
     if (currentExporter) {
       if (state.project->chipsCount > 1) {
         screenMessage(MESSAGE_TIME, "Starting export (%d files)...", state.project->chipsCount);

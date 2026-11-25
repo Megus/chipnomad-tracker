@@ -38,8 +38,6 @@ class ScreenChain : public Screen, EditCellInterface {
 
     uint16_t lastPhraseValue = 0;
     uint8_t lastTransposeValue = 0;
-
-    bool switchSelectionMode();
 };
 
 #endif // __SCREEN_CHAIN_H__

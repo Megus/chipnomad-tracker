@@ -104,8 +104,8 @@ static void draw(void) {
   gfx.clearRect(2, 3, 1, 16);
 
   // Show play position if this groove is currently playing
-  if (chipnomadState->engine->player.tracks[state.songTrack].grooveIdx == groove) {
-    int row = chipnomadState->engine->player.tracks[state.songTrack].grooveRow;
+  if (audio.engine.player.tracks[state.songTrack].grooveIdx == groove) {
+    int row = audio.engine.player.tracks[state.songTrack].grooveRow;
     if (row >= 0 && row < 16) {
       gfx.setFgColor(theme().playMarkers);
       gfx.print(2, 3 + row, ">");

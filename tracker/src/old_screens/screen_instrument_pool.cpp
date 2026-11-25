@@ -51,7 +51,7 @@ static void fullRedraw(void) {
     // Set color based on cursor position and instrument state
     if (i == cursorRow) {
       gfx.setFgColor(t.textValue);
-    } else if (instrumentIsEmpty(&chipnomadState->project, i)) {
+    } else if (instrumentIsEmpty(state.project, i)) {
       gfx.setFgColor(t.textEmpty);
     } else {
       gfx.setFgColor(t.textDefault);
@@ -66,7 +66,7 @@ static void fullRedraw(void) {
     gfx.printf(1, y, "%02X", i);
 
     // Draw instrument name
-    if (!instrumentIsEmpty(&chipnomadState->project, i)) {
+    if (!instrumentIsEmpty(state.project, i)) {
       gfx.printf(4, y, "%-15s", state.project->instruments[i].name);
     } else {
       gfx.print(4, y, "               ");
@@ -84,7 +84,7 @@ static void draw(void) {
 
   // Draw playback markers for currently playing instruments
   for (int track = 0; track < state.project->tracksCount; track++) {
-    PlaybackTrackState* trackState = &chipnomadState->engine->player.tracks[track];
+    PlaybackTrackState* trackState = &audio.engine.player.tracks[track];
     if (trackState->mode != PlaybackMode::stopped && trackState->note.instrument < PROJECT_MAX_INSTRUMENTS) {
       int instrument = trackState->note.instrument;
       if (instrument >= topRow && instrument < topRow + 16) {
@@ -116,7 +116,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
 
   // Handle key-up
   if (!isKeyDown && keys == 0) {
-    chipnomadState->engine->player.stopPreview(state.songTrack);
+    audio.engine.player.stopPreview(state.songTrack);
     if (poolState == POOL_EDIT_PRESSED) {
       poolState = POOL_NORMAL;
       screenSetup(&screenInstrument, cursorRow);
@@ -174,8 +174,8 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
     // Move instrument up
     if (cursorRow > 0) {
       poolState = POOL_MOVING;
-      chipnomadState->engine->player.stop();
-      instrumentSwap(&chipnomadState->project, cursorRow, cursorRow - 1);
+      audio.engine.player.stop();
+      instrumentSwap(state.project, cursorRow, cursorRow - 1);
       projectModified = 1;
       cursorRow--;
       if (cursorRow < topRow) {
@@ -188,8 +188,8 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
     // Move instrument down
     if (cursorRow < PROJECT_MAX_INSTRUMENTS - 1) {
       poolState = POOL_MOVING;
-      chipnomadState->engine->player.stop();
-      instrumentSwap(&chipnomadState->project, cursorRow, cursorRow + 1);
+      audio.engine.player.stop();
+      instrumentSwap(state.project, cursorRow, cursorRow + 1);
       projectModified = 1;
       cursorRow++;
       if (cursorRow >= topRow + 16) {
@@ -201,9 +201,9 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   } else if (keys == (keyEdit | keyPlay)) {
     // Preview instrument
     poolState = POOL_PREVIEWING;
-    if (!instrumentIsEmpty(&chipnomadState->project, cursorRow) && !chipnomadState->engine->player.isPlaying()) {
-      uint8_t note = instrumentFirstNote(&chipnomadState->project, cursorRow);
-      chipnomadState->engine->player.previewNote(state.songTrack, note, cursorRow);
+    if (!instrumentIsEmpty(state.project, cursorRow) && !audio.engine.player.isPlaying()) {
+      uint8_t note = instrumentFirstNote(state.project, cursorRow);
+      audio.engine.player.previewNote(state.songTrack, note, cursorRow);
     }
     return 1;
   } else if (keys == (keyShift | keyOpt)) {
@@ -221,7 +221,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
 
   // Stop preview when cursor moves
   if (oldCursorRow != cursorRow) {
-    chipnomadState->engine->player.stopPreview(state.songTrack);
+    audio.engine.player.stopPreview(state.songTrack);
   }
 
   // Redraw only cursor if position changed
@@ -229,14 +229,14 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
     // Clear old cursor line
     int oldY = 3 + (oldCursorRow - oldTopRow);
     if (oldCursorRow >= oldTopRow && oldCursorRow < oldTopRow + 16) {
-      if (instrumentIsEmpty(&chipnomadState->project, oldCursorRow)) {
+      if (instrumentIsEmpty(state.project, oldCursorRow)) {
         gfx.setFgColor(theme().textEmpty);
       } else {
         gfx.setFgColor(theme().textDefault);
       }
       gfx.print(0, oldY, " ");
       gfx.printf(1, oldY, "%02X", oldCursorRow);
-      if (!instrumentIsEmpty(&chipnomadState->project, oldCursorRow)) {
+      if (!instrumentIsEmpty(state.project, oldCursorRow)) {
         gfx.printf(4, oldY, "%-15s", state.project->instruments[oldCursorRow].name);
       } else {
         gfx.print(4, oldY, "               ");
@@ -250,7 +250,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
     gfx.setFgColor(theme().textValue);
     gfx.print(0, newY, ">");
     gfx.printf(1, newY, "%02X", cursorRow);
-    if (!instrumentIsEmpty(&chipnomadState->project, cursorRow)) {
+    if (!instrumentIsEmpty(state.project, cursorRow)) {
       gfx.printf(4, newY, "%-15s", state.project->instruments[cursorRow].name);
     } else {
       gfx.print(4, newY, "               ");

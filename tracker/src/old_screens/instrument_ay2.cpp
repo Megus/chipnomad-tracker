@@ -339,7 +339,7 @@ static void drawField(int col, int row, CellState state) {
           if (ay2->oscSoftware.type == AYSoftwareOscType::wavetable) {
             if (p1 && wavetablePreviewBitmap) {
               // Render preview
-              Project* p = &chipnomadState->project;
+              Project* p = state.project;
               int isYM = p->chipSetup.ay.isYM;
               renderAYWavetablePreview(wavetablePreviewBitmap, p->ayWavetables[*p1], isYM);
 
@@ -538,7 +538,7 @@ static int onEdit(int col, int row, EditCellAction action) {
                 // Update wavetable preview immediately for WavTb type
                 if (ay2->oscSoftware.type == AYSoftwareOscType::wavetable) {
                   if (wavetablePreviewBitmap) {
-                    Project* p = &chipnomadState->project;
+                    Project* p = state.project;
                     int isYM = p->chipSetup.ay.isYM;
                     renderAYWavetablePreview(wavetablePreviewBitmap, p->ayWavetables[*p1], isYM);
 

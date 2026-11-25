@@ -9,6 +9,7 @@
 #include "screen_song.h"
 #include "screen_project.h"
 #include "screen_chain.h"
+#include "screen_phrase.h"
 
 #include "screen_confirm.h"
 #include "screen_enter_character.h"
@@ -28,6 +29,7 @@ TrackerUI::TrackerUI(Gfx& gfx, FontManager& fontManager, AudioManager& audio, Fi
   screens[ScreenEnum::song] = new ScreenSong(state, events, gfx, audio, clipboard);
   screens[ScreenEnum::project] = new ScreenProject(state, events, gfx, audio, file);
   screens[ScreenEnum::chain] = new ScreenChain(state, events, gfx, audio, clipboard);
+  screens[ScreenEnum::phrase] = new ScreenPhrase(state, events, gfx, audio, clipboard);
 
   screens[ScreenEnum::confirm] = new ScreenConfirm(state, events, gfx);
   screens[ScreenEnum::enterCharacter] = new ScreenEnterCharacter(state, events, gfx);
@@ -71,7 +73,7 @@ void TrackerUI::drawScreenMap() {
   }
 
   // Additional screens
-  if (s == ScreenEnum::song || s == ScreenEnum::project) {
+  if (s == ScreenEnum::song || s == ScreenEnum::project || s == ScreenEnum::settings) {
     gfx.print(35, smY, "P");
     gfx.print(35, smY + 2, "S");
   } else if (s == ScreenEnum::phrase || s == ScreenEnum::groove) {

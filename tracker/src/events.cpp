@@ -1,5 +1,7 @@
 #include "events.h"
 
+// ScreenData
+
 ScreenData ScreenData::confirm(const char* title, int confirmValue, int cancelValue) {
   return {.title = title, .confirmValue = confirmValue, .cancelValue = cancelValue};
 }
@@ -27,6 +29,12 @@ ScreenData ScreenData::fileBrowser(bool isFolder, const char* title, const char*
 ScreenData ScreenData::fileBrowserOutput(bool isFolder, const char* filePath, const char* folderPath) {
   return {.isFolder = isFolder, .filePath = filePath, .folderPath = folderPath};
 }
+
+ScreenData ScreenData::editFX(int fxIdx, int instrumentIdx) {
+  return {.intValue = fxIdx, .instrumentIdx = instrumentIdx};
+}
+
+// Event
 
 Event Event::input(bool isKeyDown, int keys, int tapCount) {
   return {.type = EventType::input, .isKeyDown = isKeyDown, .keys = keys, .tapCount = tapCount};

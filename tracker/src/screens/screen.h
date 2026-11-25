@@ -20,7 +20,6 @@ enum class CellState : int {
   selected = 2,
 };
 
-
 enum class ScreenMode : int {
   edit,
   select,
@@ -88,14 +87,14 @@ class Screen : public EventHandler {
 
     Rect getSelectionRange(); // Get selection range between cursor and selection start cell
     void drawSelectionBorder(const Rect& range, bool draw); // Draw selection border
-    bool isSingleColumnSelection(); // Is the selection a single column?
 
     void validateCursorPosition(); // Ensure that cursor is in a valid cell
     void setCellColor(CellState state, bool isEmpty, bool hasContent); // Set cell color based on state and content
 
-    int isSingleCellSelection(const Rect& range);
-    int isFullColumnSelection(const Rect& range, int maxRow);
-    int isFullRowSelection(const Rect& range, int maxCol);
+    bool isSingleCellSelection(const Rect& range); // Is the selection a single cell?
+    bool isSingleColumnSelection(const Rect& range); // Is the selection a single column?
+    bool isFullColumnSelection(const Rect& range, int maxRow); // Is the selection a full column?
+    bool isFullRowSelection(const Rect& range, int maxCol); // Is the selection a full row?
     void selectColumn(int maxRow);
     void selectRow(int maxCol);
     void selectAll(int maxCol, int maxRow);

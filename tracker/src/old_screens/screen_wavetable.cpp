@@ -110,7 +110,7 @@ static void init(void) {
 }
 
 static void updatePreviews(void) {
-  Project* p = &chipnomadState->project;
+  Project* p = state.project;
   int isYM = p->chipSetup.ay.isYM;
 
   // Update current wavetable preview (3 lines tall)
@@ -433,7 +433,7 @@ static int onEdit(int col, int row, EditCellAction action) {
       projectModified = 1;
 
       // Update preview immediately after edit
-      Project* p = &chipnomadState->project;
+      Project* p = state.project;
       int isYM = p->chipSetup.ay.isYM;
       if (previewBitmap) {
         renderAYWavetablePreview(previewBitmap, p->ayWavetables[wavetableIdx], isYM);

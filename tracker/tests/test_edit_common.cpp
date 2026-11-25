@@ -20,7 +20,7 @@ static TrackerState testState;
 struct EditCommonFixture {
   EditCommonFixture() {
     chipnomadState = &testState;
-    projectInit(&chipnomadState->project);
+    projectInit(state.project);
     state.project->tracksCount = 3;
   }
   ~EditCommonFixture() {

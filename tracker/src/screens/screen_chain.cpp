@@ -22,16 +22,16 @@ Rect ScreenChain::getSelectionRect(const Rect& range) {
 }
 
 bool ScreenChain::switchSelectionRange() {
-  Rect range = getSelectionRange();
-  if (isSingleCellSelection(range)) {
+  Rect selection = getSelectionRange();
+  if (isSingleCellSelection(selection)) {
     selectColumn(15);
     return true;
   }
-  if (isFullColumnSelection(range, 15)) {
+  if (isFullColumnSelection(selection, 15)) {
     selectRow(1);
     return 0;
   }
-  if (isFullRowSelection(range, 1)) {
+  if (isFullRowSelection(selection, 1)) {
     selectAll(1, 15);
     return 0;
   }
@@ -122,7 +122,7 @@ bool ScreenChain::onEdit(int col, int row, EditCellAction action) {
   Rect selection = getSelectionRange();
 
   if (isMultiAction(action)) {
-    if (!isSingleColumnSelection()) return false;
+    if (!isSingleColumnSelection(selection)) return false;
     handled = applyMultiEdit(selection, action, this);
   } else if (action == EditCellAction::shallowClone || action == EditCellAction::deepClone) {
     int clonedCount = 0;
